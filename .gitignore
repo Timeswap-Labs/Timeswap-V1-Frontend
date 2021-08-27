@@ -1,0 +1,19 @@
+# elm-package generated files
+elm-stuff
+
+# ds-store
+.DS_Store
+
+# compiled js 
+main.js
+
+package-lock.json
+
+dist
+
+.vscode/
+
+.idea/
+
+node_modules
+
