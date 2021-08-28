@@ -19,6 +19,7 @@ import Element
         , link
         , mouseDown
         , mouseOver
+        , newTabLink
         , padding
         , paddingEach
         , paddingXY
@@ -68,7 +69,7 @@ view { device, backdrop } =
          , spacing 32
          , centerX
          , centerY
-         , inFront exit
+         , inFront Exit.button
          ]
             ++ Glass.darkPrimaryModal backdrop 0
             ++ (if Device.isPhone device then
@@ -86,25 +87,6 @@ view { device, backdrop } =
         [ title
         , content
         ]
-
-
-exit : Element msg
-exit =
-    el
-        [ width shrink
-        , height shrink
-        , padding 20
-        , alignRight
-        , alignTop
-        ]
-        (link
-            [ width shrink
-            , height shrink
-            ]
-            { url = Exit.toUrl
-            , label = Image.close [ width <| px 24 ]
-            }
-        )
 
 
 title : Element msg
@@ -220,7 +202,9 @@ termsOfService =
         [ el
             [ Font.color Color.transparent300 ]
             (text "By connecting, I accept Timeswap's ")
-        , el
+        , newTabLink
             [ Font.color Color.primary300 ]
-            (text "Terms of Service")
+            { url = "https://timeswap.io/terms/"
+            , label = text "Terms of Service"
+            }
         ]

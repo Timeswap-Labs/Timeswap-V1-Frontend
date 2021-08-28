@@ -132,21 +132,25 @@ update msg =
 
 view : { model | device : Device, backdrop : Backdrop } -> Service -> Element Msg
 view ({ device } as model) service =
-    case service of
-        Connect ->
-            el
-                [ width fill
-                , height fill
-                , if Device.isPhone device then
-                    padding 0
+    el
+        [ width fill
+        , height fill
+        , if Device.isPhone device then
+            padding 0
 
-                  else
-                    padding 80
-                , scrollbarY
-                , Background.color Color.modal
-                , Font.family Typography.supreme
-                ]
-                (Connect.view model |> Element.map ConnectMsg)
+          else
+            padding 80
+        , scrollbarY
+        , Background.color Color.modal
+        , Font.family Typography.supreme
+        ]
+        (case service of
+            Connect ->
+                Connect.view model |> Element.map ConnectMsg
 
-        _ ->
-            none
+            NoMetamask ->
+                NoMetamask.view model
+
+            _ ->
+                none
+        )

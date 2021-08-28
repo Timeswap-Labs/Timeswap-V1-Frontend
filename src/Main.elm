@@ -126,6 +126,7 @@ type Msg
     | ModalMsg Modal.Msg
     | ServiceMsg Service.Msg
     | MetamaskConnected Value
+    | NoMetamask Value
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -291,8 +292,16 @@ update msg model =
             , Cmd.none
             )
 
+        NoMetamask _ ->
+            ( model
+            , Navigation.pushUrl model.key "#nometamask"
+            )
+
 
 port metamaskConnected : (Value -> msg) -> Sub msg
+
+
+port noMetamask : (Value -> msg) -> Sub msg
 
 
 subscriptions : Model -> Sub Msg
@@ -303,6 +312,7 @@ subscriptions model =
         , Time.every 1000 ReceiveTime
         , onClickOutsideAside model
         , metamaskConnected MetamaskConnected
+        , noMetamask NoMetamask
         ]
 
 
