@@ -3,7 +3,8 @@ module Modals.Lend.Main exposing
     , Modal
     , Msg
     , fromFragment
-    , toFragment
+    , same
+    , toUrl
     , update
     )
 
@@ -50,12 +51,20 @@ fromFragment chain string =
            )
 
 
-toFragment : Modal -> String
-toFragment (Modal { pair, maturity }) =
-    [ pair |> Pair.toFragment
-    , maturity |> Maturity.toFragment
-    ]
+toUrl : Modal -> String
+toUrl (Modal { pair, maturity }) =
+    [ "#lend"
+    , [ pair |> Pair.toFragment
+      , maturity |> Maturity.toFragment
+      ]
         |> String.join "&"
+    ]
+        |> String.join "?"
+
+
+same : Modal -> Modal -> Bool
+same (Modal modal1) (Modal modal2) =
+    modal1.pair == modal2.pair && modal1.maturity == modal2.maturity
 
 
 type Msg

@@ -1,4 +1,4 @@
-module Modal exposing (Modal, Msg, fromFragment, toFragment, update)
+module Modal exposing (Modal(..), Msg, fromFragment, same, toUrl, update)
 
 import Data.Chain exposing (Chain(..))
 import Modals.Borrow.Main as Borrow
@@ -63,32 +63,39 @@ fromFragment { user } string =
            )
 
 
-toFragment : Modal -> String
-toFragment modal =
+toUrl : Modal -> String
+toUrl modal =
     case modal of
         Lend lend ->
-            [ "lend"
-            , lend |> Lend.toFragment
-            ]
-                |> String.join "?"
+            lend |> Lend.toUrl
 
         Borrow borrow ->
-            [ "borrow"
-            , borrow |> Borrow.toFragment
-            ]
-                |> String.join "?"
+            borrow |> Borrow.toUrl
 
         Withdraw withdraw ->
-            [ "withdraw"
-            , withdraw |> Withdraw.toFragment
-            ]
-                |> String.join "?"
+            withdraw |> Withdraw.toUrl
 
         Pay pay ->
-            [ "pay"
-            , pay |> Pay.toFragment
-            ]
-                |> String.join "?"
+            pay |> Pay.toUrl
+
+
+same : Modal -> Modal -> Bool
+same modal1 modal2 =
+    case ( modal1, modal2 ) of
+        ( Lend lend1, Lend lend2 ) ->
+            Lend.same lend1 lend2
+
+        ( Borrow borrow1, Borrow borrow2 ) ->
+            Borrow.same borrow1 borrow2
+
+        ( Withdraw withdraw1, Withdraw withdraw2 ) ->
+            Withdraw.same withdraw1 withdraw2
+
+        ( Pay pay1, Pay pay2 ) ->
+            Pay.same pay1 pay2
+
+        _ ->
+            False
 
 
 type Msg

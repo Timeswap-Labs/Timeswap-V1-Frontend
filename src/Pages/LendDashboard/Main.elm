@@ -1,4 +1,4 @@
-module Pages.LendDashboard.Main exposing (Msg, Page, init, update)
+module Pages.LendDashboard.Main exposing (Msg, Page, init, toUrl, update)
 
 
 type Page
@@ -8,6 +8,11 @@ type Page
 init : Page
 init =
     Page
+
+
+toUrl : String
+toUrl =
+    "#dashboard?transaction=lend"
 
 
 type Msg

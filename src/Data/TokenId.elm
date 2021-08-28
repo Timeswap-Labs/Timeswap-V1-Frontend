@@ -52,7 +52,7 @@ toFragment set =
 sorter : Sorter TokenId
 sorter =
     Sort.alphabetical
-        |> Debug.todo "fix it to number"
+        |> Debug.log "fix it to number"
         |> Sort.by (\(TokenId string) -> string)
 
 

@@ -3,7 +3,8 @@ module Modals.Pay.Main exposing
     , Modal
     , Msg
     , fromFragment
-    , toFragment
+    , same
+    , toUrl
     , update
     )
 
@@ -56,13 +57,21 @@ fromFragment chain string =
            )
 
 
-toFragment : Modal -> String
-toFragment (Modal { pair, maturity, tokenIds }) =
-    [ pair |> Pair.toFragment
-    , maturity |> Maturity.toFragment
-    , tokenIds |> TokenId.toFragment
-    ]
+toUrl : Modal -> String
+toUrl (Modal { pair, maturity, tokenIds }) =
+    [ "#pay"
+    , [ pair |> Pair.toFragment
+      , maturity |> Maturity.toFragment
+      , tokenIds |> TokenId.toFragment
+      ]
         |> String.join "&"
+    ]
+        |> String.join "?"
+
+
+same : Modal -> Modal -> Bool
+same (Modal modal1) (Modal modal2) =
+    modal1.pair == modal2.pair && modal1.maturity == modal2.maturity && modal1.tokenIds == modal2.tokenIds
 
 
 type Msg

@@ -41,7 +41,7 @@ fromDeviceWidth device width =
             fromWidth width
     in
     if checkAsideStatus device then
-        toggleAside newDevice
+        openAside newDevice
 
     else
         newDevice
@@ -129,22 +129,3 @@ checkAsideStatus device =
 
         _ ->
             False
-
-
-toggleAside : Device -> Device
-toggleAside device =
-    case device of
-        Phone Open ->
-            Phone Close
-
-        Phone Close ->
-            Phone Open
-
-        Tablet Open ->
-            Tablet Close
-
-        Tablet Close ->
-            Tablet Open
-
-        _ ->
-            device

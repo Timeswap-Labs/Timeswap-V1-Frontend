@@ -1,4 +1,4 @@
-module Data.Backdrop exposing (Backdrop, setBackdrop)
+module Data.Backdrop exposing (Backdrop(..), setBackdrop)
 
 
 type Backdrop
@@ -8,7 +8,7 @@ type Backdrop
 
 setBackdrop : Bool -> Backdrop
 setBackdrop hasBackdropSupport =
-    if hasBackdropSupport == True then
+    if hasBackdropSupport then
         Supported
 
     else

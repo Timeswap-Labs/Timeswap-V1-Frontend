@@ -38,12 +38,14 @@ import Pages.AllMarket.Main as AllMarket
 import Pages.BorrowDashboard.Main as BorrowDashboard
 import Pages.LendDashboard.Main as LendDashboard
 import Route
-import Service exposing (Service)
+import Service as Service exposing (Service)
 import Task
 import Time exposing (Posix)
 import Url exposing (Url)
+import Url.Builder
 import User exposing (User)
 import Utility.Color as Color
+import Utility.Exit as Exit
 
 
 main : Program Flags Model Msg
@@ -90,7 +92,12 @@ init { width, time, hasBackdropSupport } url key =
     , key = key
     , pools = Pools.whitelist Rinkeby
     , user = Nothing
-    , page = Page.AllMarket AllMarket.init
+    , page =
+        AllMarket.init
+            { pools = Pools.whitelist Rinkeby
+            , user = Nothing
+            }
+            |> Page.AllMarket
     , modal = Nothing
     , service = Nothing
     }
@@ -110,8 +117,7 @@ type Msg
     = RequestUrl UrlRequest
     | ChangeUrl Url
     | ResizeWindow Int Int
-    | OpenAside
-    | CloseAside
+    | ClickOutsideAside
     | VisibilityChange Visibility
     | ReceiveTime Posix
     | ReceiveZoneInfo ZoneInfo
@@ -142,8 +148,9 @@ update msg model =
                         case route of
                             Route.Page page ->
                                 { model
-                                    | page =
-                                        if model.page == page then
+                                    | device = model.device |> Device.closeAside
+                                    , page =
+                                        if Page.same model.page page then
                                             model.page
 
                                         else
@@ -154,33 +161,52 @@ update msg model =
 
                             Route.Modal modal ->
                                 { model
-                                    | modal =
-                                        if model.modal == Just modal then
-                                            model.modal
+                                    | device = model.device |> Device.closeAside
+                                    , modal =
+                                        model.modal
+                                            |> Maybe.map
+                                                (\modelModal ->
+                                                    if Modal.same modelModal modal then
+                                                        model.modal
 
-                                        else
-                                            Just modal
+                                                    else
+                                                        Just modal
+                                                )
+                                            |> Maybe.withDefault (Just modal)
                                     , service = Nothing
                                 }
 
                             Route.Service service ->
                                 { model
-                                    | service =
-                                        if model.service == Just service then
-                                            model.service
+                                    | device = model.device |> Device.closeAside
+                                    , service =
+                                        model.service
+                                            |> Maybe.map
+                                                (\modelService ->
+                                                    if Service.same modelService service then
+                                                        model.service
 
-                                        else
-                                            Just service
+                                                    else
+                                                        Just service
+                                                )
+                                            |> Maybe.withDefault (Just service)
                                 }
 
+                            Route.Aside ->
+                                { model | device = model.device |> Device.openAside }
+
                             Route.Exit ->
-                                model.service
-                                    |> Maybe.map (\_ -> { model | service = Nothing })
-                                    |> Maybe.withDefault
-                                        (model.modal
-                                            |> Maybe.map (\_ -> { model | modal = Nothing })
-                                            |> Maybe.withDefault { model | page = Page.AllMarket AllMarket.init }
-                                        )
+                                if model.device |> Device.checkAsideStatus then
+                                    { model | device = model.device |> Device.closeAside }
+
+                                else
+                                    model.service
+                                        |> Maybe.map (\_ -> { model | service = Nothing })
+                                        |> Maybe.withDefault
+                                            (model.modal
+                                                |> Maybe.map (\_ -> { model | modal = Nothing })
+                                                |> Maybe.withDefault { model | page = Page.AllMarket (AllMarket.init model) }
+                                            )
                     )
                 |> Maybe.withDefault model
             , Cmd.none
@@ -191,14 +217,9 @@ update msg model =
             , Cmd.none
             )
 
-        OpenAside ->
-            ( { model | device = model.device |> Device.openAside }
-            , Cmd.none
-            )
-
-        CloseAside ->
-            ( { model | device = model.device |> Device.closeAside }
-            , Cmd.none
+        ClickOutsideAside ->
+            ( model
+            , Route.exitAside model
             )
 
         VisibilityChange visibility ->
@@ -279,13 +300,12 @@ decoderOutsideAside =
     Decode.string
         |> Decode.andThen
             (\string ->
-                if string /= "aside" then
-                    Decode.succeed string
+                if string == "outside-aside" then
+                    Decode.succeed ClickOutsideAside
 
                 else
                     Decode.fail "Its the aside id"
             )
-        |> Decode.andThen (\_ -> Decode.succeed CloseAside)
 
 
 view : Model -> Document Msg
@@ -303,20 +323,18 @@ html model =
             ([ width <| minimum 340 fill
              , Background.color Color.dark400
              ]
-                ++ (model.service
-                        |> Maybe.map (\service -> [ Lazy.lazy2 (Debug.todo "Service.view") model service |> inFront ])
-                        |> Maybe.map Just
-                        |> Maybe.withDefault
-                            (model.modal
-                                |> Maybe.map (\modal -> [ Lazy.lazy2 (Debug.todo "Modal.view") model modal |> inFront ])
-                            )
-                        |> Maybe.withDefault []
-                   )
                 ++ (if Device.checkAsideStatus model.device then
                         [ Lazy.lazy Aside.view model |> inFront ]
 
                     else
-                        []
+                        model.service
+                            |> Maybe.map (\service -> [ Lazy.lazy2 Service.view model service |> inFront ])
+                            |> Maybe.map Just
+                            |> Maybe.withDefault
+                                (model.modal
+                                    |> Maybe.map (\modal -> [{- Lazy.lazy2 (Debug.todo "Modal.view") model modal |> inFront -}])
+                                )
+                            |> Maybe.withDefault []
                    )
             )
             (column
@@ -324,8 +342,9 @@ html model =
                 , height fill
                 , clip
                 ]
-                [ Lazy.lazy2 Header.view OpenAside model
-                , Debug.todo "Page.view model"
+                [ Lazy.lazy Header.view model
+
+                --, Debug.todo "Page.view model"
                 ]
             )
 
@@ -337,11 +356,11 @@ html model =
              , behindContent <| background
              ]
                 ++ (model.service
-                        |> Maybe.map (\service -> [ Lazy.lazy2 (Debug.todo "Service.view") model service |> inFront ])
+                        |> Maybe.map (\service -> [ Lazy.lazy2 Service.view model service |> inFront ])
                         |> Maybe.map Just
                         |> Maybe.withDefault
                             (model.modal
-                                |> Maybe.map (\modal -> [ Lazy.lazy2 (Debug.todo "Modal.view") model modal |> inFront ])
+                                |> Maybe.map (\modal -> [{- Lazy.lazy2 (Debug.todo "Modal.view") model modal |> inFront -}])
                             )
                         |> Maybe.withDefault []
                    )
@@ -352,14 +371,15 @@ html model =
                 , height fill
                 , clip
                 ]
-                [ Lazy.lazy2 Header.view OpenAside model
+                [ Lazy.lazy Header.view model
                 , row
                     [ width fill
                     , height fill
                     , clip
                     ]
                     [ Lazy.lazy Aside.view model
-                    , Debug.todo "Page.view model"
+
+                    --, Debug.log "Page.view model"
                     ]
                 ]
 

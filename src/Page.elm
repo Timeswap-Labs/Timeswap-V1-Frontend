@@ -1,10 +1,13 @@
-module Page exposing (Page(..), fromFragment, toFragment, toName, updateAllMarket, updateBorrowDashboard, updateLendDashboard)
+module Page exposing (Page(..), fromFragment, same, toName, toUrl, updateAllMarket, updateBorrowDashboard, updateLendDashboard)
 
 import Data.Chain exposing (Chain(..))
 import Data.Pair as Pair exposing (Pair)
+import Data.Pools exposing (Pools)
 import Pages.AllMarket.Main as AllMarket
 import Pages.BorrowDashboard.Main as BorrowDashboard
 import Pages.LendDashboard.Main as LendDashboard
+import Pages.Liquidity.Main as Liquidity
+import Pages.PairMarket.Main as PairMarket
 
 
 type Page
@@ -15,8 +18,8 @@ type Page
     | Liquidity
 
 
-fromFragment : { model | user : Maybe { user | chain : Chain } } -> String -> Maybe Page
-fromFragment { user } string =
+fromFragment : { model | pools : Pools, user : Maybe { user | chain : Chain } } -> String -> Maybe Page
+fromFragment ({ user } as model) string =
     string
         |> String.split "?"
         |> List.concatMap (String.split "&")
@@ -30,7 +33,8 @@ fromFragment { user } string =
                             |> Maybe.map PairMarket
 
                     "market" :: _ ->
-                        AllMarket AllMarket.init
+                        AllMarket.init model
+                            |> AllMarket
                             |> Just
 
                     "dashboard" :: "transaction=lend" :: _ ->
@@ -39,6 +43,10 @@ fromFragment { user } string =
 
                     "dashboard" :: "transaction=borrow" :: _ ->
                         BorrowDashboard BorrowDashboard.init
+                            |> Just
+
+                    "dashboard" :: _ ->
+                        LendDashboard LendDashboard.init
                             |> Just
 
                     "liquidity" :: _ ->
@@ -50,26 +58,45 @@ fromFragment { user } string =
            )
 
 
-toFragment : Page -> String
-toFragment page =
+toUrl : Page -> String
+toUrl page =
     case page of
         AllMarket _ ->
-            "market"
+            AllMarket.toUrl
 
         PairMarket pair ->
-            [ "market"
-            , pair |> Pair.toFragment
-            ]
-                |> String.join "?"
+            PairMarket.toUrl pair
 
         LendDashboard _ ->
-            "dashboard?transaction=lend"
+            LendDashboard.toUrl
 
         BorrowDashboard _ ->
-            "dashboard?transaction=borrow"
+            BorrowDashboard.toUrl
 
         Liquidity ->
-            "liquidity"
+            Liquidity.toUrl
+
+
+same : Page -> Page -> Bool
+same page1 page2 =
+    case ( page1, page2 ) of
+        ( AllMarket _, AllMarket _ ) ->
+            True
+
+        ( PairMarket pair1, PairMarket pair2 ) ->
+            pair1 == pair2
+
+        ( LendDashboard _, LendDashboard _ ) ->
+            True
+
+        ( BorrowDashboard _, BorrowDashboard _ ) ->
+            True
+
+        ( Liquidity, Liquidity ) ->
+            True
+
+        _ ->
+            False
 
 
 toName : Page -> String

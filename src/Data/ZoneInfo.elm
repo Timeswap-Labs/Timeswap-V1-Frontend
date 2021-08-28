@@ -1,6 +1,7 @@
 module Data.ZoneInfo exposing
     ( ZoneInfo
     , toDateString
+    , toString
     , toTimeString
     )
 
@@ -11,6 +12,14 @@ type alias ZoneInfo =
     { zone : Zone
     , zoneName : ZoneName
     }
+
+
+toString : Maybe ZoneInfo -> Posix -> String
+toString maybeZoneInfo posix =
+    [ posix |> toDateString maybeZoneInfo
+    , posix |> toTimeString maybeZoneInfo
+    ]
+        |> String.join " "
 
 
 toDateString : Maybe ZoneInfo -> Posix -> String

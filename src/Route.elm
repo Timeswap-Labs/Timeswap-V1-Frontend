@@ -1,9 +1,13 @@
-module Route exposing (Route(..), fromUrl, pushUrl, toUrl)
+module Route exposing (Route(..), exitAside, fromUrl, pushUrl)
 
+import Aside
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Chain exposing (Chain(..))
+import Data.Device as Device exposing (Device)
+import Data.Pools exposing (Pools)
 import Modal exposing (Modal)
 import Page exposing (Page)
+import Pages.AllMarket.Main as AllMarket
 import Service exposing (Service)
 import Url exposing (Url)
 import Url.Parser as Parser exposing (Parser)
@@ -13,12 +17,15 @@ type Route
     = Page Page
     | Modal Modal
     | Service Service
+    | Aside
     | Exit
 
 
 pushUrl :
     { model
-        | key : Key
+        | device : Device
+        , key : Key
+        , pools : Pools
         , user : Maybe { user | chain : Chain }
         , page : Page
         , modal : Maybe Modal
@@ -26,70 +33,108 @@ pushUrl :
     }
     -> Url
     -> Cmd msg
-pushUrl ({ key } as model) url =
+pushUrl ({ device, key } as model) url =
     url
         |> Parser.parse (match model)
         |> Maybe.map
             (\route ->
                 case route of
                     Page page ->
-                        page |> Page.toFragment
+                        page |> Page.toUrl
 
                     Modal modal ->
-                        modal |> Modal.toFragment
+                        modal |> Modal.toUrl
 
                     Service service ->
-                        service |> Service.toFragment
+                        service |> Service.toUrl
+
+                    Aside ->
+                        if device |> Device.isPhoneOrTablet then
+                            Aside.toUrl
+
+                        else
+                            model.service
+                                |> Maybe.map Service.toUrl
+                                |> Maybe.withDefault
+                                    (model.modal
+                                        |> Maybe.map Modal.toUrl
+                                        |> Maybe.withDefault (model.page |> Page.toUrl)
+                                    )
 
                     Exit ->
                         model.service
                             |> Maybe.map
                                 (\_ ->
                                     model.modal
-                                        |> Maybe.map (\modal -> modal |> Modal.toFragment)
-                                        |> Maybe.withDefault (model.page |> Page.toFragment)
+                                        |> Maybe.map Modal.toUrl
+                                        |> Maybe.withDefault (model.page |> Page.toUrl)
                                 )
                             |> Maybe.withDefault
                                 (model.modal
-                                    |> Maybe.map (\_ -> model.page |> Page.toFragment)
-                                    |> Maybe.withDefault "market"
+                                    |> Maybe.map (\_ -> model.page |> Page.toUrl)
+                                    |> Maybe.withDefault AllMarket.toUrl
                                 )
             )
-        |> Maybe.withDefault "market"
-        |> (++) "/#"
+        |> Maybe.withDefault AllMarket.toUrl
         |> Navigation.pushUrl key
 
 
-fromUrl : { model | user : Maybe { user | chain : Chain } } -> Url -> Maybe Route
+exitAside :
+    { model
+        | device : Device
+        , key : Key
+        , page : Page
+        , modal : Maybe Modal
+        , service : Maybe Service
+    }
+    -> Cmd msg
+exitAside ({ device, key } as model) =
+    if device |> Device.checkAsideStatus then
+        model.service
+            |> Maybe.map Service.toUrl
+            |> Maybe.withDefault
+                (model.modal
+                    |> Maybe.map Modal.toUrl
+                    |> Maybe.withDefault (model.page |> Page.toUrl)
+                )
+            |> Navigation.pushUrl key
+
+    else
+        Cmd.none
+
+
+fromUrl :
+    { model
+        | device : Device
+        , pools : Pools
+        , user : Maybe { user | chain : Chain }
+    }
+    -> Url
+    -> Maybe Route
 fromUrl model url =
     url |> Parser.parse (match model)
 
 
-toUrl : Route -> String
-toUrl route =
-    (case route of
-        Page page ->
-            page |> Page.toFragment
-
-        Modal modal ->
-            modal |> Modal.toFragment
-
-        Service service ->
-            service |> Service.toFragment
-
-        Exit ->
-            ""
-    )
-        |> (++) "#"
-
-
-match : { model | user : Maybe { user | chain : Chain } } -> Parser (Route -> a) a
+match :
+    { model
+        | device : Device
+        , pools : Pools
+        , user : Maybe { user | chain : Chain }
+    }
+    -> Parser (Route -> a) a
 match model =
-    Parser.fragment <| fragment model
+    Parser.fragment <| fromFragment model
 
 
-fragment : { model | user : Maybe { user | chain : Chain } } -> Maybe String -> Route
-fragment model maybeString =
+fromFragment :
+    { model
+        | device : Device
+        , pools : Pools
+        , user : Maybe { user | chain : Chain }
+    }
+    -> Maybe String
+    -> Route
+fromFragment model maybeString =
     maybeString
         |> Maybe.withDefault ""
         |> (\string ->
@@ -104,7 +149,12 @@ fragment model maybeString =
                                 (string
                                     |> Service.fromFragment model
                                     |> Maybe.map Service
-                                    |> Maybe.withDefault Exit
+                                    |> Maybe.withDefault
+                                        (string
+                                            |> Aside.fromFragment model
+                                            |> Maybe.map (\_ -> Aside)
+                                            |> Maybe.withDefault Exit
+                                        )
                                 )
                         )
            )

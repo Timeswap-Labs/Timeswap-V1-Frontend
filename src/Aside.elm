@@ -1,6 +1,7 @@
-module Aside exposing (view)
+module Aside exposing (fromFragment, toUrl, view)
 
 import Data.Address as Address
+import Data.Chain exposing (Chain)
 import Data.Device as Device exposing (Device)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools as Pools exposing (Pools)
@@ -17,6 +18,7 @@ import Element
         , height
         , htmlAttribute
         , link
+        , padding
         , paddingEach
         , paddingXY
         , px
@@ -35,39 +37,79 @@ import Element.Region as Region
 import Html.Attributes
 import Page exposing (Page)
 import Pages.AllMarket.Main as AllMarket
-import Route
+import Pages.PairMarket.Main as PairMarket
 import Utility.Color as Color
 import Utility.Image as Image
 import Utility.TokenImage as TokenImage
 
 
-view : { model | device : Device, pools : Pools, page : Page } -> Element msg
-view ({ device } as model) =
-    column
-        ([ Region.aside
-         , width <| px 278
-         , height fill
-         , scrollbarY
-         , Border.solid
-         , Border.widthEach
-            { top = 0
-            , right = 1
-            , bottom = 0
-            , left = 0
-            }
-         , Border.color Color.transparent100
-         ]
-            ++ (if device |> Device.isPhoneOrTablet then
-                    [ htmlAttribute <| Html.Attributes.id "aside" ]
+fromFragment : { model | device : Device } -> String -> Maybe ()
+fromFragment { device } string =
+    case string of
+        "aside" ->
+            if device |> Device.isPhoneOrTablet then
+                Just ()
 
-                else
-                    []
-               )
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
+toUrl : String
+toUrl =
+    "#aside"
+
+
+view :
+    { model
+        | device : Device
+        , pools : Pools
+        , user : Maybe { user | chain : Chain }
+        , page : Page
+    }
+    -> Element msg
+view ({ device } as model) =
+    (if device |> Device.isPhoneOrTablet then
+        el
+            [ width fill
+            , height fill
+            , scrollbarY
+            , Background.color Color.modal
+            , htmlAttribute <| Html.Attributes.id "outside-aside"
+            ]
+
+     else
+        identity
+    )
+        (column
+            ([ Region.aside
+             , width <| px 278
+             , height fill
+             , alignLeft
+             , scrollbarY
+             , Border.solid
+             , Border.widthEach
+                { top = 0
+                , right = 1
+                , bottom = 0
+                , left = 0
+                }
+             , Border.color Color.transparent100
+             ]
+                ++ (if device |> Device.isPhoneOrTablet then
+                        [ Background.color Color.dark300 ]
+
+                    else
+                        []
+                   )
+            )
+            [ title
+            , allPairs model
+            , listPairs model
+            ]
         )
-        [ title
-        , allPairs model
-        , listPairs model
-        ]
 
 
 title : Element msg
@@ -89,8 +131,14 @@ title =
         [ text "Trading pairs" ]
 
 
-allPairs : { model | page : Page } -> Element msg
-allPairs { page } =
+allPairs :
+    { model
+        | pools : Pools
+        , user : Maybe { user | chain : Chain }
+        , page : Page
+    }
+    -> Element msg
+allPairs ({ page } as model) =
     row
         [ width fill
         , height <| px 48
@@ -127,7 +175,7 @@ allPairs { page } =
                                 [ width fill
                                 , height shrink
                                 ]
-                                { url = Page.AllMarket AllMarket.init |> Route.Page |> Route.toUrl
+                                { url = AllMarket.toUrl
                                 , label = element
                                 }
                             )
@@ -187,7 +235,7 @@ singlePair ({ page } as model) pair =
                                 [ width fill
                                 , height shrink
                                 ]
-                                { url = Page.PairMarket pair |> Route.Page |> Route.toUrl
+                                { url = pair |> PairMarket.toUrl
                                 , label = element
                                 }
 
@@ -196,7 +244,7 @@ singlePair ({ page } as model) pair =
                             [ width fill
                             , height shrink
                             ]
-                            { url = Page.PairMarket pair |> Route.Page |> Route.toUrl
+                            { url = pair |> PairMarket.toUrl
                             , label = element
                             }
            )

@@ -1,8 +1,10 @@
 module Header exposing (view)
 
+import Aside
 import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
+import Data.Pools exposing (Pools)
 import Element
     exposing
         ( Element
@@ -33,45 +35,41 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
-import Element.Input as Input
 import Element.Region as Region
 import Page exposing (Page)
 import Pages.AllMarket.Main as AllMarket
 import Pages.LendDashboard.Main as LendDashboard
-import Route
-import Service
+import Services.Connect.Main as Connect
+import Services.Faucet.Main as Faucet
+import Services.Settings.Main as Settings
+import Services.Wallet.Main as Wallet
 import Utility.Color as Color
+import Utility.Exit as Exit
 import Utility.Image as Image
 import Utility.Typography as Typography
 
 
 view :
-    msg
-    ->
-        { model
-            | device : Device
-            , page : Page
-            , user : Maybe { user | chain : Chain, address : Address }
-        }
+    { model
+        | device : Device
+        , pools : Pools
+        , user : Maybe { user | chain : Chain, address : Address }
+        , page : Page
+    }
     -> Element msg
-view msg ({ device } as model) =
+view ({ device } as model) =
     if Device.isPhoneOrTablet device then
         column
             [ Region.navigation
-            , height <| px 164
             , width fill
+            , height shrink
             , clipY
             , Font.family Typography.supreme
             ]
             [ row
-                [ height <| px 108
-                , width fill
-                , paddingEach
-                    { top = 33
-                    , right = 20
-                    , bottom = 0
-                    , left = 20
-                    }
+                [ width fill
+                , height <| px 75
+                , paddingXY 20 0
                 , spacing 10
                 , Border.solid
                 , Border.widthEach
@@ -86,8 +84,8 @@ view msg ({ device } as model) =
                 , buttons model
                 ]
             , row
-                [ height <| px 56
-                , width fill
+                [ width fill
+                , height <| px 56
                 , paddingEach
                     { top = 0
                     , right = 0
@@ -104,7 +102,7 @@ view msg ({ device } as model) =
                     }
                 , Border.color Color.transparent100
                 ]
-                [ openAside msg
+                [ openAside
                 , tabs model
                 ]
             ]
@@ -197,8 +195,6 @@ alpha { device } =
          , centerY
          , Background.color Color.primary500
          , Border.rounded 4
-
-         -- , Font.family [ Font.typeface "Supreme" ]
          , Font.bold
          , Font.color Color.light100
          , Font.letterSpacing 1.28
@@ -236,7 +232,14 @@ line =
         none
 
 
-tabs : { model | device : Device, page : Page } -> Element msg
+tabs :
+    { model
+        | device : Device
+        , pools : Pools
+        , user : Maybe { user | chain : Chain }
+        , page : Page
+    }
+    -> Element msg
 tabs ({ device, page } as model) =
     row
         ([ height fill
@@ -263,19 +266,19 @@ tabs ({ device, page } as model) =
                 ]
 
             Page.LendDashboard _ ->
-                [ unselected model (Page.AllMarket AllMarket.init)
+                [ unselected model (Page.AllMarket (AllMarket.init model))
                 , selected model
                 , unselected model Page.Liquidity
                 ]
 
             Page.BorrowDashboard _ ->
-                [ unselected model (Page.AllMarket AllMarket.init)
+                [ unselected model (Page.AllMarket (AllMarket.init model))
                 , selected model
                 , unselected model Page.Liquidity
                 ]
 
             Page.Liquidity ->
-                [ unselected model (Page.AllMarket AllMarket.init)
+                [ unselected model (Page.AllMarket (AllMarket.init model))
                 , unselected model (Page.LendDashboard LendDashboard.init)
                 , selected model
                 ]
@@ -329,8 +332,6 @@ pageName page =
         [ width shrink
         , height shrink
         , centerY
-
-        -- , Font.family [ Font.typeface "Supreme" ]
         , Font.regular
         , Font.size 16
         , Font.color Color.light100
@@ -368,13 +369,11 @@ pageLink page =
         , height shrink
         , centerX
         , centerY
-
-        -- , Font.family [ Font.typeface "Supreme" ]
         , Font.regular
         , Font.size 16
         , Font.color Color.transparent300
         ]
-        { url = page |> Route.Page |> Route.toUrl
+        { url = page |> Page.toUrl
         , label = Page.toName page |> text
         }
 
@@ -433,7 +432,6 @@ faucetButton { device } =
             }
          , Background.color Color.primary500
          , Border.rounded 4
-         , Font.family [ Font.typeface "Supreme" ]
          , Font.bold
          , Font.size 16
          , Font.color Color.light100
@@ -449,7 +447,7 @@ faucetButton { device } =
                     ]
                )
         )
-        { url = Service.Faucet |> Route.Service |> Route.toUrl
+        { url = Faucet.toUrl
         , label =
             row
                 [ width shrink
@@ -493,8 +491,6 @@ walletButton { device, user } =
             }
          , Background.color Color.primary100
          , Border.rounded 4
-
-         --, Font.family [ Font.typeface "Supreme" ]
          , Font.regular
          , Font.size 16
          , Font.color Color.light100
@@ -514,12 +510,12 @@ walletButton { device, user } =
                     (\{ chain } ->
                         case chain of
                             Mainnet ->
-                                Route.Exit |> Route.toUrl
+                                Exit.toUrl
 
                             Rinkeby ->
-                                Service.Wallet |> Route.Service |> Route.toUrl
+                                Wallet.toUrl
                     )
-                |> Maybe.withDefault (Service.Connect |> Route.Service |> Route.toUrl)
+                |> Maybe.withDefault Connect.toUrl
         , label =
             row
                 [ width shrink
@@ -582,7 +578,6 @@ rinkebyLabel =
         , spacing 6
         , Background.color Color.warning400
         , Border.rounded 999
-        , Font.family [ Font.typeface "Supreme" ]
         , Font.bold
         , Font.size 12
         , Font.color Color.dark500
@@ -617,7 +612,7 @@ settingsButton { device } =
                     ]
                )
         )
-        { url = Service.Faucet |> Route.Service |> Route.toUrl
+        { url = Settings.toUrl
         , label =
             Image.option
                 [ width <| px 24
@@ -627,10 +622,14 @@ settingsButton { device } =
         }
 
 
-openAside : msg -> Element msg
-openAside msg =
-    Input.button []
-        { onPress = Just msg
+openAside : Element msg
+openAside =
+    link
+        [ width shrink
+        , height shrink
+        , alignLeft
+        ]
+        { url = Aside.toUrl
         , label =
             Image.allPairs
                 [ width <| px 20
