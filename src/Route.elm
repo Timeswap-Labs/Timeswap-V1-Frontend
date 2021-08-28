@@ -1,4 +1,4 @@
-module Route exposing (Route(..), exitAside, fromUrl, pushUrl)
+module Route exposing (Route(..), exit, fromUrl, pushUrl)
 
 import Aside
 import Browser.Navigation as Navigation exposing (Key)
@@ -79,7 +79,7 @@ pushUrl ({ device, key } as model) url =
         |> Navigation.pushUrl key
 
 
-exitAside :
+exit :
     { model
         | device : Device
         , key : Key
@@ -88,8 +88,8 @@ exitAside :
         , service : Maybe Service
     }
     -> Cmd msg
-exitAside ({ device, key } as model) =
-    if device |> Device.checkAsideStatus then
+exit ({ device, key } as model) =
+    (if device |> Device.checkAsideStatus then
         model.service
             |> Maybe.map Service.toUrl
             |> Maybe.withDefault
@@ -97,10 +97,22 @@ exitAside ({ device, key } as model) =
                     |> Maybe.map Modal.toUrl
                     |> Maybe.withDefault (model.page |> Page.toUrl)
                 )
-            |> Navigation.pushUrl key
 
-    else
-        Cmd.none
+     else
+        model.service
+            |> Maybe.map
+                (\_ ->
+                    model.modal
+                        |> Maybe.map Modal.toUrl
+                        |> Maybe.withDefault (model.page |> Page.toUrl)
+                )
+            |> Maybe.withDefault
+                (model.modal
+                    |> Maybe.map (\_ -> model.page |> Page.toUrl)
+                    |> Maybe.withDefault AllMarket.toUrl
+                )
+    )
+        |> Navigation.pushUrl key
 
 
 fromUrl :

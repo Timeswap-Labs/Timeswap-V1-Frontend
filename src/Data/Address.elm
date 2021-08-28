@@ -1,5 +1,6 @@
-module Data.Address exposing (Address, compare, fromString, sorter, toString, toStringShort)
+module Data.Address exposing (Address, compare, decoder, fromString, sorter, toString, toStringShort)
 
+import Json.Decode as Decode exposing (Decoder)
 import Sort exposing (Sorter)
 
 
@@ -28,6 +29,18 @@ fromString string =
 
     else
         Nothing
+
+
+decoder : Decoder Address
+decoder =
+    Decode.string
+        |> Decode.map fromString
+        |> Decode.andThen
+            (\address ->
+                address
+                    |> Maybe.map Decode.succeed
+                    |> Maybe.withDefault (Decode.fail "Incorrect address")
+            )
 
 
 toString : Address -> String

@@ -1,5 +1,6 @@
-module Service exposing (Service(..), fromFragment, same, toUrl, view)
+module Service exposing (Msg, Service(..), fromFragment, same, toUrl, update, view)
 
+import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
 import Element
@@ -14,12 +15,14 @@ import Element
         , width
         )
 import Element.Background as Background
+import Element.Font as Font
 import Services.Connect.Main as Connect
 import Services.Faucet.Main as Faucet
 import Services.NoMetamask.Main as NoMetamask
 import Services.Settings.Main as Settings
 import Services.Wallet.Main as Wallet
 import Utility.Color as Color
+import Utility.Typography as Typography
 
 
 type Service
@@ -115,6 +118,19 @@ same service1 service2 =
             False
 
 
+type Msg
+    = ConnectMsg Connect.Msg
+
+
+update : Msg -> Cmd Msg
+update msg =
+    case msg of
+        ConnectMsg connectMsg ->
+            Connect.update connectMsg
+                |> Cmd.map ConnectMsg
+
+
+view : { model | device : Device, backdrop : Backdrop } -> Service -> Element Msg
 view ({ device } as model) service =
     case service of
         Connect ->
@@ -128,8 +144,9 @@ view ({ device } as model) service =
                     padding 80
                 , scrollbarY
                 , Background.color Color.modal
+                , Font.family Typography.supreme
                 ]
-                (Connect.view model)
+                (Connect.view model |> Element.map ConnectMsg)
 
         _ ->
             none

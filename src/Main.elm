@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Aside
 import Browser exposing (Document, UrlRequest(..))
@@ -32,6 +32,7 @@ import Element.Lazy as Lazy
 import Header
 import Html exposing (Html)
 import Json.Decode as Decode exposing (Decoder)
+import Json.Encode exposing (Value)
 import Modal exposing (Modal)
 import Page exposing (Page)
 import Pages.AllMarket.Main as AllMarket
@@ -42,10 +43,8 @@ import Service as Service exposing (Service)
 import Task
 import Time exposing (Posix)
 import Url exposing (Url)
-import Url.Builder
 import User exposing (User)
 import Utility.Color as Color
-import Utility.Exit as Exit
 
 
 main : Program Flags Model Msg
@@ -125,6 +124,8 @@ type Msg
     | LendDashboardMsg LendDashboard.Msg
     | BorrowDashboardMsg BorrowDashboard.Msg
     | ModalMsg Modal.Msg
+    | ServiceMsg Service.Msg
+    | MetamaskConnected Value
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -219,7 +220,7 @@ update msg model =
 
         ClickOutsideAside ->
             ( model
-            , Route.exitAside model
+            , Route.exit model
             )
 
         VisibilityChange visibility ->
@@ -275,6 +276,24 @@ update msg model =
                     )
                 |> Maybe.withDefault ( model, Cmd.none )
 
+        ServiceMsg serviceMsg ->
+            ( model
+            , Service.update serviceMsg
+                |> Cmd.map ServiceMsg
+            )
+
+        MetamaskConnected value ->
+            ( value
+                |> Decode.decodeValue User.decoder
+                |> Result.map
+                    (\user -> { model | user = Just user })
+                |> Result.withDefault model
+            , Cmd.none
+            )
+
+
+port metamaskConnected : (Value -> msg) -> Sub msg
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -283,6 +302,7 @@ subscriptions model =
         , Browser.Events.onVisibilityChange VisibilityChange
         , Time.every 1000 ReceiveTime
         , onClickOutsideAside model
+        , metamaskConnected MetamaskConnected
         ]
 
 
@@ -328,7 +348,13 @@ html model =
 
                     else
                         model.service
-                            |> Maybe.map (\service -> [ Lazy.lazy2 Service.view model service |> inFront ])
+                            |> Maybe.map
+                                (\service ->
+                                    [ Lazy.lazy2 Service.view model service
+                                        |> Element.map ServiceMsg
+                                        |> inFront
+                                    ]
+                                )
                             |> Maybe.map Just
                             |> Maybe.withDefault
                                 (model.modal
@@ -356,7 +382,13 @@ html model =
              , behindContent <| background
              ]
                 ++ (model.service
-                        |> Maybe.map (\service -> [ Lazy.lazy2 Service.view model service |> inFront ])
+                        |> Maybe.map
+                            (\service ->
+                                [ Lazy.lazy2 Service.view model service
+                                    |> Element.map ServiceMsg
+                                    |> inFront
+                                ]
+                            )
                         |> Maybe.map Just
                         |> Maybe.withDefault
                             (model.modal
