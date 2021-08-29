@@ -1,88 +1,103 @@
 module Data.Slippage exposing
     ( Option(..)
-    , Output(..)
     , Slippage
+    , fromOption
+    , fromString
     , init
-    , input
-    , toOutput
+    , isCorrect
+    , toOption
+    , toString
     )
 
 
 type Slippage
-    = Slippage_ Int
-    | Small_
-    | Medium_
-    | Large_
+    = Slippage Float
 
 
-type Output
-    = Slippage String
-    | Small
+type Option
+    = Small
     | Medium
     | Large
 
 
-type Option
-    = SmallOption
-    | MediumOption
-    | LargeOption
+init : Slippage
+init =
+    Slippage 0.005
 
 
-init : Option -> Slippage
-init option =
-    case option of
-        SmallOption ->
-            Small_
+toOption : Slippage -> Maybe Option
+toOption (Slippage float) =
+    if float == 0.001 then
+        Just Small
 
-        MediumOption ->
-            Medium_
+    else if float == 0.005 then
+        Just Medium
 
-        LargeOption ->
-            Large_
+    else if float == 0.01 then
+        Just Large
+
+    else
+        Nothing
 
 
-input : String -> Maybe Slippage
-input string =
+toString : Slippage -> Maybe String
+toString (Slippage float) =
+    if float == 0.001 || float == 0.005 || float == 0.01 then
+        Nothing
+
+    else
+        float
+            |> (*) 100
+            |> String.fromFloat
+            |> Just
+
+
+isCorrect : String -> Bool
+isCorrect string =
     string
         |> String.toFloat
         |> Maybe.map ((*) 100)
         |> Maybe.map truncate
-        --|> Maybe.andThen ((<) 0 |> Utility.require)
-        --|> Maybe.andThen ((>=) 5000 |> Utility.require)
-        |> Maybe.map Slippage_
+        |> Maybe.map
+            (\int ->
+                if int > 0 && int <= 5000 then
+                    True
+
+                else
+                    False
+            )
+        |> Maybe.withDefault False
 
 
-toOutput : Slippage -> Output
-toOutput slippage =
-    case slippage of
-        Slippage_ basisPoint ->
-            let
-                string : String
-                string =
-                    basisPoint
-                        |> String.fromInt
-                        |> String.padLeft 3 '0'
+fromOption : Option -> Slippage
+fromOption option =
+    case option of
+        Small ->
+            Slippage 0.001
 
-                whole : String
-                whole =
-                    string
-                        |> String.dropRight 2
+        Medium ->
+            Slippage 0.005
 
-                decimals : String
-                decimals =
-                    string
-                        |> String.right 2
-            in
-            whole
-                ++ "."
-                ++ decimals
-                |> Slippage
+        Large ->
+            Slippage 0.01
 
-        Small_ ->
-            Small
 
-        Medium_ ->
-            Medium
+fromString : String -> Slippage
+fromString string =
+    string
+        |> String.toFloat
+        |> Maybe.map ((*) 100)
+        |> Maybe.map truncate
+        |> Maybe.andThen
+            (\int ->
+                if int > 0 && int <= 5000 then
+                    int
+                        |> toFloat
+                        |> (\basisPoint -> basisPoint / 10000)
+                        |> Slippage
+                        |> Just
 
-        Large_ ->
-            Large
+                else
+                    Nothing
+            )
+        |> Maybe.withDefault (Slippage 0.005)

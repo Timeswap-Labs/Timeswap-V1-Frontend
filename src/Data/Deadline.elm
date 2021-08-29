@@ -1,66 +1,98 @@
 module Data.Deadline exposing
     ( Deadline
     , Option(..)
-    , Output(..)
+    , fromOption
+    , fromString
     , init
-    , input
-    , toOutput
+    , isCorrect
+    , toOption
+    , toString
     )
 
 
 type Deadline
-    = Deadline_ Int
-    | Short_
-    | Medium_
-    | Long_
+    = Deadline Int
 
 
-type Output
-    = Deadline String
-    | Short
+type Option
+    = Short
     | Medium
     | Long
 
 
-type Option
-    = ShortOption
-    | MediumOption
-    | LongOption
+init : Deadline
+init =
+    Deadline 1200
 
 
-init : Option -> Deadline
-init option =
-    case option of
-        ShortOption ->
-            Short_
+toOption : Deadline -> Maybe Option
+toOption (Deadline seconds) =
+    if seconds == 600 then
+        Just Short
 
-        MediumOption ->
-            Medium_
+    else if seconds == 1200 then
+        Just Medium
 
-        LongOption ->
-            Long_
+    else if seconds == 1800 then
+        Just Long
+
+    else
+        Nothing
 
 
-input : String -> Maybe Deadline
-input string =
+toString : Deadline -> Maybe String
+toString (Deadline seconds) =
+    if seconds == 600 || seconds == 1200 || seconds == 1800 then
+        Nothing
+
+    else
+        seconds
+            // 60
+            |> String.fromInt
+            |> Just
+
+
+isCorrect : String -> Bool
+isCorrect string =
     string
         |> String.toInt
-        --|> Maybe.andThen ((<) 0 |> Utility.require)
-        --|> Maybe.andThen ((>=) 180 |> Utility.require)
-        |> Maybe.map Deadline_
+        |> Maybe.map
+            (\minutes ->
+                if minutes > 0 && minutes <= 180 then
+                    True
+
+                else
+                    False
+            )
+        |> Maybe.withDefault False
 
 
-toOutput : Deadline -> Output
-toOutput deadline =
-    case deadline of
-        Deadline_ minute ->
-            Deadline <| String.fromInt minute
+fromOption : Option -> Deadline
+fromOption option =
+    case option of
+        Short ->
+            Deadline 600
 
-        Short_ ->
-            Short
+        Medium ->
+            Deadline 1200
 
-        Medium_ ->
-            Medium
+        Long ->
+            Deadline 1800
 
-        Long_ ->
-            Long
+
+fromString : String -> Deadline
+fromString string =
+    string
+        |> String.toInt
+        |> Maybe.andThen
+            (\minutes ->
+                if minutes > 0 && minutes <= 180 then
+                    minutes
+                        |> (*) 60
+                        |> Deadline
+                        |> Just
+
+                else
+                    Nothing
+            )
+        |> Maybe.withDefault (Deadline 1200)

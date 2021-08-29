@@ -5,6 +5,7 @@ import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
 import Data.Pools exposing (Pools)
+import Data.Tab as Tab exposing (Tab)
 import Element
     exposing
         ( Element
@@ -36,9 +37,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Region as Region
-import Page exposing (Page)
-import Pages.AllMarket.Main as AllMarket
-import Pages.LendDashboard.Main as LendDashboard
+import Page as Page exposing (Page)
 import Services.Connect.Main as Connect
 import Services.Faucet.Main as Faucet
 import Services.Settings.Main as Settings
@@ -252,41 +251,29 @@ tabs ({ device, page } as model) =
                     [ width shrink ]
                )
         )
-        (case page of
-            Page.AllMarket _ ->
-                [ selected model
-                , unselected model (Page.LendDashboard LendDashboard.init)
-                , unselected model Page.Liquidity
+        (case page |> Page.toTab of
+            Tab.Market ->
+                [ selected model Tab.Market
+                , unselected model Tab.Dashboard
+                , unselected model Tab.Liquidity
                 ]
 
-            Page.PairMarket _ ->
-                [ selected model
-                , unselected model (Page.LendDashboard LendDashboard.init)
-                , unselected model Page.Liquidity
+            Tab.Dashboard ->
+                [ unselected model Tab.Market
+                , selected model Tab.Dashboard
+                , unselected model Tab.Liquidity
                 ]
 
-            Page.LendDashboard _ ->
-                [ unselected model (Page.AllMarket (AllMarket.init model))
-                , selected model
-                , unselected model Page.Liquidity
-                ]
-
-            Page.BorrowDashboard _ ->
-                [ unselected model (Page.AllMarket (AllMarket.init model))
-                , selected model
-                , unselected model Page.Liquidity
-                ]
-
-            Page.Liquidity ->
-                [ unselected model (Page.AllMarket (AllMarket.init model))
-                , unselected model (Page.LendDashboard LendDashboard.init)
-                , selected model
+            Tab.Liquidity ->
+                [ unselected model Tab.Market
+                , unselected model Tab.Dashboard
+                , selected model Tab.Liquidity
                 ]
         )
 
 
-selected : { model | device : Device, page : Page } -> Element msg
-selected { device, page } =
+selected : { model | device : Device } -> Tab -> Element msg
+selected { device } tab =
     el
         (height fill
             :: (if Device.isPhoneOrTablet device then
@@ -298,17 +285,17 @@ selected { device, page } =
                     ]
                )
         )
-        (container page)
+        (container tab)
 
 
-container : Page -> Element msg
-container page =
+container : Tab -> Element msg
+container tab =
     column
         [ width shrink
         , height fill
         , centerX
         ]
-        [ pageName page
+        [ pageName tab
         , el
             [ width fill
             , height shrink
@@ -326,8 +313,8 @@ container page =
         ]
 
 
-pageName : Page -> Element msg
-pageName page =
+pageName : Tab -> Element msg
+pageName tab =
     el
         [ width shrink
         , height shrink
@@ -336,11 +323,11 @@ pageName page =
         , Font.size 16
         , Font.color Color.light100
         ]
-        (Page.toName page |> text)
+        (tab |> Tab.toName |> text)
 
 
-unselected : { model | device : Device } -> Page -> Element msg
-unselected { device } page =
+unselected : { model | device : Device } -> Tab -> Element msg
+unselected { device } tab =
     el
         ([ height fill
          , paddingEach
@@ -359,11 +346,11 @@ unselected { device } page =
                     ]
                )
         )
-        (pageLink page)
+        (pageLink tab)
 
 
-pageLink : Page -> Element msg
-pageLink page =
+pageLink : Tab -> Element msg
+pageLink tab =
     link
         [ width shrink
         , height shrink
@@ -373,8 +360,8 @@ pageLink page =
         , Font.size 16
         , Font.color Color.transparent300
         ]
-        { url = page |> Page.toUrl
-        , label = Page.toName page |> text
+        { url = tab |> Tab.toUrl
+        , label = tab |> Tab.toName |> text
         }
 
 

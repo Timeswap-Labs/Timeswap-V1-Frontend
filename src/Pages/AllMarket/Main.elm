@@ -59,18 +59,14 @@ type Msg
     | Collapse Pair
 
 
-update : Msg -> Page -> ( Page, Cmd Msg )
+update : Msg -> Page -> Page
 update msg (Page set) =
     case msg of
         Expand pair ->
-            ( set |> Set.insert pair |> Page
-            , Cmd.none
-            )
+            set |> Set.insert pair |> Page
 
         Collapse pair ->
-            ( set |> Set.remove pair |> Page
-            , Cmd.none
-            )
+            set |> Set.remove pair |> Page
 
 
 view : { model | device : Device } -> Element Msg

@@ -131,14 +131,8 @@ title =
         [ text "Trading pairs" ]
 
 
-allPairs :
-    { model
-        | pools : Pools
-        , user : Maybe { user | chain : Chain }
-        , page : Page
-    }
-    -> Element msg
-allPairs ({ page } as model) =
+allPairs : { model | page : Page } -> Element msg
+allPairs { page } =
     row
         [ width fill
         , height <| px 48
@@ -159,34 +153,29 @@ allPairs ({ page } as model) =
             (text "View All Pairs")
         ]
         |> (\element ->
-                case page of
-                    Page.AllMarket _ ->
-                        Keyed.el
+                page
+                    |> Page.getPair
+                    |> Maybe.map
+                        (\_ ->
+                            Keyed.el []
+                                ( "allPairs"
+                                , link
+                                    [ width fill
+                                    , height shrink
+                                    ]
+                                    { url = AllMarket.toUrl
+                                    , label = element
+                                    }
+                                )
+                        )
+                    |> Maybe.withDefault
+                        (Keyed.el
                             [ width fill
                             , height shrink
                             , Background.color Color.primary100
                             ]
                             ( "allPairs", element )
-
-                    Page.PairMarket _ ->
-                        Keyed.el []
-                            ( "allPairs"
-                            , link
-                                [ width fill
-                                , height shrink
-                                ]
-                                { url = AllMarket.toUrl
-                                , label = element
-                                }
-                            )
-
-                    _ ->
-                        Keyed.el
-                            [ width fill
-                            , height shrink
-                            , Background.color Color.primary100
-                            ]
-                            ( "allPairs", element )
+                        )
            )
 
 
@@ -220,33 +209,36 @@ singlePair ({ page } as model) pair =
         , size model pair
         ]
         |> (\element ->
-                case page of
-                    Page.PairMarket chosenPair ->
-                        if chosenPair == pair then
-                            el
-                                [ width fill
-                                , height shrink
-                                , Background.color Color.primary100
-                                ]
-                                element
+                page
+                    |> Page.getPair
+                    |> Maybe.map
+                        (\chosenPair ->
+                            if chosenPair == pair then
+                                el
+                                    [ width fill
+                                    , height shrink
+                                    , Background.color Color.primary100
+                                    ]
+                                    element
 
-                        else
-                            link
-                                [ width fill
-                                , height shrink
-                                ]
-                                { url = pair |> PairMarket.toUrl
-                                , label = element
-                                }
-
-                    _ ->
-                        link
+                            else
+                                link
+                                    [ width fill
+                                    , height shrink
+                                    ]
+                                    { url = pair |> PairMarket.toUrl
+                                    , label = element
+                                    }
+                        )
+                    |> Maybe.withDefault
+                        (link
                             [ width fill
                             , height shrink
                             ]
                             { url = pair |> PairMarket.toUrl
                             , label = element
                             }
+                        )
            )
 
 

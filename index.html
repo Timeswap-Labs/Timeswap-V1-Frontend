@@ -126,27 +126,27 @@
 
             ethereum.autoRefreshOnNetworkChange = false
 
-        //     ethereum.on("accountsChanged", accounts => {
-        //         if (typeof accounts[0] !== "undefined") {
-        //             app.ports.receiveConnect.send({
-        //                 chainId: ethereum.chainId,
-        //                 user: accounts[0]
-        //             })
-        //         }
-        //         else {
-        //             app.ports.receiveConnect.send(null)
-        //         }
-        //     })
+            ethereum.on("accountsChanged", accounts => {
+                if (typeof accounts[0] !== "undefined") {
+                    app.ports.metamaskConnected.send({
+                        chainId: ethereum.chainId,
+                        user: accounts[0]
+                    })
+                }
+                else {
+                    app.ports.metamaskConnected.send(null)
+                }
+            })
 
-        //     ethereum.on("chainChanged", chainId => {
-        //         ethereum.request({ method: "eth_requestAccounts" })
-        //             .then(accounts => {
-        //                 app.ports.receiveConnect.send({
-        //                     chainId: chainId,
-        //                     user: accounts[0]
-        //                 })
-        //             })
-        //     })
+            ethereum.on("chainChanged", chainId => {
+                ethereum.request({ method: "eth_requestAccounts" })
+                    .then(accounts => {
+                        app.ports.metamaskConnected.send({
+                            chainId: chainId,
+                            user: accounts[0]
+                        })
+                    })
+            })
 
         //     app.ports.call.subscribe(request => {
         //         ethereum

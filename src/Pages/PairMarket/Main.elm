@@ -1,4 +1,4 @@
-module Pages.PairMarket.Main exposing (toUrl, view)
+module Pages.PairMarket.Main exposing (Msg, Page, getPair, init, toUrl, update, view)
 
 import Data.Device as Device exposing (Device)
 import Data.Pair as Pair exposing (Pair)
@@ -38,12 +38,35 @@ import Utility.Color as Color
 import Utility.TokenImage as TokenImage
 
 
+type Page
+    = Page Pair
+
+
+init : Pair -> Page
+init pair =
+    Page pair
+
+
 toUrl : Pair -> String
 toUrl pair =
     [ "#market"
     , pair |> Pair.toFragment
     ]
         |> String.join "?"
+
+
+getPair : Page -> Pair
+getPair (Page pair) =
+    pair
+
+
+type Msg
+    = Msg
+
+
+update : Msg -> Page -> Page
+update msg page =
+    page
 
 
 view : { model | device : Device, pools : Pools } -> Pair -> Element msg

@@ -6,8 +6,11 @@ import Browser.Events exposing (Visibility)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Backdrop as Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain(..))
+import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
+import Data.Or exposing (Or(..))
 import Data.Pools as Pools exposing (Pools)
+import Data.Slippage as Slippage exposing (Slippage)
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
@@ -35,11 +38,9 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Modal exposing (Modal)
 import Page exposing (Page)
-import Pages.AllMarket.Main as AllMarket
-import Pages.BorrowDashboard.Main as BorrowDashboard
-import Pages.LendDashboard.Main as LendDashboard
 import Route
 import Service as Service exposing (Service)
+import Services.Settings.Main as Settings
 import Task
 import Time exposing (Posix)
 import Url exposing (Url)
@@ -66,6 +67,8 @@ type alias Model =
     , zoneInfo : Maybe ZoneInfo
     , backdrop : Backdrop
     , key : Key
+    , slippage : Slippage
+    , deadline : Deadline
     , pools : Pools
     , user : Maybe User
     , page : Page
@@ -89,14 +92,15 @@ init { width, time, hasBackdropSupport } url key =
     , zoneInfo = Nothing
     , backdrop = hasBackdropSupport |> Backdrop.setBackdrop
     , key = key
+    , slippage = Slippage.init
+    , deadline = Deadline.init
     , pools = Pools.whitelist Rinkeby
     , user = Nothing
     , page =
-        AllMarket.init
+        Page.init
             { pools = Pools.whitelist Rinkeby
             , user = Nothing
             }
-            |> Page.AllMarket
     , modal = Nothing
     , service = Nothing
     }
@@ -120,9 +124,13 @@ type Msg
     | VisibilityChange Visibility
     | ReceiveTime Posix
     | ReceiveZoneInfo ZoneInfo
-    | AllMarketMsg AllMarket.Msg
-    | LendDashboardMsg LendDashboard.Msg
-    | BorrowDashboardMsg BorrowDashboard.Msg
+    | ChooseSlippageOption Slippage.Option
+    | ChooseDeadlineOption Deadline.Option
+    | InputSlippage String
+    | InputDeadline String
+    | ClickOutsideSlippage
+    | ClickOutsideDeadline
+    | PageMsg Page.Msg
     | ModalMsg Modal.Msg
     | ServiceMsg Service.Msg
     | MetamaskConnected Value
@@ -207,7 +215,7 @@ update msg model =
                                         |> Maybe.withDefault
                                             (model.modal
                                                 |> Maybe.map (\_ -> { model | modal = Nothing })
-                                                |> Maybe.withDefault { model | page = Page.AllMarket (AllMarket.init model) }
+                                                |> Maybe.withDefault { model | page = Page.init model }
                                             )
                     )
                 |> Maybe.withDefault model
@@ -239,32 +247,52 @@ update msg model =
             , Cmd.none
             )
 
-        AllMarketMsg allMarketMsg ->
-            model.page
-                |> Page.updateAllMarket allMarketMsg
-                |> (\( page, cmd ) ->
-                        ( { model | page = page }
-                        , cmd |> Cmd.map AllMarketMsg
-                        )
-                   )
+        ChooseSlippageOption option ->
+            ( { model | slippage = option |> Slippage.fromOption }
+            , Cmd.none
+            )
 
-        LendDashboardMsg lendDashboardMsg ->
-            model.page
-                |> Page.updateLendDashboard lendDashboardMsg
-                |> (\( page, cmd ) ->
-                        ( { model | page = page }
-                        , cmd |> Cmd.map LendDashboardMsg
-                        )
-                   )
+        ChooseDeadlineOption option ->
+            ( { model | deadline = option |> Deadline.fromOption }
+            , Cmd.none
+            )
 
-        BorrowDashboardMsg borrowDashboardMsg ->
-            model.page
-                |> Page.updateBorrowDashboard borrowDashboardMsg
-                |> (\( page, cmd ) ->
-                        ( { model | page = page }
-                        , cmd |> Cmd.map BorrowDashboardMsg
-                        )
-                   )
+        InputSlippage string ->
+            ( { model | service = model.service |> Maybe.map (Service.inputSlippage string) }
+            , Cmd.none
+            )
+
+        InputDeadline string ->
+            ( { model | service = model.service |> Maybe.map (Service.inputDeadline string) }
+            , Cmd.none
+            )
+
+        ClickOutsideSlippage ->
+            ( { model
+                | slippage =
+                    model.service
+                        |> Maybe.andThen Service.getSlippage
+                        |> Maybe.withDefault model.slippage
+                , service = Just Service.refreshSettings
+              }
+            , Cmd.none
+            )
+
+        ClickOutsideDeadline ->
+            ( { model
+                | deadline =
+                    model.service
+                        |> Maybe.andThen Service.getDeadline
+                        |> Maybe.withDefault model.deadline
+                , service = Just Service.refreshSettings
+              }
+            , Cmd.none
+            )
+
+        PageMsg pageMsg ->
+            ( { model | page = model.page |> Page.update pageMsg }
+            , Cmd.none
+            )
 
         ModalMsg modalMsg ->
             model.modal
@@ -285,9 +313,29 @@ update msg model =
 
         MetamaskConnected value ->
             ( value
-                |> Decode.decodeValue User.decoder
+                |> Decode.decodeValue (User.decoder |> Decode.nullable)
                 |> Result.map
-                    (\user -> { model | user = Just user })
+                    (\maybeUser ->
+                        { model
+                            | user =
+                                case ( model.user, maybeUser ) of
+                                    ( Just modelUser, Just user ) ->
+                                        if User.same modelUser user then
+                                            model.user
+
+                                        else
+                                            maybeUser
+
+                                    ( Just _, Nothing ) ->
+                                        Nothing
+
+                                    ( Nothing, Just _ ) ->
+                                        maybeUser
+
+                                    ( Nothing, Nothing ) ->
+                                        Nothing
+                        }
+                    )
                 |> Result.withDefault model
             , Cmd.none
             )
@@ -311,6 +359,8 @@ subscriptions model =
         , Browser.Events.onVisibilityChange VisibilityChange
         , Time.every 1000 ReceiveTime
         , onClickOutsideAside model
+        , onClickOutsideSlippage model
+        , onClickOutsideDeadline model
         , metamaskConnected MetamaskConnected
         , noMetamask NoMetamask
         ]
@@ -338,6 +388,60 @@ decoderOutsideAside =
             )
 
 
+onClickOutsideSlippage : { model | service : Maybe Service } -> Sub Msg
+onClickOutsideSlippage model =
+    model.service
+        |> Maybe.map
+            (\service ->
+                if service |> Service.hasSlippageInput then
+                    Browser.Events.onClick (Decode.at [] decoderOutsideSlippage)
+
+                else
+                    Sub.none
+            )
+        |> Maybe.withDefault Sub.none
+
+
+decoderOutsideSlippage : Decoder Msg
+decoderOutsideSlippage =
+    Decode.string
+        |> Decode.andThen
+            (\string ->
+                if string /= "slippage" then
+                    Decode.succeed ClickOutsideSlippage
+
+                else
+                    Decode.fail "Its the slippage input"
+            )
+
+
+onClickOutsideDeadline : { model | service : Maybe Service } -> Sub Msg
+onClickOutsideDeadline model =
+    model.service
+        |> Maybe.map
+            (\service ->
+                if service |> Service.hasDeadlineInput then
+                    Browser.Events.onClick (Decode.at [] decoderOutsideDeadline)
+
+                else
+                    Sub.none
+            )
+        |> Maybe.withDefault Sub.none
+
+
+decoderOutsideDeadline : Decoder Msg
+decoderOutsideDeadline =
+    Decode.string
+        |> Decode.andThen
+            (\string ->
+                if string /= "deadline" then
+                    Decode.succeed ClickOutsideDeadline
+
+                else
+                    Decode.fail "Its the deadline input"
+            )
+
+
 view : Model -> Document Msg
 view model =
     { title = "Timeswap"
@@ -345,11 +449,20 @@ view model =
     }
 
 
+settingsMsgs : Settings.Msgs Msg
+settingsMsgs =
+    { chooseSlippageOption = ChooseSlippageOption
+    , chooseDeadlineOption = ChooseDeadlineOption
+    , inputSlippage = InputSlippage
+    , inputDeadline = InputDeadline
+    }
+
+
 html : Model -> Html Msg
 html model =
     if Device.isPhoneOrTablet model.device then
         layoutWith
-            { options = [ option ] }
+            { options = options }
             ([ width <| minimum 340 fill
              , Background.color Color.dark400
              ]
@@ -360,8 +473,15 @@ html model =
                         model.service
                             |> Maybe.map
                                 (\service ->
-                                    [ Lazy.lazy2 Service.view model service
-                                        |> Element.map ServiceMsg
+                                    [ Service.view settingsMsgs model service
+                                        |> (\or ->
+                                                case or of
+                                                    Either element ->
+                                                        element |> Element.map ServiceMsg
+
+                                                    Or element ->
+                                                        element
+                                           )
                                         |> inFront
                                     ]
                                 )
@@ -386,7 +506,7 @@ html model =
 
     else
         layoutWith
-            { options = [ option ] }
+            { options = options }
             ([ width <| minimum 340 fill
              , Background.color Color.dark400
              , behindContent <| background
@@ -394,8 +514,15 @@ html model =
                 ++ (model.service
                         |> Maybe.map
                             (\service ->
-                                [ Lazy.lazy2 Service.view model service
-                                    |> Element.map ServiceMsg
+                                [ Service.view settingsMsgs model service
+                                    |> (\or ->
+                                            case or of
+                                                Either element ->
+                                                    element |> Element.map ServiceMsg
+
+                                                Or element ->
+                                                    element
+                                       )
                                     |> inFront
                                 ]
                             )
@@ -436,10 +563,11 @@ background =
         none
 
 
-option : Option
-option =
-    focusStyle
+options : List Option
+options =
+    [ focusStyle
         { borderColor = Nothing
         , backgroundColor = Nothing
         , shadow = Nothing
         }
+    ]

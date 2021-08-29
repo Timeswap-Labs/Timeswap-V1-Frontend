@@ -1,8 +1,26 @@
-module Service exposing (Msg, Service(..), fromFragment, same, toUrl, update, view)
+module Service exposing
+    ( Msg
+    , Service
+    , fromFragment
+    , getDeadline
+    , getSlippage
+    , hasDeadlineInput
+    , hasSlippageInput
+    , inputDeadline
+    , inputSlippage
+    , refreshSettings
+    , same
+    , toUrl
+    , update
+    , view
+    )
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain(..))
+import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
+import Data.Or as Or exposing (Or(..))
+import Data.Slippage as Slippage exposing (Slippage)
 import Element
     exposing
         ( Element
@@ -16,10 +34,11 @@ import Element
         )
 import Element.Background as Background
 import Element.Font as Font
+import Element.Lazy as Lazy
 import Services.Connect.Main as Connect
 import Services.Faucet.Main as Faucet
 import Services.NoMetamask.Main as NoMetamask
-import Services.Settings.Main as Settings
+import Services.Settings.Main as Settings exposing (Settings)
 import Services.Wallet.Main as Wallet
 import Utility.Color as Color
 import Utility.Typography as Typography
@@ -29,10 +48,7 @@ type Service
     = Connect
     | NoMetamask
     | Wallet
-    | Settings
-        { slippage : Maybe String
-        , deadline : Maybe String
-        }
+    | Settings Settings
     | Faucet
 
 
@@ -53,10 +69,8 @@ fromFragment { user } string =
             user
                 |> Maybe.andThen (\_ -> Just Wallet)
 
-        "changesettings" ->
-            { slippage = Nothing
-            , deadline = Nothing
-            }
+        "settings" ->
+            Settings.init
                 |> Settings
                 |> Just
 
@@ -130,27 +144,134 @@ update msg =
                 |> Cmd.map ConnectMsg
 
 
-view : { model | device : Device, backdrop : Backdrop } -> Service -> Element Msg
-view ({ device } as model) service =
-    el
-        [ width fill
-        , height fill
-        , if Device.isPhone device then
-            padding 0
+inputSlippage : String -> Service -> Service
+inputSlippage string service =
+    case service of
+        Settings settings ->
+            settings
+                |> Settings.inputSlippage string
+                |> Settings
 
-          else
-            padding 80
-        , scrollbarY
-        , Background.color Color.modal
-        , Font.family Typography.supreme
-        ]
-        (case service of
-            Connect ->
-                Connect.view model |> Element.map ConnectMsg
+        _ ->
+            service
 
-            NoMetamask ->
-                NoMetamask.view model
 
-            _ ->
-                none
-        )
+inputDeadline : String -> Service -> Service
+inputDeadline string service =
+    case service of
+        Settings settings ->
+            settings
+                |> Settings.inputDeadline string
+                |> Settings
+
+        _ ->
+            service
+
+
+getSlippage : Service -> Maybe Slippage
+getSlippage service =
+    case service of
+        Settings settings ->
+            settings |> Settings.getSlippage
+
+        _ ->
+            Nothing
+
+
+getDeadline : Service -> Maybe Deadline
+getDeadline service =
+    case service of
+        Settings settings ->
+            settings |> Settings.getDeadline
+
+        _ ->
+            Nothing
+
+
+refreshSettings : Service
+refreshSettings =
+    Settings.init
+        |> Settings
+
+
+hasSlippageInput : Service -> Bool
+hasSlippageInput service =
+    case service of
+        Settings settings ->
+            settings |> Settings.hasSlippageInput
+
+        _ ->
+            False
+
+
+hasDeadlineInput : Service -> Bool
+hasDeadlineInput service =
+    case service of
+        Settings settings ->
+            settings |> Settings.hasDeadlineInput
+
+        _ ->
+            False
+
+
+view :
+    Settings.Msgs msg
+    ->
+        { model
+            | device : Device
+            , backdrop : Backdrop
+            , slippage : Slippage
+            , deadline : Deadline
+            , user : Maybe user
+        }
+    -> Service
+    -> Or (Element Msg) (Element msg)
+view msgs ({ device } as model) service =
+    (case service of
+        Connect ->
+            Lazy.lazy Connect.view model
+                |> Element.map ConnectMsg
+                |> Either
+
+        NoMetamask ->
+            Lazy.lazy NoMetamask.view model
+                |> Either
+
+        Settings _ ->
+            Lazy.lazy3 Settings.view msgs model Settings.init
+                |> Or
+
+        Faucet ->
+            Lazy.lazy Faucet.view model
+                |> Either
+
+        _ ->
+            none |> Either
+    )
+        |> Or.map
+            (el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    padding 0
+
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+            )
+            (el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    padding 0
+
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+            )

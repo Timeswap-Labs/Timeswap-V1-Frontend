@@ -1,4 +1,4 @@
-module Modal exposing (Modal(..), Msg, fromFragment, same, toUrl, update)
+module Modal exposing (Modal, Msg, fromFragment, same, toUrl, update)
 
 import Data.Chain exposing (Chain(..))
 import Modals.Borrow.Main as Borrow

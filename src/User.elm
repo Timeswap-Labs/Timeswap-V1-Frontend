@@ -1,4 +1,4 @@
-module User exposing (User, decoder)
+module User exposing (User, decoder, same)
 
 import Data.Address as Address exposing (Address)
 import Data.Chain as Chain exposing (Chain)
@@ -17,3 +17,8 @@ decoder =
     Decode.succeed User
         |> Pipeline.required "chainId" Chain.decoder
         |> Pipeline.required "user" Address.decoder
+
+
+same : User -> User -> Bool
+same user1 user2 =
+    user1.chain == user2.chain && user1.address == user2.address

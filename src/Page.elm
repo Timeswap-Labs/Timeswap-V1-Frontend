@@ -1,24 +1,44 @@
-module Page exposing (Page(..), fromFragment, same, toName, toUrl, updateAllMarket, updateBorrowDashboard, updateLendDashboard)
+module Page exposing
+    ( Msg
+    , Page
+    , fromFragment
+    , getPair
+    , init
+    , same
+    , toTab
+    , toUrl
+    , update
+    )
 
 import Data.Chain exposing (Chain(..))
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools exposing (Pools)
+import Data.Tab as Tab exposing (Tab)
 import Pages.AllMarket.Main as AllMarket
 import Pages.BorrowDashboard.Main as BorrowDashboard
 import Pages.LendDashboard.Main as LendDashboard
-import Pages.Liquidity.Main as Liquidity
+import Pages.LiquidityProvider.Main as LiquidityProvider
 import Pages.PairMarket.Main as PairMarket
 
 
 type Page
     = AllMarket AllMarket.Page
-    | PairMarket Pair
+    | PairMarket PairMarket.Page
     | LendDashboard LendDashboard.Page
     | BorrowDashboard BorrowDashboard.Page
-    | Liquidity
+    | LiquidityProvider
 
 
-fromFragment : { model | pools : Pools, user : Maybe { user | chain : Chain } } -> String -> Maybe Page
+init : { model | pools : Pools, user : Maybe { user | chain : Chain } } -> Page
+init model =
+    AllMarket.init model
+        |> AllMarket
+
+
+fromFragment :
+    { model | pools : Pools, user : Maybe { user | chain : Chain } }
+    -> String
+    -> Maybe Page
 fromFragment ({ user } as model) string =
     string
         |> String.split "?"
@@ -30,6 +50,7 @@ fromFragment ({ user } as model) string =
                             |> Maybe.map .chain
                             |> Maybe.withDefault Rinkeby
                             |> (\chain -> Pair.fromFragment chain asset collateral)
+                            |> Maybe.map PairMarket.init
                             |> Maybe.map PairMarket
 
                     "market" :: _ ->
@@ -50,7 +71,7 @@ fromFragment ({ user } as model) string =
                             |> Just
 
                     "liquidity" :: _ ->
-                        Liquidity
+                        LiquidityProvider
                             |> Just
 
                     _ ->
@@ -64,8 +85,8 @@ toUrl page =
         AllMarket _ ->
             AllMarket.toUrl
 
-        PairMarket pair ->
-            PairMarket.toUrl pair
+        PairMarket pairMarket ->
+            pairMarket |> PairMarket.getPair |> PairMarket.toUrl
 
         LendDashboard _ ->
             LendDashboard.toUrl
@@ -73,8 +94,8 @@ toUrl page =
         BorrowDashboard _ ->
             BorrowDashboard.toUrl
 
-        Liquidity ->
-            Liquidity.toUrl
+        LiquidityProvider ->
+            LiquidityProvider.toUrl
 
 
 same : Page -> Page -> Bool
@@ -92,63 +113,56 @@ same page1 page2 =
         ( BorrowDashboard _, BorrowDashboard _ ) ->
             True
 
-        ( Liquidity, Liquidity ) ->
+        ( LiquidityProvider, LiquidityProvider ) ->
             True
 
         _ ->
             False
 
 
-toName : Page -> String
-toName page =
+toTab : Page -> Tab
+toTab page =
     case page of
         AllMarket _ ->
-            "Market"
+            Tab.Market
 
         PairMarket _ ->
-            "Market"
+            Tab.Market
 
         LendDashboard _ ->
-            "Dashboard"
+            Tab.Dashboard
 
         BorrowDashboard _ ->
-            "Dashboard"
+            Tab.Dashboard
 
-        Liquidity ->
-            "liquidity"
+        LiquidityProvider ->
+            Tab.Liquidity
 
 
-updateAllMarket : AllMarket.Msg -> Page -> ( Page, Cmd AllMarket.Msg )
-updateAllMarket msg page =
+getPair : Page -> Maybe Pair
+getPair page =
     case page of
-        AllMarket allMarket ->
+        PairMarket pairMarket ->
+            pairMarket |> PairMarket.getPair |> Just
+
+        _ ->
+            Nothing
+
+
+type Msg
+    = AllMarketMsg AllMarket.Msg
+    | PairMarketMsg PairMarket.Msg
+    | LendDashboardMsg LendDashboard.Msg
+    | BorrowDashboardMsg BorrowDashboard.Msg
+
+
+update : Msg -> Page -> Page
+update msg page =
+    case ( msg, page ) of
+        ( AllMarketMsg allMarketMsg, AllMarket allMarket ) ->
             allMarket
-                |> AllMarket.update msg
-                |> Tuple.mapFirst AllMarket
+                |> AllMarket.update allMarketMsg
+                |> AllMarket
 
         _ ->
-            ( page, Cmd.none )
-
-
-updateLendDashboard : LendDashboard.Msg -> Page -> ( Page, Cmd LendDashboard.Msg )
-updateLendDashboard msg page =
-    case page of
-        LendDashboard lendDashboard ->
-            lendDashboard
-                |> LendDashboard.update msg
-                |> Tuple.mapFirst LendDashboard
-
-        _ ->
-            ( page, Cmd.none )
-
-
-updateBorrowDashboard : BorrowDashboard.Msg -> Page -> ( Page, Cmd BorrowDashboard.Msg )
-updateBorrowDashboard msg page =
-    case page of
-        BorrowDashboard borrowDashboard ->
-            borrowDashboard
-                |> BorrowDashboard.update msg
-                |> Tuple.mapFirst BorrowDashboard
-
-        _ ->
-            ( page, Cmd.none )
+            page
