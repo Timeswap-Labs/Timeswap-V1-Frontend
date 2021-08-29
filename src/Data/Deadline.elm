@@ -22,18 +22,18 @@ type Option
 
 init : Deadline
 init =
-    Deadline 1200
+    Deadline 20
 
 
 toOption : Deadline -> Maybe Option
-toOption (Deadline seconds) =
-    if seconds == 600 then
+toOption (Deadline minutes) =
+    if minutes == 10 then
         Just Short
 
-    else if seconds == 1200 then
+    else if minutes == 20 then
         Just Medium
 
-    else if seconds == 1800 then
+    else if minutes == 30 then
         Just Long
 
     else
@@ -41,13 +41,12 @@ toOption (Deadline seconds) =
 
 
 toString : Deadline -> Maybe String
-toString (Deadline seconds) =
-    if seconds == 600 || seconds == 1200 || seconds == 1800 then
+toString (Deadline minutes) =
+    if minutes == 10 || minutes == 20 || minutes == 30 then
         Nothing
 
     else
-        seconds
-            // 60
+        minutes
             |> String.fromInt
             |> Just
 
@@ -71,13 +70,13 @@ fromOption : Option -> Deadline
 fromOption option =
     case option of
         Short ->
-            Deadline 600
+            Deadline 10
 
         Medium ->
-            Deadline 1200
+            Deadline 20
 
         Long ->
-            Deadline 1800
+            Deadline 30
 
 
 fromString : String -> Deadline
@@ -88,11 +87,10 @@ fromString string =
             (\minutes ->
                 if minutes > 0 && minutes <= 180 then
                     minutes
-                        |> (*) 60
                         |> Deadline
                         |> Just
 
                 else
                     Nothing
             )
-        |> Maybe.withDefault (Deadline 1200)
+        |> Maybe.withDefault (Deadline 20)

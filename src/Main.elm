@@ -124,6 +124,7 @@ type Msg
     | VisibilityChange Visibility
     | ReceiveTime Posix
     | ReceiveZoneInfo ZoneInfo
+    | ExitSettings
     | ChooseSlippageOption Slippage.Option
     | ChooseDeadlineOption Deadline.Option
     | InputSlippage String
@@ -245,6 +246,20 @@ update msg model =
         ReceiveZoneInfo zoneInfo ->
             ( { model | zoneInfo = Just zoneInfo }
             , Cmd.none
+            )
+
+        ExitSettings ->
+            ( { model
+                | slippage =
+                    model.service
+                        |> Maybe.andThen Service.getSlippage
+                        |> Maybe.withDefault model.slippage
+                , deadline =
+                    model.service
+                        |> Maybe.andThen Service.getDeadline
+                        |> Maybe.withDefault model.deadline
+              }
+            , Route.exit model
             )
 
         ChooseSlippageOption option ->
@@ -394,7 +409,7 @@ onClickOutsideSlippage model =
         |> Maybe.map
             (\service ->
                 if service |> Service.hasSlippageInput then
-                    Browser.Events.onClick (Decode.at [] decoderOutsideSlippage)
+                    Browser.Events.onClick (Decode.at [ "target", "id" ] decoderOutsideSlippage)
 
                 else
                     Sub.none
@@ -421,7 +436,7 @@ onClickOutsideDeadline model =
         |> Maybe.map
             (\service ->
                 if service |> Service.hasDeadlineInput then
-                    Browser.Events.onClick (Decode.at [] decoderOutsideDeadline)
+                    Browser.Events.onClick (Decode.at [ "target", "id" ] decoderOutsideDeadline)
 
                 else
                     Sub.none
@@ -451,7 +466,8 @@ view model =
 
 settingsMsgs : Settings.Msgs Msg
 settingsMsgs =
-    { chooseSlippageOption = ChooseSlippageOption
+    { exitSettings = ExitSettings
+    , chooseSlippageOption = ChooseSlippageOption
     , chooseDeadlineOption = ChooseDeadlineOption
     , inputSlippage = InputSlippage
     , inputDeadline = InputDeadline

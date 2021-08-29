@@ -164,5 +164,20 @@ update msg page =
                 |> AllMarket.update allMarketMsg
                 |> AllMarket
 
+        ( PairMarketMsg pairMarketMsg, PairMarket pairMarket ) ->
+            pairMarket
+                |> PairMarket.update pairMarketMsg
+                |> PairMarket
+
+        ( LendDashboardMsg lendDashboardMsg, LendDashboard lendDashboard ) ->
+            lendDashboard
+                |> LendDashboard.update lendDashboardMsg
+                |> LendDashboard
+
+        ( BorrowDashboardMsg borrowDashboardMsg, BorrowDashboard borrowDashboard ) ->
+            borrowDashboard
+                |> BorrowDashboard.update borrowDashboardMsg
+                |> BorrowDashboard
+
         _ ->
             page

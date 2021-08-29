@@ -11,7 +11,7 @@ module Data.Slippage exposing
 
 
 type Slippage
-    = Slippage Float
+    = Slippage Int
 
 
 type Option
@@ -22,18 +22,18 @@ type Option
 
 init : Slippage
 init =
-    Slippage 0.005
+    Slippage 50
 
 
 toOption : Slippage -> Maybe Option
-toOption (Slippage float) =
-    if float == 0.001 then
+toOption (Slippage int) =
+    if int == 10 then
         Just Small
 
-    else if float == 0.005 then
+    else if int == 50 then
         Just Medium
 
-    else if float == 0.01 then
+    else if int == 100 then
         Just Large
 
     else
@@ -41,14 +41,20 @@ toOption (Slippage float) =
 
 
 toString : Slippage -> Maybe String
-toString (Slippage float) =
-    if float == 0.001 || float == 0.005 || float == 0.01 then
+toString (Slippage int) =
+    if int == 10 || int == 50 || int == 100 then
         Nothing
 
     else
-        float
-            |> (*) 100
-            |> String.fromFloat
+        int
+            |> String.fromInt
+            |> String.padLeft 3 '0'
+            |> (\string ->
+                    [ string |> String.dropRight 2
+                    , string |> String.right 2 |> String.padRight 2 '0'
+                    ]
+                        |> String.join "."
+               )
             |> Just
 
 
@@ -57,7 +63,7 @@ isCorrect string =
     string
         |> String.toFloat
         |> Maybe.map ((*) 100)
-        |> Maybe.map truncate
+        |> Maybe.map floor
         |> Maybe.map
             (\int ->
                 if int > 0 && int <= 5000 then
@@ -73,13 +79,13 @@ fromOption : Option -> Slippage
 fromOption option =
     case option of
         Small ->
-            Slippage 0.001
+            Slippage 10
 
         Medium ->
-            Slippage 0.005
+            Slippage 50
 
         Large ->
-            Slippage 0.01
+            Slippage 100
 
 
 fromString : String -> Slippage
@@ -87,17 +93,15 @@ fromString string =
     string
         |> String.toFloat
         |> Maybe.map ((*) 100)
-        |> Maybe.map truncate
+        |> Maybe.map floor
         |> Maybe.andThen
             (\int ->
                 if int > 0 && int <= 5000 then
                     int
-                        |> toFloat
-                        |> (\basisPoint -> basisPoint / 10000)
                         |> Slippage
                         |> Just
 
                 else
                     Nothing
             )
-        |> Maybe.withDefault (Slippage 0.005)
+        |> Maybe.withDefault (Slippage 50)

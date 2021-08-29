@@ -1,4 +1,4 @@
-module Utility.Exit exposing (button, toUrl)
+module Utility.Exit exposing (button, buttonWithMsg, toUrl)
 
 import Element
     exposing
@@ -13,6 +13,7 @@ import Element
         , shrink
         , width
         )
+import Element.Input as Input
 import Utility.Image as Image
 
 
@@ -35,6 +36,25 @@ button =
             , height shrink
             ]
             { url = toUrl
+            , label = Image.close [ width <| px 24 ]
+            }
+        )
+
+
+buttonWithMsg : msg -> Element msg
+buttonWithMsg msg =
+    el
+        [ width shrink
+        , height shrink
+        , padding 20
+        , alignRight
+        , alignTop
+        ]
+        (Input.button
+            [ width shrink
+            , height shrink
+            ]
+            { onPress = Just msg
             , label = Image.close [ width <| px 24 ]
             }
         )

@@ -110,7 +110,8 @@ hasDeadlineInput { deadline } =
 
 
 type alias Msgs msg =
-    { chooseSlippageOption : Slippage.Option -> msg
+    { exitSettings : msg
+    , chooseSlippageOption : Slippage.Option -> msg
     , chooseDeadlineOption : Deadline.Option -> msg
     , inputSlippage : String -> msg
     , inputDeadline : String -> msg
@@ -134,7 +135,7 @@ view msgs ({ device, backdrop } as model) settings =
          , spacing 32
          , centerX
          , centerY
-         , inFront Exit.button
+         , inFront (Exit.buttonWithMsg msgs.exitSettings)
          ]
             ++ Glass.darkPrimaryModal backdrop 0
             ++ (if Device.isPhone device then
@@ -256,9 +257,9 @@ slippageSwitch msgs ({ device, slippage } as model) =
         )
         { onChange = msgs.chooseSlippageOption
         , options =
-            [ ( Slippage.Small, "0.1%" )
-            , ( Slippage.Medium, "0.5%" )
-            , ( Slippage.Large, "1%" )
+            [ ( Slippage.Small, "0.10%" )
+            , ( Slippage.Medium, "0.50%" )
+            , ( Slippage.Large, "1.00%" )
             ]
                 |> List.map
                     (\( options, label ) ->

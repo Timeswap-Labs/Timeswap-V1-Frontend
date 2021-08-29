@@ -17,10 +17,10 @@ module Service exposing
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain(..))
-import Data.Deadline as Deadline exposing (Deadline)
+import Data.Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
 import Data.Or as Or exposing (Or(..))
-import Data.Slippage as Slippage exposing (Slippage)
+import Data.Slippage exposing (Slippage)
 import Element
     exposing
         ( Element
@@ -237,8 +237,8 @@ view msgs ({ device } as model) service =
             Lazy.lazy NoMetamask.view model
                 |> Either
 
-        Settings _ ->
-            Lazy.lazy3 Settings.view msgs model Settings.init
+        Settings settings ->
+            Lazy.lazy3 Settings.view msgs model settings
                 |> Or
 
         Faucet ->
