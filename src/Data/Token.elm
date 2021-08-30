@@ -1,5 +1,6 @@
 module Data.Token exposing
     ( Token(..)
+    , compare
     , fromAssetFragment
     , fromCollateralFragment
     , sorter

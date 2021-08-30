@@ -1,4 +1,4 @@
-module Data.Address exposing (Address, compare, decoder, fromString, sorter, toString, toStringShort)
+module Data.Address exposing (Address, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, fromString, maticRinkeby, sorter, toString, toStringShort, wethDaiRinkeby, wethRinkeby)
 
 import Json.Decode as Decode exposing (Decoder)
 import Sort exposing (Sorter)
@@ -67,3 +67,37 @@ compare (Address address1) (Address address2) =
 sorter : Sorter Address
 sorter =
     Sort.custom compare
+
+
+
+-- Change the address before testnet
+
+
+daiRinkeby : Address
+daiRinkeby =
+    Address ("0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba" |> String.toLower)
+
+
+maticRinkeby : Address
+maticRinkeby =
+    Address ("0x98ea5A9f9621F160EC378e1F1b1Be78A4809eF32" |> String.toLower)
+
+
+wethRinkeby : Address
+wethRinkeby =
+    Address ("0xa1fcEeFd0bA04519729815Fc0512E47869C8818e" |> String.toLower)
+
+
+daiWethRinkeby : Address
+daiWethRinkeby =
+    Address ("0xf18f57a842398Aba5420A0405f4D1cf3De8D29Ba" |> String.toLower)
+
+
+daiMaticRinkeby : Address
+daiMaticRinkeby =
+    Address ("0xf18f57a8423985ba5420A0405f4D1cf3De8D99Ba" |> String.toLower)
+
+
+wethDaiRinkeby : Address
+wethDaiRinkeby =
+    Address ("0xa1fcEeFd0bA04519729814Fc0512E47869C8818e" |> String.toLower)

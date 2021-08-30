@@ -8,8 +8,7 @@ toString now maturity =
     let
         total : Int
         total =
-            (maturity |> Time.posixToMillis)
-                - (now |> Time.posixToMillis)
+            ((maturity |> Time.posixToMillis) - (now |> Time.posixToMillis))
                 // 1000
 
         days : String

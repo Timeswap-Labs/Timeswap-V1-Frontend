@@ -1,10 +1,21 @@
-module Data.Pools exposing (PoolInfo, Pools, getFirst, getSize, toList, toPairs, whitelist)
+module Data.Pools exposing
+    ( Pool
+    , PoolInfo
+    , Pools
+    , getFirst
+    , getSize
+    , toList
+    , toListSinglePool
+    , toPairs
+    , whitelist
+    )
 
-import Data.Chain exposing (Chain)
-import Data.Maturity exposing (Maturity)
+import Data.Chain exposing (Chain(..))
+import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
-import Data.Remote as Remote exposing (Remote)
+import Data.Remote exposing (Remote(..))
 import Sort.Dict as Dict exposing (Dict)
+import Time exposing (Posix)
 
 
 type Pools
@@ -20,16 +31,33 @@ type alias Pool =
 
 
 type alias PoolInfo =
-    { pair : Pair
-    , maturity : Maturity
+    { maturity : Maturity
     , pool : Remote Pool
     }
 
 
 whitelist : Chain -> Pools
 whitelist chain =
-    Dict.empty (Pair.sorter chain)
-        -- fix soon add whitelist
+    (case chain of
+        Mainnet ->
+            Dict.empty (Pair.sorter chain)
+
+        Rinkeby ->
+            Dict.empty (Pair.sorter chain)
+                |> Dict.insert Pair.daiEthRinkeby
+                    (Dict.fromList Maturity.sorter
+                        [ ( Maturity.unix962654400, Loading )
+                        , ( Maturity.unix1635364800, Success (Pool "1.2M" "1.3K" "12%" "2450.809") )
+                        , ( Maturity.unix1650889815, Loading )
+                        ]
+                    )
+                |> Dict.insert Pair.daiMaticRinkeby
+                    (Dict.fromList Maturity.sorter
+                        [ ( Maturity.unix1635364800, Loading ) ]
+                    )
+                |> Dict.insert Pair.wethDaiRinkeby
+                    (Dict.empty Maturity.sorter)
+    )
         |> Pools
 
 
@@ -39,30 +67,45 @@ toPairs (Pools dict) =
         |> Dict.keys
 
 
-toList : Pools -> List (List PoolInfo)
+toList : Pools -> List ( Pair, List PoolInfo )
 toList (Pools dict) =
     dict
         |> Dict.toList
         |> List.map
             (\( pair, innerDict ) ->
-                innerDict
+                ( pair
+                , innerDict
                     |> Dict.toList
                     |> List.map
                         (\( maturity, pool ) ->
-                            { pair = pair
-                            , maturity = maturity
+                            { maturity = maturity
                             , pool = pool
                             }
                         )
+                )
             )
 
 
-getSize : Pair -> Pools -> Int
-getSize pair (Pools dict) =
+toListSinglePool : Pair -> Pools -> List PoolInfo
+toListSinglePool pair (Pools dict) =
     dict
         |> Dict.get pair
+        |> Maybe.map Dict.toList
+        |> (Maybe.map << List.map)
+            (\( maturity, pool ) ->
+                { maturity = maturity
+                , pool = pool
+                }
+            )
+        |> Maybe.withDefault []
+
+
+getSize : Posix -> Pair -> Pools -> Int
+getSize time pair (Pools dict) =
+    dict
+        |> Dict.get pair
+        |> Maybe.map (Dict.keepIf (\maturity _ -> maturity |> Maturity.isActive time))
         |> Maybe.map Dict.size
-        -- fix in the future add time expiration
         |> Maybe.withDefault 0
 
 

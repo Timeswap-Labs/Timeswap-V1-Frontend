@@ -1,5 +1,6 @@
 module Utility.TokenImage exposing (getIcon)
 
+import Data.ERC20 as ERC20
 import Data.Token as Token exposing (Token)
 import Element exposing (Attribute, Element, image)
 
@@ -11,7 +12,17 @@ getIcon attribute token =
             eth attribute
 
         Token.ERC20 erc20 ->
-            eth attribute
+            if erc20 == ERC20.daiRinkeby then
+                dai attribute
+
+            else if erc20 == ERC20.maticRinkeby then
+                matic attribute
+
+            else if erc20 == ERC20.wethRinkeby then
+                weth attribute
+
+            else
+                eth attribute
 
 
 weth : List (Attribute msg) -> Element msg

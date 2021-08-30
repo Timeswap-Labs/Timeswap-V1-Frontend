@@ -12,6 +12,7 @@ module Utility.Color exposing
     , light300
     , light400
     , light500
+    , list
     , modal
     , negative100
     , negative200
@@ -58,6 +59,11 @@ none =
 aside : Color
 aside =
     rgba255 0 0 0 0.5
+
+
+list : Color
+list =
+    rgba255 0 0 0 0.21
 
 
 modal : Color

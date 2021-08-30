@@ -1,7 +1,18 @@
-module Data.ERC20 exposing (ERC20, compare, fromString, sorter, toString, toSymbol)
+module Data.ERC20 exposing
+    ( ERC20
+    , compare
+    , daiRinkeby
+    , fromString
+    , maticRinkeby
+    , sorter
+    , toString
+    , toSymbol
+    , wethRinkeby
+    , whitelist
+    )
 
 import Data.Address as Address exposing (Address)
-import Data.Chain exposing (Chain)
+import Data.Chain exposing (Chain(..))
 import Sort exposing (Sorter)
 import Sort.Set as Set exposing (Set)
 
@@ -53,16 +64,82 @@ toSymbol (ERC20 { symbol }) =
 
 whitelist : Chain -> Set ERC20
 whitelist chain =
-    Set.empty (sorter chain)
+    (case chain of
+        Mainnet ->
+            []
+
+        Rinkeby ->
+            [ daiRinkeby
+            , maticRinkeby
+            , wethRinkeby
+            ]
+    )
+        |> Set.fromList (sorter chain)
 
 
-sorter : Chain -> Sorter ERC20
-sorter chain =
-    Sort.increasing
-        |> Sort.by (\erc20 -> 0)
-        |> Sort.tiebreaker (Address.sorter |> Sort.by (\(ERC20 { address }) -> address))
+toRank : Chain -> ERC20 -> Int
+toRank chain erc20 =
+    case chain of
+        Mainnet ->
+            0
+
+        Rinkeby ->
+            if erc20 == daiRinkeby then
+                0
+
+            else if erc20 == maticRinkeby then
+                1
+
+            else if erc20 == wethRinkeby then
+                2
+
+            else
+                3
 
 
 compare : Chain -> ERC20 -> ERC20 -> Order
 compare chain ((ERC20 erc20a) as erc20A) ((ERC20 erc20b) as erc20B) =
-    Address.compare erc20a.address erc20b.address
+    Basics.compare (erc20A |> toRank chain) (erc20B |> toRank chain)
+        |> (\order ->
+                case order of
+                    EQ ->
+                        Address.compare erc20a.address erc20b.address
+
+                    _ ->
+                        order
+           )
+
+
+sorter : Chain -> Sorter ERC20
+sorter chain =
+    Sort.custom (compare chain)
+
+
+daiRinkeby : ERC20
+daiRinkeby =
+    ERC20
+        { address = Address.daiRinkeby
+        , name = "DAI Stablecoin"
+        , symbol = "DAI"
+        , decimals = 18
+        }
+
+
+maticRinkeby : ERC20
+maticRinkeby =
+    ERC20
+        { address = Address.maticRinkeby
+        , name = "Matic Token"
+        , symbol = "MATIC"
+        , decimals = 18
+        }
+
+
+wethRinkeby : ERC20
+wethRinkeby =
+    ERC20
+        { address = Address.wethRinkeby
+        , name = "Wrapped Ether"
+        , symbol = "WETH"
+        , decimals = 18
+        }

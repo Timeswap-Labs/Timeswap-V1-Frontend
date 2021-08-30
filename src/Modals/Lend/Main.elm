@@ -3,6 +3,7 @@ module Modals.Lend.Main exposing
     , Modal
     , Msg
     , fromFragment
+    , init
     , same
     , toUrl
     , update

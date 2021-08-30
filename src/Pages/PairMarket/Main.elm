@@ -4,12 +4,14 @@ import Data.Device as Device exposing (Device)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools as Pools exposing (Pools)
 import Data.Token as Token
+import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
         ( Element
         , above
         , alignLeft
         , alignRight
+        , alignTop
         , alpha
         , below
         , centerX
@@ -30,10 +32,9 @@ import Element
         , text
         , width
         )
-import Element.Background as Background
-import Element.Border as Border
-import Element.Events as Events
 import Element.Font as Font
+import Pages.PairMarket.ListPools as ListPools
+import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.TokenImage as TokenImage
 
@@ -69,38 +70,44 @@ update msg page =
     page
 
 
-view : { model | device : Device, pools : Pools } -> Pair -> Element msg
-view ({ device } as model) pair =
+view :
+    { model
+        | device : Device
+        , time : Posix
+        , zoneInfo : Maybe ZoneInfo
+        , pools : Pools
+    }
+    -> Page
+    -> Element msg
+view ({ device, pools } as model) (Page pair) =
     column
-        ([ height shrink
-         , spacing 24
-         , centerX
-         ]
-            ++ (if Device.isPhone device then
-                    [ width <| px 335
-                    , paddingXY 0 29
-                    ]
+        [ (if Device.isPhone device then
+            px 335
 
-                else if Device.isTablet device then
-                    [ width <| px 552
-                    , paddingXY 0 29
-                    ]
+           else if Device.isTablet device then
+            px 552
 
-                else
-                    [ width <| px 1074
-                    , paddingXY 0 38
-                    ]
-               )
-        )
-        [ title model pair ]
+           else
+            px 1068
+          )
+            |> width
+        , height shrink
+        , spacing 24
+        , alignTop
+        , centerX
+        ]
+        [ title model pair
+        , pools
+            |> Pools.toListSinglePool pair
+            |> ListPools.view model pair
+        ]
 
 
-title : { model | device : Device, pools : Pools } -> Pair -> Element msg
+title : { model | device : Device, time : Posix, pools : Pools } -> Pair -> Element msg
 title model pair =
     row
         [ width fill
         , height shrink
-        , paddingXY 0 6
         , spacing 14
         ]
         [ icons pair
@@ -118,8 +125,8 @@ icons pair =
         , alignLeft
         , centerY
         ]
-        [ pair |> Pair.toAsset |> TokenImage.getIcon [ height <| px 24 ]
-        , pair |> Pair.toCollateral |> TokenImage.getIcon [ height <| px 24 ]
+        [ pair |> Pair.toAsset |> TokenImage.getIcon [ height <| px 32 ]
+        , pair |> Pair.toCollateral |> TokenImage.getIcon [ height <| px 32 ]
         ]
 
 
@@ -128,7 +135,6 @@ symbols { device } pair =
     el
         [ width shrink
         , height shrink
-        , paddingXY 0 3
         , alignLeft
         , centerY
         , Font.bold
@@ -147,25 +153,23 @@ symbols { device } pair =
         )
 
 
-size : { model | device : Device, pools : Pools } -> Pair -> Element msg
-size { device, pools } pair =
+size : { model | device : Device, time : Posix, pools : Pools } -> Pair -> Element msg
+size { device, time, pools } pair =
     el
         [ width shrink
         , height shrink
-        , paddingXY 0 3
         , alignRight
         , centerY
-        , Font.family [ Font.typeface "Supreme" ]
         , Font.regular
         , if Device.isPhoneOrTablet device then
             Font.size 16
 
           else
             Font.size 18
-        , Font.color Color.transparent200
+        , Font.color Color.transparent500
         ]
         (pools
-            |> Pools.getSize pair
+            |> Pools.getSize time pair
             |> String.fromInt
             |> (\string ->
                     if string == "1" then

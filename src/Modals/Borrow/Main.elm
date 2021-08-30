@@ -3,6 +3,7 @@ module Modals.Borrow.Main exposing
     , Modal
     , Msg
     , fromFragment
+    , init
     , same
     , toUrl
     , update

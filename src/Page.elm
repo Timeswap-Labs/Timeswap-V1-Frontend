@@ -8,17 +8,33 @@ module Page exposing
     , toTab
     , toUrl
     , update
+    , view
     )
 
 import Data.Chain exposing (Chain(..))
+import Data.Device exposing (Device)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools exposing (Pools)
 import Data.Tab as Tab exposing (Tab)
+import Data.ZoneInfo exposing (ZoneInfo)
+import Element
+    exposing
+        ( Element
+        , alignTop
+        , el
+        , fill
+        , height
+        , none
+        , paddingXY
+        , shrink
+        , width
+        )
 import Pages.AllMarket.Main as AllMarket
 import Pages.BorrowDashboard.Main as BorrowDashboard
 import Pages.LendDashboard.Main as LendDashboard
 import Pages.LiquidityProvider.Main as LiquidityProvider
 import Pages.PairMarket.Main as PairMarket
+import Time exposing (Posix)
 
 
 type Page
@@ -156,12 +172,12 @@ type Msg
     | BorrowDashboardMsg BorrowDashboard.Msg
 
 
-update : Msg -> Page -> Page
-update msg page =
+update : { model | pools : Pools } -> Msg -> Page -> Page
+update model msg page =
     case ( msg, page ) of
         ( AllMarketMsg allMarketMsg, AllMarket allMarket ) ->
             allMarket
-                |> AllMarket.update allMarketMsg
+                |> AllMarket.update model allMarketMsg
                 |> AllMarket
 
         ( PairMarketMsg pairMarketMsg, PairMarket pairMarket ) ->
@@ -181,3 +197,31 @@ update msg page =
 
         _ ->
             page
+
+
+view :
+    { model
+        | device : Device
+        , time : Posix
+        , zoneInfo : Maybe ZoneInfo
+        , pools : Pools
+    }
+    -> Page
+    -> Element Msg
+view model page =
+    el
+        [ width fill
+        , height shrink
+        , paddingXY 0 38
+        , alignTop
+        ]
+        (case page of
+            AllMarket allMarket ->
+                AllMarket.view model allMarket |> Element.map AllMarketMsg
+
+            PairMarket pairMarket ->
+                PairMarket.view model pairMarket
+
+            _ ->
+                none
+        )

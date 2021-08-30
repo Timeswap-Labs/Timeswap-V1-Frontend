@@ -305,7 +305,7 @@ update msg model =
             )
 
         PageMsg pageMsg ->
-            ( { model | page = model.page |> Page.update pageMsg }
+            ( { model | page = model.page |> Page.update model pageMsg }
             , Cmd.none
             )
 
@@ -515,8 +515,7 @@ html model =
                 , clip
                 ]
                 [ Lazy.lazy Header.view model
-
-                --, Debug.todo "Page.view model"
+                , Lazy.lazy2 Page.view model model.page |> Element.map PageMsg
                 ]
             )
 
@@ -563,8 +562,7 @@ html model =
                     , clip
                     ]
                     [ Lazy.lazy Aside.view model
-
-                    --, Debug.log "Page.view model"
+                    , Lazy.lazy2 Page.view model model.page |> Element.map PageMsg
                     ]
                 ]
 

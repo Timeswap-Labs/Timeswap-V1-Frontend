@@ -38,6 +38,7 @@ import Html.Attributes
 import Page exposing (Page)
 import Pages.AllMarket.Main as AllMarket
 import Pages.PairMarket.Main as PairMarket
+import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Image as Image
 import Utility.TokenImage as TokenImage
@@ -65,6 +66,7 @@ toUrl =
 view :
     { model
         | device : Device
+        , time : Posix
         , pools : Pools
         , user : Maybe { user | chain : Chain }
         , page : Page
@@ -179,7 +181,7 @@ allPairs { page } =
            )
 
 
-listPairs : { model | pools : Pools, page : Page } -> Element msg
+listPairs : { model | time : Posix, pools : Pools, page : Page } -> Element msg
 listPairs ({ pools } as model) =
     Keyed.column
         [ width fill
@@ -196,7 +198,7 @@ listPairs ({ pools } as model) =
         )
 
 
-singlePair : { model | pools : Pools, page : Page } -> Pair -> Element msg
+singlePair : { model | time : Posix, pools : Pools, page : Page } -> Pair -> Element msg
 singlePair ({ page } as model) pair =
     row
         [ width fill
@@ -275,8 +277,8 @@ symbols pair =
         )
 
 
-size : { model | pools : Pools } -> Pair -> Element msg
-size { pools } pair =
+size : { model | time : Posix, pools : Pools } -> Pair -> Element msg
+size { time, pools } pair =
     el
         [ width shrink
         , height shrink
@@ -288,7 +290,7 @@ size { pools } pair =
         , Font.color Color.transparent200
         ]
         (pools
-            |> Pools.getSize pair
+            |> Pools.getSize time pair
             |> String.fromInt
             |> text
         )
