@@ -3,7 +3,6 @@ module Pages.PairMarket.Main exposing (Msg, Page, getPair, init, toUrl, update, 
 import Data.Device as Device exposing (Device)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools as Pools exposing (Pools)
-import Data.Token as Token
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
@@ -36,7 +35,7 @@ import Element.Font as Font
 import Pages.PairMarket.ListPools as ListPools
 import Time exposing (Posix)
 import Utility.Color as Color
-import Utility.TokenImage as TokenImage
+import Utility.PairInfo as PairInfo
 
 
 type Page
@@ -110,47 +109,10 @@ title model pair =
         , height shrink
         , spacing 14
         ]
-        [ icons pair
-        , symbols model pair
+        [ PairInfo.icons { iconSize = 32 } pair
+        , PairInfo.symbols { fontSize = 18, isBold = True } pair
         , size model pair
         ]
-
-
-icons : Pair -> Element msg
-icons pair =
-    row
-        [ width shrink
-        , height shrink
-        , spacing 4
-        , alignLeft
-        , centerY
-        ]
-        [ pair |> Pair.toAsset |> TokenImage.getIcon [ height <| px 32 ]
-        , pair |> Pair.toCollateral |> TokenImage.getIcon [ height <| px 32 ]
-        ]
-
-
-symbols : { model | device : Device } -> Pair -> Element msg
-symbols { device } pair =
-    el
-        [ width shrink
-        , height shrink
-        , alignLeft
-        , centerY
-        , Font.bold
-        , if Device.isPhoneOrTablet device then
-            Font.size 16
-
-          else
-            Font.size 18
-        , Font.color Color.transparent500
-        ]
-        ([ pair |> Pair.toAsset |> Token.toSymbol -- short symbol
-         , pair |> Pair.toCollateral |> Token.toSymbol -- short symbol
-         ]
-            |> String.join " - "
-            |> text
-        )
 
 
 size : { model | device : Device, time : Posix, pools : Pools } -> Pair -> Element msg

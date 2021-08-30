@@ -71,10 +71,9 @@ toList : Pools -> List ( Pair, List PoolInfo )
 toList (Pools dict) =
     dict
         |> Dict.toList
-        |> List.map
-            (\( pair, innerDict ) ->
-                ( pair
-                , innerDict
+        |> (List.map << Tuple.mapSecond)
+            (\innerDict ->
+                innerDict
                     |> Dict.toList
                     |> List.map
                         (\( maturity, pool ) ->
@@ -82,7 +81,6 @@ toList (Pools dict) =
                             , pool = pool
                             }
                         )
-                )
             )
 
 

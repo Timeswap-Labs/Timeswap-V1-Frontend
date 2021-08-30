@@ -10,11 +10,8 @@ import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
         ( Element
-        , above
         , alignLeft
         , alignRight
-        , alpha
-        , below
         , centerX
         , centerY
         , column
@@ -25,8 +22,6 @@ import Element
         , mouseDown
         , mouseOver
         , none
-        , padding
-        , paddingEach
         , paddingXY
         , px
         , row
@@ -38,7 +33,7 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
-import Html.Attributes
+import Element.Keyed as Keyed
 import Modals.Borrow.Main as Borrow
 import Modals.Lend.Main as Lend
 import Time exposing (Posix)
@@ -58,7 +53,7 @@ view ({ time } as model) pair list =
         [ width fill
         , height shrink
         ]
-        (row
+        [ row
             [ width fill
             , height shrink
             , paddingXY 24 20
@@ -77,11 +72,20 @@ view ({ time } as model) pair list =
             , el [ width <| px 170, alignRight, Font.center ] (text "COLLATERAL FACTOR")
             , el [ width <| px 177, alignRight ] none
             ]
-            :: (list
-                    |> List.filter (\{ maturity } -> maturity |> Maturity.isActive time)
-                    |> List.map (singlePool model pair)
-               )
-        )
+        , Keyed.column
+            [ width fill
+            , height shrink
+            ]
+            (list
+                |> List.filter (\{ maturity } -> maturity |> Maturity.isActive time)
+                |> List.map
+                    (\({ maturity } as poolInfo) ->
+                        ( maturity |> Maturity.toKey
+                        , singlePool model pair poolInfo
+                        )
+                    )
+            )
+        ]
 
 
 singlePool :

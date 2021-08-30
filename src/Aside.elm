@@ -5,7 +5,6 @@ import Data.Chain exposing (Chain)
 import Data.Device as Device exposing (Device)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools as Pools exposing (Pools)
-import Data.Token as Token
 import Element
     exposing
         ( Element
@@ -18,7 +17,6 @@ import Element
         , height
         , htmlAttribute
         , link
-        , padding
         , paddingEach
         , paddingXY
         , px
@@ -41,7 +39,7 @@ import Pages.PairMarket.Main as PairMarket
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Image as Image
-import Utility.TokenImage as TokenImage
+import Utility.PairInfo as PairInfo
 
 
 fromFragment : { model | device : Device } -> String -> Maybe ()
@@ -206,8 +204,8 @@ singlePair ({ page } as model) pair =
         , paddingXY 37 0
         , spacing 8
         ]
-        [ icons pair
-        , symbols pair
+        [ PairInfo.icons { iconSize = 24 } pair
+        , PairInfo.symbols { fontSize = 14, isBold = False } pair
         , size model pair
         ]
         |> (\element ->
@@ -242,39 +240,6 @@ singlePair ({ page } as model) pair =
                             }
                         )
            )
-
-
-icons : Pair -> Element msg
-icons pair =
-    row
-        [ width shrink
-        , height shrink
-        , alignLeft
-        , centerY
-        , spacing 4
-        ]
-        [ pair |> Pair.toAsset |> TokenImage.getIcon [ height <| px 24 ]
-        , pair |> Pair.toCollateral |> TokenImage.getIcon [ height <| px 24 ]
-        ]
-
-
-symbols : Pair -> Element msg
-symbols pair =
-    el
-        [ width shrink
-        , height shrink
-        , alignLeft
-        , centerY
-        , Font.regular
-        , Font.size 14
-        , Font.color Color.transparent500
-        ]
-        ([ pair |> Pair.toAsset |> Token.toSymbol -- short symbol
-         , pair |> Pair.toCollateral |> Token.toSymbol -- short symbol
-         ]
-            |> String.join " - "
-            |> text
-        )
 
 
 size : { model | time : Posix, pools : Pools } -> Pair -> Element msg

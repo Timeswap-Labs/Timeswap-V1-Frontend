@@ -26,15 +26,18 @@ import Element
         , height
         , none
         , paddingXY
+        , scrollbarY
         , shrink
         , width
         )
+import Element.Font as Font
 import Pages.AllMarket.Main as AllMarket
 import Pages.BorrowDashboard.Main as BorrowDashboard
 import Pages.LendDashboard.Main as LendDashboard
 import Pages.LiquidityProvider.Main as LiquidityProvider
 import Pages.PairMarket.Main as PairMarket
 import Time exposing (Posix)
+import Utility.Typography as Typography
 
 
 type Page
@@ -75,7 +78,7 @@ fromFragment ({ user } as model) string =
                             |> Just
 
                     "dashboard" :: "transaction=lend" :: _ ->
-                        LendDashboard LendDashboard.init
+                        LendDashboard (LendDashboard.init model)
                             |> Just
 
                     "dashboard" :: "transaction=borrow" :: _ ->
@@ -83,7 +86,7 @@ fromFragment ({ user } as model) string =
                             |> Just
 
                     "dashboard" :: _ ->
-                        LendDashboard LendDashboard.init
+                        LendDashboard (LendDashboard.init model)
                             |> Just
 
                     "liquidity" :: _ ->
@@ -211,9 +214,10 @@ view :
 view model page =
     el
         [ width fill
-        , height shrink
+        , height fill
         , paddingXY 0 38
-        , alignTop
+        , scrollbarY
+        , Font.family Typography.supreme
         ]
         (case page of
             AllMarket allMarket ->
@@ -221,6 +225,9 @@ view model page =
 
             PairMarket pairMarket ->
                 PairMarket.view model pairMarket
+
+            LendDashboard lendDashboard ->
+                LendDashboard.view model lendDashboard |> Element.map LendDashboardMsg
 
             _ ->
                 none

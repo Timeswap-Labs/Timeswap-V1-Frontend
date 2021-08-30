@@ -42,6 +42,7 @@ import Services.Connect.Main as Connect
 import Services.Faucet.Main as Faucet
 import Services.Settings.Main as Settings
 import Services.Wallet.Main as Wallet
+import User
 import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Image as Image
@@ -378,16 +379,15 @@ buttons ({ user } as model) =
         , spacing 10
         ]
         ((user
-            |> Maybe.map
-                (\{ chain } ->
+            |> User.toChain
+            |> (\chain ->
                     case chain of
                         Mainnet ->
                             []
 
                         Rinkeby ->
                             [ faucetButton model ]
-                )
-            |> Maybe.withDefault [ faucetButton model ]
+               )
          )
             ++ [ walletButton model
                , settingsButton model
@@ -478,7 +478,6 @@ walletButton { device, user } =
             }
          , Background.color Color.primary100
          , Border.rounded 4
-         , Font.regular
          , Font.size 16
          , Font.color Color.light100
          , mouseDown [ Background.color Color.primary500 ]
@@ -539,7 +538,7 @@ walletButton { device, user } =
                                     []
 
                                 else
-                                    [ el [ centerY ]
+                                    [ el [ centerY, Font.regular ]
                                         (if Device.isTablet device then
                                             text "Wallet"
 
@@ -565,7 +564,6 @@ rinkebyLabel =
         , spacing 6
         , Background.color Color.warning400
         , Border.rounded 999
-        , Font.bold
         , Font.size 12
         , Font.color Color.dark500
         , Font.letterSpacing 1.28
@@ -573,6 +571,7 @@ rinkebyLabel =
         (el
             [ centerX
             , centerY
+            , Font.bold
             ]
             (text "RINKEBY")
         )

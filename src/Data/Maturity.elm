@@ -4,6 +4,7 @@ module Data.Maturity exposing
     , isActive
     , sorter
     , toFragment
+    , toKey
     , toPosix
     , toString
     , unix1635364800
@@ -52,6 +53,14 @@ toFragment (Maturity posix) =
 toPosix : Maturity -> Posix
 toPosix (Maturity posix) =
     posix
+
+
+toKey : Maturity -> String
+toKey maturity =
+    maturity
+        |> toPosix
+        |> Time.posixToMillis
+        |> String.fromInt
 
 
 sorter : Sorter Maturity

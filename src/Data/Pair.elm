@@ -1,4 +1,4 @@
-module Data.Pair exposing (Pair, daiEthRinkeby, daiMaticRinkeby, fromFragment, sorter, toAddress, toAsset, toCollateral, toFragment, wethDaiRinkeby, whitelist)
+module Data.Pair exposing (Pair, daiEthRinkeby, daiMaticRinkeby, fromFragment, sorter, toAddress, toAsset, toCollateral, toFragment, toKey, wethDaiRinkeby, whitelist)
 
 import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain(..))
@@ -61,6 +61,13 @@ toAsset (Pair { asset }) =
 toCollateral : Pair -> Token
 toCollateral (Pair { collateral }) =
     collateral
+
+
+toKey : Pair -> String
+toKey pair =
+    pair
+        |> toAddress
+        |> Address.toString
 
 
 whitelist : Chain -> Set Pair

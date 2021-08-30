@@ -5,12 +5,10 @@ import Data.Device as Device exposing (Device)
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools as Pools exposing (PoolInfo, Pools)
-import Data.Token as Token
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
         ( Element
-        , alignLeft
         , alignRight
         , alignTop
         , centerX
@@ -20,7 +18,6 @@ import Element
         , fill
         , height
         , none
-        , padding
         , paddingXY
         , px
         , rotate
@@ -32,13 +29,15 @@ import Element
         )
 import Element.Font as Font
 import Element.Input as Input
+import Element.Keyed as Keyed
 import Pages.PairMarket.ListPools as ListPools
 import Sort.Set as Set exposing (Set)
 import Time exposing (Posix)
+import User
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
-import Utility.TokenImage as TokenImage
+import Utility.PairInfo as PairInfo
 
 
 type Page
@@ -48,8 +47,7 @@ type Page
 init : { model | pools : Pools, user : Maybe { user | chain : Chain } } -> Page
 init { pools, user } =
     user
-        |> Maybe.map .chain
-        |> Maybe.withDefault Rinkeby
+        |> User.toChain
         |> (\chain ->
                 pools
                     |> Pools.getFirst
@@ -145,14 +143,19 @@ allPairs :
     -> Set Pair
     -> Element Msg
 allPairs ({ pools } as model) set =
-    column
+    Keyed.column
         [ width fill
         , height shrink
         , spacing 12
         ]
         (pools
             |> Pools.toList
-            |> List.map (singlePair model set)
+            |> List.map
+                (\( pair, list ) ->
+                    ( pair |> Pair.toKey
+                    , singlePair model set ( pair, list )
+                    )
+                )
         )
 
 
@@ -177,13 +180,13 @@ singlePair ({ time } as model) set ( pair, list ) =
                     [ row
                         ([ width fill
                          , height <| px 72
-                         , padding 24
+                         , paddingXY 24 0
                          , spacing 18
                          ]
                             ++ Glass.lightPrimary 1
                         )
-                        [ icons pair
-                        , symbols pair
+                        [ PairInfo.icons { iconSize = 32 } pair
+                        , PairInfo.symbols { fontSize = 16, isBold = True } pair
                         , size model pair
                         , discloser set pair filteredList
                         ]
@@ -212,39 +215,6 @@ singlePair ({ time } as model) set ( pair, list ) =
                         none
                     ]
            )
-
-
-icons : Pair -> Element msg
-icons pair =
-    row
-        [ width shrink
-        , height shrink
-        , spacing 4
-        , alignLeft
-        , centerY
-        ]
-        [ pair |> Pair.toAsset |> TokenImage.getIcon [ height <| px 24 ]
-        , pair |> Pair.toCollateral |> TokenImage.getIcon [ height <| px 24 ]
-        ]
-
-
-symbols : Pair -> Element msg
-symbols pair =
-    el
-        [ width shrink
-        , height shrink
-        , alignLeft
-        , centerY
-        , Font.bold
-        , Font.size 16
-        , Font.color Color.transparent500
-        ]
-        ([ pair |> Pair.toAsset |> Token.toSymbol -- short symbol
-         , pair |> Pair.toCollateral |> Token.toSymbol -- short symbol
-         ]
-            |> String.join " - "
-            |> text
-        )
 
 
 size : { model | time : Posix, pools : Pools } -> Pair -> Element msg
