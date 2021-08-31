@@ -1,4 +1,4 @@
-module Services.NoMetamask.Main exposing (toUrl, view)
+module Services.NoMetamask.Main exposing (view)
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Device as Device exposing (Device)
@@ -29,11 +29,6 @@ import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Glass as Glass
 import Utility.Image as Image
-
-
-toUrl : String
-toUrl =
-    "#nometamask"
 
 
 view : { model | device : Device, backdrop : Backdrop } -> Element msg

@@ -34,12 +34,11 @@ import Element.Keyed as Keyed
 import Element.Region as Region
 import Html.Attributes
 import Page exposing (Page)
-import Pages.AllMarket.Main as AllMarket
-import Pages.PairMarket.Main as PairMarket
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Image as Image
 import Utility.PairInfo as PairInfo
+import Utility.Router as Router
 
 
 fromFragment : { model | device : Device } -> String -> Maybe ()
@@ -163,7 +162,7 @@ allPairs { page } =
                                     [ width fill
                                     , height shrink
                                     ]
-                                    { url = AllMarket.toUrl
+                                    { url = Router.toAllMarket
                                     , label = element
                                     }
                                 )
@@ -204,8 +203,8 @@ singlePair ({ page } as model) pair =
         , paddingXY 37 0
         , spacing 8
         ]
-        [ PairInfo.icons { iconSize = 24 } pair
-        , PairInfo.symbols { fontSize = 14, isBold = False } pair
+        [ PairInfo.iconsAside pair
+        , PairInfo.symbolsAside pair
         , size model pair
         ]
         |> (\element ->
@@ -226,7 +225,7 @@ singlePair ({ page } as model) pair =
                                     [ width fill
                                     , height shrink
                                     ]
-                                    { url = pair |> PairMarket.toUrl
+                                    { url = pair |> Router.toPairMarket
                                     , label = element
                                     }
                         )
@@ -235,7 +234,7 @@ singlePair ({ page } as model) pair =
                             [ width fill
                             , height shrink
                             ]
-                            { url = pair |> PairMarket.toUrl
+                            { url = pair |> Router.toPairMarket
                             , label = element
                             }
                         )

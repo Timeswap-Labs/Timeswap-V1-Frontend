@@ -5,6 +5,7 @@ import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools exposing (PoolInfo)
 import Data.Remote exposing (Remote(..))
+import Data.Status exposing (Status(..))
 import Data.Token as Token
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
@@ -34,13 +35,11 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Keyed as Keyed
-import Modals.Borrow.Main as Borrow
-import Modals.Lend.Main as Lend
 import Time exposing (Posix)
 import Utility.Color as Color
-import Utility.Duration as Duration
 import Utility.Image as Image
 import Utility.Loading as Loading
+import Utility.Router as Router
 
 
 view :
@@ -159,9 +158,13 @@ maturityInfo { time, zoneInfo } { maturity } =
                 , Font.regular
                 , Font.color Color.transparent300
                 ]
-                (maturity
-                    |> Maturity.toPosix
-                    |> Duration.toString time
+                ((case maturity |> Maturity.toDuration time of
+                    Active string ->
+                        "Matured in " ++ string
+
+                    Matured string ->
+                        "Matured " ++ string ++ " ago"
+                 )
                     |> text
                 )
             ]
@@ -203,12 +206,14 @@ liquidities { device } pair { pool } =
                 Success { assetLiquidity, collateralLiquidity } ->
                     [ el
                         [ centerX
+                        , Font.bold
                         , Font.color Color.transparent500
                         ]
                         (text assetLiquidity)
-                    , el [ centerX ] <| text " "
+                    , el [ centerX, Font.bold ] <| text " "
                     , el
                         [ centerX
+                        , Font.bold
                         , Font.color Color.transparent300
                         ]
                         (pair
@@ -216,15 +221,22 @@ liquidities { device } pair { pool } =
                             |> Token.toSymbol
                             |> text
                         )
-                    , el [ centerX, Font.color Color.transparent500 ] (text " + ")
                     , el
                         [ centerX
+                        , Font.bold
+                        , Font.color Color.transparent500
+                        ]
+                        (text " + ")
+                    , el
+                        [ centerX
+                        , Font.bold
                         , Font.color Color.transparent500
                         ]
                         (text collateralLiquidity)
-                    , el [ centerX ] <| text " "
+                    , el [ centerX, Font.bold ] <| text " "
                     , el
                         [ centerX
+                        , Font.bold
                         , Font.color Color.transparent300
                         ]
                         (pair
@@ -357,7 +369,7 @@ buttons { device } pair { maturity } =
             , Font.size 16
             , Font.color Color.primary500
             ]
-            { url = Lend.init { pair = pair, maturity = maturity } |> Lend.toUrl
+            { url = Router.toLend pair maturity
             , label =
                 el
                     [ centerX
@@ -376,7 +388,7 @@ buttons { device } pair { maturity } =
             , Font.size 16
             , Font.color Color.primary500
             ]
-            { url = Borrow.init { pair = pair, maturity = maturity } |> Borrow.toUrl
+            { url = Router.toBorrow pair maturity
             , label =
                 el
                     [ centerX

@@ -5,6 +5,7 @@ import Modals.Borrow.Main as Borrow
 import Modals.Lend.Main as Lend
 import Modals.Pay.Main as Pay
 import Modals.Withdraw.Main as Withdraw
+import Utility.Router as Router
 
 
 type Modal
@@ -67,16 +68,32 @@ toUrl : Modal -> String
 toUrl modal =
     case modal of
         Lend lend ->
-            lend |> Lend.toUrl
+            lend
+                |> Lend.getPool
+                |> (\{ pair, maturity } ->
+                        Router.toLend pair maturity
+                   )
 
         Borrow borrow ->
-            borrow |> Borrow.toUrl
+            borrow
+                |> Borrow.getPool
+                |> (\{ pair, maturity } ->
+                        Router.toBorrow pair maturity
+                   )
 
         Withdraw withdraw ->
-            withdraw |> Withdraw.toUrl
+            withdraw
+                |> Withdraw.getPool
+                |> (\{ pair, maturity } ->
+                        Router.toWithdraw pair maturity
+                   )
 
         Pay pay ->
-            pay |> Pay.toUrl
+            pay
+                |> Pay.getPool
+                |> (\{ pair, maturity, tokenIds } ->
+                        Router.toPay pair maturity tokenIds
+                   )
 
 
 same : Modal -> Modal -> Bool

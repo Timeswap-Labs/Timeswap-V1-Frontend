@@ -1,4 +1,4 @@
-module Utility.PairInfo exposing (icons, symbols)
+module Utility.PairInfo exposing (icons, iconsAside, symbols, symbolsAside)
 
 import Data.Pair as Pair exposing (Pair)
 import Data.Token as Token
@@ -21,8 +21,8 @@ import Utility.Color as Color
 import Utility.TokenImage as TokenImage
 
 
-icons : { iconSize : Int } -> Pair -> Element msg
-icons { iconSize } pair =
+icons : Pair -> Element msg
+icons pair =
     row
         [ width shrink
         , height shrink
@@ -30,24 +30,53 @@ icons { iconSize } pair =
         , alignLeft
         , centerY
         ]
-        [ pair |> Pair.toAsset |> TokenImage.getIcon [ height <| px iconSize ]
-        , pair |> Pair.toCollateral |> TokenImage.getIcon [ height <| px iconSize ]
+        [ pair |> Pair.toAsset |> TokenImage.getIcon [ height <| px 32 ]
+        , pair |> Pair.toCollateral |> TokenImage.getIcon [ height <| px 32 ]
         ]
 
 
-symbols : { fontSize : Int, isBold : Bool } -> Pair -> Element msg
-symbols { fontSize, isBold } pair =
+iconsAside : Pair -> Element msg
+iconsAside pair =
+    row
+        [ width shrink
+        , height shrink
+        , spacing 4
+        , alignLeft
+        , centerY
+        ]
+        [ pair |> Pair.toAsset |> TokenImage.getIcon [ height <| px 24 ]
+        , pair |> Pair.toCollateral |> TokenImage.getIcon [ height <| px 24 ]
+        ]
+
+
+symbols : Pair -> Element msg
+symbols pair =
     el
         [ width shrink
         , height shrink
         , alignLeft
         , centerY
-        , if isBold then
-            Font.bold
+        , Font.bold
+        , Font.size 18
+        , Font.color Color.transparent500
+        ]
+        ([ pair |> Pair.toAsset |> Token.toSymbol -- short symbol
+         , pair |> Pair.toCollateral |> Token.toSymbol -- short symbol
+         ]
+            |> String.join " - "
+            |> text
+        )
 
-          else
-            Font.regular
-        , Font.size fontSize
+
+symbolsAside : Pair -> Element msg
+symbolsAside pair =
+    el
+        [ width shrink
+        , height shrink
+        , alignLeft
+        , centerY
+        , Font.regular
+        , Font.size 14
         , Font.color Color.transparent500
         ]
         ([ pair |> Pair.toAsset |> Token.toSymbol -- short symbol

@@ -36,6 +36,10 @@ type alias PoolInfo =
     }
 
 
+
+-- dummy data
+
+
 whitelist : Chain -> Pools
 whitelist chain =
     (case chain of

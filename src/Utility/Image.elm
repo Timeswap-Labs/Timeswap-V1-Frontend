@@ -17,11 +17,11 @@ module Utility.Image exposing
     , link
     , logo
     , logoPure
+    , matured
     , metamask
     , option
     , plus
     , setting
-    , subtract
     , token
     , wallet
     , warning
@@ -206,12 +206,12 @@ info attributes =
         }
 
 
-subtract : List (Attribute msg) -> Element msg
-subtract attributes =
+matured : List (Attribute msg) -> Element msg
+matured attributes =
     image
         attributes
-        { src = "./../../image/Subtract.svg"
-        , description = "Subtract Icon"
+        { src = "./../../image/Matured.svg"
+        , description = "Matured Icon"
         }
 
 

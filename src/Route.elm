@@ -11,6 +11,7 @@ import Pages.AllMarket.Main as AllMarket
 import Service exposing (Service)
 import Url exposing (Url)
 import Url.Parser as Parser exposing (Parser)
+import Utility.Router as Router
 
 
 type Route
@@ -72,10 +73,10 @@ pushUrl ({ device, key } as model) url =
                             |> Maybe.withDefault
                                 (model.modal
                                     |> Maybe.map (\_ -> model.page |> Page.toUrl)
-                                    |> Maybe.withDefault AllMarket.toUrl
+                                    |> Maybe.withDefault Router.toAllMarket
                                 )
             )
-        |> Maybe.withDefault AllMarket.toUrl
+        |> Maybe.withDefault Router.toAllMarket
         |> Navigation.pushUrl key
 
 
@@ -109,7 +110,7 @@ exit ({ device, key } as model) =
             |> Maybe.withDefault
                 (model.modal
                     |> Maybe.map (\_ -> model.page |> Page.toUrl)
-                    |> Maybe.withDefault AllMarket.toUrl
+                    |> Maybe.withDefault Router.toAllMarket
                 )
     )
         |> Navigation.pushUrl key

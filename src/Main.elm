@@ -40,7 +40,6 @@ import Modal exposing (Modal)
 import Page exposing (Page)
 import Route
 import Service as Service exposing (Service)
-import Services.Settings.Main as Settings
 import Task
 import Time exposing (Posix)
 import Url exposing (Url)
@@ -136,6 +135,17 @@ type Msg
     | ServiceMsg Service.Msg
     | MetamaskConnected Value
     | NoMetamask Value
+    | Disconnect
+
+
+type alias Msgs =
+    { exitSettings : Msg
+    , chooseSlippageOption : Slippage.Option -> Msg
+    , chooseDeadlineOption : Deadline.Option -> Msg
+    , inputSlippage : String -> Msg
+    , inputDeadline : String -> Msg
+    , disconnect : Msg
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -360,6 +370,11 @@ update msg model =
             , Navigation.pushUrl model.key "#nometamask"
             )
 
+        Disconnect ->
+            ( { model | user = Nothing }
+            , Cmd.none
+            )
+
 
 port metamaskConnected : (Value -> msg) -> Sub msg
 
@@ -464,13 +479,14 @@ view model =
     }
 
 
-settingsMsgs : Settings.Msgs Msg
-settingsMsgs =
+msgs : Msgs
+msgs =
     { exitSettings = ExitSettings
     , chooseSlippageOption = ChooseSlippageOption
     , chooseDeadlineOption = ChooseDeadlineOption
     , inputSlippage = InputSlippage
     , inputDeadline = InputDeadline
+    , disconnect = Disconnect
     }
 
 
@@ -489,7 +505,7 @@ html model =
                         model.service
                             |> Maybe.map
                                 (\service ->
-                                    [ Service.view settingsMsgs model service
+                                    [ Service.view msgs model service
                                         |> (\or ->
                                                 case or of
                                                     Either element ->
@@ -529,7 +545,7 @@ html model =
                 ++ (model.service
                         |> Maybe.map
                             (\service ->
-                                [ Service.view settingsMsgs model service
+                                [ Service.view msgs model service
                                     |> (\or ->
                                             case or of
                                                 Either element ->

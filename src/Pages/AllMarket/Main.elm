@@ -1,4 +1,4 @@
-module Pages.AllMarket.Main exposing (Msg, Page, init, toUrl, update, view)
+module Pages.AllMarket.Main exposing (Msg, Page, init, update, view)
 
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
@@ -57,11 +57,6 @@ init { pools, user } =
            )
 
 
-toUrl : String
-toUrl =
-    "#market"
-
-
 type Msg
     = Expand Pair
     | Collapse Pair
@@ -96,7 +91,7 @@ view :
     }
     -> Page
     -> Element Msg
-view ({ device } as model) (Page set) =
+view ({ device } as model) page =
     column
         [ (if Device.isPhone device then
             px 335
@@ -114,7 +109,7 @@ view ({ device } as model) (Page set) =
         , centerX
         ]
         [ title model
-        , allPairs model set
+        , allPairs model page
         ]
 
 
@@ -140,9 +135,9 @@ allPairs :
         , zoneInfo : Maybe ZoneInfo
         , pools : Pools
     }
-    -> Set Pair
+    -> Page
     -> Element Msg
-allPairs ({ pools } as model) set =
+allPairs ({ pools } as model) page =
     Keyed.column
         [ width fill
         , height shrink
@@ -153,7 +148,7 @@ allPairs ({ pools } as model) set =
             |> List.map
                 (\( pair, list ) ->
                     ( pair |> Pair.toKey
-                    , singlePair model set ( pair, list )
+                    , singlePair model page ( pair, list )
                     )
                 )
         )
@@ -166,10 +161,10 @@ singlePair :
         , zoneInfo : Maybe ZoneInfo
         , pools : Pools
     }
-    -> Set Pair
+    -> Page
     -> ( Pair, List PoolInfo )
     -> Element Msg
-singlePair ({ time } as model) set ( pair, list ) =
+singlePair ({ time } as model) ((Page set) as page) ( pair, list ) =
     list
         |> List.filter (\{ maturity } -> maturity |> Maturity.isActive time)
         |> (\filteredList ->
@@ -185,29 +180,11 @@ singlePair ({ time } as model) set ( pair, list ) =
                          ]
                             ++ Glass.lightPrimary 1
                         )
-                        [ PairInfo.icons { iconSize = 32 } pair
-                        , PairInfo.symbols { fontSize = 16, isBold = True } pair
+                        [ PairInfo.icons pair
+                        , PairInfo.symbols pair
                         , size model pair
-                        , discloser set pair filteredList
+                        , discloser page pair filteredList
                         ]
-                        |> (\element ->
-                                if filteredList |> List.isEmpty then
-                                    element
-
-                                else
-                                    Input.button
-                                        [ width fill
-                                        , height shrink
-                                        ]
-                                        { onPress =
-                                            if pair |> Set.memberOf set then
-                                                Collapse pair |> Just
-
-                                            else
-                                                Expand pair |> Just
-                                        , label = element
-                                        }
-                           )
                     , if (pair |> Set.memberOf set) && (list |> List.isEmpty |> not) then
                         ListPools.view model pair filteredList
 
@@ -242,8 +219,8 @@ size { time, pools } pair =
         )
 
 
-discloser : Set Pair -> Pair -> List { poolInfo | maturity : Maturity } -> Element msg
-discloser set pair list =
+discloser : Page -> Pair -> List { poolInfo | maturity : Maturity } -> Element Msg
+discloser (Page set) pair list =
     if list |> List.isEmpty then
         el
             [ width <| px 12
@@ -254,13 +231,25 @@ discloser set pair list =
             none
 
     else
-        Image.discloser
-            [ width <| px 12
+        Input.button
+            [ width shrink
+            , height shrink
             , alignRight
             , centerY
-            , if pair |> Set.memberOf set then
-                degrees 180 |> rotate
-
-              else
-                degrees 0 |> rotate
             ]
+            { onPress =
+                if pair |> Set.memberOf set then
+                    Collapse pair |> Just
+
+                else
+                    Expand pair |> Just
+            , label =
+                Image.discloser
+                    [ width <| px 12
+                    , if pair |> Set.memberOf set then
+                        degrees 180 |> rotate
+
+                      else
+                        degrees 0 |> rotate
+                    ]
+            }

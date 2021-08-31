@@ -3,6 +3,7 @@ module Data.Maturity exposing
     , fromFragment
     , isActive
     , sorter
+    , toDuration
     , toFragment
     , toKey
     , toPosix
@@ -12,6 +13,7 @@ module Data.Maturity exposing
     , unix962654400
     )
 
+import Data.Status exposing (Status(..))
 import Data.ZoneInfo exposing (ZoneInfo)
 import Sort as Sort exposing (Sorter)
 import Time exposing (Month(..), Posix)
@@ -80,6 +82,71 @@ toString maybeZoneInfo maturity =
     , maturity |> toTimeString maybeZoneInfo
     ]
         |> String.join " "
+
+
+toDuration : Posix -> Maturity -> Status String String
+toDuration now (Maturity maturity) =
+    let
+        nowInt : Int
+        nowInt =
+            now |> Time.posixToMillis
+
+        maturityInt : Int
+        maturityInt =
+            maturity |> Time.posixToMillis
+
+        total : Int
+        total =
+            if maturityInt > nowInt then
+                (maturityInt - nowInt) // 1000
+
+            else
+                (nowInt - maturityInt) // 1000
+
+        days : String
+        days =
+            total
+                // 86400
+                |> String.fromInt
+
+        remainderDays : Int
+        remainderDays =
+            total |> modBy 86400
+
+        hours : String
+        hours =
+            remainderDays
+                // 3600
+                |> String.fromInt
+                |> String.padRight 2 '0'
+
+        remainderHours : Int
+        remainderHours =
+            remainderDays |> modBy 3600
+
+        minutes : String
+        minutes =
+            remainderHours
+                // 60
+                |> String.fromInt
+                |> String.padRight 2 '0'
+
+        seconds : String
+        seconds =
+            remainderHours
+                |> modBy 60
+                |> String.fromInt
+                |> String.padRight 2 '0'
+
+        string : String
+        string =
+            days ++ "d : " ++ hours ++ "h : " ++ minutes ++ "m : " ++ seconds ++ "s"
+    in
+    if maturityInt > nowInt then
+        Active string
+
+    else
+        Matured string
 
 
 toDateString : Maybe ZoneInfo -> Maturity -> String

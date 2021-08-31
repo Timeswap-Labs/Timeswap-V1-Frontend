@@ -1,4 +1,4 @@
-module Services.Faucet.Main exposing (toUrl, view)
+module Services.Faucet.Main exposing (view)
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Device as Device exposing (Device)
@@ -33,11 +33,6 @@ import Element.Font as Font
 import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Glass as Glass
-
-
-toUrl : String
-toUrl =
-    "#faucet"
 
 
 view : { model | device : Device, backdrop : Backdrop, user : Maybe user } -> Element msg

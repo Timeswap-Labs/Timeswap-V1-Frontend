@@ -1,8 +1,6 @@
 module Data.Tab exposing (Tab(..), toName, toUrl)
 
-import Pages.AllMarket.Main as AllMarket
-import Pages.LendDashboard.Main as LendDashboard
-import Pages.LiquidityProvider.Main as LiquidityProvider
+import Utility.Router as Router
 
 
 type Tab
@@ -15,13 +13,13 @@ toUrl : Tab -> String
 toUrl tab =
     case tab of
         Market ->
-            AllMarket.toUrl
+            Router.toAllMarket
 
         Dashboard ->
-            LendDashboard.toUrl
+            Router.toLendDashboard
 
         Liquidity ->
-            LiquidityProvider.toUrl
+            Router.toLiquidityProvider
 
 
 toName : Tab -> String

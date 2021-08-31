@@ -15,6 +15,8 @@ import Data.Chain exposing (Chain(..))
 import Data.Device exposing (Device)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools exposing (Pools)
+import Data.Positions exposing (Positions)
+import Data.Remote exposing (Remote)
 import Data.Tab as Tab exposing (Tab)
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
@@ -37,6 +39,7 @@ import Pages.LendDashboard.Main as LendDashboard
 import Pages.LiquidityProvider.Main as LiquidityProvider
 import Pages.PairMarket.Main as PairMarket
 import Time exposing (Posix)
+import Utility.Router as Router
 import Utility.Typography as Typography
 
 
@@ -82,7 +85,7 @@ fromFragment ({ user } as model) string =
                             |> Just
 
                     "dashboard" :: "transaction=borrow" :: _ ->
-                        BorrowDashboard BorrowDashboard.init
+                        BorrowDashboard (BorrowDashboard.init model)
                             |> Just
 
                     "dashboard" :: _ ->
@@ -102,19 +105,21 @@ toUrl : Page -> String
 toUrl page =
     case page of
         AllMarket _ ->
-            AllMarket.toUrl
+            Router.toAllMarket
 
         PairMarket pairMarket ->
-            pairMarket |> PairMarket.getPair |> PairMarket.toUrl
+            pairMarket
+                |> PairMarket.getPair
+                |> Router.toPairMarket
 
         LendDashboard _ ->
-            LendDashboard.toUrl
+            Router.toLendDashboard
 
         BorrowDashboard _ ->
-            BorrowDashboard.toUrl
+            Router.toBorrowDashboard
 
         LiquidityProvider ->
-            LiquidityProvider.toUrl
+            Router.toLiquidityProvider
 
 
 same : Page -> Page -> Bool
@@ -175,7 +180,14 @@ type Msg
     | BorrowDashboardMsg BorrowDashboard.Msg
 
 
-update : { model | pools : Pools } -> Msg -> Page -> Page
+update :
+    { model
+        | pools : Pools
+        , user : Maybe { user | positions : Remote Positions }
+    }
+    -> Msg
+    -> Page
+    -> Page
 update model msg page =
     case ( msg, page ) of
         ( AllMarketMsg allMarketMsg, AllMarket allMarket ) ->
@@ -190,12 +202,12 @@ update model msg page =
 
         ( LendDashboardMsg lendDashboardMsg, LendDashboard lendDashboard ) ->
             lendDashboard
-                |> LendDashboard.update lendDashboardMsg
+                |> LendDashboard.update model lendDashboardMsg
                 |> LendDashboard
 
         ( BorrowDashboardMsg borrowDashboardMsg, BorrowDashboard borrowDashboard ) ->
             borrowDashboard
-                |> BorrowDashboard.update borrowDashboardMsg
+                |> BorrowDashboard.update model borrowDashboardMsg
                 |> BorrowDashboard
 
         _ ->
@@ -208,6 +220,7 @@ view :
         , time : Posix
         , zoneInfo : Maybe ZoneInfo
         , pools : Pools
+        , user : Maybe { user | positions : Remote Positions }
     }
     -> Page
     -> Element Msg
@@ -221,13 +234,19 @@ view model page =
         ]
         (case page of
             AllMarket allMarket ->
-                AllMarket.view model allMarket |> Element.map AllMarketMsg
+                AllMarket.view model allMarket
+                    |> Element.map AllMarketMsg
 
             PairMarket pairMarket ->
                 PairMarket.view model pairMarket
 
             LendDashboard lendDashboard ->
-                LendDashboard.view model lendDashboard |> Element.map LendDashboardMsg
+                LendDashboard.view model lendDashboard
+                    |> Element.map LendDashboardMsg
+
+            BorrowDashboard borrowDashboard ->
+                BorrowDashboard.view model borrowDashboard
+                    |> Element.map BorrowDashboardMsg
 
             _ ->
                 none

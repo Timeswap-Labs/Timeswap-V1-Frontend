@@ -3,8 +3,9 @@ module Modals.Withdraw.Main exposing
     , Modal
     , Msg
     , fromFragment
+    , getPool
+    , init
     , same
-    , toUrl
     , update
     )
 
@@ -51,20 +52,16 @@ fromFragment chain string =
            )
 
 
-toUrl : Modal -> String
-toUrl (Modal { pair, maturity }) =
-    [ "#withdraw"
-    , [ pair |> Pair.toFragment
-      , maturity |> Maturity.toFragment
-      ]
-        |> String.join "&"
-    ]
-        |> String.join "?"
-
-
 same : Modal -> Modal -> Bool
 same (Modal modal1) (Modal modal2) =
     modal1.pair == modal2.pair && modal1.maturity == modal2.maturity
+
+
+getPool : Modal -> Flags
+getPool (Modal { pair, maturity }) =
+    { pair = pair
+    , maturity = maturity
+    }
 
 
 type Msg

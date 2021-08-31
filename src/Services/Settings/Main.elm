@@ -1,6 +1,5 @@
 module Services.Settings.Main exposing
-    ( Msgs
-    , Settings
+    ( Settings
     , getDeadline
     , getSlippage
     , hasDeadlineInput
@@ -8,7 +7,6 @@ module Services.Settings.Main exposing
     , init
     , inputDeadline
     , inputSlippage
-    , toUrl
     , view
     )
 
@@ -62,11 +60,6 @@ init =
     }
 
 
-toUrl : String
-toUrl =
-    "#settings"
-
-
 inputSlippage : String -> Settings -> Settings
 inputSlippage string settings =
     if string |> Input.isFloat then
@@ -109,17 +102,14 @@ hasDeadlineInput { deadline } =
         |> Maybe.withDefault False
 
 
-type alias Msgs msg =
-    { exitSettings : msg
-    , chooseSlippageOption : Slippage.Option -> msg
-    , chooseDeadlineOption : Deadline.Option -> msg
-    , inputSlippage : String -> msg
-    , inputDeadline : String -> msg
-    }
-
-
 view :
-    Msgs msg
+    { msgs
+        | exitSettings : msg
+        , chooseSlippageOption : Slippage.Option -> msg
+        , chooseDeadlineOption : Deadline.Option -> msg
+        , inputSlippage : String -> msg
+        , inputDeadline : String -> msg
+    }
     ->
         { model
             | device : Device
@@ -171,7 +161,13 @@ title =
 
 
 content :
-    Msgs msg
+    { msgs
+        | exitSettings : msg
+        , chooseSlippageOption : Slippage.Option -> msg
+        , chooseDeadlineOption : Deadline.Option -> msg
+        , inputSlippage : String -> msg
+        , inputDeadline : String -> msg
+    }
     ->
         { model
             | device : Device

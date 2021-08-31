@@ -6,6 +6,7 @@ module Data.Token exposing
     , sorter
     , toAssetFragment
     , toCollateralFragment
+    , toName
     , toSymbol
     )
 
@@ -55,6 +56,16 @@ fromCollateralFragment chain string =
                     _ ->
                         Nothing
            )
+
+
+toName : Token -> String
+toName token =
+    case token of
+        ETH ->
+            "Ethereum"
+
+        ERC20 erc20 ->
+            erc20 |> ERC20.toName
 
 
 toSymbol : Token -> String

@@ -1,4 +1,4 @@
-module Utility.Exit exposing (button, buttonWithMsg, toUrl)
+module Utility.Exit exposing (button, buttonWithMsg)
 
 import Element
     exposing
@@ -15,11 +15,7 @@ import Element
         )
 import Element.Input as Input
 import Utility.Image as Image
-
-
-toUrl : String
-toUrl =
-    "#"
+import Utility.Router as Router
 
 
 button : Element msg
@@ -35,7 +31,7 @@ button =
             [ width shrink
             , height shrink
             ]
-            { url = toUrl
+            { url = Router.exit
             , label = Image.close [ width <| px 24 ]
             }
         )

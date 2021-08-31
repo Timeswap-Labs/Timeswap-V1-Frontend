@@ -1,4 +1,15 @@
-module Data.Device exposing (Device, checkAsideStatus, closeAside, fromDeviceWidth, fromViewport, fromWidth, isPhone, isPhoneOrTablet, isTablet, openAside)
+module Data.Device exposing
+    ( Device
+    , checkAsideStatus
+    , closeAside
+    , fromDeviceWidth
+    , fromViewport
+    , fromWidth
+    , isPhone
+    , isPhoneOrTablet
+    , isTablet
+    , openAside
+    )
 
 
 type Device

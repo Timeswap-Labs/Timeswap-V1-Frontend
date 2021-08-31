@@ -38,14 +38,10 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Region as Region
 import Page as Page exposing (Page)
-import Services.Connect.Main as Connect
-import Services.Faucet.Main as Faucet
-import Services.Settings.Main as Settings
-import Services.Wallet.Main as Wallet
 import User
 import Utility.Color as Color
-import Utility.Exit as Exit
 import Utility.Image as Image
+import Utility.Router as Router
 import Utility.Typography as Typography
 
 
@@ -434,7 +430,7 @@ faucetButton { device } =
                     ]
                )
         )
-        { url = Faucet.toUrl
+        { url = Router.toFaucet
         , label =
             row
                 [ width shrink
@@ -496,12 +492,12 @@ walletButton { device, user } =
                     (\{ chain } ->
                         case chain of
                             Mainnet ->
-                                Exit.toUrl
+                                Router.exit
 
                             Rinkeby ->
-                                Wallet.toUrl
+                                Router.toWallet
                     )
-                |> Maybe.withDefault Connect.toUrl
+                |> Maybe.withDefault Router.toConnect
         , label =
             row
                 [ width shrink
@@ -598,7 +594,7 @@ settingsButton { device } =
                     ]
                )
         )
-        { url = Settings.toUrl
+        { url = Router.toSettings
         , label =
             Image.option
                 [ width <| px 24

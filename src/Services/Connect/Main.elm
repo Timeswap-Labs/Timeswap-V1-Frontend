@@ -1,4 +1,4 @@
-port module Services.Connect.Main exposing (Msg, toUrl, update, view)
+port module Services.Connect.Main exposing (Msg, update, view)
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Device as Device exposing (Device)
@@ -8,7 +8,6 @@ import Element
         , alignBottom
         , alignLeft
         , alignRight
-        , alignTop
         , centerX
         , centerY
         , column
@@ -39,11 +38,7 @@ import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Glass as Glass
 import Utility.Image as Image
-
-
-toUrl : String
-toUrl =
-    "#connect"
+import Utility.Router as Router
 
 
 type Msg
@@ -147,7 +142,7 @@ metamaskButton =
         , mouseOver [ Background.color Color.primary100 ]
         , Events.onClick ConnectMetamask
         ]
-        { url = Exit.toUrl
+        { url = Router.exit
         , label =
             row
                 [ width fill

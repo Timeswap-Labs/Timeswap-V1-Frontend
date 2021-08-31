@@ -15,12 +15,15 @@ module Service exposing
     , view
     )
 
+import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
+import Data.Balances exposing (Balances)
 import Data.Chain exposing (Chain(..))
-import Data.Deadline exposing (Deadline)
+import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
-import Data.Or as Or exposing (Or(..))
-import Data.Slippage exposing (Slippage)
+import Data.Or exposing (Or(..))
+import Data.Remote exposing (Remote)
+import Data.Slippage as Slippage exposing (Slippage)
 import Element
     exposing
         ( Element
@@ -41,6 +44,7 @@ import Services.NoMetamask.Main as NoMetamask
 import Services.Settings.Main as Settings exposing (Settings)
 import Services.Wallet.Main as Wallet
 import Utility.Color as Color
+import Utility.Router as Router
 import Utility.Typography as Typography
 
 
@@ -95,19 +99,19 @@ toUrl : Service -> String
 toUrl service =
     case service of
         Connect ->
-            Connect.toUrl
+            Router.toConnect
 
         NoMetamask ->
-            NoMetamask.toUrl
+            Router.toNoMetamask
 
         Wallet ->
-            Wallet.toUrl
+            Router.toWallet
 
         Settings _ ->
-            Settings.toUrl
+            Router.toSettings
 
         Faucet ->
-            Faucet.toUrl
+            Router.toFaucet
 
 
 same : Service -> Service -> Bool
@@ -215,63 +219,112 @@ hasDeadlineInput service =
 
 
 view :
-    Settings.Msgs msg
+    { msgs
+        | exitSettings : msg
+        , chooseSlippageOption : Slippage.Option -> msg
+        , chooseDeadlineOption : Deadline.Option -> msg
+        , inputSlippage : String -> msg
+        , inputDeadline : String -> msg
+        , disconnect : msg
+    }
     ->
         { model
             | device : Device
             , backdrop : Backdrop
             , slippage : Slippage
             , deadline : Deadline
-            , user : Maybe user
+            , user : Maybe { user | address : Address, balances : Remote Balances }
         }
     -> Service
     -> Or (Element Msg) (Element msg)
-view msgs ({ device } as model) service =
-    (case service of
+view msgs ({ device, user } as model) service =
+    case service of
         Connect ->
-            Lazy.lazy Connect.view model
+            el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    padding 0
+
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+                (Lazy.lazy Connect.view model)
                 |> Element.map ConnectMsg
                 |> Either
 
         NoMetamask ->
-            Lazy.lazy NoMetamask.view model
-                |> Either
+            user
+                |> Maybe.map (\_ -> none |> Either)
+                |> Maybe.withDefault
+                    (el
+                        [ width fill
+                        , height fill
+                        , if Device.isPhone device then
+                            padding 0
+
+                          else
+                            padding 80
+                        , scrollbarY
+                        , Background.color Color.modal
+                        , Font.family Typography.supreme
+                        ]
+                        (Lazy.lazy NoMetamask.view model)
+                        |> Either
+                    )
+
+        Wallet ->
+            user
+                |> Maybe.map
+                    (\userJust ->
+                        el
+                            [ width fill
+                            , height fill
+                            , if Device.isPhone device then
+                                padding 0
+
+                              else
+                                padding 80
+                            , scrollbarY
+                            , Background.color Color.modal
+                            , Font.family Typography.supreme
+                            ]
+                            (Lazy.lazy3 Wallet.view msgs model userJust)
+                            |> Or
+                    )
+                |> Maybe.withDefault (none |> Either)
 
         Settings settings ->
-            Lazy.lazy3 Settings.view msgs model settings
+            el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    padding 0
+
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+                (Lazy.lazy3 Settings.view msgs model settings)
                 |> Or
 
         Faucet ->
-            Lazy.lazy Faucet.view model
+            el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    padding 0
+
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+                (Lazy.lazy Faucet.view model)
                 |> Either
-
-        _ ->
-            none |> Either
-    )
-        |> Or.map
-            (el
-                [ width fill
-                , height fill
-                , if Device.isPhone device then
-                    padding 0
-
-                  else
-                    padding 80
-                , scrollbarY
-                , Background.color Color.modal
-                , Font.family Typography.supreme
-                ]
-            )
-            (el
-                [ width fill
-                , height fill
-                , if Device.isPhone device then
-                    padding 0
-
-                  else
-                    padding 80
-                , scrollbarY
-                , Background.color Color.modal
-                , Font.family Typography.supreme
-                ]
-            )

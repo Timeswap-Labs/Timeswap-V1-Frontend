@@ -1,7 +1,7 @@
-module Pages.PairMarket.Main exposing (Msg, Page, getPair, init, toUrl, update, view)
+module Pages.PairMarket.Main exposing (Msg, Page, getPair, init, update, view)
 
 import Data.Device as Device exposing (Device)
-import Data.Pair as Pair exposing (Pair)
+import Data.Pair exposing (Pair)
 import Data.Pools as Pools exposing (Pools)
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
@@ -47,14 +47,6 @@ init pair =
     Page pair
 
 
-toUrl : Pair -> String
-toUrl pair =
-    [ "#market"
-    , pair |> Pair.toFragment
-    ]
-        |> String.join "?"
-
-
 getPair : Page -> Pair
 getPair (Page pair) =
     pair
@@ -78,7 +70,7 @@ view :
     }
     -> Page
     -> Element msg
-view ({ device, pools } as model) (Page pair) =
+view ({ device, pools } as model) ((Page pair) as page) =
     column
         [ (if Device.isPhone device then
             px 335
@@ -95,28 +87,28 @@ view ({ device, pools } as model) (Page pair) =
         , alignTop
         , centerX
         ]
-        [ title model pair
+        [ title model page
         , pools
             |> Pools.toListSinglePool pair
             |> ListPools.view model pair
         ]
 
 
-title : { model | device : Device, time : Posix, pools : Pools } -> Pair -> Element msg
-title model pair =
+title : { model | device : Device, time : Posix, pools : Pools } -> Page -> Element msg
+title model ((Page pair) as page) =
     row
         [ width fill
         , height shrink
         , spacing 14
         ]
-        [ PairInfo.icons { iconSize = 32 } pair
-        , PairInfo.symbols { fontSize = 18, isBold = True } pair
-        , size model pair
+        [ PairInfo.icons pair
+        , PairInfo.symbols pair
+        , size model page
         ]
 
 
-size : { model | device : Device, time : Posix, pools : Pools } -> Pair -> Element msg
-size { device, time, pools } pair =
+size : { model | device : Device, time : Posix, pools : Pools } -> Page -> Element msg
+size { device, time, pools } (Page pair) =
     el
         [ width shrink
         , height shrink

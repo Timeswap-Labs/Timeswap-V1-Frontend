@@ -1,4 +1,4 @@
-module Data.TokenId exposing (TokenId, fromFragment, toFragment)
+module Data.TokenId exposing (TokenId, fromFragment, sorter, toFragment)
 
 import Sort exposing (Sorter)
 import Sort.Set as Set exposing (Set)
@@ -51,9 +51,14 @@ toFragment set =
 
 sorter : Sorter TokenId
 sorter =
-    Sort.alphabetical
+    Sort.increasing
         |> Debug.log "fix it to number"
-        |> Sort.by (\(TokenId string) -> string)
+        |> Sort.by
+            (\(TokenId string) ->
+                string
+                    |> String.toInt
+                    |> Maybe.withDefault 0
+            )
 
 
 isUint : String -> Bool

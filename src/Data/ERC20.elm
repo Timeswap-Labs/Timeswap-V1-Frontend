@@ -5,6 +5,7 @@ module Data.ERC20 exposing
     , fromString
     , maticRinkeby
     , sorter
+    , toName
     , toString
     , toSymbol
     , wethRinkeby
@@ -55,6 +56,11 @@ toString erc20 =
 toAddress : ERC20 -> Address
 toAddress (ERC20 { address }) =
     address
+
+
+toName : ERC20 -> String
+toName (ERC20 { name }) =
+    name
 
 
 toSymbol : ERC20 -> String
