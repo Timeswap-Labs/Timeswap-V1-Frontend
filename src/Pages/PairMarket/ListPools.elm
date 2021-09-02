@@ -1,6 +1,7 @@
 module Pages.PairMarket.ListPools exposing (view)
 
 import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools exposing (PoolInfo)
@@ -43,11 +44,11 @@ import Utility.Router as Router
 
 
 view :
-    { model | device : Device, time : Posix, zoneInfo : Maybe ZoneInfo }
+    { model | device : Device, time : Posix, zoneInfo : Maybe ZoneInfo, images : Images }
     -> Pair
-    -> List PoolInfo
+    -> List ( Maturity, Remote PoolInfo )
     -> Element msg
-view ({ time } as model) pair list =
+view model pair list =
     column
         [ width fill
         , height shrink
@@ -76,11 +77,10 @@ view ({ time } as model) pair list =
             , height shrink
             ]
             (list
-                |> List.filter (\{ maturity } -> maturity |> Maturity.isActive time)
                 |> List.map
-                    (\({ maturity } as poolInfo) ->
+                    (\( maturity, poolInfo ) ->
                         ( maturity |> Maturity.toKey
-                        , singlePool model pair poolInfo
+                        , singlePool model pair ( maturity, poolInfo )
                         )
                     )
             )
@@ -88,11 +88,11 @@ view ({ time } as model) pair list =
 
 
 singlePool :
-    { model | device : Device, time : Posix, zoneInfo : Maybe ZoneInfo }
+    { model | device : Device, time : Posix, zoneInfo : Maybe ZoneInfo, images : Images }
     -> Pair
-    -> PoolInfo
+    -> ( Maturity, Remote PoolInfo )
     -> Element msg
-singlePool ({ device } as model) pair poolInfo =
+singlePool ({ device } as model) pair ( maturity, poolInfo ) =
     if device |> Device.isPhoneOrTablet then
         none
 
@@ -111,16 +111,19 @@ singlePool ({ device } as model) pair poolInfo =
                 }
             , Border.color Color.transparent100
             ]
-            [ maturityInfo model poolInfo
+            [ maturityInfo model maturity
             , liquidities model pair poolInfo
             , estimatedAPR model poolInfo
             , collateralFactor model pair poolInfo
-            , buttons model pair poolInfo
+            , buttons model pair maturity
             ]
 
 
-maturityInfo : { model | time : Posix, zoneInfo : Maybe ZoneInfo } -> { poolInfo | maturity : Maturity } -> Element msg
-maturityInfo { time, zoneInfo } { maturity } =
+maturityInfo :
+    { model | time : Posix, zoneInfo : Maybe ZoneInfo, images : Images }
+    -> Maturity
+    -> Element msg
+maturityInfo { time, zoneInfo, images } maturity =
     row
         [ width shrink
         , height shrink
@@ -128,7 +131,7 @@ maturityInfo { time, zoneInfo } { maturity } =
         , centerY
         , spacing 12
         ]
-        [ Image.hourglassPrimary
+        [ Image.hourglassPrimary images
             [ width <| px 16
             , centerY
             ]
@@ -174,9 +177,9 @@ maturityInfo { time, zoneInfo } { maturity } =
 liquidities :
     { model | device : Device }
     -> Pair
-    -> { poolInfo | pool : Remote { pool | assetLiquidity : String, collateralLiquidity : String } }
+    -> Remote { poolInfo | assetLiquidity : String, collateralLiquidity : String }
     -> Element msg
-liquidities { device } pair { pool } =
+liquidities { device } pair poolInfo =
     row
         ([ height shrink
          , Font.bold
@@ -196,7 +199,7 @@ liquidities { device } pair { pool } =
             [ width shrink
             , centerX
             ]
-            (case pool of
+            (case poolInfo of
                 Loading ->
                     [ Loading.view ]
 
@@ -251,9 +254,9 @@ liquidities { device } pair { pool } =
 
 estimatedAPR :
     { model | device : Device }
-    -> { poolInfo | pool : Remote { pool | apr : String } }
+    -> Remote { poolInfo | apr : String }
     -> Element msg
-estimatedAPR { device } { pool } =
+estimatedAPR { device } poolInfo =
     el
         [ (if Device.isPhoneOrTablet device then
             shrink
@@ -265,7 +268,7 @@ estimatedAPR { device } { pool } =
         , height shrink
         , alignRight
         ]
-        (case pool of
+        (case poolInfo of
             Loading ->
                 Loading.view
 
@@ -292,9 +295,9 @@ estimatedAPR { device } { pool } =
 collateralFactor :
     { model | device : Device }
     -> Pair
-    -> { poolInfo | pool : Remote { pool | cf : String } }
+    -> Remote { poolInfo | cf : String }
     -> Element msg
-collateralFactor { device } pair { pool } =
+collateralFactor { device } pair poolInfo =
     column
         [ (if Device.isPhoneOrTablet device then
             shrink
@@ -306,7 +309,7 @@ collateralFactor { device } pair { pool } =
         , height shrink
         , alignRight
         ]
-        (case pool of
+        (case poolInfo of
             Loading ->
                 [ Loading.view ]
 
@@ -344,8 +347,12 @@ collateralFactor { device } pair { pool } =
         )
 
 
-buttons : { model | device : Device } -> Pair -> { poolInfo | maturity : Maturity } -> Element msg
-buttons { device } pair { maturity } =
+buttons :
+    { model | device : Device }
+    -> Pair
+    -> Maturity
+    -> Element msg
+buttons { device } pair maturity =
     row
         (if device |> Device.isPhoneOrTablet then
             [ width fill
@@ -369,7 +376,7 @@ buttons { device } pair { maturity } =
             , Font.size 16
             , Font.color Color.primary500
             ]
-            { url = Router.toLend pair maturity
+            { url = Router.toLend { pair = pair, maturity = maturity }
             , label =
                 el
                     [ centerX
@@ -388,7 +395,7 @@ buttons { device } pair { maturity } =
             , Font.size 16
             , Font.color Color.primary500
             ]
-            { url = Router.toBorrow pair maturity
+            { url = Router.toBorrow { pair = pair, maturity = maturity }
             , label =
                 el
                     [ centerX

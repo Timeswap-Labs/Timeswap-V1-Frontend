@@ -2,6 +2,7 @@ module Services.Faucet.Main exposing (view)
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Element
     exposing
         ( Element
@@ -35,14 +36,14 @@ import Utility.Exit as Exit
 import Utility.Glass as Glass
 
 
-view : { model | device : Device, backdrop : Backdrop, user : Maybe user } -> Element msg
-view { device, backdrop, user } =
+view : { model | device : Device, backdrop : Backdrop, images : Images, user : Maybe user } -> Element msg
+view { device, backdrop, images, user } =
     column
         ([ padding 40
          , spacing 32
          , centerX
          , centerY
-         , inFront Exit.button
+         , Exit.button images |> inFront
          ]
             ++ Glass.darkPrimaryModal backdrop 0
             ++ (if Device.isPhone device then

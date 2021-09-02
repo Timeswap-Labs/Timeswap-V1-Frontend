@@ -2,12 +2,11 @@ module Services.NoMetamask.Main exposing (view)
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Element
     exposing
         ( Element
         , alignBottom
-        , alignRight
-        , alignTop
         , centerX
         , centerY
         , column
@@ -16,7 +15,6 @@ import Element
         , height
         , inFront
         , newTabLink
-        , padding
         , paddingXY
         , px
         , shrink
@@ -31,14 +29,14 @@ import Utility.Glass as Glass
 import Utility.Image as Image
 
 
-view : { model | device : Device, backdrop : Backdrop } -> Element msg
-view { device, backdrop } =
+view : { model | device : Device, backdrop : Backdrop, images : Images } -> Element msg
+view { device, backdrop, images } =
     column
         ([ paddingXY 40 100
          , spacing 18
          , centerX
          , centerY
-         , inFront Exit.button
+         , Exit.button images |> inFront
          ]
             ++ Glass.darkPrimaryModal backdrop 0
             ++ (if Device.isPhone device then
@@ -53,7 +51,7 @@ view { device, backdrop } =
                     ]
                )
         )
-        [ Image.metamask
+        [ Image.metamask images
             [ width <| px 72
             , centerX
             , centerY

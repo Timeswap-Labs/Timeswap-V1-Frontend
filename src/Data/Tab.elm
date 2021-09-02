@@ -16,7 +16,7 @@ toUrl tab =
             Router.toAllMarket
 
         Dashboard ->
-            Router.toLendDashboard
+            Router.toLendDashboard Nothing
 
         Liquidity ->
             Router.toLiquidityProvider

@@ -2,6 +2,7 @@ module Utility.PairInfo exposing (icons, iconsAside, symbols, symbolsAside)
 
 import Data.Pair as Pair exposing (Pair)
 import Data.Token as Token
+import Data.TokenImages exposing (TokenImages)
 import Element
     exposing
         ( Element
@@ -21,8 +22,8 @@ import Utility.Color as Color
 import Utility.TokenImage as TokenImage
 
 
-icons : Pair -> Element msg
-icons pair =
+icons : TokenImages -> Pair -> Element msg
+icons tokenImages pair =
     row
         [ width shrink
         , height shrink
@@ -30,13 +31,17 @@ icons pair =
         , alignLeft
         , centerY
         ]
-        [ pair |> Pair.toAsset |> TokenImage.getIcon [ height <| px 32 ]
-        , pair |> Pair.toCollateral |> TokenImage.getIcon [ height <| px 32 ]
+        [ pair
+            |> Pair.toAsset
+            |> TokenImage.icon tokenImages [ height <| px 32 ]
+        , pair
+            |> Pair.toCollateral
+            |> TokenImage.icon tokenImages [ height <| px 32 ]
         ]
 
 
-iconsAside : Pair -> Element msg
-iconsAside pair =
+iconsAside : TokenImages -> Pair -> Element msg
+iconsAside tokenImages pair =
     row
         [ width shrink
         , height shrink
@@ -44,8 +49,12 @@ iconsAside pair =
         , alignLeft
         , centerY
         ]
-        [ pair |> Pair.toAsset |> TokenImage.getIcon [ height <| px 24 ]
-        , pair |> Pair.toCollateral |> TokenImage.getIcon [ height <| px 24 ]
+        [ pair
+            |> Pair.toAsset
+            |> TokenImage.icon tokenImages [ height <| px 24 ]
+        , pair
+            |> Pair.toCollateral
+            |> TokenImage.icon tokenImages [ height <| px 24 ]
         ]
 
 

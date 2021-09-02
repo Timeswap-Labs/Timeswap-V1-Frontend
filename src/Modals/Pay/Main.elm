@@ -3,53 +3,54 @@ module Modals.Pay.Main exposing
     , Modal
     , Msg
     , fromFragment
-    , getPool
-    , init
+    , getFlags
     , same
     , update
     )
 
-import Data.Chain exposing (Chain)
-import Data.Maturity as Maturity exposing (Maturity)
-import Data.Pair as Pair exposing (Pair)
+import Data.Pool exposing (Pool)
+import Data.Pools as Pools exposing (Pools)
 import Data.TokenId as TokenId exposing (TokenId)
+import Data.Tokens exposing (Tokens)
 import Sort.Set exposing (Set)
 
 
 type Modal
     = Modal
-        { pair : Pair
-        , maturity : Maturity
+        { pool : Pool
         , tokenIds : Set TokenId
         }
 
 
 type alias Flags =
-    { pair : Pair
-    , maturity : Maturity
+    { pool : Pool
     , tokenIds : Set TokenId
     }
 
 
 init : Flags -> Modal
-init { pair, maturity, tokenIds } =
-    { pair = pair
-    , maturity = maturity
+init { pool, tokenIds } =
+    { pool = pool
     , tokenIds = tokenIds
     }
         |> Modal
 
 
-fromFragment : Chain -> String -> Maybe Modal
-fromFragment chain string =
+fromFragment : Tokens -> Pools -> String -> Maybe Modal
+fromFragment tokens pools string =
     string
         |> String.split "&"
         |> (\list ->
                 case list of
                     asset :: collateral :: maturity :: tokenIds :: _ ->
-                        Maybe.map3 Flags
-                            (Pair.fromFragment chain asset collateral)
-                            (maturity |> Maturity.fromFragment)
+                        Maybe.map2 Flags
+                            ([ asset
+                             , collateral
+                             , maturity
+                             ]
+                                |> String.join "&"
+                                |> Pools.fromPoolFragment tokens pools
+                            )
                             (tokenIds |> TokenId.fromFragment)
                             |> Maybe.map init
 
@@ -60,13 +61,12 @@ fromFragment chain string =
 
 same : Modal -> Modal -> Bool
 same (Modal modal1) (Modal modal2) =
-    modal1.pair == modal2.pair && modal1.maturity == modal2.maturity && modal1.tokenIds == modal2.tokenIds
+    modal1.pool == modal2.pool && modal1.tokenIds == modal2.tokenIds
 
 
-getPool : Modal -> Flags
-getPool (Modal { pair, maturity, tokenIds }) =
-    { pair = pair
-    , maturity = maturity
+getFlags : Modal -> Flags
+getFlags (Modal { pool, tokenIds }) =
+    { pool = pool
     , tokenIds = tokenIds
     }
 

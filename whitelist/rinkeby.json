@@ -1,0 +1,29 @@
+{
+  "erc20": [
+    {
+      "address": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+      "name": "DAI Stablecoin",
+      "symbol": "DAI",
+      "decimals": 18
+    },
+    {
+      "address": "0x98ea5A9f9621F160EC378e1F1b1Be78A4809eF32",
+      "name": "Matic Token",
+      "symbol": "MATIC",
+      "decimals": 18
+    },
+    {
+      "address": "0xa1fcEeFd0bA04519729815Fc0512E47869C8818e",
+      "name": "Wrapped Ether",
+      "symbol": "WETH",
+      "decimals": 18
+    }
+  ],
+  "pools": [
+    {
+      "asset": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+      "collateral": "ETH",
+      "maturity": "1635757472"
+    }
+  ]
+}

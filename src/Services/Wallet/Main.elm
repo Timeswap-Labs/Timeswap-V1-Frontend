@@ -4,6 +4,7 @@ import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Balances exposing (Balances)
 import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Data.Remote exposing (Remote(..))
 import Element
     exposing
@@ -32,16 +33,16 @@ import Utility.Glass as Glass
 
 view :
     { msgs | disconnect : msg }
-    -> { model | device : Device, backdrop : Backdrop }
+    -> { model | device : Device, backdrop : Backdrop, images : Images }
     -> { user | address : Address, balances : Remote Balances }
     -> Element msg
-view msgs { device, backdrop } user =
+view msgs { device, backdrop, images } user =
     column
         ([ padding 40
          , spacing 32
          , centerX
          , centerY
-         , inFront Exit.button
+         , Exit.button images |> inFront
          ]
             ++ Glass.darkPrimaryModal backdrop 0
             ++ (if Device.isPhone device then

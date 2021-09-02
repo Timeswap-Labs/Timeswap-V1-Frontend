@@ -1,12 +1,16 @@
-module Pages.LendDashboard.Main exposing (Msg, Page, init, update, view)
+module Pages.LendDashboard.Main exposing (Msg, Page, fromFragment, getFilter, init, update, view)
 
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
-import Data.Maturity as Maturity exposing (Maturity)
+import Data.Images exposing (Images)
 import Data.Pair as Pair exposing (Pair)
+import Data.Pool as Pool exposing (Pool)
+import Data.Pools as Pools exposing (Pools)
 import Data.Positions as Positions exposing (ActiveClaimInfo, Claim, MaturedClaimInfo, Positions, Return)
 import Data.Remote exposing (Remote(..))
 import Data.Token as Token
+import Data.TokenImages exposing (TokenImages)
+import Data.Tokens exposing (Tokens)
 import Element
     exposing
         ( Element
@@ -19,9 +23,11 @@ import Element
         , el
         , fill
         , height
+        , inFront
         , link
         , mouseDown
         , mouseOver
+        , moveLeft
         , none
         , padding
         , paddingXY
@@ -38,10 +44,8 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
-import Sort
 import Sort.Set as Set exposing (Set)
 import Time exposing (Posix)
-import User
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
@@ -52,26 +56,62 @@ import Utility.Router as Router
 
 
 type Page
-    = Page (Set ( Pair, Maturity ))
+    = Page
+        { filter : Maybe Pair
+        , expandedSet : Set Pool
+        }
 
 
-init : { model | user : Maybe { user | chain : Chain } } -> Page
-init { user } =
-    user
-        |> User.toChain
-        |> (\chain ->
-                Pair.sorter chain
-                    |> Sort.by Tuple.first
-                    |> Sort.tiebreaker
-                        (Maturity.sorter |> Sort.by Tuple.second)
-                    |> Set.empty
-                    |> Page
-           )
+init :
+    { model | time : Posix, user : Maybe { user | positions : Remote Positions } }
+    -> Maybe Pair
+    -> Page
+init { time, user } filter =
+    { filter = filter
+    , expandedSet =
+        user
+            |> Maybe.andThen
+                (\{ positions } ->
+                    case positions of
+                        Loading ->
+                            Set.empty Pool.sorter |> Just
+
+                        Failure ->
+                            Set.empty Pool.sorter |> Just
+
+                        Success successPositions ->
+                            successPositions
+                                |> Positions.getFirstClaim time filter
+                                |> Maybe.map (Set.singleton Pool.sorter)
+                )
+            |> Maybe.withDefault (Set.empty Pool.sorter)
+    }
+        |> Page
+
+
+fromFragment :
+    { model
+        | time : Posix
+        , tokens : Tokens
+        , pools : Pools
+        , user : Maybe { user | positions : Remote Positions }
+    }
+    -> String
+    -> Page
+fromFragment ({ tokens, pools } as model) string =
+    string
+        |> Pools.fromPairFragment tokens pools
+        |> init model
+
+
+getFilter : Page -> Maybe Pair
+getFilter (Page { filter }) =
+    filter
 
 
 type Msg
-    = Expand Pair Maturity
-    | Collapse Pair Maturity
+    = Expand Pool
+    | Collapse Pool
 
 
 update :
@@ -79,9 +119,9 @@ update :
     -> Msg
     -> Page
     -> Page
-update { user } msg (Page set) =
+update { user } msg (Page page) =
     case msg of
-        Expand pair maturity ->
+        Expand pool ->
             user
                 |> Maybe.map
                     (\{ positions } ->
@@ -90,28 +130,36 @@ update { user } msg (Page set) =
                                 successPositions
                                     |> Positions.toClaimPools
                                     |> (\list ->
-                                            if list |> List.member ( pair, maturity ) then
-                                                set
-                                                    |> Set.insert ( pair, maturity )
+                                            if list |> List.member pool then
+                                                { page
+                                                    | expandedSet =
+                                                        page.expandedSet
+                                                            |> Set.insert pool
+                                                }
                                                     |> Page
 
                                             else
-                                                Page set
+                                                Page page
                                        )
 
                             _ ->
-                                Page set
+                                Page page
                     )
-                |> Maybe.withDefault (Page set)
+                |> Maybe.withDefault (Page page)
 
-        Collapse pair maturity ->
-            set |> Set.remove ( pair, maturity ) |> Page
+        Collapse pool ->
+            { page
+                | expandedSet = page.expandedSet |> Set.remove pool
+            }
+                |> Page
 
 
 view :
     { model
         | device : Device
         , time : Posix
+        , images : Images
+        , tokenImages : TokenImages
         , user : Maybe { user | positions : Remote Positions }
     }
     -> Page
@@ -190,7 +238,7 @@ switch =
             [ width <| px 95
             , height <| px 44
             ]
-            { url = Router.toBorrowDashboard
+            { url = Router.toBorrowDashboard Nothing
             , label =
                 el
                     [ width shrink
@@ -217,33 +265,39 @@ title =
 
 
 allPositions :
-    { model | time : Posix }
+    { model | time : Posix, images : Images, tokenImages : TokenImages }
     -> Page
     -> ( List ActiveClaimInfo, List MaturedClaimInfo )
     -> Element Msg
-allPositions model page ( activeList, maturedList ) =
+allPositions model ((Page { filter }) as page) ( activeList, maturedList ) =
     Keyed.column
         [ width fill
         , height shrink
         , spacing 18
         ]
         ([ maturedList
+            |> List.filter
+                (\{ pool } ->
+                    filter
+                        |> Maybe.map ((==) pool.pair)
+                        |> Maybe.withDefault True
+                )
             |> List.map
-                (\({ pair, maturity } as maturedClaimInfo) ->
-                    ( [ pair |> Pair.toKey
-                      , maturity |> Maturity.toKey
-                      ]
-                        |> String.join " "
+                (\({ pool } as maturedClaimInfo) ->
+                    ( pool |> Pool.toKey
                     , singleMaturedPosition model page maturedClaimInfo
                     )
                 )
          , activeList
+            |> List.filter
+                (\{ pool } ->
+                    filter
+                        |> Maybe.map ((==) pool.pair)
+                        |> Maybe.withDefault True
+                )
             |> List.map
-                (\({ pair, maturity } as activeClaimInfo) ->
-                    ( [ pair |> Pair.toKey
-                      , maturity |> Maturity.toKey
-                      ]
-                        |> String.join " "
+                (\({ pool } as activeClaimInfo) ->
+                    ( pool |> Pool.toKey
                     , singleActivePosition model page activeClaimInfo
                     )
                 )
@@ -253,30 +307,52 @@ allPositions model page ( activeList, maturedList ) =
 
 
 singleMaturedPosition :
-    { model | time : Posix }
+    { model | time : Posix, images : Images, tokenImages : TokenImages }
     -> Page
     -> MaturedClaimInfo
     -> Element Msg
-singleMaturedPosition model ((Page set) as page) ({ pair, maturity } as maturedClaimInfo) =
+singleMaturedPosition ({ tokenImages } as model) ((Page { expandedSet }) as page) ({ pool } as maturedClaimInfo) =
     column
         [ width fill
         , height shrink
         ]
-        [ row
-            ([ width fill
-             , height <| px 72
-             , paddingXY 24 0
-             , spacing 18
-             ]
-                ++ Glass.lightPrimary 1
-            )
-            [ PairInfo.icons pair
-            , PairInfo.symbols pair
-            , PositionsInfo.duration model maturedClaimInfo
-            , maturedButtons maturedClaimInfo
-            , discloser page maturedClaimInfo
+        [ el
+            [ width fill
+            , height shrink
+            , claimButton maturedClaimInfo |> inFront
             ]
-        , if ( pair, maturity ) |> Set.memberOf set then
+            (Input.button
+                [ width fill
+                , height shrink
+                ]
+                { onPress =
+                    if pool |> Set.memberOf expandedSet then
+                        Just (Collapse pool)
+
+                    else
+                        Just (Expand pool)
+                , label =
+                    row
+                        ([ width fill
+                         , height <| px 72
+                         , paddingXY 24 0
+                         , spacing 18
+                         ]
+                            ++ Glass.lightPrimary 1
+                        )
+                        [ PairInfo.icons tokenImages pool.pair
+                        , PairInfo.symbols pool.pair
+                        , PositionsInfo.duration model pool.maturity
+                        , el
+                            [ width <| px 110
+                            , alignRight
+                            ]
+                            none
+                        , discloser model page maturedClaimInfo
+                        ]
+                }
+            )
+        , if pool |> Set.memberOf expandedSet then
             el
                 [ width fill
                 , height shrink
@@ -292,30 +368,53 @@ singleMaturedPosition model ((Page set) as page) ({ pair, maturity } as maturedC
 
 
 singleActivePosition :
-    { model | time : Posix }
+    { model | time : Posix, images : Images, tokenImages : TokenImages }
     -> Page
     -> ActiveClaimInfo
     -> Element Msg
-singleActivePosition model ((Page set) as page) ({ pair, maturity } as activeClaimInfo) =
+singleActivePosition ({ tokenImages } as model) ((Page { expandedSet }) as page) ({ pool } as activeClaimInfo) =
     column
         [ width fill
         , height shrink
         ]
-        [ row
-            ([ width fill
-             , height <| px 72
-             , paddingXY 24 0
-             , spacing 18
-             ]
-                ++ Glass.lightPrimary 1
-            )
-            [ PairInfo.icons pair
-            , PairInfo.symbols pair
-            , PositionsInfo.duration model activeClaimInfo
-            , activeButtons activeClaimInfo
-            , discloser page activeClaimInfo
+        [ el
+            [ width fill
+            , height shrink
+            , lendMoreButton activeClaimInfo |> inFront
+            , claimButtonOff |> inFront
             ]
-        , if ( pair, maturity ) |> Set.memberOf set then
+            (Input.button
+                [ width fill
+                , height shrink
+                ]
+                { onPress =
+                    if pool |> Set.memberOf expandedSet then
+                        Just (Collapse pool)
+
+                    else
+                        Just (Expand pool)
+                , label =
+                    row
+                        ([ width fill
+                         , height <| px 72
+                         , paddingXY 24 0
+                         , spacing 18
+                         ]
+                            ++ Glass.lightPrimary 1
+                        )
+                        [ PairInfo.icons tokenImages pool.pair
+                        , PairInfo.symbols pool.pair
+                        , PositionsInfo.duration model pool.maturity
+                        , el
+                            [ width <| px 238
+                            , alignRight
+                            ]
+                            none
+                        , discloser model page activeClaimInfo
+                        ]
+                }
+            )
+        , if pool |> Set.memberOf expandedSet then
             el
                 [ width fill
                 , height shrink
@@ -330,17 +429,20 @@ singleActivePosition model ((Page set) as page) ({ pair, maturity } as activeCla
         ]
 
 
-maturedButtons : { maturedClaimInfo | pair : Pair, maturity : Maturity } -> Element msg
-maturedButtons { pair, maturity } =
+claimButton : { maturedClaimInfo | pool : Pool } -> Element msg
+claimButton { pool } =
     link
         [ width <| px 110
         , height <| px 44
+        , alignRight
+        , centerY
+        , moveLeft 54
         , Background.color Color.primary100
         , Border.rounded 4
         , mouseDown [ Background.color Color.primary400 ]
         , mouseOver [ Background.color Color.primary300 ]
         ]
-        { url = Router.toWithdraw pair maturity
+        { url = Router.toWithdraw pool
         , label =
             el
                 [ width shrink
@@ -355,88 +457,84 @@ maturedButtons { pair, maturity } =
         }
 
 
-activeButtons : { activeClaimInfo | pair : Pair, maturity : Maturity } -> Element msg
-activeButtons { pair, maturity } =
-    row
-        [ width shrink
-        , height shrink
-        , spacing 18
-        , Font.size 16
+lendMoreButton : { activeClaimInfo | pool : Pool } -> Element msg
+lendMoreButton { pool } =
+    link
+        [ width <| px 110
+        , height <| px 44
+        , alignRight
+        , centerY
+        , moveLeft 182
+        , Border.width 1
+        , Border.color Color.primary100
+        , Border.rounded 4
+        , mouseDown
+            [ Background.color Color.primary300
+            , Border.color Color.primary300
+            ]
+        , mouseOver [ Background.color Color.primary100 ]
         ]
-        [ link
-            [ width <| px 110
-            , height <| px 44
-            , Border.width 1
-            , Border.color Color.primary100
-            , Border.rounded 4
-            , mouseDown
-                [ Background.color Color.primary300
-                , Border.color Color.primary300
-                ]
-            , mouseOver [ Background.color Color.primary100 ]
-            ]
-            { url = Router.toLend pair maturity
-            , label =
-                el
-                    [ width shrink
-                    , height shrink
-                    , centerX
-                    , centerY
-                    , Font.bold
-                    , Font.color Color.light100
-                    ]
-                    (text "Lend more")
-            }
-        , el
-            [ width <| px 110
-            , height <| px 44
-            , Background.color Color.transparent100
-            , Border.rounded 4
-            ]
-            (el
+        { url = Router.toLend pool
+        , label =
+            el
                 [ width shrink
                 , height shrink
                 , centerX
                 , centerY
                 , Font.bold
-                , Font.color Color.transparent100
+                , Font.size 16
+                , Font.color Color.light100
                 ]
-                (text "Claim")
-            )
-        ]
-
-
-discloser :
-    Page
-    -> { positionsInfo | pair : Pair, maturity : Maturity }
-    -> Element Msg
-discloser (Page set) { pair, maturity } =
-    Input.button
-        [ width shrink
-        , height shrink
-        , alignRight
-        , centerY
-        ]
-        { onPress =
-            if ( pair, maturity ) |> Set.memberOf set then
-                Just (Collapse pair maturity)
-
-            else
-                Just (Expand pair maturity)
-        , label =
-            Image.discloser
-                [ width <| px 12
-                , if ( pair, maturity ) |> Set.memberOf set then
-                    degrees 180 |> rotate
-
-                  else
-                    degrees 0 |> rotate
-                ]
+                (text "Lend more")
         }
 
 
-maturedBalances : { maturedClaimInfo | pair : Pair, return : Maybe Return } -> Element msg
-maturedBalances { pair, return } =
+claimButtonOff : Element msg
+claimButtonOff =
+    el
+        [ width <| px 110
+        , height <| px 44
+        , alignRight
+        , centerY
+        , moveLeft 54
+        , Background.color Color.transparent100
+        , Border.rounded 4
+        ]
+        (el
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.bold
+            , Font.size 16
+            , Font.color Color.transparent100
+            ]
+            (text "Claim")
+        )
+
+
+discloser :
+    { model | images : Images }
+    -> Page
+    -> { positionsInfo | pool : Pool }
+    -> Element Msg
+discloser { images } (Page { expandedSet }) { pool } =
+    Image.discloser images
+        [ width <| px 12
+        , alignRight
+        , centerY
+        , if pool |> Set.memberOf expandedSet then
+            degrees 180 |> rotate
+
+          else
+            degrees 0 |> rotate
+        ]
+
+
+maturedBalances :
+    { maturedClaimInfo | pool : { pool | pair : Pair }, return : Maybe Return }
+    -> Element msg
+maturedBalances { pool, return } =
     row
         ([ width fill
          , height <| px 56
@@ -475,7 +573,7 @@ maturedBalances { pair, return } =
                             [ Font.bold
                             , Font.color Color.transparent300
                             ]
-                            (pair
+                            (pool.pair
                                 |> Pair.toAsset
                                 |> Token.toSymbol
                                 |> text
@@ -494,7 +592,7 @@ maturedBalances { pair, return } =
                             [ Font.bold
                             , Font.color Color.transparent300
                             ]
-                            (pair
+                            (pool.pair
                                 |> Pair.toCollateral
                                 |> Token.toSymbol
                                 |> text
@@ -513,8 +611,10 @@ maturedBalances { pair, return } =
         ]
 
 
-activeBalances : { activeClaimInfo | pair : Pair, claim : Claim } -> Element msg
-activeBalances { pair, claim } =
+activeBalances :
+    { activeClaimInfo | pool : { pool | pair : Pair }, claim : Claim }
+    -> Element msg
+activeBalances { pool, claim } =
     row
         ([ width fill
          , height <| px 56
@@ -550,7 +650,7 @@ activeBalances { pair, claim } =
                 [ Font.bold
                 , Font.color Color.transparent300
                 ]
-                (pair
+                (pool.pair
                     |> Pair.toAsset
                     |> Token.toSymbol
                     |> text
@@ -584,7 +684,7 @@ activeBalances { pair, claim } =
                 [ Font.bold
                 , Font.color Color.transparent300
                 ]
-                (pair
+                (pool.pair
                     |> Pair.toCollateral
                     |> Token.toSymbol
                     |> text

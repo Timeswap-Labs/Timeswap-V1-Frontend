@@ -1,5 +1,6 @@
 module Utility.Exit exposing (button, buttonWithMsg)
 
+import Data.Images exposing (Images)
 import Element
     exposing
         ( Element
@@ -18,8 +19,8 @@ import Utility.Image as Image
 import Utility.Router as Router
 
 
-button : Element msg
-button =
+button : Images -> Element msg
+button images =
     el
         [ width shrink
         , height shrink
@@ -32,13 +33,13 @@ button =
             , height shrink
             ]
             { url = Router.exit
-            , label = Image.close [ width <| px 24 ]
+            , label = Image.close images [ width <| px 24 ]
             }
         )
 
 
-buttonWithMsg : msg -> Element msg
-buttonWithMsg msg =
+buttonWithMsg : Images -> msg -> Element msg
+buttonWithMsg images msg =
     el
         [ width shrink
         , height shrink
@@ -51,6 +52,6 @@ buttonWithMsg msg =
             , height shrink
             ]
             { onPress = Just msg
-            , label = Image.close [ width <| px 24 ]
+            , label = Image.close images [ width <| px 24 ]
             }
         )

@@ -16,8 +16,8 @@ module Utility.Router exposing
     , toWithdraw
     )
 
-import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
+import Data.Pool as Pool exposing (Pool)
 import Data.TokenId as TokenId exposing (TokenId)
 import Sort.Set exposing (Set)
 
@@ -35,14 +35,22 @@ toPairMarket pair =
         |> String.join "?"
 
 
-toLendDashboard : String
-toLendDashboard =
-    "#dashboard?transaction=lend"
+toLendDashboard : Maybe Pair -> String
+toLendDashboard filter =
+    filter
+        |> Maybe.map Pair.toFragment
+        |> Maybe.map ((++) "&")
+        |> Maybe.withDefault ""
+        |> (++) "#dashboard?transaction=lend"
 
 
-toBorrowDashboard : String
-toBorrowDashboard =
-    "#dashboard?transaction=borrow"
+toBorrowDashboard : Maybe Pair -> String
+toBorrowDashboard filter =
+    filter
+        |> Maybe.map Pair.toFragment
+        |> Maybe.map ((++) "&")
+        |> Maybe.withDefault ""
+        |> (++) "#dashboard?transaction=borrow"
 
 
 toLiquidityProvider : String
@@ -50,44 +58,34 @@ toLiquidityProvider =
     "#liquidity"
 
 
-toLend : Pair -> Maturity -> String
-toLend pair maturity =
+toLend : Pool -> String
+toLend pool =
     [ "#lend"
-    , [ pair |> Pair.toFragment
-      , maturity |> Maturity.toFragment
-      ]
-        |> String.join "&"
+    , pool |> Pool.toFragment
     ]
         |> String.join "?"
 
 
-toBorrow : Pair -> Maturity -> String
-toBorrow pair maturity =
+toBorrow : Pool -> String
+toBorrow pool =
     [ "#borrow"
-    , [ pair |> Pair.toFragment
-      , maturity |> Maturity.toFragment
-      ]
-        |> String.join "&"
+    , pool |> Pool.toFragment
     ]
         |> String.join "?"
 
 
-toWithdraw : Pair -> Maturity -> String
-toWithdraw pair maturity =
+toWithdraw : Pool -> String
+toWithdraw pool =
     [ "#withdraw"
-    , [ pair |> Pair.toFragment
-      , maturity |> Maturity.toFragment
-      ]
-        |> String.join "&"
+    , pool |> Pool.toFragment
     ]
         |> String.join "?"
 
 
-toPay : Pair -> Maturity -> Set TokenId -> String
-toPay pair maturity tokenIds =
+toPay : Pool -> Set TokenId -> String
+toPay pool tokenIds =
     [ "#pay"
-    , [ pair |> Pair.toFragment
-      , maturity |> Maturity.toFragment
+    , [ pool |> Pool.toFragment
       , tokenIds |> TokenId.toFragment
       ]
         |> String.join "&"

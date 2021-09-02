@@ -1,11 +1,34 @@
-module Modal exposing (Modal, Msg, fromFragment, same, toUrl, update)
+module Modal exposing (Modal, Msg, fromFragment, same, toUrl, update, view)
 
+import Data.Backdrop exposing (Backdrop)
+import Data.Balances exposing (Balances)
 import Data.Chain exposing (Chain(..))
+import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
+import Data.Pools exposing (Pools)
+import Data.Remote exposing (Remote)
+import Data.TokenImages exposing (TokenImages)
+import Data.Tokens exposing (Tokens)
+import Element
+    exposing
+        ( Element
+        , el
+        , fill
+        , height
+        , none
+        , padding
+        , scrollbarY
+        , width
+        )
+import Element.Background as Background
+import Element.Font as Font
 import Modals.Borrow.Main as Borrow
 import Modals.Lend.Main as Lend
 import Modals.Pay.Main as Pay
 import Modals.Withdraw.Main as Withdraw
+import Utility.Color as Color
 import Utility.Router as Router
+import Utility.Typography as Typography
 
 
 type Modal
@@ -15,47 +38,44 @@ type Modal
     | Pay Pay.Modal
 
 
-fromFragment : { model | user : Maybe { user | chain : Chain } } -> String -> Maybe Modal
-fromFragment { user } string =
+fromFragment :
+    { model
+        | tokens : Tokens
+        , pools : Pools
+        , user : Maybe user
+    }
+    -> String
+    -> Maybe Modal
+fromFragment { tokens, pools, user } string =
     string
         |> String.split "?"
         |> (\list ->
                 case list of
                     "lend" :: parameter :: _ ->
-                        user
-                            |> Maybe.map .chain
-                            |> Maybe.withDefault Rinkeby
-                            |> (\chain ->
-                                    parameter
-                                        |> Lend.fromFragment chain
-                                        |> Maybe.map Lend
-                               )
+                        parameter
+                            |> Lend.fromFragment tokens pools
+                            |> Maybe.map Lend
 
                     "borrow" :: parameter :: _ ->
-                        user
-                            |> Maybe.map .chain
-                            |> Maybe.withDefault Rinkeby
-                            |> (\chain ->
-                                    parameter
-                                        |> Borrow.fromFragment chain
-                                        |> Maybe.map Borrow
-                               )
+                        parameter
+                            |> Borrow.fromFragment tokens pools
+                            |> Maybe.map Borrow
 
                     "withdraw" :: parameter :: _ ->
                         user
                             |> Maybe.andThen
-                                (\{ chain } ->
+                                (\_ ->
                                     parameter
-                                        |> Withdraw.fromFragment chain
+                                        |> Withdraw.fromFragment tokens pools
                                         |> Maybe.map Withdraw
                                 )
 
                     "pay" :: parameter :: _ ->
                         user
                             |> Maybe.andThen
-                                (\{ chain } ->
+                                (\_ ->
                                     parameter
-                                        |> Pay.fromFragment chain
+                                        |> Pay.fromFragment tokens pools
                                         |> Maybe.map Pay
                                 )
 
@@ -70,29 +90,23 @@ toUrl modal =
         Lend lend ->
             lend
                 |> Lend.getPool
-                |> (\{ pair, maturity } ->
-                        Router.toLend pair maturity
-                   )
+                |> Router.toLend
 
         Borrow borrow ->
             borrow
                 |> Borrow.getPool
-                |> (\{ pair, maturity } ->
-                        Router.toBorrow pair maturity
-                   )
+                |> Router.toBorrow
 
         Withdraw withdraw ->
             withdraw
                 |> Withdraw.getPool
-                |> (\{ pair, maturity } ->
-                        Router.toWithdraw pair maturity
-                   )
+                |> Router.toWithdraw
 
         Pay pay ->
             pay
-                |> Pay.getPool
-                |> (\{ pair, maturity, tokenIds } ->
-                        Router.toPay pair maturity tokenIds
+                |> Pay.getFlags
+                |> (\{ pool, tokenIds } ->
+                        Router.toPay pool tokenIds
                    )
 
 
@@ -147,3 +161,36 @@ update msg modal =
 
         _ ->
             ( modal, Cmd.none )
+
+
+view :
+    { model
+        | device : Device
+        , backdrop : Backdrop
+        , images : Images
+        , tokenImages : TokenImages
+        , user : Maybe { user | balances : Remote Balances }
+    }
+    -> Modal
+    -> Element Msg
+view ({ device } as model) modal =
+    el
+        [ width fill
+        , height fill
+        , if Device.isPhone device then
+            padding 0
+
+          else
+            padding 80
+        , scrollbarY
+        , Background.color Color.modal
+        , Font.family Typography.supreme
+        ]
+        (case modal of
+            Lend lend ->
+                Lend.view model lend
+                    |> Element.map LendMsg
+
+            _ ->
+                none
+        )

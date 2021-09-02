@@ -8,9 +8,12 @@ import Data.Backdrop as Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain(..))
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
+import Data.Images as Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Pools as Pools exposing (Pools)
 import Data.Slippage as Slippage exposing (Slippage)
+import Data.TokenImages as TokenImages exposing (TokenImages)
+import Data.Tokens as Tokens exposing (Tokens)
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
@@ -68,6 +71,9 @@ type alias Model =
     , key : Key
     , slippage : Slippage
     , deadline : Deadline
+    , tokens : Tokens
+    , images : Images
+    , tokenImages : TokenImages
     , pools : Pools
     , user : Maybe User
     , page : Page
@@ -80,11 +86,13 @@ type alias Flags =
     { width : Int
     , time : Int
     , hasBackdropSupport : Bool
+    , images : List ( String, String )
+    , tokenImages : List ( String, String )
     }
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
-init { width, time, hasBackdropSupport } url key =
+init { width, time, hasBackdropSupport, images, tokenImages } url key =
     { device = Device.fromWidth width
     , visibility = Browser.Events.Visible
     , time = Time.millisToPosix time
@@ -93,11 +101,14 @@ init { width, time, hasBackdropSupport } url key =
     , key = key
     , slippage = Slippage.init
     , deadline = Deadline.init
-    , pools = Pools.whitelist Rinkeby
+    , tokens = Tokens.example
+    , images = Images.init images
+    , tokenImages = TokenImages.init tokenImages
+    , pools = Pools.example
     , user = Nothing
     , page =
         Page.init
-            { pools = Pools.whitelist Rinkeby
+            { pools = Pools.example
             , user = Nothing
             }
     , modal = Nothing
@@ -133,7 +144,7 @@ type Msg
     | PageMsg Page.Msg
     | ModalMsg Modal.Msg
     | ServiceMsg Service.Msg
-    | MetamaskConnected Value
+    | MetamaskMsg Value
     | NoMetamask Value
     | Disconnect
 
@@ -336,7 +347,7 @@ update msg model =
                 |> Cmd.map ServiceMsg
             )
 
-        MetamaskConnected value ->
+        MetamaskMsg value ->
             ( value
                 |> Decode.decodeValue (User.decoder |> Decode.nullable)
                 |> Result.map
@@ -376,7 +387,7 @@ update msg model =
             )
 
 
-port metamaskConnected : (Value -> msg) -> Sub msg
+port metamaskMsg : (Value -> msg) -> Sub msg
 
 
 port noMetamask : (Value -> msg) -> Sub msg
@@ -391,7 +402,7 @@ subscriptions model =
         , onClickOutsideAside model
         , onClickOutsideSlippage model
         , onClickOutsideDeadline model
-        , metamaskConnected MetamaskConnected
+        , metamaskMsg MetamaskMsg
         , noMetamask NoMetamask
         ]
 
@@ -520,7 +531,10 @@ html model =
                             |> Maybe.map Just
                             |> Maybe.withDefault
                                 (model.modal
-                                    |> Maybe.map (\modal -> [{- Lazy.lazy2 (Debug.todo "Modal.view") model modal |> inFront -}])
+                                    |> Maybe.map
+                                        (\modal ->
+                                            [ Lazy.lazy2 Modal.view model modal |> Element.map ModalMsg |> inFront ]
+                                        )
                                 )
                             |> Maybe.withDefault []
                    )
@@ -560,7 +574,10 @@ html model =
                         |> Maybe.map Just
                         |> Maybe.withDefault
                             (model.modal
-                                |> Maybe.map (\modal -> [{- Lazy.lazy2 (Debug.todo "Modal.view") model modal |> inFront -}])
+                                |> Maybe.map
+                                    (\modal ->
+                                        [ Lazy.lazy2 Modal.view model modal |> Element.map ModalMsg |> inFront ]
+                                    )
                             )
                         |> Maybe.withDefault []
                    )

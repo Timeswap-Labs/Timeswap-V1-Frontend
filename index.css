@@ -1,0 +1,93 @@
+@font-face {
+  font-family: "Supreme";
+  font-style: normal;
+  font-weight: normal;
+  src: url("./font/Supreme-Regular.otf");
+}
+
+@font-face {
+  font-family: "Supreme";
+  font-style: normal;
+  font-weight: bold;
+  src: url("./font/Supreme-Bold.otf");
+  overflow: hidden;
+}
+
+/* Dot Pulse */
+
+.dot-pulse {
+  position: relative;
+  left: -9999px;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.64);
+  color: rgba(255, 255, 255, 0.64);
+  box-shadow: 9999px 0 0 -5px rgba(255, 255, 255, 0.64);
+  animation: dotPulse 1.5s infinite linear;
+  animation-delay: 0.25s;
+}
+
+.dot-pulse::before,
+.dot-pulse::after {
+  content: "";
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  width: 10px;
+  height: 10px;
+  border-radius: 5px;
+  background-color: rgba(255, 255, 255, 0.64);
+  color: rgba(255, 255, 255, 0.64);
+}
+
+.dot-pulse::before {
+  box-shadow: 9984px 0 0 -5px rgba(255, 255, 255, 0.64);
+  animation: dotPulseBefore 1.5s infinite linear;
+  animation-delay: 0s;
+}
+
+.dot-pulse::after {
+  box-shadow: 10014px 0 0 -5px rgba(255, 255, 255, 0.64);
+  animation: dotPulseAfter 1.5s infinite linear;
+  animation-delay: 0.5s;
+}
+
+@keyframes dotPulseBefore {
+  0% {
+    box-shadow: 9984px 0 0 -5px rgba(255, 255, 255, 0.64);
+  }
+  30% {
+    box-shadow: 9984px 0 0 2px rgba(255, 255, 255, 0.64);
+  }
+  60%,
+  100% {
+    box-shadow: 9984px 0 0 -5px rgba(255, 255, 255, 0.64);
+  }
+}
+
+@keyframes dotPulse {
+  0% {
+    box-shadow: 9999px 0 0 -5px rgba(255, 255, 255, 0.64);
+  }
+  30% {
+    box-shadow: 9999px 0 0 2px rgba(255, 255, 255, 0.64);
+  }
+  60%,
+  100% {
+    box-shadow: 9999px 0 0 -5px rgba(255, 255, 255, 0.64);
+  }
+}
+
+@keyframes dotPulseAfter {
+  0% {
+    box-shadow: 10014px 0 0 -5px rgba(255, 255, 255, 0.64);
+  }
+  30% {
+    box-shadow: 10014px 0 0 2px rgba(255, 255, 255, 0.64);
+  }
+  60%,
+  100% {
+    box-shadow: 10014px 0 0 -5px rgba(255, 255, 255, 0.64);
+  }
+}

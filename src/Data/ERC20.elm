@@ -2,14 +2,16 @@ module Data.ERC20 exposing
     ( ERC20
     , compare
     , daiRinkeby
+    , example
     , fromString
     , maticRinkeby
     , sorter
+    , toDecimals
+    , toKey
     , toName
     , toString
     , toSymbol
     , wethRinkeby
-    , whitelist
     )
 
 import Data.Address as Address exposing (Address)
@@ -20,20 +22,21 @@ import Sort.Set as Set exposing (Set)
 
 type ERC20
     = ERC20
-        { address : Address
+        { id : Int
+        , address : Address
         , name : String
         , symbol : String
         , decimals : Int
         }
 
 
-fromString : Chain -> String -> Maybe ERC20
-fromString chain string =
+fromString : Set ERC20 -> String -> Maybe ERC20
+fromString set string =
     string
         |> Address.fromString
         |> Maybe.andThen
             (\address ->
-                whitelist chain
+                set
                     |> Set.foldl
                         (\erc20 accumulator ->
                             if (erc20 |> toAddress) == address then
@@ -53,6 +56,11 @@ toString erc20 =
         |> Address.toString
 
 
+toKey : ERC20 -> String
+toKey =
+    toString
+
+
 toAddress : ERC20 -> Address
 toAddress (ERC20 { address }) =
     address
@@ -68,63 +76,35 @@ toSymbol (ERC20 { symbol }) =
     symbol
 
 
-whitelist : Chain -> Set ERC20
-whitelist chain =
-    (case chain of
-        Mainnet ->
-            []
-
-        Rinkeby ->
-            [ daiRinkeby
-            , maticRinkeby
-            , wethRinkeby
-            ]
-    )
-        |> Set.fromList (sorter chain)
+toDecimals : ERC20 -> Int
+toDecimals (ERC20 { decimals }) =
+    decimals
 
 
-toRank : Chain -> ERC20 -> Int
-toRank chain erc20 =
-    case chain of
-        Mainnet ->
-            0
-
-        Rinkeby ->
-            if erc20 == daiRinkeby then
-                0
-
-            else if erc20 == maticRinkeby then
-                1
-
-            else if erc20 == wethRinkeby then
-                2
-
-            else
-                3
+example : Set ERC20
+example =
+    Set.fromList sorter
+        [ daiRinkeby
+        , maticRinkeby
+        , wethRinkeby
+        ]
 
 
-compare : Chain -> ERC20 -> ERC20 -> Order
-compare chain ((ERC20 erc20a) as erc20A) ((ERC20 erc20b) as erc20B) =
-    Basics.compare (erc20A |> toRank chain) (erc20B |> toRank chain)
-        |> (\order ->
-                case order of
-                    EQ ->
-                        Address.compare erc20a.address erc20b.address
-
-                    _ ->
-                        order
-           )
+compare : ERC20 -> ERC20 -> Order
+compare (ERC20 erc20a) (ERC20 erc20b) =
+    Basics.compare erc20a.id erc20b.id
 
 
-sorter : Chain -> Sorter ERC20
-sorter chain =
-    Sort.custom (compare chain)
+sorter : Sorter ERC20
+sorter =
+    Sort.custom compare
 
 
 daiRinkeby : ERC20
 daiRinkeby =
     ERC20
-        { address = Address.daiRinkeby
+        { id = 0
+        , address = Address.daiRinkeby
         , name = "DAI Stablecoin"
         , symbol = "DAI"
         , decimals = 18
@@ -134,7 +114,8 @@ daiRinkeby =
 maticRinkeby : ERC20
 maticRinkeby =
     ERC20
-        { address = Address.maticRinkeby
+        { id = 1
+        , address = Address.maticRinkeby
         , name = "Matic Token"
         , symbol = "MATIC"
         , decimals = 18
@@ -144,7 +125,8 @@ maticRinkeby =
 wethRinkeby : ERC20
 wethRinkeby =
     ERC20
-        { address = Address.wethRinkeby
+        { id = 2
+        , address = Address.wethRinkeby
         , name = "Wrapped Ether"
         , symbol = "WETH"
         , decimals = 18

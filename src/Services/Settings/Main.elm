@@ -13,6 +13,7 @@ module Services.Settings.Main exposing
 import Data.Backdrop exposing (Backdrop)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Data.Slippage as Slippage exposing (Slippage)
 import Element
     exposing
@@ -116,16 +117,17 @@ view :
             , backdrop : Backdrop
             , slippage : Slippage
             , deadline : Deadline
+            , images : Images
         }
     -> Settings
     -> Element msg
-view msgs ({ device, backdrop } as model) settings =
+view msgs ({ device, backdrop, images } as model) settings =
     column
         ([ padding 40
          , spacing 32
          , centerX
          , centerY
-         , inFront (Exit.buttonWithMsg msgs.exitSettings)
+         , inFront (Exit.buttonWithMsg images msgs.exitSettings)
          ]
             ++ Glass.darkPrimaryModal backdrop 0
             ++ (if Device.isPhone device then

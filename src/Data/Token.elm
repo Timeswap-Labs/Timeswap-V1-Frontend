@@ -1,16 +1,14 @@
 module Data.Token exposing
     ( Token(..)
-    , compare
-    , fromAssetFragment
-    , fromCollateralFragment
     , sorter
     , toAssetFragment
     , toCollateralFragment
+    , toDecimals
+    , toKey
     , toName
     , toSymbol
     )
 
-import Data.Chain exposing (Chain)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Sort exposing (Sorter)
 
@@ -20,42 +18,14 @@ type Token
     | ERC20 ERC20
 
 
-fromAssetFragment : Chain -> String -> Maybe Token
-fromAssetFragment chain string =
-    string
-        |> String.split "="
-        |> (\list ->
-                case list of
-                    "asset" :: "ETH" :: _ ->
-                        Just ETH
+toKey : Token -> String
+toKey token =
+    case token of
+        ETH ->
+            "ETH"
 
-                    "asset" :: address :: _ ->
-                        address
-                            |> ERC20.fromString chain
-                            |> Maybe.map ERC20
-
-                    _ ->
-                        Nothing
-           )
-
-
-fromCollateralFragment : Chain -> String -> Maybe Token
-fromCollateralFragment chain string =
-    string
-        |> String.split "="
-        |> (\list ->
-                case list of
-                    "collateral" :: "ETH" :: _ ->
-                        Just ETH
-
-                    "collateral" :: address :: _ ->
-                        address
-                            |> ERC20.fromString chain
-                            |> Maybe.map ERC20
-
-                    _ ->
-                        Nothing
-           )
+        ERC20 erc20 ->
+            erc20 |> ERC20.toKey
 
 
 toName : Token -> String
@@ -76,6 +46,16 @@ toSymbol token =
 
         ERC20 erc20 ->
             erc20 |> ERC20.toSymbol
+
+
+toDecimals : Token -> Int
+toDecimals token =
+    case token of
+        ETH ->
+            18
+
+        ERC20 erc20 ->
+            erc20 |> ERC20.toDecimals
 
 
 toAssetFragment : Token -> String
@@ -102,8 +82,8 @@ toCollateralFragment token =
                 |> (++) "collateral="
 
 
-compare : Chain -> Token -> Token -> Order
-compare chain token1 token2 =
+compare : Token -> Token -> Order
+compare token1 token2 =
     case ( token1, token2 ) of
         ( ETH, ETH ) ->
             EQ
@@ -115,10 +95,9 @@ compare chain token1 token2 =
             LT
 
         ( ERC20 erc20a, ERC20 erc20b ) ->
-            ERC20.compare chain erc20a erc20b
+            ERC20.compare erc20a erc20b
 
 
-sorter : Chain -> Sorter Token
-sorter chain =
-    compare chain
-        |> Sort.custom
+sorter : Sorter Token
+sorter =
+    Sort.custom compare

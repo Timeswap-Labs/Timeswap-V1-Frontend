@@ -2,6 +2,7 @@ port module Services.Connect.Main exposing (Msg, update, view)
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Element
     exposing
         ( Element
@@ -57,14 +58,20 @@ update msg =
 port connectMetamask : Value -> Cmd msg
 
 
-view : { modal | device : Device, backdrop : Backdrop } -> Element Msg
-view { device, backdrop } =
+view :
+    { modal
+        | device : Device
+        , backdrop : Backdrop
+        , images : Images
+    }
+    -> Element Msg
+view ({ device, backdrop, images } as model) =
     column
         ([ padding 40
          , spacing 32
          , centerX
          , centerY
-         , inFront Exit.button
+         , Exit.button images |> inFront
          ]
             ++ Glass.darkPrimaryModal backdrop 0
             ++ (if Device.isPhone device then
@@ -80,7 +87,7 @@ view { device, backdrop } =
                )
         )
         [ title
-        , content
+        , content model
         ]
 
 
@@ -111,20 +118,20 @@ title =
         ]
 
 
-content : Element Msg
-content =
+content : { model | images : Images } -> Element Msg
+content model =
     column
         [ width fill
         , height shrink
         , spacing 20
         ]
-        [ metamaskButton
+        [ metamaskButton model
         , termsOfService
         ]
 
 
-metamaskButton : Element Msg
-metamaskButton =
+metamaskButton : { model | images : Images } -> Element Msg
+metamaskButton { images } =
     link
         [ width fill
         , height <| px 64
@@ -150,7 +157,7 @@ metamaskButton =
                 , spacing 12
                 , Font.family [ Font.typeface "Supreme" ]
                 ]
-                [ Image.metamask
+                [ Image.metamask images
                     [ width <| px 32
                     , alignLeft
                     , centerY
@@ -175,7 +182,7 @@ metamaskButton =
                     , Font.letterSpacing 1.28
                     ]
                     (text "RECOMMENDED")
-                , Image.arrow
+                , Image.arrow images
                     [ width <| px 24
                     , alignRight
                     ]

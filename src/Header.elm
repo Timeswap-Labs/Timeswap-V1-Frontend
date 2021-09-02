@@ -4,6 +4,7 @@ import Aside
 import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Data.Pools exposing (Pools)
 import Data.Tab as Tab exposing (Tab)
 import Element
@@ -48,6 +49,7 @@ import Utility.Typography as Typography
 view :
     { model
         | device : Device
+        , images : Images
         , pools : Pools
         , user : Maybe { user | chain : Chain, address : Address }
         , page : Page
@@ -98,7 +100,7 @@ view ({ device } as model) =
                     }
                 , Border.color Color.transparent100
                 ]
-                [ openAside
+                [ openAside model
                 , tabs model
                 ]
             ]
@@ -132,7 +134,7 @@ view ({ device } as model) =
             ]
 
 
-logoContainer : { model | device : Device } -> Element msg
+logoContainer : { model | device : Device, images : Images } -> Element msg
 logoContainer ({ device } as model) =
     if Device.isPhoneOrTablet device then
         row
@@ -158,24 +160,24 @@ logoContainer ({ device } as model) =
             ]
 
 
-logo : { model | device : Device } -> Element msg
-logo { device } =
+logo : { model | device : Device, images : Images } -> Element msg
+logo { device, images } =
     if Device.isPhone device then
-        Image.logoPure
+        Image.logoPure images
             [ alignLeft
             , centerY
             , height <| px 34
             ]
 
     else if Device.isTablet device then
-        Image.logo
+        Image.logo images
             [ centerX
             , centerY
             , height <| px 34
             ]
 
     else
-        Image.logo
+        Image.logo images
             [ centerX
             , centerY
             , height <| px 40
@@ -365,6 +367,7 @@ pageLink tab =
 buttons :
     { model
         | device : Device
+        , images : Images
         , user : Maybe { user | chain : Chain, address : Address }
     }
     -> Element msg
@@ -392,9 +395,9 @@ buttons ({ user } as model) =
 
 
 faucetButton :
-    { model | device : Device }
+    { model | device : Device, images : Images }
     -> Element msg
-faucetButton { device } =
+faucetButton { device, images } =
     link
         ([ width shrink
          , paddingEach
@@ -441,7 +444,7 @@ faucetButton { device } =
                     [ centerY
                     ]
                     (if Device.isPhone device then
-                        Image.faucet
+                        Image.faucet images
                             [ width <| px 19
                             , centerX
                             , centerY
@@ -460,10 +463,11 @@ faucetButton { device } =
 walletButton :
     { model
         | device : Device
+        , images : Images
         , user : Maybe { user | chain : Chain, address : Address }
     }
     -> Element msg
-walletButton { device, user } =
+walletButton { device, images, user } =
     link
         ([ width shrink
          , paddingEach
@@ -507,7 +511,7 @@ walletButton { device, user } =
                 (user
                     |> Maybe.map
                         (\{ chain, address } ->
-                            Image.metamask
+                            Image.metamask images
                                 [ width <| px 24
                                 , centerY
                                 ]
@@ -526,7 +530,7 @@ walletButton { device, user } =
                                    )
                         )
                     |> Maybe.withDefault
-                        (Image.wallet
+                        (Image.wallet images
                             [ width <| px 24
                             , centerY
                             ]
@@ -574,9 +578,9 @@ rinkebyLabel =
 
 
 settingsButton :
-    { model | device : Device }
+    { model | device : Device, images : Images }
     -> Element msg
-settingsButton { device } =
+settingsButton { device, images } =
     link
         ([ Background.color Color.primary100
          , Border.rounded 4
@@ -596,7 +600,7 @@ settingsButton { device } =
         )
         { url = Router.toSettings
         , label =
-            Image.option
+            Image.option images
                 [ width <| px 24
                 , centerX
                 , centerY
@@ -604,8 +608,8 @@ settingsButton { device } =
         }
 
 
-openAside : Element msg
-openAside =
+openAside : { model | images : Images } -> Element msg
+openAside { images } =
     link
         [ width shrink
         , height shrink
@@ -613,7 +617,7 @@ openAside =
         ]
         { url = Aside.toUrl
         , label =
-            Image.allPairs
+            Image.allPairs images
                 [ width <| px 20
                 , centerY
                 ]

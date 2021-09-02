@@ -1,67 +1,42 @@
 module Modals.Borrow.Main exposing
-    ( Flags
-    , Modal
+    ( Modal
     , Msg
     , fromFragment
     , getPool
-    , init
     , same
     , update
     )
 
-import Data.Chain exposing (Chain)
-import Data.Maturity as Maturity exposing (Maturity)
-import Data.Pair as Pair exposing (Pair)
+import Data.Pool exposing (Pool)
+import Data.Pools as Pools exposing (Pools)
+import Data.Tokens exposing (Tokens)
 
 
 type Modal
-    = Modal
-        { pair : Pair
-        , maturity : Maturity
-        }
+    = Modal { pool : Pool }
 
 
-type alias Flags =
-    { pair : Pair
-    , maturity : Maturity
-    }
-
-
-init : Flags -> Modal
-init { pair, maturity } =
-    { pair = pair
-    , maturity = maturity
-    }
+init : Pool -> Modal
+init pool =
+    { pool = pool }
         |> Modal
 
 
-fromFragment : Chain -> String -> Maybe Modal
-fromFragment chain string =
+fromFragment : Tokens -> Pools -> String -> Maybe Modal
+fromFragment tokens pools string =
     string
-        |> String.split "&"
-        |> (\list ->
-                case list of
-                    asset :: collateral :: maturity :: _ ->
-                        Maybe.map2 Flags
-                            (Pair.fromFragment chain asset collateral)
-                            (maturity |> Maturity.fromFragment)
-                            |> Maybe.map init
-
-                    _ ->
-                        Nothing
-           )
+        |> Pools.fromPoolFragment tokens pools
+        |> Maybe.map init
 
 
 same : Modal -> Modal -> Bool
 same (Modal modal1) (Modal modal2) =
-    modal1.pair == modal2.pair && modal1.maturity == modal2.maturity
+    modal1.pool == modal2.pool
 
 
-getPool : Modal -> Flags
-getPool (Modal { pair, maturity }) =
-    { pair = pair
-    , maturity = maturity
-    }
+getPool : Modal -> Pool
+getPool (Modal { pool }) =
+    pool
 
 
 type Msg

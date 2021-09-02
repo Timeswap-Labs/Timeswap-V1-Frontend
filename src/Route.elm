@@ -5,10 +5,13 @@ import Browser.Navigation as Navigation exposing (Key)
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
 import Data.Pools exposing (Pools)
+import Data.Positions exposing (Positions)
+import Data.Remote exposing (Remote)
+import Data.Tokens exposing (Tokens)
 import Modal exposing (Modal)
 import Page exposing (Page)
-import Pages.AllMarket.Main as AllMarket
 import Service exposing (Service)
+import Time exposing (Posix)
 import Url exposing (Url)
 import Url.Parser as Parser exposing (Parser)
 import Utility.Router as Router
@@ -25,9 +28,11 @@ type Route
 pushUrl :
     { model
         | device : Device
+        , time : Posix
         , key : Key
+        , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | chain : Chain }
+        , user : Maybe { user | chain : Chain, positions : Remote Positions }
         , page : Page
         , modal : Maybe Modal
         , service : Maybe Service
@@ -119,8 +124,10 @@ exit ({ device, key } as model) =
 fromUrl :
     { model
         | device : Device
+        , time : Posix
+        , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | chain : Chain }
+        , user : Maybe { user | chain : Chain, positions : Remote Positions }
     }
     -> Url
     -> Maybe Route
@@ -131,8 +138,10 @@ fromUrl model url =
 match :
     { model
         | device : Device
+        , time : Posix
+        , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | chain : Chain }
+        , user : Maybe { user | chain : Chain, positions : Remote Positions }
     }
     -> Parser (Route -> a) a
 match model =
@@ -142,8 +151,10 @@ match model =
 fromFragment :
     { model
         | device : Device
+        , time : Posix
+        , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | chain : Chain }
+        , user : Maybe { user | chain : Chain, positions : Remote Positions }
     }
     -> Maybe String
     -> Route

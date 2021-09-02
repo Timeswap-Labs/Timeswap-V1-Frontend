@@ -1,88 +1,28 @@
-module Utility.TokenImage exposing (getIcon)
+module Utility.TokenImage exposing (icon)
 
 import Data.ERC20 as ERC20
 import Data.Token as Token exposing (Token)
+import Data.TokenImages exposing (TokenImages)
 import Element exposing (Attribute, Element, image)
+import Sort.Dict as Dict
 
 
-getIcon : List (Attribute msg) -> Token -> Element msg
-getIcon attribute token =
-    case token of
+icon : TokenImages -> List (Attribute msg) -> Token -> Element msg
+icon dict attributes token =
+    (case token of
         Token.ETH ->
-            eth attribute
+            "ETH"
 
         Token.ERC20 erc20 ->
-            if erc20 == ERC20.daiRinkeby then
-                dai attribute
-
-            else if erc20 == ERC20.maticRinkeby then
-                matic attribute
-
-            else if erc20 == ERC20.wethRinkeby then
-                weth attribute
-
-            else
-                eth attribute
-
-
-weth : List (Attribute msg) -> Element msg
-weth attributes =
-    image
-        attributes
-        { src = "./../../image/tokens/WETH.svg"
-        , description = "WETH Token"
-        }
-
-
-matic : List (Attribute msg) -> Element msg
-matic attributes =
-    image
-        attributes
-        { src = "./../../image/tokens/MATIC.svg"
-        , description = "MATIC Token"
-        }
-
-
-dai : List (Attribute msg) -> Element msg
-dai attributes =
-    image
-        attributes
-        { src = "./../../image/tokens/DAI.svg"
-        , description = "DAI Token"
-        }
-
-
-btc : List (Attribute msg) -> Element msg
-btc attributes =
-    image
-        attributes
-        { src = "./../../image/tokens/BIC.svg"
-        , description = "BTC Token"
-        }
-
-
-eth : List (Attribute msg) -> Element msg
-eth attributes =
-    image
-        attributes
-        { src = "./../../image/tokens/ETH.svg"
-        , description = "ETH Token"
-        }
-
-
-usdt : List (Attribute msg) -> Element msg
-usdt attributes =
-    image
-        attributes
-        { src = "./../../image/tokens/USDT.svg"
-        , description = "USDT Token"
-        }
-
-
-usdc : List (Attribute msg) -> Element msg
-usdc attributes =
-    image
-        attributes
-        { src = "./../../image/tokens/USDC.svg"
-        , description = "USDC Token"
-        }
+            erc20 |> ERC20.toSymbol
+    )
+        |> (\symbol ->
+                image
+                    attributes
+                    { src =
+                        dict
+                            |> Dict.get symbol
+                            |> Maybe.withDefault ""
+                    , description = symbol
+                    }
+           )

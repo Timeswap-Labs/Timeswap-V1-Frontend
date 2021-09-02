@@ -27,243 +27,153 @@ module Utility.Image exposing
     , warning
     )
 
+import Data.Images exposing (Images)
 import Element
     exposing
         ( Attribute
         , Element
         , image
         )
+import Sort.Dict as Dict
 
 
-logo : List (Attribute msg) -> Element msg
-logo attributes =
+view : String -> Images -> List (Attribute msg) -> Element msg
+view name dict attributes =
     image
         attributes
-        { src = "./../../image/Logo.svg"
-        , description = "Timeswap Logo"
+        { src =
+            dict
+                |> Dict.get name
+                |> Maybe.withDefault ""
+        , description = name
         }
 
 
-logoPure : List (Attribute msg) -> Element msg
-logoPure attributes =
-    image
-        attributes
-        { src = "./../../image/LogoPure.svg"
-        , description = "Timeswap Logo"
-        }
+logo : Images -> List (Attribute msg) -> Element msg
+logo =
+    view "Logo"
 
 
-metamask : List (Attribute msg) -> Element msg
-metamask attributes =
-    image
-        attributes
-        { src = "./../../image/Metamask.svg"
-        , description = "Metamask Icon"
-        }
+logoPure : Images -> List (Attribute msg) -> Element msg
+logoPure =
+    view "LogoPure"
 
 
-link : List (Attribute msg) -> Element msg
-link attributes =
-    image
-        attributes
-        { src = "./../../image/Link.svg"
-        , description = "Link Icon"
-        }
+metamask : Images -> List (Attribute msg) -> Element msg
+metamask =
+    view "Metamask"
 
 
-energy : List (Attribute msg) -> Element msg
-energy attributes =
-    image
-        attributes
-        { src = "./../../image/Energy.svg"
-        , description = "Energy Icon"
-        }
+link : Images -> List (Attribute msg) -> Element msg
+link =
+    view "Link"
 
 
-option : List (Attribute msg) -> Element msg
-option attributes =
-    image
-        attributes
-        { src = "./../../image/Option.svg"
-        , description = "Option Icon"
-        }
+energy : Images -> List (Attribute msg) -> Element msg
+energy =
+    view "Energy"
 
 
-allPairs : List (Attribute msg) -> Element msg
-allPairs attributes =
-    image
-        attributes
-        { src = "./../../image/AllPairs.svg"
-        , description = "AllPairs Icon"
-        }
+option : Images -> List (Attribute msg) -> Element msg
+option =
+    view "Option"
 
 
-token : List (Attribute msg) -> Element msg
-token attributes =
-    image
-        attributes
-        { src = "./../../image/Token.svg"
-        , description = "Sample Token"
-        }
+allPairs : Images -> List (Attribute msg) -> Element msg
+allPairs =
+    view "AllPairs"
 
 
-wallet : List (Attribute msg) -> Element msg
-wallet attributes =
-    image
-        attributes
-        { src = "./../../image/Wallet.svg"
-        , description = "Wallet Icon"
-        }
+token : Images -> List (Attribute msg) -> Element msg
+token =
+    view "Token"
 
 
-faucet : List (Attribute msg) -> Element msg
-faucet attributes =
-    image
-        attributes
-        { src = "./../../image/Faucet.svg"
-        , description = "Faucet Icon"
-        }
+wallet : Images -> List (Attribute msg) -> Element msg
+wallet =
+    view "Wallet"
 
 
-discloser : List (Attribute msg) -> Element msg
-discloser attributes =
-    image
-        attributes
-        { src = "./../../image/Discloser.svg"
-        , description = "Discloser Icon"
-        }
+faucet : Images -> List (Attribute msg) -> Element msg
+faucet =
+    view "Faucet"
 
 
-hourglassPrimary : List (Attribute msg) -> Element msg
-hourglassPrimary attributes =
-    image
-        attributes
-        { src = "./../../image/HourglassPrimary.svg"
-        , description = "HourglassPrimary Icon"
-        }
+discloser : Images -> List (Attribute msg) -> Element msg
+discloser =
+    view "Discloser"
 
 
-hourglassPrimarySmall : List (Attribute msg) -> Element msg
-hourglassPrimarySmall attributes =
-    image
-        attributes
-        { src = "./../../image/HourglassPrimarySmall.svg"
-        , description = "HourglassPrimarySmall Icon"
-        }
+hourglassPrimary : Images -> List (Attribute msg) -> Element msg
+hourglassPrimary =
+    view "HourglassPrimary"
 
 
-plus : List (Attribute msg) -> Element msg
-plus attributes =
-    image
-        attributes
-        { src = "./../../image/Plus.svg"
-        , description = "Plus Icon"
-        }
+hourglassPrimarySmall : Images -> List (Attribute msg) -> Element msg
+hourglassPrimarySmall =
+    view "HourglassPrimarySmall"
 
 
-arrow : List (Attribute msg) -> Element msg
-arrow attributes =
-    image
-        attributes
-        { src = "./../../image/Arrow.svg"
-        , description = "Arrow Icon"
-        }
+plus : Images -> List (Attribute msg) -> Element msg
+plus =
+    view "Plus"
 
 
-close : List (Attribute msg) -> Element msg
-close attributes =
-    image
-        attributes
-        { src = "./../../image/Close.svg"
-        , description = "Close Icon"
-        }
+arrow : Images -> List (Attribute msg) -> Element msg
+arrow =
+    view "Arrow"
 
 
-arrowDown : List (Attribute msg) -> Element msg
-arrowDown attributes =
-    image
-        attributes
-        { src = "./../../image/ArrowDown.svg"
-        , description = "ArrowDown Icon"
-        }
+close : Images -> List (Attribute msg) -> Element msg
+close =
+    view "Close"
 
 
-hourglass : List (Attribute msg) -> Element msg
-hourglass attributes =
-    image
-        attributes
-        { src = "./../../image/Hourglass.svg"
-        , description = "Hourglass Icon"
-        }
+arrowDown : Images -> List (Attribute msg) -> Element msg
+arrowDown =
+    view "ArrowDown"
 
 
-info : List (Attribute msg) -> Element msg
-info attributes =
-    image
-        attributes
-        { src = "./../../image/Info.svg"
-        , description = "Info Icon"
-        }
+hourglass : Images -> List (Attribute msg) -> Element msg
+hourglass =
+    view "Hourglass"
 
 
-matured : List (Attribute msg) -> Element msg
-matured attributes =
-    image
-        attributes
-        { src = "./../../image/Matured.svg"
-        , description = "Matured Icon"
-        }
+info : Images -> List (Attribute msg) -> Element msg
+info =
+    view "Info"
 
 
-calander : List (Attribute msg) -> Element msg
-calander attributes =
-    image
-        attributes
-        { src = "./../../image/Calander.svg"
-        , description = "Calander Icon"
-        }
+matured : Images -> List (Attribute msg) -> Element msg
+matured =
+    view "Matured"
 
 
-setting : List (Attribute msg) -> Element msg
-setting attributes =
-    image
-        attributes
-        { src = "./../../image/Setting.svg"
-        , description = "Setting"
-        }
+calander : Images -> List (Attribute msg) -> Element msg
+calander =
+    view "Calendar"
 
 
-checkbox : List (Attribute msg) -> Element msg
-checkbox attributes =
-    image
-        attributes
-        { src = "./../../image/Checkbox.svg"
-        , description = "Checkbox"
-        }
+setting : Images -> List (Attribute msg) -> Element msg
+setting =
+    view "Setting"
 
 
-checkboxSelected : List (Attribute msg) -> Element msg
-checkboxSelected attributes =
-    image
-        attributes
-        { src = "./../../image/CheckboxSelected.svg"
-        , description = "CheckboxSelected"
-        }
+checkbox : Images -> List (Attribute msg) -> Element msg
+checkbox =
+    view "Checkbox"
 
 
-warning : List (Attribute msg) -> Element msg
-warning attributes =
-    image
-        attributes
-        { src = "./../../image/Warning.svg"
-        , description = "Warning"
-        }
+checkboxSelected : Images -> List (Attribute msg) -> Element msg
+checkboxSelected =
+    view "CheckboxSelected"
 
 
-background : List (Attribute msg) -> Element msg
-background attributes =
-    image
-        attributes
-        { src = "./../../image/Background.svg"
-        , description = "Background"
-        }
+warning : Images -> List (Attribute msg) -> Element msg
+warning =
+    view "Warning"
+
+
+background : Images -> List (Attribute msg) -> Element msg
+background =
+    view "Background"

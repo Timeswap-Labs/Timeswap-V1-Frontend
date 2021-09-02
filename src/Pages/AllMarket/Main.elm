@@ -2,9 +2,12 @@ module Pages.AllMarket.Main exposing (Msg, Page, init, update, view)
 
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
-import Data.Maturity as Maturity exposing (Maturity)
+import Data.Images exposing (Images)
+import Data.Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pools as Pools exposing (PoolInfo, Pools)
+import Data.Remote exposing (Remote)
+import Data.TokenImages exposing (TokenImages)
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
@@ -33,7 +36,6 @@ import Element.Keyed as Keyed
 import Pages.PairMarket.ListPools as ListPools
 import Sort.Set as Set exposing (Set)
 import Time exposing (Posix)
-import User
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
@@ -44,17 +46,13 @@ type Page
     = Page (Set Pair)
 
 
-init : { model | pools : Pools, user : Maybe { user | chain : Chain } } -> Page
-init { pools, user } =
-    user
-        |> User.toChain
-        |> (\chain ->
-                pools
-                    |> Pools.getFirst
-                    |> Maybe.map (Set.singleton (Pair.sorter chain))
-                    |> Maybe.withDefault (Set.empty (Pair.sorter chain))
-                    |> Page
-           )
+init : { model | pools : Pools } -> Page
+init { pools } =
+    pools
+        |> Pools.getFirst
+        |> Maybe.map (Set.singleton Pair.sorter)
+        |> Maybe.withDefault (Set.empty Pair.sorter)
+        |> Page
 
 
 type Msg
@@ -87,6 +85,8 @@ view :
         | device : Device
         , time : Posix
         , zoneInfo : Maybe ZoneInfo
+        , images : Images
+        , tokenImages : TokenImages
         , pools : Pools
     }
     -> Page
@@ -133,18 +133,20 @@ allPairs :
         | device : Device
         , time : Posix
         , zoneInfo : Maybe ZoneInfo
+        , images : Images
+        , tokenImages : TokenImages
         , pools : Pools
     }
     -> Page
     -> Element Msg
-allPairs ({ pools } as model) page =
+allPairs ({ time, pools } as model) page =
     Keyed.column
         [ width fill
         , height shrink
         , spacing 12
         ]
         (pools
-            |> Pools.toList
+            |> Pools.toList time
             |> List.map
                 (\( pair, list ) ->
                     ( pair |> Pair.toKey
@@ -159,43 +161,59 @@ singlePair :
         | device : Device
         , time : Posix
         , zoneInfo : Maybe ZoneInfo
+        , images : Images
+        , tokenImages : TokenImages
         , pools : Pools
     }
     -> Page
-    -> ( Pair, List PoolInfo )
+    -> ( Pair, List ( Maturity, Remote PoolInfo ) )
     -> Element Msg
-singlePair ({ time } as model) ((Page set) as page) ( pair, list ) =
-    list
-        |> List.filter (\{ maturity } -> maturity |> Maturity.isActive time)
-        |> (\filteredList ->
-                column
-                    [ width fill
-                    , height shrink
-                    ]
-                    [ row
-                        ([ width fill
-                         , height <| px 72
-                         , paddingXY 24 0
-                         , spacing 18
-                         ]
-                            ++ Glass.lightPrimary 1
-                        )
-                        [ PairInfo.icons pair
-                        , PairInfo.symbols pair
-                        , size model pair
-                        , discloser page pair filteredList
-                        ]
-                    , if (pair |> Set.memberOf set) && (list |> List.isEmpty |> not) then
-                        ListPools.view model pair filteredList
+singlePair ({ tokenImages } as model) ((Page set) as page) ( pair, list ) =
+    column
+        [ width fill
+        , height shrink
+        ]
+        [ row
+            ([ width fill
+             , height <| px 72
+             , paddingXY 24 0
+             , spacing 18
+             ]
+                ++ Glass.lightPrimary 1
+            )
+            [ PairInfo.icons tokenImages pair
+            , PairInfo.symbols pair
+            , pairSize list
+            , discloser model page ( pair, list )
+            ]
+            |> (\element ->
+                    if list |> List.isEmpty then
+                        element
 
-                      else
-                        none
-                    ]
-           )
+                    else
+                        Input.button
+                            [ width fill
+                            , height shrink
+                            ]
+                            { onPress =
+                                if pair |> Set.memberOf set then
+                                    Collapse pair |> Just
+
+                                else
+                                    Expand pair |> Just
+                            , label = element
+                            }
+               )
+        , if (pair |> Set.memberOf set) && (list |> List.isEmpty |> not) then
+            ListPools.view model pair list
+
+          else
+            none
+        ]
 
 
-size : { model | time : Posix, pools : Pools } -> Pair -> Element msg
-size { time, pools } pair =
+pairSize : List ( Maturity, Remote PoolInfo ) -> Element msg
+pairSize list =
     el
         [ width shrink
         , height shrink
@@ -205,8 +223,8 @@ size { time, pools } pair =
         , Font.size 16
         , Font.color Color.transparent500
         ]
-        (pools
-            |> Pools.getSize time pair
+        (list
+            |> List.length
             |> String.fromInt
             |> (\string ->
                     if string == "1" then
@@ -219,8 +237,8 @@ size { time, pools } pair =
         )
 
 
-discloser : Page -> Pair -> List { poolInfo | maturity : Maturity } -> Element Msg
-discloser (Page set) pair list =
+discloser : { model | images : Images } -> Page -> ( Pair, List ( Maturity, Remote PoolInfo ) ) -> Element Msg
+discloser { images } (Page set) ( pair, list ) =
     if list |> List.isEmpty then
         el
             [ width <| px 12
@@ -231,25 +249,13 @@ discloser (Page set) pair list =
             none
 
     else
-        Input.button
-            [ width shrink
-            , height shrink
+        Image.discloser images
+            [ width <| px 12
             , alignRight
             , centerY
+            , if pair |> Set.memberOf set then
+                degrees 180 |> rotate
+
+              else
+                degrees 0 |> rotate
             ]
-            { onPress =
-                if pair |> Set.memberOf set then
-                    Collapse pair |> Just
-
-                else
-                    Expand pair |> Just
-            , label =
-                Image.discloser
-                    [ width <| px 12
-                    , if pair |> Set.memberOf set then
-                        degrees 180 |> rotate
-
-                      else
-                        degrees 0 |> rotate
-                    ]
-            }

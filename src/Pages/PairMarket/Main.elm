@@ -1,8 +1,19 @@
-module Pages.PairMarket.Main exposing (Msg, Page, getPair, init, update, view)
+module Pages.PairMarket.Main exposing
+    ( Msg
+    , Page
+    , fromFragment
+    , getPair
+    , init
+    , update
+    , view
+    )
 
 import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Data.Pair exposing (Pair)
 import Data.Pools as Pools exposing (Pools)
+import Data.TokenImages exposing (TokenImages)
+import Data.Tokens exposing (Tokens)
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
@@ -47,6 +58,16 @@ init pair =
     Page pair
 
 
+fromFragment :
+    { model | tokens : Tokens, pools : Pools }
+    -> String
+    -> Maybe Page
+fromFragment { tokens, pools } string =
+    string
+        |> Pools.fromPairFragment tokens pools
+        |> Maybe.map init
+
+
 getPair : Page -> Pair
 getPair (Page pair) =
     pair
@@ -66,11 +87,13 @@ view :
         | device : Device
         , time : Posix
         , zoneInfo : Maybe ZoneInfo
+        , images : Images
+        , tokenImages : TokenImages
         , pools : Pools
     }
     -> Page
     -> Element msg
-view ({ device, pools } as model) ((Page pair) as page) =
+view ({ device, time, pools } as model) ((Page pair) as page) =
     column
         [ (if Device.isPhone device then
             px 335
@@ -89,26 +112,34 @@ view ({ device, pools } as model) ((Page pair) as page) =
         ]
         [ title model page
         , pools
-            |> Pools.toListSinglePool pair
+            |> Pools.toListSinglePair time pair
             |> ListPools.view model pair
         ]
 
 
-title : { model | device : Device, time : Posix, pools : Pools } -> Page -> Element msg
-title model ((Page pair) as page) =
+title :
+    { model
+        | device : Device
+        , time : Posix
+        , tokenImages : TokenImages
+        , pools : Pools
+    }
+    -> Page
+    -> Element msg
+title ({ tokenImages } as model) ((Page pair) as page) =
     row
         [ width fill
         , height shrink
         , spacing 14
         ]
-        [ PairInfo.icons pair
+        [ PairInfo.icons tokenImages pair
         , PairInfo.symbols pair
-        , size model page
+        , pairSize model page
         ]
 
 
-size : { model | device : Device, time : Posix, pools : Pools } -> Page -> Element msg
-size { device, time, pools } (Page pair) =
+pairSize : { model | device : Device, time : Posix, pools : Pools } -> Page -> Element msg
+pairSize { device, time, pools } (Page pair) =
     el
         [ width shrink
         , height shrink
@@ -123,7 +154,8 @@ size { device, time, pools } (Page pair) =
         , Font.color Color.transparent500
         ]
         (pools
-            |> Pools.getSize time pair
+            |> Pools.toListSinglePair time pair
+            |> List.length
             |> String.fromInt
             |> (\string ->
                     if string == "1" then

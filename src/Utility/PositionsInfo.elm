@@ -7,6 +7,7 @@ module Utility.PositionsInfo exposing
     )
 
 import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Status exposing (Status(..))
 import Element
@@ -69,7 +70,7 @@ loading =
         ]
 
 
-noLendPosition : { model | device : Device } -> Element msg
+noLendPosition : { model | device : Device, images : Images } -> Element msg
 noLendPosition model =
     column
         [ width fill
@@ -91,7 +92,7 @@ noLendPosition model =
         ]
 
 
-noBorrowPosition : { model | device : Device } -> Element msg
+noBorrowPosition : { model | device : Device, images : Images } -> Element msg
 noBorrowPosition model =
     column
         [ width fill
@@ -113,8 +114,8 @@ noBorrowPosition model =
         ]
 
 
-goToMarketButton : { model | device : Device } -> Element msg
-goToMarketButton { device } =
+goToMarketButton : { model | device : Device, images : Images } -> Element msg
+goToMarketButton { device, images } =
     link
         ([ width shrink
          , paddingEach
@@ -146,7 +147,7 @@ goToMarketButton { device } =
                 , height fill
                 , spacing 6
                 ]
-                [ Image.plus
+                [ Image.plus images
                     [ height <| px 18
                     , centerX
                     , centerY
@@ -161,7 +162,7 @@ goToMarketButton { device } =
         }
 
 
-noUser : { model | device : Device } -> Element msg
+noUser : { model | device : Device, images : Images } -> Element msg
 noUser model =
     column
         [ width fill
@@ -183,8 +184,8 @@ noUser model =
         ]
 
 
-connectButton : { model | device : Device } -> Element msg
-connectButton { device } =
+connectButton : { model | device : Device, images : Images } -> Element msg
+connectButton { device, images } =
     link
         ([ width shrink
          , paddingEach
@@ -216,7 +217,7 @@ connectButton { device } =
                 , height fill
                 , spacing 6
                 ]
-                (Image.wallet
+                (Image.wallet images
                     [ width <| px 24
                     , centerY
                     ]
@@ -263,10 +264,10 @@ rinkebyLabel =
 
 
 duration :
-    { model | time : Posix }
-    -> { positionsInfo | maturity : Maturity }
+    { model | time : Posix, images : Images }
+    -> Maturity
     -> Element msg
-duration { time } { maturity } =
+duration { time, images } maturity =
     row
         [ width shrink
         , height shrink
@@ -278,7 +279,7 @@ duration { time } { maturity } =
         ]
         (case maturity |> Maturity.toDuration time of
             Active string ->
-                [ Image.hourglassPrimary
+                [ Image.hourglassPrimary images
                     [ height <| px 22
                     , centerY
                     ]
@@ -299,7 +300,7 @@ duration { time } { maturity } =
                     , Background.color Color.transparent100
                     , Border.rounded 999
                     ]
-                    (Image.matured
+                    (Image.matured images
                         [ height <| px 25
                         , centerX
                         , centerY

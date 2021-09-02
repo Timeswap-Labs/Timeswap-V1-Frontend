@@ -21,6 +21,7 @@ import Data.Balances exposing (Balances)
 import Data.Chain exposing (Chain(..))
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Remote exposing (Remote)
 import Data.Slippage as Slippage exposing (Slippage)
@@ -233,6 +234,7 @@ view :
             , backdrop : Backdrop
             , slippage : Slippage
             , deadline : Deadline
+            , images : Images
             , user : Maybe { user | address : Address, balances : Remote Balances }
         }
     -> Service

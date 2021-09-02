@@ -2,9 +2,9 @@ module Page exposing
     ( Msg
     , Page
     , fromFragment
-    , getPair
     , init
     , same
+    , toFilter
     , toTab
     , toUrl
     , update
@@ -13,31 +13,33 @@ module Page exposing
 
 import Data.Chain exposing (Chain(..))
 import Data.Device exposing (Device)
-import Data.Pair as Pair exposing (Pair)
+import Data.Filter as Filter exposing (Filter)
+import Data.Images exposing (Images)
+import Data.Pair exposing (Pair)
 import Data.Pools exposing (Pools)
 import Data.Positions exposing (Positions)
 import Data.Remote exposing (Remote)
 import Data.Tab as Tab exposing (Tab)
+import Data.TokenImages exposing (TokenImages)
+import Data.Tokens exposing (Tokens)
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
         ( Element
-        , alignTop
         , el
         , fill
         , height
         , none
         , paddingXY
         , scrollbarY
-        , shrink
         , width
         )
 import Element.Font as Font
 import Pages.AllMarket.Main as AllMarket
 import Pages.BorrowDashboard.Main as BorrowDashboard
 import Pages.LendDashboard.Main as LendDashboard
-import Pages.LiquidityProvider.Main as LiquidityProvider
 import Pages.PairMarket.Main as PairMarket
+import Sort.Set exposing (Set)
 import Time exposing (Posix)
 import Utility.Router as Router
 import Utility.Typography as Typography
@@ -58,21 +60,22 @@ init model =
 
 
 fromFragment :
-    { model | pools : Pools, user : Maybe { user | chain : Chain } }
+    { model
+        | time : Posix
+        , tokens : Tokens
+        , pools : Pools
+        , user : Maybe { user | positions : Remote Positions }
+    }
     -> String
     -> Maybe Page
-fromFragment ({ user } as model) string =
+fromFragment model string =
     string
         |> String.split "?"
-        |> List.concatMap (String.split "&")
         |> (\list ->
                 case list of
-                    "market" :: asset :: collateral :: _ ->
-                        user
-                            |> Maybe.map .chain
-                            |> Maybe.withDefault Rinkeby
-                            |> (\chain -> Pair.fromFragment chain asset collateral)
-                            |> Maybe.map PairMarket.init
+                    "market" :: parameter :: _ ->
+                        parameter
+                            |> PairMarket.fromFragment model
                             |> Maybe.map PairMarket
 
                     "market" :: _ ->
@@ -80,17 +83,44 @@ fromFragment ({ user } as model) string =
                             |> AllMarket
                             |> Just
 
-                    "dashboard" :: "transaction=lend" :: _ ->
-                        LendDashboard (LendDashboard.init model)
-                            |> Just
+                    "dashboard" :: transactionString :: _ ->
+                        transactionString
+                            |> String.split "&"
+                            |> (\innerList ->
+                                    case innerList of
+                                        "transaction=lend" :: asset :: collateral :: _ ->
+                                            [ asset
+                                            , collateral
+                                            ]
+                                                |> String.join "&"
+                                                |> LendDashboard.fromFragment model
+                                                |> LendDashboard
+                                                |> Just
 
-                    "dashboard" :: "transaction=borrow" :: _ ->
-                        BorrowDashboard (BorrowDashboard.init model)
-                            |> Just
+                                        "transaction=lend" :: _ ->
+                                            LendDashboard.init model Nothing
+                                                |> LendDashboard
+                                                |> Just
 
-                    "dashboard" :: _ ->
-                        LendDashboard (LendDashboard.init model)
-                            |> Just
+                                        "transaction=borrow" :: asset :: collateral :: _ ->
+                                            [ asset
+                                            , collateral
+                                            ]
+                                                |> String.join "&"
+                                                |> BorrowDashboard.fromFragment model
+                                                |> BorrowDashboard
+                                                |> Just
+
+                                        "transaction=borrow" :: _ ->
+                                            BorrowDashboard.init model Nothing
+                                                |> BorrowDashboard
+                                                |> Just
+
+                                        _ ->
+                                            LendDashboard.init model Nothing
+                                                |> LendDashboard
+                                                |> Just
+                               )
 
                     "liquidity" :: _ ->
                         LiquidityProvider
@@ -112,11 +142,15 @@ toUrl page =
                 |> PairMarket.getPair
                 |> Router.toPairMarket
 
-        LendDashboard _ ->
-            Router.toLendDashboard
+        LendDashboard lendDashboard ->
+            lendDashboard
+                |> LendDashboard.getFilter
+                |> Router.toLendDashboard
 
-        BorrowDashboard _ ->
-            Router.toBorrowDashboard
+        BorrowDashboard borrowDashboard ->
+            borrowDashboard
+                |> BorrowDashboard.getFilter
+                |> Router.toBorrowDashboard
 
         LiquidityProvider ->
             Router.toLiquidityProvider
@@ -128,14 +162,17 @@ same page1 page2 =
         ( AllMarket _, AllMarket _ ) ->
             True
 
-        ( PairMarket pair1, PairMarket pair2 ) ->
-            pair1 == pair2
+        ( PairMarket pairMarket1, PairMarket pairMarket2 ) ->
+            (pairMarket1 |> PairMarket.getPair)
+                == (pairMarket2 |> PairMarket.getPair)
 
-        ( LendDashboard _, LendDashboard _ ) ->
-            True
+        ( LendDashboard lendDashboard1, LendDashboard lendDashboard2 ) ->
+            (lendDashboard1 |> LendDashboard.getFilter)
+                == (lendDashboard2 |> LendDashboard.getFilter)
 
-        ( BorrowDashboard _, BorrowDashboard _ ) ->
-            True
+        ( BorrowDashboard borrowDashboard1, BorrowDashboard borrowDashboard2 ) ->
+            (borrowDashboard1 |> BorrowDashboard.getFilter)
+                == (borrowDashboard2 |> BorrowDashboard.getFilter)
 
         ( LiquidityProvider, LiquidityProvider ) ->
             True
@@ -163,14 +200,29 @@ toTab page =
             Tab.Liquidity
 
 
-getPair : Page -> Maybe Pair
-getPair page =
+toFilter : Page -> Filter
+toFilter page =
     case page of
-        PairMarket pairMarket ->
-            pairMarket |> PairMarket.getPair |> Just
+        AllMarket _ ->
+            Filter.AllMarket
 
-        _ ->
-            Nothing
+        PairMarket pairMarket ->
+            pairMarket
+                |> PairMarket.getPair
+                |> Filter.PairMarket
+
+        LendDashboard lendDashboard ->
+            lendDashboard
+                |> LendDashboard.getFilter
+                |> Filter.LendDashboard
+
+        BorrowDashboard borrowDashboard ->
+            borrowDashboard
+                |> BorrowDashboard.getFilter
+                |> Filter.BorrowDashboard
+
+        LiquidityProvider ->
+            Filter.LiquidityProvider
 
 
 type Msg
@@ -219,6 +271,8 @@ view :
         | device : Device
         , time : Posix
         , zoneInfo : Maybe ZoneInfo
+        , images : Images
+        , tokenImages : TokenImages
         , pools : Pools
         , user : Maybe { user | positions : Remote Positions }
     }

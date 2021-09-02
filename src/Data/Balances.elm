@@ -1,13 +1,13 @@
-module Data.Balances exposing (BalanceInfo, Balances, example, isEmpty, toList)
+module Data.Balances exposing (BalanceInfo, Balances, example, get, hasEnough, isEmpty, toList)
 
-import Data.Chain exposing (Chain(..))
 import Data.ERC20 as ERC20
 import Data.Token as Token exposing (Token)
+import Data.Uint as Uint exposing (Uint)
 import Sort.Dict as Dict exposing (Dict)
 
 
 type Balances
-    = Balances (Dict Token String)
+    = Balances (Dict Token Uint)
 
 
 type alias BalanceInfo =
@@ -28,17 +28,46 @@ toList (Balances dict) =
         |> List.map
             (\( token, balance ) ->
                 { token = token
-                , balance = balance
+                , balance =
+                    balance
+                        |> Uint.toAmount (token |> Token.toDecimals)
                 }
             )
 
 
+get : Token -> Balances -> String
+get token (Balances dict) =
+    dict
+        |> Dict.get token
+        |> Maybe.map (Uint.toAmount (token |> Token.toDecimals))
+        |> Maybe.withDefault "0"
+
+
+hasEnough : Token -> String -> Balances -> Bool
+hasEnough token string (Balances dict) =
+    Maybe.map2 Uint.compare
+        (dict |> Dict.get token)
+        (string |> Uint.fromAmount token)
+        |> Maybe.map
+            (\order ->
+                case order of
+                    LT ->
+                        False
+
+                    _ ->
+                        True
+            )
+        |> Maybe.withDefault False
+
+
 example : Balances
 example =
-    Dict.fromList (Token.sorter Rinkeby)
-        [ ( Token.ETH, "26.56" )
-        , ( Token.ERC20 ERC20.daiRinkeby, "388870.2131" )
-        , ( Token.ERC20 ERC20.maticRinkeby, "12.00013131312" )
-        , ( Token.ERC20 ERC20.wethRinkeby, "0.088313" )
+    List.map2 Tuple.pair
+        [ Token.ETH
+        , Token.ERC20 ERC20.daiRinkeby
+        , Token.ERC20 ERC20.maticRinkeby
+        , Token.ERC20 ERC20.wethRinkeby
         ]
+        Uint.example
+        |> Dict.fromList Token.sorter
         |> Balances
