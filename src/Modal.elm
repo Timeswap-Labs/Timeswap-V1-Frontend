@@ -136,12 +136,12 @@ type Msg
     | PayMsg Pay.Msg
 
 
-update : Msg -> Modal -> ( Modal, Cmd Msg )
-update msg modal =
+update : { model | user : Maybe { user | balances : Remote Balances } } -> Msg -> Modal -> ( Modal, Cmd Msg )
+update model msg modal =
     case ( msg, modal ) of
         ( LendMsg lendMsg, Lend lend ) ->
             lend
-                |> Lend.update lendMsg
+                |> Lend.update model lendMsg
                 |> (\( updatedLend, cmd ) -> ( Lend updatedLend, cmd |> Cmd.map LendMsg ))
 
         ( BorrowMsg borrowMsg, Borrow borrow ) ->

@@ -15,7 +15,6 @@ import Data.Chain exposing (Chain(..))
 import Data.Device exposing (Device)
 import Data.Filter as Filter exposing (Filter)
 import Data.Images exposing (Images)
-import Data.Pair exposing (Pair)
 import Data.Pools exposing (Pools)
 import Data.Positions exposing (Positions)
 import Data.Remote exposing (Remote)
@@ -39,7 +38,6 @@ import Pages.AllMarket.Main as AllMarket
 import Pages.BorrowDashboard.Main as BorrowDashboard
 import Pages.LendDashboard.Main as LendDashboard
 import Pages.PairMarket.Main as PairMarket
-import Sort.Set exposing (Set)
 import Time exposing (Posix)
 import Utility.Router as Router
 import Utility.Typography as Typography

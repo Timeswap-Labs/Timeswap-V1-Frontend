@@ -1,6 +1,6 @@
 module Services.Wallet.Main exposing (view)
 
-import Data.Address exposing (Address)
+import Data.Address as Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Balances exposing (Balances)
 import Data.Device as Device exposing (Device)
@@ -36,7 +36,7 @@ view :
     -> { model | device : Device, backdrop : Backdrop, images : Images }
     -> { user | address : Address, balances : Remote Balances }
     -> Element msg
-view msgs { device, backdrop, images } user =
+view msgs ({ device, backdrop, images } as model) user =
     column
         ([ padding 40
          , spacing 32

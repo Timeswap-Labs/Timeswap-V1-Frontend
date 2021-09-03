@@ -151,7 +151,7 @@ logo :
             , claimsOut : ClaimsOut
         }
     -> Element msg
-logo { tokenImages, user } { pool, assetIn, claimsOut } =
+logo ({ tokenImages } as model) ({ pool } as modal) =
     row
         [ width shrink
         , height fill
@@ -165,31 +165,12 @@ logo { tokenImages, user } { pool, assetIn, claimsOut } =
             , left = 1
             }
         , Border.solid
-        , user
-            |> Maybe.map
-                (\{ balances } ->
-                    case balances of
-                        Loading ->
-                            False
+        , (if ClaimsOut.isCorrect model modal then
+            Color.transparent100
 
-                        Failure ->
-                            True
-
-                        Success successBalance ->
-                            successBalance
-                                |> Balances.hasEnough
-                                    (pool.pair |> Pair.toAsset)
-                                    assetIn
-                                |> not
-                )
-            |> Maybe.withDefault False
-            |> (\notEnough ->
-                    if (claimsOut |> ClaimsOut.hasFailure) || notEnough then
-                        Color.negative500
-
-                    else
-                        Color.transparent100
-               )
+           else
+            Color.negative500
+          )
             |> Border.color
         , Border.roundEach
             { topLeft = 4
@@ -230,7 +211,7 @@ amount :
             , claimsOut : ClaimsOut
         }
     -> Element msg
-amount msgs ({ user } as model) ({ pool, claimsOut, assetIn } as modal) =
+amount msgs ({ user } as model) modal =
     row
         [ width fill
         , height fill
@@ -248,31 +229,12 @@ amount msgs ({ user } as model) ({ pool, claimsOut, assetIn } as modal) =
             , left = 0
             }
         , Border.solid
-        , user
-            |> Maybe.map
-                (\{ balances } ->
-                    case balances of
-                        Loading ->
-                            False
+        , (if ClaimsOut.isCorrect model modal then
+            Color.transparent100
 
-                        Failure ->
-                            True
-
-                        Success successBalance ->
-                            successBalance
-                                |> Balances.hasEnough
-                                    (pool.pair |> Pair.toAsset)
-                                    assetIn
-                                |> not
-                )
-            |> Maybe.withDefault False
-            |> (\notEnough ->
-                    if (claimsOut |> ClaimsOut.hasFailure) || notEnough then
-                        Color.negative500
-
-                    else
-                        Color.transparent100
-               )
+           else
+            Color.negative500
+          )
             |> Border.color
         , Border.roundEach
             { topLeft = 0
@@ -283,7 +245,15 @@ amount msgs ({ user } as model) ({ pool, claimsOut, assetIn } as modal) =
         ]
         [ assetInInput msgs model modal
         , user
-            |> Maybe.map (\_ -> maxButton msgs)
+            |> Maybe.map
+                (\{ balances } ->
+                    case balances of
+                        Success _ ->
+                            maxButton msgs
+
+                        _ ->
+                            none
+                )
             |> Maybe.withDefault none
         ]
 
@@ -293,7 +263,7 @@ assetInInput :
     -> { model | user : Maybe { user | balances : Remote Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
     -> Element msg
-assetInInput msgs { user } { pool, assetIn, claimsOut } =
+assetInInput msgs model ({ assetIn } as modal) =
     Input.text
         [ width fill
         , height shrink
@@ -303,31 +273,12 @@ assetInInput msgs { user } { pool, assetIn, claimsOut } =
         , Border.color Color.none
         , Font.regular
         , Font.size 16
-        , user
-            |> Maybe.map
-                (\{ balances } ->
-                    case balances of
-                        Loading ->
-                            False
+        , (if ClaimsOut.isCorrect model modal then
+            Color.transparent500
 
-                        Failure ->
-                            True
-
-                        Success successBalance ->
-                            successBalance
-                                |> Balances.hasEnough
-                                    (pool.pair |> Pair.toAsset)
-                                    assetIn
-                                |> not
-                )
-            |> Maybe.withDefault False
-            |> (\notEnough ->
-                    if (claimsOut |> ClaimsOut.hasFailure) || notEnough then
-                        Color.negative500
-
-                    else
-                        Color.transparent500
-               )
+           else
+            Color.negative500
+          )
             |> Font.color
         ]
         { onChange = msgs.inputAssetIn

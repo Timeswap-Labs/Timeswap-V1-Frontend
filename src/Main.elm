@@ -332,7 +332,7 @@ update msg model =
 
         ModalMsg modalMsg ->
             model.modal
-                |> Maybe.map (Modal.update modalMsg)
+                |> Maybe.map (Modal.update model modalMsg)
                 |> Maybe.map
                     (\( modal, cmd ) ->
                         ( { model | modal = Just modal }

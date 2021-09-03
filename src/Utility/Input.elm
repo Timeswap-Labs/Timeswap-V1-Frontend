@@ -1,4 +1,4 @@
-module Utility.Input exposing (isFloat, isInt)
+module Utility.Input exposing (isFloat, isInt, isZero)
 
 
 isFloat : String -> Bool
@@ -9,6 +9,16 @@ isFloat string =
 isInt : String -> Bool
 isInt string =
     String.all Char.isDigit string
+
+
+isZero : String -> Bool
+isZero string =
+    String.all isZeroOrPoint string && hasMaxOnePoint string
+
+
+isZeroOrPoint : Char -> Bool
+isZeroOrPoint char =
+    char == '0' || isPoint char
 
 
 isDigitOrPoint : Char -> Bool

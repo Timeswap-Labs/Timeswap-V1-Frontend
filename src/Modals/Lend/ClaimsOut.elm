@@ -1,26 +1,50 @@
-module Modals.Lend.ClaimsOut exposing (BondInput, ClaimsOut(..), InsuranceInput, SliderInput, hasFailure, updateAssetIn, updateEmptyAssetIn)
+module Modals.Lend.ClaimsOut exposing
+    ( BondInput
+    , ClaimsOut(..)
+    , InsuranceInput
+    , SliderInput
+    , hasFailure
+    , hasZeroInput
+    , isCorrect
+    , isDefault
+    , slide
+    , slideZero
+    , switchLendSetting
+    , switchLendSettingZero
+    , updateAssetIn
+    , updateAssetInZero
+    , updateBondOut
+    , updateBondOutZero
+    , updateInsuranceOut
+    , updateInsuranceOutZero
+    , view
+    )
 
 import Data.Balances as Balances exposing (Balances)
 import Data.Images exposing (Images)
 import Data.Pair as Pair exposing (Pair)
 import Data.Percent as Percent exposing (Percent)
 import Data.Remote exposing (Remote(..))
+import Data.Token as Token
+import Data.TokenImages exposing (TokenImages)
 import Data.Uint as Uint
 import Element
     exposing
         ( Element
         , alignLeft
         , alignRight
+        , alpha
         , behindContent
         , centerX
         , centerY
+        , clip
         , column
         , el
         , fill
         , height
+        , inFront
         , newTabLink
         , none
-        , onRight
         , padding
         , paddingEach
         , paddingXY
@@ -33,12 +57,13 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
-import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Utility.Color as Color
 import Utility.Image as Image
+import Utility.Input as Input
 import Utility.Loading as Loading
+import Utility.TokenImage as TokenImage
 
 
 type ClaimsOut
@@ -74,8 +99,8 @@ type alias InsuranceInput =
     }
 
 
-hasFailure : ClaimsOut -> Bool
-hasFailure claimsOut =
+hasFailure : { modal | claimsOut : ClaimsOut } -> Bool
+hasFailure { claimsOut } =
     case claimsOut of
         Default Failure ->
             True
@@ -149,49 +174,58 @@ hasBalanceIfUser { user } { pool, assetIn } =
 
 
 isCorrect :
-    { model | user : Maybe { user | balances : Balances } }
+    { model | user : Maybe { user | balances : Remote Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
     -> Bool
-isCorrect { user } { pool, assetIn, claimsOut } =
-    True
+isCorrect model modal =
+    (hasFailure modal |> not)
+        && isAmount modal
+        && hasBalanceIfUser model modal
 
 
-updateAssetIn : ClaimsOut -> ClaimsOut
-updateAssetIn claimsOut =
+hasZeroInput : ClaimsOut -> Bool
+hasZeroInput claimsOut =
+    case claimsOut of
+        Bond { bond } ->
+            bond |> Input.isZero
+
+        Insurance { insurance } ->
+            insurance |> Input.isZero
+
+        _ ->
+            False
+
+
+isDefault : { modal | claimsOut : ClaimsOut } -> Bool
+isDefault { claimsOut } =
     case claimsOut of
         Default _ ->
-            Default Loading
+            True
 
-        Slider sliderInput ->
-            { sliderInput | claims = Loading }
-                |> Slider
+        Slider { percent } ->
+            (percent |> Percent.toFloat) == 64
 
-        Bond bondInput ->
-            { bondInput | insurance = Loading }
-                |> Bond
-
-        Insurance insuranceInput ->
-            { insuranceInput | bond = Loading }
-                |> Insurance
+        _ ->
+            False
 
 
-updateEmptyAssetIn : ClaimsOut -> ClaimsOut
-updateEmptyAssetIn claimsOut =
+updateAssetInZero : ClaimsOut -> ClaimsOut
+updateAssetInZero claimsOut =
     case claimsOut of
         Default _ ->
-            Success
-                { bond = ""
-                , insurance = ""
-                }
+            { bond = ""
+            , insurance = ""
+            }
+                |> Success
                 |> Default
 
         Slider sliderInput ->
             { sliderInput
                 | claims =
-                    Success
-                        { bond = ""
-                        , insurance = ""
-                        }
+                    { bond = ""
+                    , insurance = ""
+                    }
+                        |> Success
             }
                 |> Slider
 
@@ -204,10 +238,249 @@ updateEmptyAssetIn claimsOut =
                 |> Insurance
 
 
+updateAssetIn : ClaimsOut -> ClaimsOut
+updateAssetIn claimsOut =
+    case claimsOut of
+        Default _ ->
+            Default Loading
+
+        Slider sliderInput ->
+            { sliderInput | claims = Loading }
+                |> Slider
+
+        Bond ({ bond } as bondInput) ->
+            { bondInput
+                | insurance =
+                    if bond |> Input.isZero then
+                        Success ""
+
+                    else
+                        Loading
+            }
+                |> Bond
+
+        Insurance ({ insurance } as insuranceInput) ->
+            { insuranceInput
+                | bond =
+                    if insurance |> Input.isZero then
+                        Success ""
+
+                    else
+                        Loading
+            }
+                |> Insurance
+
+
+switchLendSettingZero : Bool -> ClaimsOut -> ClaimsOut
+switchLendSettingZero checked claimsOut =
+    if checked then
+        case claimsOut of
+            Default _ ->
+                { percent = Percent.init
+                , claims =
+                    { bond = ""
+                    , insurance = ""
+                    }
+                        |> Success
+                }
+                    |> Slider
+
+            _ ->
+                claimsOut
+
+    else
+        { bond = ""
+        , insurance = ""
+        }
+            |> Success
+            |> Default
+
+
+switchLendSetting : Bool -> ClaimsOut -> ClaimsOut
+switchLendSetting checked claimsOut =
+    if checked then
+        case claimsOut of
+            Default claims ->
+                Slider
+                    { percent = Percent.init
+                    , claims = claims
+                    }
+
+            _ ->
+                claimsOut
+
+    else
+        case claimsOut of
+            Slider { percent, claims } ->
+                if (percent |> Percent.toFloat) == 64 then
+                    Default claims
+
+                else
+                    Default Loading
+
+            Default _ ->
+                claimsOut
+
+            _ ->
+                Default Loading
+
+
+slideZero : Float -> ClaimsOut
+slideZero float =
+    { percent = float |> Percent.fromFloat
+    , claims =
+        { bond = ""
+        , insurance = ""
+        }
+            |> Success
+    }
+        |> Slider
+
+
+slide : Float -> ClaimsOut
+slide float =
+    { percent = float |> Percent.fromFloat
+    , claims = Loading
+    }
+        |> Slider
+
+
+updateBondOutZero : String -> ClaimsOut -> ClaimsOut
+updateBondOutZero string claimsOut =
+    (case claimsOut of
+        Slider { percent } ->
+            Just percent
+
+        Bond { percent } ->
+            Just percent
+
+        Insurance { percent } ->
+            Just percent
+
+        _ ->
+            Nothing
+    )
+        |> Maybe.map
+            (\percent ->
+                { percent = percent
+                , bond = string
+                , insurance = Success ""
+                }
+                    |> Bond
+            )
+        |> Maybe.withDefault claimsOut
+
+
+updateBondOut : String -> ClaimsOut -> ClaimsOut
+updateBondOut string claimsOut =
+    (case claimsOut of
+        Slider { percent } ->
+            Just percent
+
+        Bond { percent } ->
+            Just percent
+
+        Insurance { percent } ->
+            Just percent
+
+        _ ->
+            Nothing
+    )
+        |> Maybe.map
+            (\percent ->
+                { percent = percent
+                , bond = string
+                , insurance =
+                    if string |> Input.isZero then
+                        Success ""
+
+                    else
+                        Loading
+                }
+                    |> Bond
+            )
+        |> Maybe.withDefault claimsOut
+
+
+updateInsuranceOutZero : String -> ClaimsOut -> ClaimsOut
+updateInsuranceOutZero string claimsOut =
+    (case claimsOut of
+        Slider { percent } ->
+            Just percent
+
+        Bond { percent } ->
+            Just percent
+
+        Insurance { percent } ->
+            Just percent
+
+        _ ->
+            Nothing
+    )
+        |> Maybe.map
+            (\percent ->
+                { percent = percent
+                , bond = Success ""
+                , insurance = string
+                }
+                    |> Insurance
+            )
+        |> Maybe.withDefault claimsOut
+
+
+updateInsuranceOut : String -> ClaimsOut -> ClaimsOut
+updateInsuranceOut string claimsOut =
+    (case claimsOut of
+        Slider { percent } ->
+            Just percent
+
+        Bond { percent } ->
+            Just percent
+
+        Insurance { percent } ->
+            Just percent
+
+        _ ->
+            Nothing
+    )
+        |> Maybe.map
+            (\percent ->
+                { percent = percent
+                , bond =
+                    if string |> Input.isZero then
+                        Success ""
+
+                    else
+                        Loading
+                , insurance =
+                    string
+                }
+                    |> Insurance
+            )
+        |> Maybe.withDefault claimsOut
+
+
 view :
-    { msgs | switchLendSetting : Bool -> msg, slide : Float -> msg }
-    -> { model | images : Images }
-    -> { modal | claimsOut : ClaimsOut, apr : Remote String }
+    { msgs
+        | switchLendSetting : Bool -> msg
+        , slide : Float -> msg
+        , inputBondOut : String -> msg
+        , inputInsuranceOut : String -> msg
+    }
+    ->
+        { model
+            | images : Images
+            , tokenImages : TokenImages
+            , user : Maybe { user | balances : Remote Balances }
+        }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+            , apr : Remote String
+            , cf : Remote String
+        }
     -> Element msg
 view msgs model modal =
     column
@@ -215,7 +488,7 @@ view msgs model modal =
         , height shrink
         ]
         [ title msgs model modal
-        , position msgs modal
+        , position msgs model modal
 
         -- , timeToMaturity model lendModel
         ]
@@ -252,8 +525,9 @@ title msgs { images } modal =
             ]
             (text "Your Position")
         , Image.info images
-            [ width <| px 24
+            [ width <| px 16
             , alignLeft
+            , centerY
             ]
         , el
             [ alignRight
@@ -329,15 +603,32 @@ switch msgs { claimsOut } =
 
 
 position :
-    { msgs | slide : Float -> msg }
-    -> { modal | claimsOut : ClaimsOut, apr : Remote String }
+    { msgs
+        | slide : Float -> msg
+        , inputBondOut : String -> msg
+        , inputInsuranceOut : String -> msg
+    }
+    ->
+        { model
+            | images : Images
+            , tokenImages : TokenImages
+            , user : Maybe { user | balances : Remote Balances }
+        }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+            , apr : Remote String
+            , cf : Remote String
+        }
     -> Element msg
-position msgs ({ claimsOut } as modal) =
+position msgs model ({ claimsOut } as modal) =
     column
         [ width fill
         , height shrink
         , padding 20
-        , spacing 12
+        , spacing 16
         , Border.widthEach
             { top = 0
             , right = 1
@@ -360,20 +651,28 @@ position msgs ({ claimsOut } as modal) =
             _ ->
                 Nothing
           )
-            |> Maybe.map (sliderSection msgs modal)
+            |> Maybe.map (sliderSection msgs model modal)
             |> Maybe.withDefault none
-        , estimatedAPR modal
-
-        --, claimsOut lendModel
+        , column
+            [ width fill
+            , height shrink
+            , spacing 12
+            ]
+            [ estimatedAPR modal
+            , collateralFactor modal
+            ]
+        , bondOutSection msgs model modal
+        , insuranceOutSection msgs model modal
         ]
 
 
 sliderSection :
     { msgs | slide : Float -> msg }
-    -> { modal | claimsOut : ClaimsOut }
+    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
     -> Percent
     -> Element msg
-sliderSection msgs modal percent =
+sliderSection msgs model modal percent =
     column
         [ width fill
         , height shrink
@@ -405,7 +704,7 @@ sliderSection msgs modal percent =
             , height shrink
             , spacing 6
             ]
-            [ slider msgs modal percent
+            [ slider msgs model modal percent
             , row
                 [ width fill
                 , height shrink
@@ -422,21 +721,22 @@ sliderSection msgs modal percent =
 
 slider :
     { msgs | slide : Float -> msg }
-    -> { modal | claimsOut : ClaimsOut }
+    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
     -> Percent
     -> Element msg
-slider msgs { claimsOut } percent =
+slider msgs model modal percent =
     Input.slider
         [ width fill
         , el
             [ width fill
             , height <| px 2
             , centerY
-            , (if claimsOut |> hasFailure then
-                Color.negative500
+            , (if isCorrect model modal then
+                Color.transparent100
 
                else
-                Color.transparent100
+                Color.negative500
               )
                 |> Background.color
             ]
@@ -461,8 +761,10 @@ slider msgs { claimsOut } percent =
         }
 
 
-estimatedAPR : { modal | claimsOut : ClaimsOut, apr : Remote String } -> Element msg
-estimatedAPR { claimsOut, apr } =
+estimatedAPR :
+    { modal | apr : Remote String }
+    -> Element msg
+estimatedAPR { apr } =
     row
         [ width shrink
         , height <| px 32
@@ -481,7 +783,7 @@ estimatedAPR { claimsOut, apr } =
             , Font.size 14
             , Font.color Color.transparent400
             ]
-            (text "Estimated APR")
+            (text "Estimated APR:")
         , el
             [ width shrink
             , height shrink
@@ -489,22 +791,756 @@ estimatedAPR { claimsOut, apr } =
             , centerY
             , Font.bold
             , Font.size 18
-            , (if claimsOut |> hasFailure then
-                Color.negative500
-
-               else
-                Color.positive400
-              )
-                |> Font.color
+            , Font.color Color.positive500
             ]
             (case apr of
                 Loading ->
-                    Loading.view
+                    el
+                        [ width <| px 50
+                        , height shrink
+                        ]
+                        Loading.view
 
                 Failure ->
                     none
 
                 Success successAPR ->
-                    text (successAPR ++ "%")
+                    text successAPR
+            )
+        , el
+            [ paddingXY 4 0
+            , centerY
+            , Font.bold
+            , Font.size 18
+            , Font.color Color.positive500
+            ]
+            (text "%")
+        ]
+
+
+collateralFactor :
+    { modal
+        | pool : { pool | pair : Pair }
+        , assetIn : String
+        , claimsOut : ClaimsOut
+        , cf : Remote String
+    }
+    -> Element msg
+collateralFactor { pool, cf } =
+    row
+        [ width shrink
+        , height <| px 32
+        , paddingXY 12 0
+        , spacing 5
+        , centerX
+        , Background.color Color.primary100
+        , Border.rounded 20
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , paddingXY 0 3
+            , centerY
+            , Font.regular
+            , Font.size 14
+            , Font.color Color.transparent400
+            ]
+            (text "Collateral factor:")
+        , el
+            [ width shrink
+            , height shrink
+            , paddingXY 0 3
+            , centerY
+            , Font.bold
+            , Font.size 18
+            , Font.color Color.transparent500
+            ]
+            (case cf of
+                Loading ->
+                    el
+                        [ width <| px 50
+                        , height shrink
+                        ]
+                        Loading.view
+
+                Failure ->
+                    none
+
+                Success successCF ->
+                    text successCF
+            )
+        , el
+            [ paddingXY 4 0
+            , centerY
+            , Font.bold
+            , Font.size 12
+            , Font.color Color.transparent300
+            ]
+            ([ pool.pair
+                |> Pair.toAsset
+                |> Token.toSymbol
+             , "PER"
+             , pool.pair
+                |> Pair.toCollateral
+                |> Token.toSymbol
+             ]
+                |> String.join " "
+                |> text
             )
         ]
+
+
+bondOutSection :
+    { msgs | inputBondOut : String -> msg }
+    ->
+        { model
+            | images : Images
+            , tokenImages : TokenImages
+            , user : Maybe { user | balances : Remote Balances }
+        }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Element msg
+bondOutSection msgs ({ images } as model) modal =
+    column
+        [ width fill
+        , height shrink
+        , spacing 12
+        , alignLeft
+        ]
+        [ row
+            [ width shrink
+            , height shrink
+            , spacing 8
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 3
+                , alignLeft
+                , Font.regular
+                , Font.size 14
+                , Font.color Color.transparent400
+                ]
+                (text "Amount at maturity")
+            , Image.info images
+                [ width <| px 16
+                , centerY
+                ]
+            ]
+        , bondOutTextbox msgs model modal
+        ]
+
+
+bondOutTextbox :
+    { msgs | inputBondOut : String -> msg }
+    ->
+        { model
+            | tokenImages : TokenImages
+            , user : Maybe { user | balances : Remote Balances }
+        }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Element msg
+bondOutTextbox msgs model modal =
+    row
+        [ width fill
+        , height <| px 44
+        ]
+        [ bondOutLogo model modal
+        , bondOutAmount msgs model modal
+        ]
+
+
+bondOutLogo :
+    { model
+        | tokenImages : TokenImages
+        , user : Maybe { user | balances : Remote Balances }
+    }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Element msg
+bondOutLogo ({ tokenImages } as model) ({ pool } as modal) =
+    row
+        [ width shrink
+        , height fill
+        , paddingXY 12 0
+        , spacing 6
+        , Background.color Color.primary100
+        , Border.widthEach
+            { top = 1
+            , right = 0
+            , bottom = 1
+            , left = 1
+            }
+        , Border.solid
+        , (if isCorrect model modal then
+            Color.transparent100
+
+           else
+            Color.negative500
+          )
+            |> Border.color
+        , Border.roundEach
+            { topLeft = 4
+            , topRight = 0
+            , bottomRight = 0
+            , bottomLeft = 4
+            }
+        ]
+        [ pool.pair
+            |> Pair.toAsset
+            |> TokenImage.icon tokenImages
+                [ width <| px 24
+                , alignLeft
+                , centerY
+                ]
+        , el
+            [ alignLeft
+            , centerY
+            , Font.regular
+            , Font.size 16
+            , Font.color Color.light100
+            ]
+            (pool.pair
+                |> Pair.toAsset
+                |> Token.toSymbol
+                |> text
+            )
+        ]
+
+
+bondOutAmount :
+    { msgs | inputBondOut : String -> msg }
+    -> { model | user : Maybe { user | balances : Remote Balances } }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Element msg
+bondOutAmount msgs model ({ claimsOut } as modal) =
+    el
+        ([ width fill
+         , height fill
+         , paddingEach
+            { top = 0
+            , right = 12
+            , bottom = 0
+            , left = 0
+            }
+         , spacing 8
+         , Border.widthEach
+            { top = 1
+            , right = 1
+            , bottom = 1
+            , left = 0
+            }
+         , Border.solid
+         , (if isCorrect model modal then
+                Color.transparent100
+
+            else
+                Color.negative500
+           )
+            |> Border.color
+         , Border.roundEach
+            { topLeft = 0
+            , topRight = 4
+            , bottomRight = 4
+            , bottomLeft = 0
+            }
+         ]
+            ++ (case claimsOut of
+                    Default _ ->
+                        [ Background.color Color.primary100
+                        , alpha 0.75
+                        ]
+
+                    _ ->
+                        []
+               )
+        )
+        (bondOutInput msgs model modal)
+
+
+bondOutInput :
+    { msgs | inputBondOut : String -> msg }
+    -> { model | user : Maybe { user | balances : Remote Balances } }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Element msg
+bondOutInput msgs model ({ claimsOut } as modal) =
+    (\maybeBondOut ->
+        row
+            [ width fill
+            , height fill
+            , paddingXY 12 0
+            , spacing 12
+            ]
+            [ Input.text
+                [ width fill
+                , height shrink
+                , paddingXY 0 4
+                , alignLeft
+                , centerY
+                , Background.color Color.none
+                , Border.color Color.none
+                , Font.regular
+                , Font.size 16
+                , (if isCorrect model modal then
+                    Color.transparent500
+
+                   else
+                    Color.negative500
+                  )
+                    |> Font.color
+                ]
+                { onChange = msgs.inputBondOut
+                , text = maybeBondOut |> Maybe.withDefault ""
+                , placeholder =
+                    Input.placeholder
+                        [ Font.color Color.transparent100 ]
+                        (text "0.0")
+                        |> Just
+                , label = Input.labelHidden "Bond Amount"
+                }
+            , maybeBondOut
+                |> Maybe.map (\_ -> none)
+                |> Maybe.withDefault
+                    (el
+                        [ width <| px 50
+                        , height shrink
+                        , alignRight
+                        , centerY
+                        ]
+                        Loading.view
+                    )
+            ]
+    )
+        |> (\element ->
+                case claimsOut of
+                    Default claims ->
+                        row
+                            [ width fill
+                            , height shrink
+                            , paddingXY 12 0
+                            , spacing 12
+                            , alignLeft
+                            , centerY
+                            , Font.regular
+                            , Font.size 16
+                            ]
+                            (case claims of
+                                Loading ->
+                                    [ el
+                                        [ paddingXY 0 4
+                                        , centerY
+                                        , Font.color Color.transparent100
+                                        ]
+                                        (text "0.0")
+                                    , el
+                                        [ width <| px 50
+                                        , height shrink
+                                        , alignRight
+                                        , centerY
+                                        ]
+                                        Loading.view
+                                    ]
+
+                                Failure ->
+                                    [ el
+                                        [ paddingXY 0 4
+                                        , centerY
+                                        , Font.color Color.transparent100
+                                        ]
+                                        (text "0.0")
+                                    ]
+
+                                Success { bond } ->
+                                    [ el
+                                        [ paddingXY 0 4
+                                        , centerY
+                                        , clip
+                                        , (if isCorrect model modal then
+                                            Color.transparent500
+
+                                           else
+                                            Color.negative500
+                                          )
+                                            |> Font.color
+                                        ]
+                                        (text bond)
+                                    ]
+                            )
+
+                    Slider { claims } ->
+                        case claims of
+                            Loading ->
+                                element Nothing
+
+                            Failure ->
+                                element (Just "")
+
+                            Success { bond } ->
+                                element (Just bond)
+
+                    Bond { bond } ->
+                        element (Just bond)
+
+                    Insurance { bond } ->
+                        case bond of
+                            Loading ->
+                                element Nothing
+
+                            Failure ->
+                                element (Just "")
+
+                            Success successBond ->
+                                element (Just successBond)
+           )
+
+
+insuranceOutSection :
+    { msgs | inputInsuranceOut : String -> msg }
+    ->
+        { model
+            | images : Images
+            , tokenImages : TokenImages
+            , user : Maybe { user | balances : Remote Balances }
+        }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Element msg
+insuranceOutSection msgs ({ images } as model) modal =
+    column
+        [ width fill
+        , height shrink
+        , spacing 12
+        , alignLeft
+        ]
+        [ row
+            [ width shrink
+            , height shrink
+            , spacing 8
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 3
+                , alignLeft
+                , Font.regular
+                , Font.size 14
+                , Font.color Color.transparent400
+                ]
+                (text "Insurance in case of default")
+            , Image.info images
+                [ width <| px 16
+                , centerY
+                ]
+            ]
+        , insuranceOutTextbox msgs model modal
+        ]
+
+
+insuranceOutTextbox :
+    { msgs | inputInsuranceOut : String -> msg }
+    ->
+        { model
+            | tokenImages : TokenImages
+            , user : Maybe { user | balances : Remote Balances }
+        }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Element msg
+insuranceOutTextbox msgs model modal =
+    row
+        [ width fill
+        , height <| px 44
+        ]
+        [ insuranceOutLogo model modal
+        , insuranceOutAmount msgs model modal
+        ]
+
+
+insuranceOutLogo :
+    { model
+        | tokenImages : TokenImages
+        , user : Maybe { user | balances : Remote Balances }
+    }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Element msg
+insuranceOutLogo ({ tokenImages } as model) ({ pool } as modal) =
+    row
+        [ width shrink
+        , height fill
+        , paddingXY 12 0
+        , spacing 6
+        , Background.color Color.primary100
+        , Border.widthEach
+            { top = 1
+            , right = 0
+            , bottom = 1
+            , left = 1
+            }
+        , Border.solid
+        , (if isCorrect model modal then
+            Color.transparent100
+
+           else
+            Color.negative500
+          )
+            |> Border.color
+        , Border.roundEach
+            { topLeft = 4
+            , topRight = 0
+            , bottomRight = 0
+            , bottomLeft = 4
+            }
+        ]
+        [ pool.pair
+            |> Pair.toCollateral
+            |> TokenImage.icon tokenImages
+                [ width <| px 24
+                , alignLeft
+                , centerY
+                ]
+        , el
+            [ alignLeft
+            , centerY
+            , Font.regular
+            , Font.size 16
+            , Font.color Color.light100
+            ]
+            (pool.pair
+                |> Pair.toCollateral
+                |> Token.toSymbol
+                |> text
+            )
+        ]
+
+
+insuranceOutAmount :
+    { msgs | inputInsuranceOut : String -> msg }
+    -> { model | user : Maybe { user | balances : Remote Balances } }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Element msg
+insuranceOutAmount msgs model ({ claimsOut } as modal) =
+    el
+        ([ width fill
+         , height fill
+         , paddingEach
+            { top = 0
+            , right = 12
+            , bottom = 0
+            , left = 0
+            }
+         , spacing 8
+         , Border.widthEach
+            { top = 1
+            , right = 1
+            , bottom = 1
+            , left = 0
+            }
+         , Border.solid
+         , (if isCorrect model modal then
+                Color.transparent100
+
+            else
+                Color.negative500
+           )
+            |> Border.color
+         , Border.roundEach
+            { topLeft = 0
+            , topRight = 4
+            , bottomRight = 4
+            , bottomLeft = 0
+            }
+         ]
+            ++ (case claimsOut of
+                    Default _ ->
+                        [ Background.color Color.primary100
+                        , alpha 0.75
+                        ]
+
+                    _ ->
+                        []
+               )
+        )
+        (insuranceOutInput msgs model modal)
+
+
+insuranceOutInput :
+    { msgs | inputInsuranceOut : String -> msg }
+    -> { model | user : Maybe { user | balances : Remote Balances } }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Element msg
+insuranceOutInput msgs model ({ claimsOut } as modal) =
+    (\maybeInsuranceOut ->
+        row
+            [ width fill
+            , height fill
+            , paddingXY 12 0
+            , spacing 12
+            ]
+            [ Input.text
+                [ width fill
+                , height shrink
+                , paddingXY 0 4
+                , alignLeft
+                , centerY
+                , Background.color Color.none
+                , Border.color Color.none
+                , Font.regular
+                , Font.size 16
+                , (if isCorrect model modal then
+                    Color.transparent500
+
+                   else
+                    Color.negative500
+                  )
+                    |> Font.color
+                ]
+                { onChange = msgs.inputInsuranceOut
+                , text = maybeInsuranceOut |> Maybe.withDefault ""
+                , placeholder =
+                    Input.placeholder
+                        [ Font.color Color.transparent100 ]
+                        (text "0.0")
+                        |> Just
+                , label = Input.labelHidden "Insurance Amount"
+                }
+            , maybeInsuranceOut
+                |> Maybe.map (\_ -> none)
+                |> Maybe.withDefault
+                    (el
+                        [ width <| px 50
+                        , height shrink
+                        , alignRight
+                        , centerY
+                        ]
+                        Loading.view
+                    )
+            ]
+    )
+        |> (\element ->
+                case claimsOut of
+                    Default claims ->
+                        row
+                            [ width fill
+                            , height shrink
+                            , paddingXY 12 0
+                            , spacing 12
+                            , alignLeft
+                            , centerY
+                            , Font.regular
+                            , Font.size 16
+                            ]
+                            (case claims of
+                                Loading ->
+                                    [ el
+                                        [ paddingXY 0 4
+                                        , centerY
+                                        , Font.color Color.transparent100
+                                        ]
+                                        (text "0.0")
+                                    , el
+                                        [ width <| px 50
+                                        , height shrink
+                                        , alignRight
+                                        , centerY
+                                        ]
+                                        Loading.view
+                                    ]
+
+                                Failure ->
+                                    [ el
+                                        [ paddingXY 0 4
+                                        , centerY
+                                        , Font.color Color.transparent100
+                                        ]
+                                        (text "0.0")
+                                    ]
+
+                                Success { insurance } ->
+                                    [ el
+                                        [ paddingXY 0 4
+                                        , centerY
+                                        , clip
+                                        , (if isCorrect model modal then
+                                            Color.transparent500
+
+                                           else
+                                            Color.negative500
+                                          )
+                                            |> Font.color
+                                        ]
+                                        (text insurance)
+                                    ]
+                            )
+
+                    Slider { claims } ->
+                        case claims of
+                            Loading ->
+                                element Nothing
+
+                            Failure ->
+                                element (Just "")
+
+                            Success { insurance } ->
+                                element (Just insurance)
+
+                    Bond { insurance } ->
+                        case insurance of
+                            Loading ->
+                                element Nothing
+
+                            Failure ->
+                                element (Just "")
+
+                            Success successInsurance ->
+                                element (Just successInsurance)
+
+                    Insurance { insurance } ->
+                        element (Just insurance)
+           )

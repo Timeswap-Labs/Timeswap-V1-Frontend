@@ -1,8 +1,13 @@
-module Data.Percent exposing (Percent, toFloat)
+module Data.Percent exposing (Percent, fromFloat, init, toFloat)
 
 
 type Percent
     = Percent Int
+
+
+init : Percent
+init =
+    Percent 64
 
 
 toFloat : Percent -> Float
