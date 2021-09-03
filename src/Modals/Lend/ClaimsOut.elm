@@ -22,9 +22,12 @@ module Modals.Lend.ClaimsOut exposing
 
 import Data.Balances as Balances exposing (Balances)
 import Data.Images exposing (Images)
+import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Percent as Percent exposing (Percent)
+import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
+import Data.Status exposing (Status(..))
 import Data.Token as Token
 import Data.TokenImages exposing (TokenImages)
 import Data.Uint as Uint
@@ -42,7 +45,6 @@ import Element
         , el
         , fill
         , height
-        , inFront
         , newTabLink
         , none
         , padding
@@ -59,6 +61,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Image as Image
 import Utility.Input as Input
@@ -469,13 +472,14 @@ view :
     }
     ->
         { model
-            | images : Images
+            | time : Posix
+            , images : Images
             , tokenImages : TokenImages
             , user : Maybe { user | balances : Remote Balances }
         }
     ->
         { modal
-            | pool : { pool | pair : Pair }
+            | pool : Pool
             , assetIn : String
             , claimsOut : ClaimsOut
             , apr : Remote String
@@ -489,8 +493,7 @@ view msgs model modal =
         ]
         [ title msgs model modal
         , position msgs model modal
-
-        -- , timeToMaturity model lendModel
+        , maturityInfo model modal
         ]
 
 
@@ -1544,3 +1547,63 @@ insuranceOutInput msgs model ({ claimsOut } as modal) =
                     Insurance { insurance } ->
                         element (Just insurance)
            )
+
+
+maturityInfo :
+    { model | time : Posix, images : Images }
+    -> { modal | pool : { pool | maturity : Maturity } }
+    -> Element msg
+maturityInfo { time, images } { pool } =
+    row
+        [ width fill
+        , height <| px 36
+        , paddingEach
+            { top = 0
+            , right = 15
+            , bottom = 0
+            , left = 20
+            }
+        , spacing 10
+        , Background.color Color.primary100
+        , Border.roundEach
+            { topLeft = 0
+            , topRight = 0
+            , bottomRight = 4
+            , bottomLeft = 4
+            }
+        , Font.size 14
+        , Font.color Color.light100
+        ]
+        [ Image.hourglass images
+            [ width <| px 20
+            , alignLeft
+            , centerY
+            ]
+        , el
+            [ paddingXY 0 3
+            , alignLeft
+            , centerY
+            , Font.regular
+            ]
+            (text "Time to maturity")
+        , el
+            [ width <| px 140
+            , paddingXY 0 3
+            , alignRight
+            , centerY
+            , Font.regular
+            ]
+            (pool.maturity
+                |> Maturity.toDuration time
+                |> (\status ->
+                        (case status of
+                            Active duration ->
+                                duration
+
+                            Matured _ ->
+                                "Matured"
+                        )
+                            |> text
+                   )
+            )
+        ]

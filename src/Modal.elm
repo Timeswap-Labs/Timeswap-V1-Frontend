@@ -9,6 +9,7 @@ import Data.Pools exposing (Pools)
 import Data.Remote exposing (Remote)
 import Data.TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
+import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
         ( Element
@@ -26,6 +27,7 @@ import Modals.Borrow.Main as Borrow
 import Modals.Lend.Main as Lend
 import Modals.Pay.Main as Pay
 import Modals.Withdraw.Main as Withdraw
+import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Router as Router
 import Utility.Typography as Typography
@@ -166,6 +168,8 @@ update model msg modal =
 view :
     { model
         | device : Device
+        , time : Posix
+        , zoneInfo : Maybe ZoneInfo
         , backdrop : Backdrop
         , images : Images
         , tokenImages : TokenImages

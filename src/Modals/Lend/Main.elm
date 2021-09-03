@@ -19,6 +19,7 @@ import Data.Remote exposing (Remote(..))
 import Data.TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
 import Data.Uint as Uint
+import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
         ( Element
@@ -40,6 +41,8 @@ import Element
 import Element.Font as Font
 import Modals.Lend.AssetIn as AssetIn
 import Modals.Lend.ClaimsOut as ClaimsOut exposing (ClaimsOut)
+import Modals.Lend.Warning as Warning
+import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Glass as Glass
@@ -352,6 +355,8 @@ msgs =
 view :
     { model
         | device : Device
+        , time : Posix
+        , zoneInfo : Maybe ZoneInfo
         , backdrop : Backdrop
         , images : Images
         , tokenImages : TokenImages
@@ -401,6 +406,8 @@ title =
 content :
     { model
         | device : Device
+        , time : Posix
+        , zoneInfo : Maybe ZoneInfo
         , backdrop : Backdrop
         , images : Images
         , tokenImages : TokenImages
@@ -427,4 +434,5 @@ content ({ images } as model) modal =
             , centerX
             ]
         , ClaimsOut.view msgs model modal
+        , Warning.view model modal
         ]

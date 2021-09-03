@@ -1,6 +1,7 @@
 import { Elm } from "./src/Main.elm";
 import images from "./image/*.svg";
 import tokenImages from "./image/tokens/*.svg";
+import rinkeby from "./whitelist/rinkeby.json";
 
 var app = Elm.Main.init({
   node: document.getElementById("elm"),
@@ -12,6 +13,7 @@ var app = Elm.Main.init({
       CSS.supports("backdrop-filter: none"),
     images: Object.entries(images),
     tokenImages: Object.entries(tokenImages),
+    // whitelist: rinkeby
   },
 });
 
