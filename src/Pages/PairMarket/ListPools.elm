@@ -365,42 +365,52 @@ buttons { device } pair maturity =
             , spacing 7
             ]
         )
-        [ link
+        [ el
             [ width fill
-            , height <| px 44
-            , Background.color Color.primary100
-            , Border.rounded 4
-            , mouseDown [ Background.color Color.primary400 ]
-            , mouseOver [ Background.color Color.primary300 ]
-            , Font.bold
-            , Font.size 16
-            , Font.color Color.primary500
+            , height shrink
             ]
-            { url = Router.toLend { pair = pair, maturity = maturity }
-            , label =
-                el
-                    [ centerX
-                    , centerY
-                    ]
-                    (text "Lend")
-            }
-        , link
+            (link
+                [ width fill
+                , height <| px 44
+                , Background.color Color.primary100
+                , Border.rounded 4
+                , mouseDown [ Background.color Color.primary400 ]
+                , mouseOver [ Background.color Color.primary300 ]
+                , Font.bold
+                , Font.size 16
+                , Font.color Color.primary500
+                ]
+                { url = Router.toLend { pair = pair, maturity = maturity }
+                , label =
+                    el
+                        [ centerX
+                        , centerY
+                        ]
+                        (text "Lend")
+                }
+            )
+        , el
             [ width fill
-            , height <| px 44
-            , Background.color Color.primary100
-            , Border.rounded 4
-            , mouseDown [ Background.color Color.primary400 ]
-            , mouseOver [ Background.color Color.primary300 ]
-            , Font.bold
-            , Font.size 16
-            , Font.color Color.primary500
+            , height shrink
             ]
-            { url = Router.toBorrow { pair = pair, maturity = maturity }
-            , label =
-                el
-                    [ centerX
-                    , centerY
-                    ]
-                    (text "Borrow")
-            }
+            (link
+                [ width fill
+                , height <| px 44
+                , Background.color Color.primary100
+                , Border.rounded 4
+                , mouseDown [ Background.color Color.primary400 ]
+                , mouseOver [ Background.color Color.primary300 ]
+                , Font.bold
+                , Font.size 16
+                , Font.color Color.primary500
+                ]
+                { url = Router.toBorrow { pair = pair, maturity = maturity }
+                , label =
+                    el
+                        [ centerX
+                        , centerY
+                        ]
+                        (text "Borrow")
+                }
+            )
         ]
