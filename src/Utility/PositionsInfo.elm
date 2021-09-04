@@ -196,12 +196,12 @@ connectButton { device, images } =
             }
          , centerX
          , centerY
-         , Background.color Color.primary100
+         , Background.color Color.primary500
          , Border.rounded 4
          , Font.size 16
          , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary500 ]
-         , mouseOver [ Background.color Color.primary400 ]
+         , mouseDown [ Background.color Color.primary400 ]
+         , mouseOver [ Background.color Color.primary300 ]
          ]
             ++ (if Device.isPhoneOrTablet device then
                     [ height <| px 35 ]

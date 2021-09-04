@@ -1,6 +1,7 @@
 module Data.Slippage exposing
     ( Option(..)
     , Slippage
+    , encode
     , fromOption
     , fromString
     , init
@@ -8,6 +9,8 @@ module Data.Slippage exposing
     , toOption
     , toString
     )
+
+import Json.Encode as Encode exposing (Value)
 
 
 type Slippage
@@ -18,6 +21,14 @@ type Option
     = Small
     | Medium
     | Large
+
+
+encode : Slippage -> Value
+encode (Slippage int) =
+    int
+        |> toFloat
+        |> (\float -> float / 1000)
+        |> Encode.float
 
 
 init : Slippage

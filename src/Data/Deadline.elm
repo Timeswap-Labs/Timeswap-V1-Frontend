@@ -5,9 +5,12 @@ module Data.Deadline exposing
     , fromString
     , init
     , isCorrect
+    , toInt
     , toOption
     , toString
     )
+
+import Time exposing (Posix)
 
 
 type Deadline
@@ -23,6 +26,14 @@ type Option
 init : Deadline
 init =
     Deadline 20
+
+
+toInt : Posix -> Deadline -> Int
+toInt time (Deadline int) =
+    time
+        |> Time.posixToMillis
+        |> (\millis -> millis // 1000)
+        |> (+) (int * 60)
 
 
 toOption : Deadline -> Maybe Option

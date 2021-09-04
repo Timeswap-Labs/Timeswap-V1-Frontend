@@ -1,6 +1,8 @@
 module Data.Uint exposing
     ( Uint
     , compare
+    , decoder
+    , encode
     , example
     , fromAmount
     , fromString
@@ -11,12 +13,26 @@ module Data.Uint exposing
     )
 
 import Data.Token as Token exposing (Token)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
 import Sort exposing (Sorter)
 import Utility.Input as Input
 
 
 type Uint
     = Uint String
+
+
+decoder : Decoder Uint
+decoder =
+    Decode.string
+        |> Decode.andThen
+            (\string ->
+                string
+                    |> fromString
+                    |> Maybe.map Decode.succeed
+                    |> Maybe.withDefault (Decode.fail "not a uint")
+            )
 
 
 fromString : String -> Maybe Uint
@@ -35,6 +51,11 @@ fromString string =
                 else
                     Nothing
            )
+
+
+encode : Uint -> Value
+encode (Uint string) =
+    Encode.string string
 
 
 fromAmount : Token -> String -> Maybe Uint
@@ -120,15 +141,37 @@ toString (Uint string) =
     string
 
 
-toAmount : Int -> Uint -> String
-toAmount decimals (Uint string) =
-    string
-        |> String.padLeft (decimals + 1) '0'
-        |> (\paddedString ->
-                [ paddedString |> String.dropRight decimals
-                , paddedString |> String.right decimals
-                ]
-                    |> String.join "."
+toAmount : Token -> Uint -> String
+toAmount token (Uint string) =
+    token
+        |> Token.toDecimals
+        |> (\decimals ->
+                string
+                    |> String.padLeft (decimals + 1) '0'
+                    |> (\paddedString ->
+                            [ paddedString |> String.dropRight decimals
+                            , paddedString |> String.right decimals
+                            ]
+                                |> String.join "."
+                       )
+                    |> String.foldr
+                        (\char accumulator ->
+                            if char == '0' && accumulator == "" then
+                                accumulator
+
+                            else
+                                accumulator
+                                    |> String.cons char
+                        )
+                        ""
+                    |> (\formattedString ->
+                            if formattedString |> String.endsWith "." then
+                                formattedString
+                                    |> String.dropRight 1
+
+                            else
+                                formattedString
+                       )
            )
 
 
@@ -175,7 +218,7 @@ uint256 =
 
 example : List Uint
 example =
-    [ Uint "0"
+    [ Uint "785"
     , Uint "1"
     , Uint "2"
     , Uint "3"

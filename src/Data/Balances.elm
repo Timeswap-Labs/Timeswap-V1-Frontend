@@ -30,7 +30,7 @@ toList (Balances dict) =
                 { token = token
                 , balance =
                     balance
-                        |> Uint.toAmount (token |> Token.toDecimals)
+                        |> Uint.toAmount token
                 }
             )
 
@@ -39,7 +39,7 @@ get : Token -> Balances -> String
 get token (Balances dict) =
     dict
         |> Dict.get token
-        |> Maybe.map (Uint.toAmount (token |> Token.toDecimals))
+        |> Maybe.map (Uint.toAmount token)
         |> Maybe.withDefault "0"
 
 

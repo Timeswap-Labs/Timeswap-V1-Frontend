@@ -1,12 +1,18 @@
-module Modal exposing (Modal, Msg, fromFragment, same, toUrl, update, view)
+module Modal exposing (Modal, Msg, fromFragment, same, subscriptions, toUrl, update, view)
 
+import Browser.Navigation exposing (Key)
+import Data.Address exposing (Address)
+import Data.Allowances exposing (Allowances)
 import Data.Backdrop exposing (Backdrop)
 import Data.Balances exposing (Balances)
 import Data.Chain exposing (Chain(..))
+import Data.Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
+import Data.Maturity as Maturity
 import Data.Pools exposing (Pools)
 import Data.Remote exposing (Remote)
+import Data.Slippage exposing (Slippage)
 import Data.TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
 import Data.ZoneInfo exposing (ZoneInfo)
@@ -27,6 +33,7 @@ import Modals.Borrow.Main as Borrow
 import Modals.Lend.Main as Lend
 import Modals.Pay.Main as Pay
 import Modals.Withdraw.Main as Withdraw
+import Page exposing (Page)
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Router as Router
@@ -42,25 +49,26 @@ type Modal
 
 fromFragment :
     { model
-        | tokens : Tokens
+        | time : Posix
+        , tokens : Tokens
         , pools : Pools
         , user : Maybe user
     }
     -> String
     -> Maybe Modal
-fromFragment { tokens, pools, user } string =
+fromFragment ({ user } as model) string =
     string
         |> String.split "?"
         |> (\list ->
                 case list of
                     "lend" :: parameter :: _ ->
                         parameter
-                            |> Lend.fromFragment tokens pools
+                            |> Lend.fromFragment model
                             |> Maybe.map Lend
 
                     "borrow" :: parameter :: _ ->
                         parameter
-                            |> Borrow.fromFragment tokens pools
+                            |> Borrow.fromFragment model
                             |> Maybe.map Borrow
 
                     "withdraw" :: parameter :: _ ->
@@ -68,7 +76,7 @@ fromFragment { tokens, pools, user } string =
                             |> Maybe.andThen
                                 (\_ ->
                                     parameter
-                                        |> Withdraw.fromFragment tokens pools
+                                        |> Withdraw.fromFragment model
                                         |> Maybe.map Withdraw
                                 )
 
@@ -77,7 +85,7 @@ fromFragment { tokens, pools, user } string =
                             |> Maybe.andThen
                                 (\_ ->
                                     parameter
-                                        |> Pay.fromFragment tokens pools
+                                        |> Pay.fromFragment model
                                         |> Maybe.map Pay
                                 )
 
@@ -138,7 +146,18 @@ type Msg
     | PayMsg Pay.Msg
 
 
-update : { model | user : Maybe { user | balances : Remote Balances } } -> Msg -> Modal -> ( Modal, Cmd Msg )
+update :
+    { model
+        | key : Key
+        , slippage : Slippage
+        , tokens : Tokens
+        , pools : Pools
+        , user : Maybe { user | balances : Remote Balances }
+        , page : Page
+    }
+    -> Msg
+    -> Modal
+    -> ( Modal, Cmd Msg )
 update model msg modal =
     case ( msg, modal ) of
         ( LendMsg lendMsg, Lend lend ) ->
@@ -148,7 +167,7 @@ update model msg modal =
 
         ( BorrowMsg borrowMsg, Borrow borrow ) ->
             borrow
-                |> Borrow.update borrowMsg
+                |> Borrow.update model borrowMsg
                 |> (\( updatedBorrow, cmd ) -> ( Borrow updatedBorrow, cmd |> Cmd.map BorrowMsg ))
 
         ( WithdrawMsg withdrawMsg, Withdraw withdraw ) ->
@@ -165,19 +184,39 @@ update model msg modal =
             ( modal, Cmd.none )
 
 
+subscriptions : { model | time : Posix } -> Modal -> Sub Msg
+subscriptions model modal =
+    case modal of
+        Lend lend ->
+            Lend.subscriptions model lend |> Sub.map LendMsg
+
+        Borrow borrow ->
+            Borrow.subscriptions model borrow |> Sub.map BorrowMsg
+
+        _ ->
+            Sub.none
+
+
 view :
     { model
         | device : Device
         , time : Posix
         , zoneInfo : Maybe ZoneInfo
         , backdrop : Backdrop
+        , deadline : Deadline
         , images : Images
         , tokenImages : TokenImages
-        , user : Maybe { user | balances : Remote Balances }
+        , user :
+            Maybe
+                { user
+                    | address : Address
+                    , balances : Remote Balances
+                    , allowances : Remote Allowances
+                }
     }
     -> Modal
     -> Element Msg
-view ({ device } as model) modal =
+view ({ device, time } as model) modal =
     el
         [ width fill
         , height fill
@@ -190,11 +229,34 @@ view ({ device } as model) modal =
         , Background.color Color.modal
         , Font.family Typography.supreme
         ]
-        (case modal of
-            Lend lend ->
-                Lend.view model lend
-                    |> Element.map LendMsg
+        |> (\element ->
+                case modal of
+                    Lend lend ->
+                        lend
+                            |> Lend.getPool
+                            |> (\{ maturity } ->
+                                    if maturity |> Maturity.isActive time then
+                                        Lend.view model lend
+                                            |> Element.map LendMsg
+                                            |> element
 
-            _ ->
-                none
-        )
+                                    else
+                                        none
+                               )
+
+                    Borrow borrow ->
+                        borrow
+                            |> Borrow.getPool
+                            |> (\{ maturity } ->
+                                    if maturity |> Maturity.isActive time then
+                                        Borrow.view model borrow
+                                            |> Element.map BorrowMsg
+                                            |> element
+
+                                    else
+                                        none
+                               )
+
+                    _ ->
+                        none
+           )

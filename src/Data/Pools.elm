@@ -1,6 +1,9 @@
 module Data.Pools exposing
     ( PoolInfo
     , Pools
+    , decoder
+    , decoderPool
+    , empty
     , example
     , fromPairFragment
     , fromPoolFragment
@@ -10,12 +13,16 @@ module Data.Pools exposing
     , toPairs
     )
 
+import Data.Address as Address
 import Data.Chain exposing (Chain(..))
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
+import Data.Token as Token
 import Data.Tokens as Tokens exposing (Tokens)
+import Json.Decode as Decode exposing (Decoder, Value)
+import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
 import Time exposing (Posix)
 
@@ -30,6 +37,95 @@ type alias PoolInfo =
     , apr : String
     , cf : String
     }
+
+
+decoder : Tokens -> Decoder Pools
+decoder tokens =
+    let
+        recursive :
+            Int
+            -> Value
+            -> ( Int, List ( Pair, List Maturity ) )
+            -> Decoder (List ( Pair, List Maturity ))
+        recursive length value ( id, list ) =
+            if id < length then
+                value
+                    |> Decode.decodeValue
+                        (Decode.succeed Tuple.pair
+                            |> Pipeline.custom (Pair.decoder tokens id)
+                            |> Pipeline.required "maturities"
+                                (Maturity.decoder |> Decode.list)
+                            |> Decode.index id
+                        )
+                    |> (\result ->
+                            case result of
+                                Ok pools ->
+                                    ( id + 1, pools :: list )
+                                        |> recursive length value
+
+                                Err error ->
+                                    error
+                                        |> Decode.errorToString
+                                        |> Decode.fail
+                       )
+
+            else
+                Decode.succeed list
+    in
+    Decode.succeed (\length value -> recursive length value ( 0, [] ))
+        |> Pipeline.custom
+            (Decode.succeed ()
+                |> Decode.list
+                |> Decode.map List.length
+            )
+        |> Pipeline.custom Decode.value
+        |> Decode.andThen identity
+        |> Decode.map
+            (\list ->
+                list
+                    |> (List.map << Tuple.mapSecond)
+                        (\innerList ->
+                            innerList
+                                |> List.map (\maturity -> ( maturity, Loading ))
+                                |> Dict.fromList Maturity.sorter
+                        )
+                    |> Dict.fromList Pair.sorter
+                    |> Pools
+            )
+
+
+decoderPool : Pools -> Tokens -> Decoder Pool
+decoderPool (Pools dict) tokens =
+    Decode.succeed
+        (\asset collateral maturity ->
+            dict
+                |> Dict.foldl
+                    (\pair innerDict accumulator ->
+                        if
+                            ((pair |> Pair.toAsset) == asset)
+                                && ((pair |> Pair.toCollateral) == collateral)
+                                && (maturity |> Dict.memberOf innerDict)
+                        then
+                            { pair = pair
+                            , maturity = maturity
+                            }
+                                |> Decode.succeed
+
+                        else
+                            accumulator
+                    )
+                    (Decode.fail "not in the whitelist")
+        )
+        |> Pipeline.required "asset" (Tokens.decoderToken tokens)
+        |> Pipeline.required "collateral" (Tokens.decoderToken tokens)
+        |> Pipeline.required "maturity" Maturity.decoder
+        |> Decode.andThen identity
+
+
+empty : Pools
+empty =
+    Dict.empty Pair.sorter
+        |> Pools
 
 
 fromPairFragment : Tokens -> Pools -> String -> Maybe Pair

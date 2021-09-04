@@ -1,8 +1,5 @@
-module Modals.Lend.ClaimsOut exposing
-    ( BondInput
-    , ClaimsOut(..)
-    , InsuranceInput
-    , SliderInput
+module Modals.Borrow.DuesOut exposing
+    ( DuesOut(..)
     , hasFailure
     , hasTransaction
     , hasZeroInput
@@ -11,14 +8,14 @@ module Modals.Lend.ClaimsOut exposing
     , isDefault
     , slide
     , slideZero
-    , switchLendSetting
-    , switchLendSettingZero
-    , updateAssetIn
-    , updateAssetInZero
-    , updateBondOut
-    , updateBondOutZero
-    , updateInsuranceOut
-    , updateInsuranceOutZero
+    , switchBorrowSetting
+    , switchBorrowSettingZero
+    , updateAssetOut
+    , updateAssetOutZero
+    , updateCollateralIn
+    , updateCollateralInZero
+    , updateDebtIn
+    , updateDebtInZero
     , view
     )
 
@@ -47,7 +44,6 @@ import Element
         , el
         , fill
         , height
-        , inFront
         , newTabLink
         , none
         , padding
@@ -72,88 +68,88 @@ import Utility.Loading as Loading
 import Utility.TokenImage as TokenImage
 
 
-type ClaimsOut
-    = Default (Remote ClaimsGivenPercent)
+type DuesOut
+    = Default (Remote DuesGivenPercent)
     | Slider SliderInput
-    | Bond BondInput
-    | Insurance InsuranceInput
+    | Debt DebtInput
+    | Collateral CollateralInput
 
 
-type alias ClaimsGivenPercent =
-    { bond : String
-    , insurance : String
-    , minBond : String
-    , minInsurance : String
+type alias DuesGivenPercent =
+    { debt : String
+    , collateral : String
+    , maxDebt : String
+    , maxCollateral : String
     }
 
 
-type alias ClaimsGivenBond =
-    { insurance : String
-    , minInsurance : String
+type alias DuesGivenDebt =
+    { collateral : String
+    , maxCollateral : String
     }
 
 
-type alias ClaimsGivenInsurance =
-    { bond : String
-    , minBond : String
+type alias DuesGivenCollateral =
+    { debt : String
+    , maxDebt : String
     }
 
 
 type alias SliderInput =
     { percent : Percent
-    , claims : Remote ClaimsGivenPercent
+    , dues : Remote DuesGivenPercent
     }
 
 
-type alias BondInput =
+type alias DebtInput =
     { percent : Percent
-    , bond : String
-    , claims : Remote ClaimsGivenBond
+    , debt : String
+    , dues : Remote DuesGivenDebt
     }
 
 
-type alias InsuranceInput =
+type alias CollateralInput =
     { percent : Percent
-    , claims : Remote ClaimsGivenInsurance
-    , insurance : String
+    , dues : Remote DuesGivenCollateral
+    , collateral : String
     }
 
 
-init : ClaimsOut
+init : DuesOut
 init =
-    { bond = ""
-    , insurance = ""
-    , minBond = ""
-    , minInsurance = ""
+    { debt = ""
+    , collateral = ""
+    , maxDebt = ""
+    , maxCollateral = ""
     }
         |> Success
         |> Default
 
 
-hasFailure : { modal | claimsOut : ClaimsOut } -> Bool
-hasFailure { claimsOut } =
-    case claimsOut of
+hasFailure : { modal | duesOut : DuesOut } -> Bool
+hasFailure { duesOut } =
+    case duesOut of
         Default Failure ->
             True
 
-        Slider { claims } ->
-            case claims of
+        Slider { dues } ->
+            case dues of
                 Failure ->
                     True
 
                 _ ->
                     False
 
-        Bond { claims } ->
-            case claims of
+        Debt { dues } ->
+            case dues of
                 Failure ->
                     True
 
                 _ ->
                     False
 
-        Insurance { claims } ->
-            case claims of
+        Collateral { dues } ->
+            case dues of
                 Failure ->
                     True
 
@@ -164,29 +160,29 @@ hasFailure { claimsOut } =
             False
 
 
-isAmount : { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut } -> Bool
-isAmount { pool, assetIn, claimsOut } =
-    (assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset))
-        && (case claimsOut of
+isAmount : { modal | pool : { pool | pair : Pair }, assetOut : String, duesOut : DuesOut } -> Bool
+isAmount { pool, assetOut, duesOut } =
+    (assetOut |> Uint.isAmount (pool.pair |> Pair.toAsset))
+        && (case duesOut of
                 Default _ ->
                     True
 
                 Slider _ ->
                     True
 
-                Bond { bond } ->
-                    bond |> Uint.isAmount (pool.pair |> Pair.toAsset)
+                Debt { debt } ->
+                    debt |> Uint.isAmount (pool.pair |> Pair.toAsset)
 
-                Insurance { insurance } ->
-                    insurance |> Uint.isAmount (pool.pair |> Pair.toCollateral)
+                Collateral { collateral } ->
+                    collateral |> Uint.isAmount (pool.pair |> Pair.toCollateral)
            )
 
 
 hasBalanceIfUser :
     { model | user : Maybe { user | balances : Remote Balances } }
-    -> { modal | pool : { pool | pair : Pair }, assetIn : String }
+    -> { modal | pool : { pool | pair : Pair }, duesOut : DuesOut }
     -> Bool
-hasBalanceIfUser { user } { pool, assetIn } =
+hasBalanceIfUser { user } { pool, duesOut } =
     user
         |> Maybe.map
             (\{ balances } ->
@@ -198,15 +194,50 @@ hasBalanceIfUser { user } { pool, assetIn } =
                         False
 
                     Success successBalances ->
-                        successBalances
-                            |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+                        (case duesOut of
+                            Default (Success { maxCollateral }) ->
+                                Just maxCollateral
+
+                            Slider { dues } ->
+                                case dues of
+                                    Success { maxCollateral } ->
+                                        Just maxCollateral
+
+                                    _ ->
+                                        Nothing
+
+                            Debt { dues } ->
+                                case dues of
+                                    Success { maxCollateral } ->
+                                        Just maxCollateral
+
+                                    _ ->
+                                        Nothing
+
+                            Collateral { collateral } ->
+                                Just collateral
+
+                            _ ->
+                                Nothing
+                        )
+                            |> (\maybeCollateral ->
+                                    maybeCollateral
+                                        |> Maybe.map
+                                            (\collateralIn ->
+                                                successBalances
+                                                    |> Balances.hasEnough
+                                                        (pool.pair |> Pair.toAsset)
+                                                        collateralIn
+                                            )
+                                        |> Maybe.withDefault True
+                               )
             )
         |> Maybe.withDefault True
 
 
 isCorrect :
     { model | user : Maybe { user | balances : Remote Balances } }
-    -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
+    -> { modal | pool : { pool | pair : Pair }, assetOut : String, duesOut : DuesOut }
     -> Bool
 isCorrect model modal =
     (hasFailure modal |> not)
@@ -214,22 +245,22 @@ isCorrect model modal =
         && hasBalanceIfUser model modal
 
 
-hasZeroInput : ClaimsOut -> Bool
-hasZeroInput claimsOut =
-    case claimsOut of
-        Bond { bond } ->
-            bond |> Input.isZero
+hasZeroInput : DuesOut -> Bool
+hasZeroInput duesOut =
+    case duesOut of
+        Debt { debt } ->
+            debt |> Input.isZero
 
-        Insurance { insurance } ->
-            insurance |> Input.isZero
+        Collateral { collateral } ->
+            collateral |> Input.isZero
 
         _ ->
             False
 
 
-isDefault : { modal | claimsOut : ClaimsOut } -> Bool
-isDefault { claimsOut } =
-    case claimsOut of
+isDefault : { modal | duesOut : DuesOut } -> Bool
+isDefault { duesOut } =
+    case duesOut of
         Default _ ->
             True
 
@@ -248,11 +279,11 @@ hasTransaction :
     ->
         { modal
             | pool : Pool
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Bool
-hasTransaction { time, user } ({ pool, assetIn, claimsOut } as modal) =
+hasTransaction { time, user } ({ pool, duesOut } as modal) =
     (pool.maturity |> Maturity.isActive time)
         && (modal |> isAmount)
         && (user
@@ -266,43 +297,78 @@ hasTransaction { time, user } ({ pool, assetIn, claimsOut } as modal) =
                                 False
 
                             Success successBalances ->
-                                successBalances
-                                    |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+                                (case duesOut of
+                                    Default (Success { maxCollateral }) ->
+                                        Just maxCollateral
+
+                                    Slider { dues } ->
+                                        case dues of
+                                            Success { maxCollateral } ->
+                                                Just maxCollateral
+
+                                            _ ->
+                                                Nothing
+
+                                    Debt { dues } ->
+                                        case dues of
+                                            Success { maxCollateral } ->
+                                                Just maxCollateral
+
+                                            _ ->
+                                                Nothing
+
+                                    Collateral { collateral } ->
+                                        Just collateral
+
+                                    _ ->
+                                        Nothing
+                                )
+                                    |> (\maybeCollateral ->
+                                            maybeCollateral
+                                                |> Maybe.map
+                                                    (\collateralOut ->
+                                                        successBalances
+                                                            |> Balances.hasEnough
+                                                                (pool.pair |> Pair.toAsset)
+                                                                collateralOut
+                                                    )
+                                                |> Maybe.withDefault False
+                                       )
                     )
                 |> Maybe.withDefault False
            )
-        && (case claimsOut of
-                Default (Success { bond, insurance, minBond, minInsurance }) ->
-                    (bond |> Input.isZero |> not)
-                        && (insurance |> Input.isZero |> not)
-                        && (minBond |> Input.isZero |> not)
-                        && (minInsurance |> Input.isZero |> not)
+        && (case duesOut of
+                Default (Success { debt, collateral, maxDebt, maxCollateral }) ->
+                    (debt |> Input.isZero |> not)
+                        && (collateral |> Input.isZero |> not)
+                        && (maxDebt |> Input.isZero |> not)
+                        && (maxCollateral |> Input.isZero |> not)
 
-                Slider { claims } ->
-                    case claims of
-                        Success { bond, insurance, minBond, minInsurance } ->
-                            (bond |> Input.isZero |> not)
-                                && (insurance |> Input.isZero |> not)
-                                && (minBond |> Input.isZero |> not)
-                                && (minInsurance |> Input.isZero |> not)
-
-                        _ ->
-                            False
-
-                Bond { claims } ->
-                    case claims of
-                        Success { insurance, minInsurance } ->
-                            (insurance |> Input.isZero |> not)
-                                && (minInsurance |> Input.isZero |> not)
+                Slider { dues } ->
+                    case dues of
+                        Success { debt, collateral, maxDebt, maxCollateral } ->
+                            (debt |> Input.isZero |> not)
+                                && (collateral |> Input.isZero |> not)
+                                && (maxDebt |> Input.isZero |> not)
+                                && (maxCollateral |> Input.isZero |> not)
 
                         _ ->
                             False
 
-                Insurance { claims } ->
-                    case claims of
-                        Success { bond, minBond } ->
-                            (bond |> Input.isZero |> not)
-                                && (minBond |> Input.isZero |> not)
+                Debt { dues } ->
+                    case dues of
+                        Success { collateral, maxCollateral } ->
+                            (collateral |> Input.isZero |> not)
+                                && (maxCollateral |> Input.isZero |> not)
+
+                        _ ->
+                            False
+
+                Collateral { dues } ->
+                    case dues of
+                        Success { debt, maxDebt } ->
+                            (debt |> Input.isZero |> not)
+                                && (maxDebt |> Input.isZero |> not)
 
                         _ ->
                             False
@@ -312,180 +378,180 @@ hasTransaction { time, user } ({ pool, assetIn, claimsOut } as modal) =
            )
 
 
-updateAssetInZero : ClaimsOut -> ClaimsOut
-updateAssetInZero claimsOut =
-    case claimsOut of
+updateAssetOutZero : DuesOut -> DuesOut
+updateAssetOutZero duesOut =
+    case duesOut of
         Default _ ->
-            { bond = ""
-            , insurance = ""
-            , minBond = ""
-            , minInsurance = ""
+            { debt = ""
+            , collateral = ""
+            , maxDebt = ""
+            , maxCollateral = ""
             }
                 |> Success
                 |> Default
 
         Slider sliderInput ->
             { sliderInput
-                | claims =
-                    { bond = ""
-                    , insurance = ""
-                    , minBond = ""
-                    , minInsurance = ""
+                | dues =
+                    { debt = ""
+                    , collateral = ""
+                    , maxDebt = ""
+                    , maxCollateral = ""
                     }
                         |> Success
             }
                 |> Slider
 
-        Bond bondInput ->
-            { bondInput
-                | claims =
-                    { insurance = ""
-                    , minInsurance = ""
+        Debt debtInput ->
+            { debtInput
+                | dues =
+                    { collateral = ""
+                    , maxCollateral = ""
                     }
                         |> Success
             }
-                |> Bond
+                |> Debt
 
-        Insurance insuranceInput ->
-            { insuranceInput
-                | claims =
-                    { bond = ""
-                    , minBond = ""
+        Collateral collateralInput ->
+            { collateralInput
+                | dues =
+                    { debt = ""
+                    , maxDebt = ""
                     }
                         |> Success
             }
-                |> Insurance
+                |> Collateral
 
 
-updateAssetIn : ClaimsOut -> ClaimsOut
-updateAssetIn claimsOut =
-    case claimsOut of
+updateAssetOut : DuesOut -> DuesOut
+updateAssetOut duesOut =
+    case duesOut of
         Default _ ->
             Default Loading
 
         Slider sliderInput ->
-            { sliderInput | claims = Loading }
+            { sliderInput | dues = Loading }
                 |> Slider
 
-        Bond ({ bond } as bondInput) ->
-            { bondInput
-                | claims =
-                    if bond |> Input.isZero then
-                        { insurance = ""
-                        , minInsurance = ""
+        Debt ({ debt } as debtInput) ->
+            { debtInput
+                | dues =
+                    if debt |> Input.isZero then
+                        { collateral = ""
+                        , maxCollateral = ""
                         }
                             |> Success
 
                     else
                         Loading
             }
-                |> Bond
+                |> Debt
 
-        Insurance ({ insurance } as insuranceInput) ->
-            { insuranceInput
-                | claims =
-                    if insurance |> Input.isZero then
-                        { bond = ""
-                        , minBond = ""
+        Collateral ({ collateral } as collateralInput) ->
+            { collateralInput
+                | dues =
+                    if collateral |> Input.isZero then
+                        { debt = ""
+                        , maxDebt = ""
                         }
                             |> Success
 
                     else
                         Loading
             }
-                |> Insurance
+                |> Collateral
 
 
-switchLendSettingZero : Bool -> ClaimsOut -> ClaimsOut
-switchLendSettingZero checked claimsOut =
+switchBorrowSettingZero : Bool -> DuesOut -> DuesOut
+switchBorrowSettingZero checked duesOut =
     if checked then
-        case claimsOut of
+        case duesOut of
             Default _ ->
                 { percent = Percent.init
-                , claims =
-                    { bond = ""
-                    , insurance = ""
-                    , minBond = ""
-                    , minInsurance = ""
+                , dues =
+                    { debt = ""
+                    , collateral = ""
+                    , maxDebt = ""
+                    , maxCollateral = ""
                     }
                         |> Success
                 }
                     |> Slider
 
             _ ->
-                claimsOut
+                duesOut
 
     else
-        { bond = ""
-        , insurance = ""
-        , minBond = ""
-        , minInsurance = ""
+        { debt = ""
+        , collateral = ""
+        , maxDebt = ""
+        , maxCollateral = ""
         }
             |> Success
             |> Default
 
 
-switchLendSetting : Bool -> ClaimsOut -> ClaimsOut
-switchLendSetting checked claimsOut =
+switchBorrowSetting : Bool -> DuesOut -> DuesOut
+switchBorrowSetting checked duesOut =
     if checked then
-        case claimsOut of
-            Default claims ->
+        case duesOut of
+            Default dues ->
                 Slider
                     { percent = Percent.init
-                    , claims = claims
+                    , dues = dues
                     }
 
             _ ->
-                claimsOut
+                duesOut
 
     else
-        case claimsOut of
-            Slider { percent, claims } ->
+        case duesOut of
+            Slider { percent, dues } ->
                 if (percent |> Percent.toFloat) == 64 then
-                    Default claims
+                    Default dues
 
                 else
                     Default Loading
 
             Default _ ->
-                claimsOut
+                duesOut
 
             _ ->
                 Default Loading
 
 
-slideZero : Float -> ClaimsOut
+slideZero : Float -> DuesOut
 slideZero float =
     { percent = float |> Percent.fromFloat
-    , claims =
-        { bond = ""
-        , insurance = ""
-        , minBond = ""
-        , minInsurance = ""
+    , dues =
+        { debt = ""
+        , collateral = ""
+        , maxDebt = ""
+        , maxCollateral = ""
         }
             |> Success
     }
         |> Slider
 
 
-slide : Float -> ClaimsOut
+slide : Float -> DuesOut
 slide float =
     { percent = float |> Percent.fromFloat
-    , claims = Loading
+    , dues = Loading
     }
         |> Slider
 
 
-updateBondOutZero : String -> ClaimsOut -> ClaimsOut
-updateBondOutZero string claimsOut =
-    (case claimsOut of
+updateDebtInZero : String -> DuesOut -> DuesOut
+updateDebtInZero string duesOut =
+    (case duesOut of
         Slider { percent } ->
             Just percent
 
-        Bond { percent } ->
+        Debt { percent } ->
             Just percent
 
-        Insurance { percent } ->
+        Collateral { percent } ->
             Just percent
 
         _ ->
@@ -494,28 +560,28 @@ updateBondOutZero string claimsOut =
         |> Maybe.map
             (\percent ->
                 { percent = percent
-                , bond = string
-                , claims =
-                    { insurance = ""
-                    , minInsurance = ""
+                , debt = string
+                , dues =
+                    { collateral = ""
+                    , maxCollateral = ""
                     }
                         |> Success
                 }
-                    |> Bond
+                    |> Debt
             )
-        |> Maybe.withDefault claimsOut
+        |> Maybe.withDefault duesOut
 
 
-updateBondOut : String -> ClaimsOut -> ClaimsOut
-updateBondOut string claimsOut =
-    (case claimsOut of
+updateDebtIn : String -> DuesOut -> DuesOut
+updateDebtIn string duesOut =
+    (case duesOut of
         Slider { percent } ->
             Just percent
 
-        Bond { percent } ->
+        Debt { percent } ->
             Just percent
 
-        Insurance { percent } ->
+        Collateral { percent } ->
             Just percent
 
         _ ->
@@ -524,32 +590,32 @@ updateBondOut string claimsOut =
         |> Maybe.map
             (\percent ->
                 { percent = percent
-                , bond = string
-                , claims =
+                , debt = string
+                , dues =
                     if string |> Input.isZero then
-                        { insurance = ""
-                        , minInsurance = ""
+                        { collateral = ""
+                        , maxCollateral = ""
                         }
                             |> Success
 
                     else
                         Loading
                 }
-                    |> Bond
+                    |> Debt
             )
-        |> Maybe.withDefault claimsOut
+        |> Maybe.withDefault duesOut
 
 
-updateInsuranceOutZero : String -> ClaimsOut -> ClaimsOut
-updateInsuranceOutZero string claimsOut =
-    (case claimsOut of
+updateCollateralInZero : String -> DuesOut -> DuesOut
+updateCollateralInZero string duesOut =
+    (case duesOut of
         Slider { percent } ->
             Just percent
 
-        Bond { percent } ->
+        Debt { percent } ->
             Just percent
 
-        Insurance { percent } ->
+        Collateral { percent } ->
             Just percent
 
         _ ->
@@ -558,28 +624,28 @@ updateInsuranceOutZero string claimsOut =
         |> Maybe.map
             (\percent ->
                 { percent = percent
-                , claims =
-                    { bond = ""
-                    , minBond = ""
+                , dues =
+                    { debt = ""
+                    , maxDebt = ""
                     }
                         |> Success
-                , insurance = string
+                , collateral = string
                 }
-                    |> Insurance
+                    |> Collateral
             )
-        |> Maybe.withDefault claimsOut
+        |> Maybe.withDefault duesOut
 
 
-updateInsuranceOut : String -> ClaimsOut -> ClaimsOut
-updateInsuranceOut string claimsOut =
-    (case claimsOut of
+updateCollateralIn : String -> DuesOut -> DuesOut
+updateCollateralIn string duesOut =
+    (case duesOut of
         Slider { percent } ->
             Just percent
 
-        Bond { percent } ->
+        Debt { percent } ->
             Just percent
 
-        Insurance { percent } ->
+        Collateral { percent } ->
             Just percent
 
         _ ->
@@ -588,28 +654,29 @@ updateInsuranceOut string claimsOut =
         |> Maybe.map
             (\percent ->
                 { percent = percent
-                , claims =
+                , dues =
                     if string |> Input.isZero then
-                        { bond = ""
-                        , minBond = ""
+                        { debt = ""
+                        , maxDebt = ""
                         }
                             |> Success
 
                     else
                         Loading
-                , insurance = string
+                , collateral = string
                 }
-                    |> Insurance
+                    |> Collateral
             )
-        |> Maybe.withDefault claimsOut
+        |> Maybe.withDefault duesOut
 
 
 view :
     { msgs
-        | switchLendSetting : Bool -> msg
+        | switchBorrowSetting : Bool -> msg
         , slide : Float -> msg
-        , inputBondOut : String -> msg
-        , inputInsuranceOut : String -> msg
+        , inputDebtIn : String -> msg
+        , inputCollateralIn : String -> msg
+        , inputMax : msg
     }
     ->
         { model
@@ -621,8 +688,8 @@ view :
     ->
         { modal
             | pool : Pool
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
             , apr : Remote String
             , cf : Remote String
         }
@@ -639,9 +706,9 @@ view msgs model modal =
 
 
 title :
-    { msgs | switchLendSetting : Bool -> msg }
+    { msgs | switchBorrowSetting : Bool -> msg }
     -> { model | images : Images }
-    -> { modal | claimsOut : ClaimsOut }
+    -> { modal | duesOut : DuesOut }
     -> Element msg
 title msgs { images } modal =
     row
@@ -667,7 +734,7 @@ title msgs { images } modal =
             , Font.bold
             , Font.color Color.transparent500
             ]
-            (text "Your Position")
+            (text "Your Collateralized Debt")
         , Image.info images
             [ width <| px 16
             , alignLeft
@@ -681,23 +748,23 @@ title msgs { images } modal =
             , Font.regular
             , Font.color Color.transparent300
             ]
-            (text "Customize Risk")
+            (text "Customize CDP")
         , switch msgs modal
         ]
 
 
 switch :
-    { msgs | switchLendSetting : Bool -> msg }
-    -> { modal | claimsOut : ClaimsOut }
+    { msgs | switchBorrowSetting : Bool -> msg }
+    -> { modal | duesOut : DuesOut }
     -> Element msg
-switch msgs { claimsOut } =
+switch msgs { duesOut } =
     Input.checkbox
         [ width shrink
         , height shrink
         , alignRight
         , centerY
         ]
-        { onChange = msgs.switchLendSetting
+        { onChange = msgs.switchBorrowSetting
         , icon =
             \checked ->
                 if checked then
@@ -736,7 +803,7 @@ switch msgs { claimsOut } =
                             none
                         )
         , checked =
-            case claimsOut of
+            case duesOut of
                 Default _ ->
                     False
 
@@ -749,8 +816,9 @@ switch msgs { claimsOut } =
 position :
     { msgs
         | slide : Float -> msg
-        , inputBondOut : String -> msg
-        , inputInsuranceOut : String -> msg
+        , inputDebtIn : String -> msg
+        , inputCollateralIn : String -> msg
+        , inputMax : msg
     }
     ->
         { model
@@ -761,13 +829,13 @@ position :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
             , apr : Remote String
             , cf : Remote String
         }
     -> Element msg
-position msgs model ({ claimsOut } as modal) =
+position msgs model ({ duesOut } as modal) =
     column
         [ width fill
         , height shrink
@@ -782,14 +850,14 @@ position msgs model ({ claimsOut } as modal) =
         , Border.solid
         , Border.color Color.transparent100
         ]
-        [ (case claimsOut of
+        [ (case duesOut of
             Slider { percent } ->
                 Just percent
 
-            Bond { percent } ->
+            Debt { percent } ->
                 Just percent
 
-            Insurance { percent } ->
+            Collateral { percent } ->
                 Just percent
 
             _ ->
@@ -805,15 +873,15 @@ position msgs model ({ claimsOut } as modal) =
             [ estimatedAPR modal
             , collateralFactor modal
             ]
-        , bondOutSection msgs model modal
-        , insuranceOutSection msgs model modal
+        , debtInSection msgs model modal
+        , collateralInSection msgs model modal
         ]
 
 
 sliderSection :
     { msgs | slide : Float -> msg }
     -> { model | user : Maybe { user | balances : Remote Balances } }
-    -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
+    -> { modal | pool : { pool | pair : Pair }, assetOut : String, duesOut : DuesOut }
     -> Percent
     -> Element msg
 sliderSection msgs model modal percent =
@@ -833,13 +901,13 @@ sliderSection msgs model modal percent =
                 , Font.regular
                 , Font.color Color.transparent500
                 ]
-                (text "Adjust your risk")
+                (text "Adjust your collateral factor")
             , newTabLink
                 [ alignRight
                 , Font.regular
                 , Font.color Color.primary500
                 ]
-                { url = "https://timeswap.gitbook.io/timeswap/deep-dive/lending"
+                { url = "https://timeswap.gitbook.io/timeswap/deep-dive/borrowing"
                 , label = text "Learn more"
                 }
             ]
@@ -866,7 +934,7 @@ sliderSection msgs model modal percent =
 slider :
     { msgs | slide : Float -> msg }
     -> { model | user : Maybe { user | balances : Remote Balances } }
-    -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
+    -> { modal | pool : { pool | pair : Pair }, assetOut : String, duesOut : DuesOut }
     -> Percent
     -> Element msg
 slider msgs model modal percent =
@@ -935,7 +1003,7 @@ estimatedAPR { apr } =
             , centerY
             , Font.bold
             , Font.size 18
-            , Font.color Color.positive500
+            , Font.color Color.negative500
             ]
             (case apr of
                 Loading ->
@@ -965,8 +1033,8 @@ estimatedAPR { apr } =
 collateralFactor :
     { modal
         | pool : { pool | pair : Pair }
-        , assetIn : String
-        , claimsOut : ClaimsOut
+        , assetOut : String
+        , duesOut : DuesOut
         , cf : Remote String
     }
     -> Element msg
@@ -1034,8 +1102,8 @@ collateralFactor { pool, cf } =
         ]
 
 
-bondOutSection :
-    { msgs | inputBondOut : String -> msg }
+debtInSection :
+    { msgs | inputDebtIn : String -> msg }
     ->
         { model
             | images : Images
@@ -1045,11 +1113,11 @@ bondOutSection :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-bondOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
+debtInSection msgs ({ images } as model) ({ duesOut } as modal) =
     column
         [ width fill
         , height shrink
@@ -1070,25 +1138,25 @@ bondOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
                 , Font.size 14
                 , Font.color Color.transparent400
                 ]
-                (text "Amount at maturity")
+                (text "Amount at repay")
             , Image.info images
                 [ width <| px 16
                 , centerY
                 ]
-            , (case claimsOut of
+            , (case duesOut of
                 Default Loading ->
                     True
 
-                Slider { claims } ->
-                    case claims of
+                Slider { dues } ->
+                    case dues of
                         Loading ->
                             True
 
                         _ ->
                             False
 
-                Insurance { claims } ->
-                    case claims of
+                Collateral { dues } ->
+                    case dues of
                         Loading ->
                             True
 
@@ -1111,12 +1179,12 @@ bondOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
                             none
                    )
             ]
-        , bondOutTextbox msgs model modal
+        , debtInTextbox msgs model modal
         ]
 
 
-bondOutTextbox :
-    { msgs | inputBondOut : String -> msg }
+debtInTextbox :
+    { msgs | inputDebtIn : String -> msg }
     ->
         { model
             | tokenImages : TokenImages
@@ -1125,21 +1193,21 @@ bondOutTextbox :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-bondOutTextbox msgs model modal =
+debtInTextbox msgs model modal =
     row
         [ width fill
         , height <| px 44
         ]
-        [ bondOutLogo model modal
-        , bondOutAmount msgs model modal
+        [ debtInLogo model modal
+        , debtInAmount msgs model modal
         ]
 
 
-bondOutLogo :
+debtInLogo :
     { model
         | tokenImages : TokenImages
         , user : Maybe { user | balances : Remote Balances }
@@ -1147,11 +1215,11 @@ bondOutLogo :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-bondOutLogo ({ tokenImages } as model) ({ pool } as modal) =
+debtInLogo ({ tokenImages } as model) ({ pool } as modal) =
     row
         [ width shrink
         , height fill
@@ -1201,17 +1269,17 @@ bondOutLogo ({ tokenImages } as model) ({ pool } as modal) =
         ]
 
 
-bondOutAmount :
-    { msgs | inputBondOut : String -> msg }
+debtInAmount :
+    { msgs | inputDebtIn : String -> msg }
     -> { model | user : Maybe { user | balances : Remote Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-bondOutAmount msgs model ({ claimsOut } as modal) =
+debtInAmount msgs model ({ duesOut } as modal) =
     el
         ([ width fill
          , height fill
@@ -1243,7 +1311,7 @@ bondOutAmount msgs model ({ claimsOut } as modal) =
             , bottomLeft = 0
             }
          ]
-            ++ (case claimsOut of
+            ++ (case duesOut of
                     Default _ ->
                         [ Background.color Color.primary100
                         , alpha 0.75
@@ -1253,21 +1321,21 @@ bondOutAmount msgs model ({ claimsOut } as modal) =
                         []
                )
         )
-        (bondOutInput msgs model modal)
+        (debtInInput msgs model modal)
 
 
-bondOutInput :
-    { msgs | inputBondOut : String -> msg }
+debtInInput :
+    { msgs | inputDebtIn : String -> msg }
     -> { model | user : Maybe { user | balances : Remote Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-bondOutInput msgs model ({ claimsOut } as modal) =
-    (\bondOut ->
+debtInInput msgs model ({ duesOut } as modal) =
+    (\debtIn ->
         Input.text
             [ width fill
             , height shrink
@@ -1286,19 +1354,19 @@ bondOutInput msgs model ({ claimsOut } as modal) =
               )
                 |> Font.color
             ]
-            { onChange = msgs.inputBondOut
-            , text = bondOut
+            { onChange = msgs.inputDebtIn
+            , text = debtIn
             , placeholder =
                 Input.placeholder
                     [ Font.color Color.transparent100 ]
                     (text "0.0")
                     |> Just
-            , label = Input.labelHidden "Bond Amount"
+            , label = Input.labelHidden "Debt Amount"
             }
     )
         |> (\element ->
-                case claimsOut of
-                    Default claims ->
+                case duesOut of
+                    Default dues ->
                         el
                             [ width fill
                             , height shrink
@@ -1308,8 +1376,8 @@ bondOutInput msgs model ({ claimsOut } as modal) =
                             , Font.regular
                             , Font.size 16
                             ]
-                            (case claims of
-                                Success { bond } ->
+                            (case dues of
+                                Success { debt } ->
                                     el
                                         [ paddingXY 12 4
                                         , centerY
@@ -1322,7 +1390,7 @@ bondOutInput msgs model ({ claimsOut } as modal) =
                                           )
                                             |> Font.color
                                         ]
-                                        (text bond)
+                                        (text debt)
 
                                 _ ->
                                     el
@@ -1333,29 +1401,29 @@ bondOutInput msgs model ({ claimsOut } as modal) =
                                         (text "0.0")
                             )
 
-                    Slider { claims } ->
-                        case claims of
-                            Success { bond } ->
-                                element bond
+                    Slider { dues } ->
+                        case dues of
+                            Success { debt } ->
+                                element debt
 
                             _ ->
                                 element ""
 
-                    Bond { bond } ->
-                        element bond
+                    Debt { debt } ->
+                        element debt
 
-                    Insurance { claims } ->
-                        case claims of
-                            Success { bond } ->
-                                element bond
+                    Collateral { dues } ->
+                        case dues of
+                            Success { debt } ->
+                                element debt
 
                             _ ->
                                 element ""
            )
 
 
-insuranceOutSection :
-    { msgs | inputInsuranceOut : String -> msg }
+collateralInSection :
+    { msgs | inputCollateralIn : String -> msg, inputMax : msg }
     ->
         { model
             | images : Images
@@ -1365,11 +1433,11 @@ insuranceOutSection :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-insuranceOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
+collateralInSection msgs ({ images, user } as model) ({ pool, duesOut } as modal) =
     column
         [ width fill
         , height shrink
@@ -1377,11 +1445,11 @@ insuranceOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
         , alignLeft
         ]
         [ row
-            [ width shrink
+            [ width fill
             , height shrink
             , spacing 8
             ]
-            [ el
+            ([ el
                 [ width shrink
                 , height shrink
                 , paddingXY 0 3
@@ -1390,34 +1458,34 @@ insuranceOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
                 , Font.size 14
                 , Font.color Color.transparent400
                 ]
-                (text "Insurance in case of default")
-            , Image.info images
+                (text "Collateral to lock")
+             , Image.info images
                 [ width <| px 16
                 , centerY
                 ]
-            , (case claimsOut of
-                Default Loading ->
-                    True
+             , (case duesOut of
+                    Default Loading ->
+                        True
 
-                Slider { claims } ->
-                    case claims of
-                        Loading ->
-                            True
+                    Slider { dues } ->
+                        case dues of
+                            Loading ->
+                                True
 
-                        _ ->
-                            False
+                            _ ->
+                                False
 
-                Bond { claims } ->
-                    case claims of
-                        Loading ->
-                            True
+                    Debt { dues } ->
+                        case dues of
+                            Loading ->
+                                True
 
-                        _ ->
-                            False
+                            _ ->
+                                False
 
-                _ ->
-                    False
-              )
+                    _ ->
+                        False
+               )
                 |> (\isLoading ->
                         if isLoading then
                             el
@@ -1430,13 +1498,52 @@ insuranceOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
                         else
                             none
                    )
-            ]
-        , insuranceOutTextbox msgs model modal
+             ]
+                ++ (user
+                        |> Maybe.map
+                            (\{ balances } ->
+                                case balances of
+                                    Loading ->
+                                        [ el
+                                            [ alignRight
+                                            , centerY
+                                            ]
+                                            Loading.view
+                                        ]
+
+                                    Failure ->
+                                        []
+
+                                    Success successBalances ->
+                                        [ el
+                                            [ alignRight
+                                            , centerY
+                                            , paddingXY 0 3
+                                            , Font.regular
+                                            , Font.size 14
+                                            , Font.color Color.transparent300
+                                            ]
+                                            ([ "Your Balance:"
+                                             , successBalances
+                                                |> Balances.get (pool.pair |> Pair.toCollateral)
+                                             , pool.pair
+                                                |> Pair.toCollateral
+                                                |> Token.toSymbol
+                                             ]
+                                                |> String.join " "
+                                                |> text
+                                            )
+                                        ]
+                            )
+                        |> Maybe.withDefault []
+                   )
+            )
+        , collateralInTextbox msgs model modal
         ]
 
 
-insuranceOutTextbox :
-    { msgs | inputInsuranceOut : String -> msg }
+collateralInTextbox :
+    { msgs | inputCollateralIn : String -> msg, inputMax : msg }
     ->
         { model
             | tokenImages : TokenImages
@@ -1445,21 +1552,21 @@ insuranceOutTextbox :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-insuranceOutTextbox msgs model modal =
+collateralInTextbox msgs model modal =
     row
         [ width fill
         , height <| px 44
         ]
-        [ insuranceOutLogo model modal
-        , insuranceOutAmount msgs model modal
+        [ collateralInLogo model modal
+        , collateralInAmount msgs model modal
         ]
 
 
-insuranceOutLogo :
+collateralInLogo :
     { model
         | tokenImages : TokenImages
         , user : Maybe { user | balances : Remote Balances }
@@ -1467,11 +1574,11 @@ insuranceOutLogo :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-insuranceOutLogo ({ tokenImages } as model) ({ pool } as modal) =
+collateralInLogo ({ tokenImages } as model) ({ pool } as modal) =
     row
         [ width shrink
         , height fill
@@ -1521,18 +1628,18 @@ insuranceOutLogo ({ tokenImages } as model) ({ pool } as modal) =
         ]
 
 
-insuranceOutAmount :
-    { msgs | inputInsuranceOut : String -> msg }
+collateralInAmount :
+    { msgs | inputCollateralIn : String -> msg, inputMax : msg }
     -> { model | user : Maybe { user | balances : Remote Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-insuranceOutAmount msgs model ({ claimsOut } as modal) =
-    el
+collateralInAmount msgs ({ user } as model) ({ duesOut } as modal) =
+    row
         ([ width fill
          , height fill
          , paddingEach
@@ -1563,7 +1670,7 @@ insuranceOutAmount msgs model ({ claimsOut } as modal) =
             , bottomLeft = 0
             }
          ]
-            ++ (case claimsOut of
+            ++ (case duesOut of
                     Default _ ->
                         [ Background.color Color.primary100
                         , alpha 0.75
@@ -1573,21 +1680,38 @@ insuranceOutAmount msgs model ({ claimsOut } as modal) =
                         []
                )
         )
-        (insuranceOutInput msgs model modal)
+        [ collateralInInput msgs model modal
+        , user
+            |> Maybe.map
+                (\{ balances } ->
+                    case balances of
+                        Success _ ->
+                            case duesOut of
+                                Default _ ->
+                                    none
+
+                                _ ->
+                                    maxButton msgs
+
+                        _ ->
+                            none
+                )
+            |> Maybe.withDefault none
+        ]
 
 
-insuranceOutInput :
-    { msgs | inputInsuranceOut : String -> msg }
+collateralInInput :
+    { msgs | inputCollateralIn : String -> msg }
     -> { model | user : Maybe { user | balances : Remote Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-insuranceOutInput msgs model ({ claimsOut } as modal) =
-    (\insuranceOut ->
+collateralInInput msgs model ({ duesOut } as modal) =
+    (\collateralIn ->
         Input.text
             [ width fill
             , height shrink
@@ -1606,19 +1730,19 @@ insuranceOutInput msgs model ({ claimsOut } as modal) =
               )
                 |> Font.color
             ]
-            { onChange = msgs.inputInsuranceOut
-            , text = insuranceOut
+            { onChange = msgs.inputCollateralIn
+            , text = collateralIn
             , placeholder =
                 Input.placeholder
                     [ Font.color Color.transparent100 ]
                     (text "0.0")
                     |> Just
-            , label = Input.labelHidden "Insurance Amount"
+            , label = Input.labelHidden "Collateral Amount"
             }
     )
         |> (\element ->
-                case claimsOut of
-                    Default claims ->
+                case duesOut of
+                    Default dues ->
                         el
                             [ width fill
                             , height shrink
@@ -1628,8 +1752,8 @@ insuranceOutInput msgs model ({ claimsOut } as modal) =
                             , Font.regular
                             , Font.size 16
                             ]
-                            (case claims of
-                                Success { insurance } ->
+                            (case dues of
+                                Success { collateral } ->
                                     el
                                         [ paddingXY 12 4
                                         , centerY
@@ -1642,7 +1766,7 @@ insuranceOutInput msgs model ({ claimsOut } as modal) =
                                           )
                                             |> Font.color
                                         ]
-                                        (text insurance)
+                                        (text collateral)
 
                                 _ ->
                                     el
@@ -1653,25 +1777,40 @@ insuranceOutInput msgs model ({ claimsOut } as modal) =
                                         (text "0.0")
                             )
 
-                    Slider { claims } ->
-                        case claims of
-                            Success { insurance } ->
-                                element insurance
+                    Slider { dues } ->
+                        case dues of
+                            Success { collateral } ->
+                                element collateral
 
                             _ ->
                                 element ""
 
-                    Bond { claims } ->
-                        case claims of
-                            Success { insurance } ->
-                                element insurance
+                    Debt { dues } ->
+                        case dues of
+                            Success { collateral } ->
+                                element collateral
 
                             _ ->
                                 element ""
 
-                    Insurance { insurance } ->
-                        element insurance
+                    Collateral { collateral } ->
+                        element collateral
            )
+
+
+maxButton : { msgs | inputMax : msg } -> Element msg
+maxButton msgs =
+    Input.button
+        [ width shrink
+        , height shrink
+        , centerY
+        , Font.regular
+        , Font.size 16
+        , Font.color Color.negative500
+        ]
+        { onPress = Just msgs.inputMax
+        , label = text "MAX"
+        }
 
 
 maturityInfo :

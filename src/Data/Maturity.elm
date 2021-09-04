@@ -1,5 +1,7 @@
 module Data.Maturity exposing
     ( Maturity
+    , decoder
+    , encode
     , fromFragment
     , isActive
     , sorter
@@ -15,12 +17,30 @@ module Data.Maturity exposing
 
 import Data.Status exposing (Status(..))
 import Data.ZoneInfo exposing (ZoneInfo)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
 import Sort as Sort exposing (Sorter)
 import Time exposing (Month(..), Posix)
 
 
 type Maturity
     = Maturity Posix
+
+
+decoder : Decoder Maturity
+decoder =
+    Decode.int
+        |> Decode.map ((*) 1000)
+        |> Decode.map Time.millisToPosix
+        |> Decode.map Maturity
+
+
+encode : Maturity -> Value
+encode (Maturity posix) =
+    posix
+        |> Time.posixToMillis
+        |> (\millis -> millis // 1000)
+        |> Encode.int
 
 
 fromFragment : String -> Maybe Maturity

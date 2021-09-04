@@ -1,6 +1,6 @@
-module Modals.Lend.AssetIn exposing (view)
+module Modals.Borrow.AssetOut exposing (view)
 
-import Data.Balances as Balances exposing (Balances)
+import Data.Balances exposing (Balances)
 import Data.Pair as Pair exposing (Pair)
 import Data.Remote exposing (Remote(..))
 import Data.Token as Token
@@ -9,13 +9,11 @@ import Element
     exposing
         ( Element
         , alignLeft
-        , alignRight
         , centerY
         , column
         , el
         , fill
         , height
-        , none
         , paddingEach
         , paddingXY
         , px
@@ -29,14 +27,13 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Modals.Lend.ClaimsOut as ClaimsOut exposing (ClaimsOut)
+import Modals.Borrow.DuesOut as DuesOut exposing (DuesOut)
 import Utility.Color as Color
-import Utility.Loading as Loading
 import Utility.TokenImage as TokenImage
 
 
 view :
-    { msgs | inputAssetIn : String -> msg, inputMax : msg }
+    { msgs | inputAssetOut : String -> msg }
     ->
         { model
             | tokenImages : TokenImages
@@ -45,8 +42,8 @@ view :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
 view msgs model modal =
@@ -60,17 +57,14 @@ view msgs model modal =
         , Border.color Color.transparent100
         , Border.rounded 4
         ]
-        [ title model modal
-        , assetInTextbox msgs model modal
+        [ title
+        , assetOutTextbox msgs model modal
         ]
 
 
-title :
-    { model | user : Maybe { user | balances : Remote Balances } }
-    -> { modal | pool : { pool | pair : Pair } }
-    -> Element msg
-title { user } { pool } =
-    row
+title : Element msg
+title =
+    el
         [ width fill
         , height shrink
         , spacing 4
@@ -82,50 +76,12 @@ title { user } { pool } =
             , Font.size 16
             , Font.color Color.transparent500
             ]
-            (text "Amount to lend")
-            :: (user
-                    |> Maybe.map
-                        (\{ balances } ->
-                            case balances of
-                                Loading ->
-                                    [ el
-                                        [ alignRight
-                                        , centerY
-                                        ]
-                                        Loading.view
-                                    ]
-
-                                Failure ->
-                                    []
-
-                                Success successBalances ->
-                                    [ el
-                                        [ alignRight
-                                        , centerY
-                                        , paddingXY 0 3
-                                        , Font.regular
-                                        , Font.size 14
-                                        , Font.color Color.transparent300
-                                        ]
-                                        ([ "Your Balance:"
-                                         , successBalances
-                                            |> Balances.get (pool.pair |> Pair.toAsset)
-                                         , pool.pair
-                                            |> Pair.toAsset
-                                            |> Token.toSymbol
-                                         ]
-                                            |> String.join " "
-                                            |> text
-                                        )
-                                    ]
-                        )
-                    |> Maybe.withDefault []
-               )
+            (text "Amount to borrow")
         )
 
 
-assetInTextbox :
-    { msgs | inputAssetIn : String -> msg, inputMax : msg }
+assetOutTextbox :
+    { msgs | inputAssetOut : String -> msg }
     ->
         { model
             | tokenImages : TokenImages
@@ -134,11 +90,11 @@ assetInTextbox :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-assetInTextbox msgs model modal =
+assetOutTextbox msgs model modal =
     row
         [ width fill
         , height <| px 44
@@ -156,8 +112,8 @@ logo :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
 logo ({ tokenImages } as model) ({ pool } as modal) =
@@ -174,7 +130,7 @@ logo ({ tokenImages } as model) ({ pool } as modal) =
             , left = 1
             }
         , Border.solid
-        , (if ClaimsOut.isCorrect model modal then
+        , (if DuesOut.isCorrect model modal then
             Color.transparent100
 
            else
@@ -211,17 +167,17 @@ logo ({ tokenImages } as model) ({ pool } as modal) =
 
 
 amount :
-    { msgs | inputAssetIn : String -> msg, inputMax : msg }
+    { msgs | inputAssetOut : String -> msg }
     -> { model | user : Maybe { user | balances : Remote Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-amount msgs ({ user } as model) modal =
-    row
+amount msgs model modal =
+    el
         [ width fill
         , height fill
         , paddingEach
@@ -238,7 +194,7 @@ amount msgs ({ user } as model) modal =
             , left = 0
             }
         , Border.solid
-        , (if ClaimsOut.isCorrect model modal then
+        , (if DuesOut.isCorrect model modal then
             Color.transparent100
 
            else
@@ -252,32 +208,20 @@ amount msgs ({ user } as model) modal =
             , bottomLeft = 0
             }
         ]
-        [ assetInInput msgs model modal
-        , user
-            |> Maybe.map
-                (\{ balances } ->
-                    case balances of
-                        Success _ ->
-                            maxButton msgs
-
-                        _ ->
-                            none
-                )
-            |> Maybe.withDefault none
-        ]
+        (assetOutInput msgs model modal)
 
 
-assetInInput :
-    { msgs | inputAssetIn : String -> msg }
+assetOutInput :
+    { msgs | inputAssetOut : String -> msg }
     -> { model | user : Maybe { user | balances : Remote Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , assetIn : String
-            , claimsOut : ClaimsOut
+            , assetOut : String
+            , duesOut : DuesOut
         }
     -> Element msg
-assetInInput msgs model ({ assetIn } as modal) =
+assetOutInput msgs model ({ assetOut } as modal) =
     Input.text
         [ width fill
         , height shrink
@@ -288,7 +232,7 @@ assetInInput msgs model ({ assetIn } as modal) =
         , Border.color Color.none
         , Font.regular
         , Font.size 16
-        , (if ClaimsOut.isCorrect model modal then
+        , (if DuesOut.isCorrect model modal then
             Color.transparent500
 
            else
@@ -296,27 +240,12 @@ assetInInput msgs model ({ assetIn } as modal) =
           )
             |> Font.color
         ]
-        { onChange = msgs.inputAssetIn
-        , text = assetIn
+        { onChange = msgs.inputAssetOut
+        , text = assetOut
         , placeholder =
             Input.placeholder
                 [ Font.color Color.transparent100 ]
                 (text "0.0")
                 |> Just
         , label = Input.labelHidden "Input Amount"
-        }
-
-
-maxButton : { msgs | inputMax : msg } -> Element msg
-maxButton msgs =
-    Input.button
-        [ width shrink
-        , height shrink
-        , centerY
-        , Font.regular
-        , Font.size 16
-        , Font.color Color.primary500
-        ]
-        { onPress = Just msgs.inputMax
-        , label = text "MAX"
         }

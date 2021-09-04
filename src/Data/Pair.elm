@@ -2,6 +2,7 @@ module Data.Pair exposing
     ( Pair
     , daiEthRinkeby
     , daiMaticRinkeby
+    , decoder
     , example
     , sorter
     , toAsset
@@ -11,9 +12,13 @@ module Data.Pair exposing
     , wethDaiRinkeby
     )
 
+import Data.Address as Address
 import Data.Chain exposing (Chain(..))
 import Data.ERC20 as ERC20
 import Data.Token as Token exposing (Token)
+import Data.Tokens as Tokens exposing (Tokens)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline as Pipeline
 import Sort exposing (Sorter)
 import Sort.Set as Set exposing (Set)
 
@@ -24,6 +29,50 @@ type Pair
         , asset : Token
         , collateral : Token
         }
+
+
+decoder : Tokens -> Int -> Decoder Pair
+decoder tokens id =
+    Decode.succeed
+        (\asset collateral ->
+            if asset == collateral then
+                Decode.fail "Cannot be the same tokens"
+
+            else
+                { id = id
+                , asset = asset
+                , collateral = collateral
+                }
+                    |> Pair
+                    |> Decode.succeed
+        )
+        |> Pipeline.required "asset"
+            (Decode.oneOf
+                [ Token.decoderETH
+                , Address.decoder
+                    |> Decode.andThen
+                        (\address ->
+                            tokens
+                                |> Tokens.getToken address
+                                |> Maybe.map Decode.succeed
+                                |> Maybe.withDefault (Decode.fail "Not a whitelisted token")
+                        )
+                ]
+            )
+        |> Pipeline.required "collateral"
+            (Decode.oneOf
+                [ Token.decoderETH
+                , Address.decoder
+                    |> Decode.andThen
+                        (\address ->
+                            tokens
+                                |> Tokens.getToken address
+                                |> Maybe.map Decode.succeed
+                                |> Maybe.withDefault (Decode.fail "Not a whitelisted token")
+                        )
+                ]
+            )
+        |> Decode.andThen identity
 
 
 toFragment : Pair -> String

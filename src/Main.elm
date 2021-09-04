@@ -10,10 +10,11 @@ import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
 import Data.Images as Images exposing (Images)
 import Data.Or exposing (Or(..))
-import Data.Pools as Pools exposing (Pools)
+import Data.Pools exposing (Pools)
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.TokenImages as TokenImages exposing (TokenImages)
-import Data.Tokens as Tokens exposing (Tokens)
+import Data.Tokens exposing (Tokens)
+import Data.Whitelist as Whitelist
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
@@ -48,6 +49,7 @@ import Time exposing (Posix)
 import Url exposing (Url)
 import User exposing (User)
 import Utility.Color as Color
+import Utility.Router as Router
 
 
 main : Program Flags Model Msg
@@ -88,32 +90,36 @@ type alias Flags =
     , hasBackdropSupport : Bool
     , images : List ( String, String )
     , tokenImages : List ( String, String )
+    , whitelist : Value
     }
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
-init { width, time, hasBackdropSupport, images, tokenImages } url key =
-    { device = Device.fromWidth width
-    , visibility = Browser.Events.Visible
-    , time = Time.millisToPosix time
-    , zoneInfo = Nothing
-    , backdrop = hasBackdropSupport |> Backdrop.setBackdrop
-    , key = key
-    , slippage = Slippage.init
-    , deadline = Deadline.init
-    , tokens = Tokens.example
-    , images = Images.init images
-    , tokenImages = TokenImages.init tokenImages
-    , pools = Pools.example
-    , user = Nothing
-    , page =
-        Page.init
-            { pools = Pools.example
-            , user = Nothing
-            }
-    , modal = Nothing
-    , service = Nothing
-    }
+init { width, time, hasBackdropSupport, images, tokenImages, whitelist } url key =
+    Whitelist.init whitelist
+        |> (\{ tokens, pools } ->
+                { device = Device.fromWidth width
+                , visibility = Browser.Events.Visible
+                , time = Time.millisToPosix time
+                , zoneInfo = Nothing
+                , backdrop = hasBackdropSupport |> Backdrop.setBackdrop
+                , key = key
+                , slippage = Slippage.init
+                , deadline = Deadline.init
+                , tokens = tokens
+                , images = Images.init images
+                , tokenImages = TokenImages.init tokenImages
+                , pools = pools
+                , user = Nothing
+                , page =
+                    Page.init
+                        { pools = pools
+                        , user = Nothing
+                        }
+                , modal = Nothing
+                , service = Nothing
+                }
+           )
         |> (\model ->
                 ( model
                 , Cmd.batch
@@ -251,7 +257,14 @@ update msg model =
 
         ClickOutsideAside ->
             ( model
-            , Route.exit model
+            , model.service
+                |> Maybe.map Service.toUrl
+                |> Maybe.withDefault
+                    (model.modal
+                        |> Maybe.map Modal.toUrl
+                        |> Maybe.withDefault (model.page |> Page.toUrl)
+                    )
+                |> Navigation.pushUrl model.key
             )
 
         VisibilityChange visibility ->
@@ -280,7 +293,19 @@ update msg model =
                         |> Maybe.andThen Service.getDeadline
                         |> Maybe.withDefault model.deadline
               }
-            , Route.exit model
+            , model.service
+                |> Maybe.map
+                    (\_ ->
+                        model.modal
+                            |> Maybe.map Modal.toUrl
+                            |> Maybe.withDefault (model.page |> Page.toUrl)
+                    )
+                |> Maybe.withDefault
+                    (model.modal
+                        |> Maybe.map (\_ -> model.page |> Page.toUrl)
+                        |> Maybe.withDefault Router.toAllMarket
+                    )
+                |> Navigation.pushUrl model.key
             )
 
         ChooseSlippageOption option ->
@@ -394,7 +419,7 @@ port noMetamask : (Value -> msg) -> Sub msg
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions ({ modal, service } as model) =
     Sub.batch
         [ Browser.Events.onResize ResizeWindow
         , Browser.Events.onVisibilityChange VisibilityChange
@@ -404,6 +429,14 @@ subscriptions model =
         , onClickOutsideDeadline model
         , metamaskMsg MetamaskMsg
         , noMetamask NoMetamask
+        , service
+            |> Maybe.map (\_ -> Sub.none)
+            |> Maybe.withDefault
+                (modal
+                    |> Maybe.map (Modal.subscriptions model)
+                    |> (Maybe.map << Sub.map) ModalMsg
+                    |> Maybe.withDefault Sub.none
+                )
         ]
 
 

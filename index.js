@@ -13,7 +13,7 @@ var app = Elm.Main.init({
       CSS.supports("backdrop-filter: none"),
     images: Object.entries(images),
     tokenImages: Object.entries(tokenImages),
-    // whitelist: rinkeby
+    whitelist: rinkeby,
   },
 });
 
@@ -35,7 +35,7 @@ app.ports.connectMetamask.subscribe((request) => {
           user: accounts[0],
         });
       } else {
-        app.ports.metamaskConnected.send(null);
+        app.ports.metamaskMsg.send(null);
       }
     });
 

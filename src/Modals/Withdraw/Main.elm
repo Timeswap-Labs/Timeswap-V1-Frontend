@@ -7,9 +7,11 @@ module Modals.Withdraw.Main exposing
     , update
     )
 
+import Data.Maturity as Maturity
 import Data.Pool exposing (Pool)
 import Data.Pools as Pools exposing (Pools)
 import Data.Tokens exposing (Tokens)
+import Time exposing (Posix)
 
 
 type Modal
@@ -21,10 +23,21 @@ init pool =
     Modal pool
 
 
-fromFragment : Tokens -> Pools -> String -> Maybe Modal
-fromFragment tokens pools string =
+fromFragment :
+    { model | time : Posix, tokens : Tokens, pools : Pools }
+    -> String
+    -> Maybe Modal
+fromFragment { time, tokens, pools } string =
     string
         |> Pools.fromPoolFragment tokens pools
+        |> Maybe.andThen
+            (\({ maturity } as pool) ->
+                if maturity |> Maturity.isActive time |> not then
+                    Just pool
+
+                else
+                    Nothing
+            )
         |> Maybe.map init
 
 

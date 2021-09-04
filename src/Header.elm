@@ -388,7 +388,9 @@ buttons ({ user } as model) =
                             [ faucetButton model ]
                )
          )
-            ++ [ walletButton model
+            ++ [ user
+                    |> Maybe.map (walletButton model)
+                    |> Maybe.withDefault (connectButton model)
                , settingsButton model
                ]
         )
@@ -460,14 +462,69 @@ faucetButton { device, images } =
         }
 
 
+connectButton : { model | device : Device, images : Images } -> Element msg
+connectButton { device, images } =
+    link
+        ([ width shrink
+         , paddingEach
+            { top = 0
+            , right = 16
+            , bottom = 0
+            , left = 10
+            }
+         , centerX
+         , centerY
+         , Background.color Color.primary500
+         , Border.rounded 4
+         , Font.size 16
+         , Font.color Color.light100
+         , mouseDown [ Background.color Color.primary400 ]
+         , mouseOver [ Background.color Color.primary300 ]
+         ]
+            ++ (if Device.isPhoneOrTablet device then
+                    [ height <| px 35 ]
+
+                else
+                    [ height <| px 44 ]
+               )
+        )
+        { url = Router.toConnect
+        , label =
+            row
+                [ width shrink
+                , height fill
+                , spacing 6
+                ]
+                (Image.wallet images
+                    [ width <| px 24
+                    , centerY
+                    ]
+                    :: (if Device.isPhone device then
+                            []
+
+                        else
+                            [ el [ centerY, Font.regular ]
+                                (if Device.isTablet device then
+                                    text "Wallet"
+
+                                 else
+                                    text "Connect to a Wallet"
+                                )
+                            ]
+                       )
+                    ++ [ rinkebyLabel ]
+                )
+        }
+
+
 walletButton :
     { model
         | device : Device
         , images : Images
-        , user : Maybe { user | chain : Chain, address : Address }
     }
+    -> { user | chain : Chain, address : Address }
     -> Element msg
-walletButton { device, images, user } =
+walletButton { device, images } { chain, address } =
     link
         ([ width shrink
          , paddingEach
@@ -490,65 +547,30 @@ walletButton { device, images, user } =
                     [ height <| px 44 ]
                )
         )
-        { url =
-            user
-                |> Maybe.map
-                    (\{ chain } ->
-                        case chain of
-                            Mainnet ->
-                                Router.exit
-
-                            Rinkeby ->
-                                Router.toWallet
-                    )
-                |> Maybe.withDefault Router.toConnect
+        { url = Router.toWallet
         , label =
             row
                 [ width shrink
                 , height fill
                 , spacing 6
                 ]
-                (user
-                    |> Maybe.map
-                        (\{ chain, address } ->
-                            Image.metamask images
-                                [ width <| px 24
-                                , centerY
-                                ]
-                                :: (if Device.isPhone device then
-                                        []
+                (Image.metamask images
+                    [ width <| px 24
+                    , centerY
+                    ]
+                    :: (if Device.isPhone device then
+                            []
 
-                                    else
-                                        [ el [ centerY ] (text <| Address.toStringShort address) ]
-                                   )
-                                ++ (case chain of
-                                        Mainnet ->
-                                            []
+                        else
+                            [ el [ centerY ] (text <| Address.toStringShort address) ]
+                       )
+                    ++ (case chain of
+                            Mainnet ->
+                                []
 
-                                        Rinkeby ->
-                                            [ rinkebyLabel ]
-                                   )
-                        )
-                    |> Maybe.withDefault
-                        (Image.wallet images
-                            [ width <| px 24
-                            , centerY
-                            ]
-                            :: (if Device.isPhone device then
-                                    []
-
-                                else
-                                    [ el [ centerY, Font.regular ]
-                                        (if Device.isTablet device then
-                                            text "Wallet"
-
-                                         else
-                                            text "Connect to a Wallet"
-                                        )
-                                    ]
-                               )
-                            ++ [ rinkebyLabel ]
-                        )
+                            Rinkeby ->
+                                [ rinkebyLabel ]
+                       )
                 )
         }
 

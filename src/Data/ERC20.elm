@@ -2,10 +2,13 @@ module Data.ERC20 exposing
     ( ERC20
     , compare
     , daiRinkeby
+    , decoder
+    , encode
     , example
     , fromString
     , maticRinkeby
     , sorter
+    , toAddress
     , toDecimals
     , toKey
     , toName
@@ -16,6 +19,9 @@ module Data.ERC20 exposing
 
 import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain(..))
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline as Pipeline
+import Json.Encode exposing (Value)
 import Sort exposing (Sorter)
 import Sort.Set as Set exposing (Set)
 
@@ -47,6 +53,29 @@ fromString set string =
                         )
                         Nothing
             )
+
+
+decoder : Int -> Decoder ERC20
+decoder id =
+    Decode.succeed
+        (\address name symbol decimals ->
+            { id = id
+            , address = address
+            , name = name
+            , symbol = symbol
+            , decimals = decimals
+            }
+                |> ERC20
+        )
+        |> Pipeline.required "address" Address.decoder
+        |> Pipeline.required "name" Decode.string
+        |> Pipeline.required "symbol" Decode.string
+        |> Pipeline.required "decimals" Decode.int
+
+
+encode : ERC20 -> Value
+encode (ERC20 { address }) =
+    address |> Address.encode
 
 
 toString : ERC20 -> String

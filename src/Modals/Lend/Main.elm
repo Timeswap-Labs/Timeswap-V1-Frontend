@@ -1,21 +1,29 @@
-module Modals.Lend.Main exposing
+port module Modals.Lend.Main exposing
     ( Modal
     , Msg
     , fromFragment
     , getPool
     , same
+    , subscriptions
     , update
     , view
     )
 
+import Browser.Navigation as Navigation exposing (Key)
+import Data.Address exposing (Address)
+import Data.Allowances exposing (Allowances)
 import Data.Backdrop exposing (Backdrop)
 import Data.Balances as Balances exposing (Balances)
+import Data.Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
+import Data.Maturity as Maturity
 import Data.Pair as Pair
+import Data.Percent as Percent
 import Data.Pool exposing (Pool)
 import Data.Pools as Pools exposing (Pools)
 import Data.Remote exposing (Remote(..))
+import Data.Slippage exposing (Slippage)
 import Data.TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
 import Data.Uint as Uint
@@ -39,9 +47,14 @@ import Element
         , width
         )
 import Element.Font as Font
+import Json.Decode as Decode
+import Json.Encode exposing (Value)
 import Modals.Lend.AssetIn as AssetIn
 import Modals.Lend.ClaimsOut as ClaimsOut exposing (ClaimsOut)
+import Modals.Lend.Query as Query
+import Modals.Lend.Transaction as Transaction
 import Modals.Lend.Warning as Warning
+import Page exposing (Page)
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Exit as Exit
@@ -64,22 +77,28 @@ init : Pool -> Modal
 init pool =
     { pool = pool
     , assetIn = ""
-    , claimsOut =
-        { bond = ""
-        , insurance = ""
-        }
-            |> Success
-            |> ClaimsOut.Default
+    , claimsOut = ClaimsOut.init
     , apr = Success ""
     , cf = Success ""
     }
         |> Modal
 
 
-fromFragment : Tokens -> Pools -> String -> Maybe Modal
-fromFragment tokens pools string =
+fromFragment :
+    { model | time : Posix, tokens : Tokens, pools : Pools }
+    -> String
+    -> Maybe Modal
+fromFragment { time, tokens, pools } string =
     string
         |> Pools.fromPoolFragment tokens pools
+        |> Maybe.andThen
+            (\({ maturity } as pool) ->
+                if maturity |> Maturity.isActive time then
+                    Just pool
+
+                else
+                    Nothing
+            )
         |> Maybe.map init
 
 
@@ -100,6 +119,10 @@ type Msg
     | Slide Float
     | InputBondOut String
     | InputInsuranceOut String
+    | ApproveLend Value
+    | Lend Value
+    | ReceiveTime Posix
+    | SdkLendMsg Value
 
 
 type alias Msgs =
@@ -109,15 +132,24 @@ type alias Msgs =
     , slide : Float -> Msg
     , inputBondOut : String -> Msg
     , inputInsuranceOut : String -> Msg
+    , approveLend : Value -> Msg
+    , lend : Value -> Msg
     }
 
 
 update :
-    { model | user : Maybe { user | balances : Remote Balances } }
+    { model
+        | key : Key
+        , slippage : Slippage
+        , tokens : Tokens
+        , pools : Pools
+        , user : Maybe { user | balances : Remote Balances }
+        , page : Page
+    }
     -> Msg
     -> Modal
     -> ( Modal, Cmd Msg )
-update { user } msg (Modal modal) =
+update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
     case msg of
         InputAssetIn string ->
             if
@@ -152,29 +184,42 @@ update { user } msg (Modal modal) =
                             Loading
                   }
                     |> Modal
-                , Cmd.none
-                  -- add command
+                , (case modal.claimsOut of
+                    ClaimsOut.Default _ ->
+                        Query.givenPercent modal.pool string Percent.init slippage
+
+                    ClaimsOut.Slider { percent } ->
+                        Query.givenPercent modal.pool string percent slippage
+
+                    ClaimsOut.Bond { bond } ->
+                        Query.givenBond modal.pool string bond slippage
+
+                    ClaimsOut.Insurance { insurance } ->
+                        Query.givenInsurance modal.pool string insurance slippage
+                  )
+                    |> Maybe.map queryLend
+                    |> Maybe.withDefault Cmd.none
                 )
 
             else
                 ( Modal modal, Cmd.none )
 
         InputMax ->
-            ( (user
+            user
                 |> Maybe.map
                     (\{ balances } ->
                         case balances of
                             Loading ->
-                                modal
+                                ( Modal modal, Cmd.none )
 
                             Failure ->
-                                modal
+                                ( Modal modal, Cmd.none )
 
                             Success successBalances ->
                                 successBalances
                                     |> Balances.get (modal.pool.pair |> Pair.toAsset)
                                     |> (\string ->
-                                            { modal
+                                            ( { modal
                                                 | assetIn = string
                                                 , claimsOut =
                                                     if string |> Input.isZero then
@@ -200,15 +245,27 @@ update { user } msg (Modal modal) =
 
                                                     else
                                                         Loading
-                                            }
+                                              }
+                                                |> Modal
+                                            , (case modal.claimsOut of
+                                                ClaimsOut.Default _ ->
+                                                    Query.givenPercent modal.pool string Percent.init slippage
+
+                                                ClaimsOut.Slider { percent } ->
+                                                    Query.givenPercent modal.pool string percent slippage
+
+                                                ClaimsOut.Bond { bond } ->
+                                                    Query.givenBond modal.pool string bond slippage
+
+                                                ClaimsOut.Insurance { insurance } ->
+                                                    Query.givenInsurance modal.pool string insurance slippage
+                                              )
+                                                |> Maybe.map queryLend
+                                                |> Maybe.withDefault Cmd.none
+                                            )
                                        )
                     )
-                |> Maybe.withDefault modal
-              )
-                |> Modal
-            , Cmd.none
-              -- add command
-            )
+                |> Maybe.withDefault ( Modal modal, Cmd.none )
 
         SwitchLendSetting checked ->
             ( { modal
@@ -238,8 +295,13 @@ update { user } msg (Modal modal) =
                         Loading
               }
                 |> Modal
-            , Cmd.none
-              -- add command
+            , if checked then
+                Cmd.none
+
+              else
+                Query.givenPercent modal.pool modal.assetIn Percent.init slippage
+                    |> Maybe.map queryLend
+                    |> Maybe.withDefault Cmd.none
             )
 
         Slide float ->
@@ -264,8 +326,9 @@ update { user } msg (Modal modal) =
                         Loading
               }
                 |> Modal
-            , Cmd.none
-              -- add command
+            , Query.givenPercent modal.pool modal.assetIn (float |> Percent.fromFloat) slippage
+                |> Maybe.map queryLend
+                |> Maybe.withDefault Cmd.none
             )
 
         InputBondOut string ->
@@ -300,8 +363,9 @@ update { user } msg (Modal modal) =
                             Loading
                   }
                     |> Modal
-                , Cmd.none
-                  -- add command
+                , Query.givenBond modal.pool modal.assetIn string slippage
+                    |> Maybe.map queryLend
+                    |> Maybe.withDefault Cmd.none
                 )
 
             else
@@ -333,12 +397,163 @@ update { user } msg (Modal modal) =
                             Loading
                   }
                     |> Modal
-                , Cmd.none
-                  -- add command
+                , Query.givenInsurance modal.pool modal.assetIn string slippage
+                    |> Maybe.map queryLend
+                    |> Maybe.withDefault Cmd.none
                 )
 
             else
                 ( Modal modal, Cmd.none )
+
+        ApproveLend value ->
+            ( Modal modal, approveLend value )
+
+        Lend value ->
+            ( Modal modal
+            , Cmd.batch
+                [ lend value
+                , page
+                    |> Page.toUrl
+                    |> Navigation.pushUrl key
+                ]
+            )
+
+        ReceiveTime posix ->
+            ( Modal modal
+            , if modal.pool.maturity |> Maturity.isActive posix then
+                (case modal.claimsOut of
+                    ClaimsOut.Default _ ->
+                        Query.givenPercent modal.pool modal.assetIn Percent.init slippage
+
+                    ClaimsOut.Slider { percent } ->
+                        Query.givenPercent modal.pool modal.assetIn percent slippage
+
+                    ClaimsOut.Bond { bond } ->
+                        Query.givenBond modal.pool modal.assetIn bond slippage
+
+                    ClaimsOut.Insurance { insurance } ->
+                        Query.givenInsurance modal.pool modal.assetIn insurance slippage
+                )
+                    |> Maybe.map queryLendPerSecond
+                    |> Maybe.withDefault Cmd.none
+
+              else
+                page
+                    |> Page.toUrl
+                    |> Navigation.pushUrl key
+            )
+
+        SdkLendMsg value ->
+            ( value
+                |> Decode.decodeValue (Query.decoder pools tokens)
+                |> (\result ->
+                        case result of
+                            Ok query ->
+                                case query of
+                                    Query.GivenPercent { pool, assetIn, percent, claims } ->
+                                        case modal.claimsOut of
+                                            ClaimsOut.Default _ ->
+                                                if
+                                                    (modal.pool == pool)
+                                                        && (modal.assetIn
+                                                                |> Uint.fromAmount (modal.pool.pair |> Pair.toAsset)
+                                                                |> Maybe.map ((==) assetIn)
+                                                                |> Maybe.withDefault False
+                                                           )
+                                                        && (Percent.init == percent)
+                                                then
+                                                    { modal
+                                                        | claimsOut =
+                                                            modal.claimsOut |> Query.updateDefaultQuery modal claims
+                                                    }
+                                                        |> Modal
+
+                                                else
+                                                    Modal modal
+
+                                            ClaimsOut.Slider sliderInput ->
+                                                if
+                                                    (modal.pool == pool)
+                                                        && (modal.assetIn
+                                                                |> Uint.fromAmount (modal.pool.pair |> Pair.toAsset)
+                                                                |> Maybe.map ((==) assetIn)
+                                                                |> Maybe.withDefault False
+                                                           )
+                                                        && (sliderInput.percent == percent)
+                                                then
+                                                    { modal
+                                                        | claimsOut =
+                                                            modal.claimsOut |> Query.updateSliderQuery modal claims
+                                                    }
+                                                        |> Modal
+
+                                                else
+                                                    Modal modal
+
+                                            _ ->
+                                                Modal modal
+
+                                    Query.GivenBond { pool, assetIn, bond, claims } ->
+                                        case modal.claimsOut of
+                                            ClaimsOut.Bond bondInput ->
+                                                if
+                                                    (modal.pool == pool)
+                                                        && (modal.assetIn
+                                                                |> Uint.fromAmount (modal.pool.pair |> Pair.toAsset)
+                                                                |> Maybe.map ((==) assetIn)
+                                                                |> Maybe.withDefault False
+                                                           )
+                                                        && (bondInput.bond
+                                                                |> Uint.fromAmount (modal.pool.pair |> Pair.toAsset)
+                                                                |> Maybe.map ((==) bond)
+                                                                |> Maybe.withDefault False
+                                                           )
+                                                then
+                                                    { modal
+                                                        | claimsOut =
+                                                            modal.claimsOut |> Query.updateBondQuery modal claims
+                                                    }
+                                                        |> Modal
+
+                                                else
+                                                    Modal modal
+
+                                            _ ->
+                                                Modal modal
+
+                                    Query.GivenInsurance { pool, assetIn, insurance, claims } ->
+                                        case modal.claimsOut of
+                                            ClaimsOut.Insurance insuranceInput ->
+                                                if
+                                                    (modal.pool == pool)
+                                                        && (modal.assetIn
+                                                                |> Uint.fromAmount (modal.pool.pair |> Pair.toAsset)
+                                                                |> Maybe.map ((==) assetIn)
+                                                                |> Maybe.withDefault False
+                                                           )
+                                                        && (insuranceInput.insurance
+                                                                |> Uint.fromAmount (modal.pool.pair |> Pair.toCollateral)
+                                                                |> Maybe.map ((==) insurance)
+                                                                |> Maybe.withDefault False
+                                                           )
+                                                then
+                                                    { modal
+                                                        | claimsOut =
+                                                            modal.claimsOut |> Query.updateInsuranceQuery modal claims
+                                                    }
+                                                        |> Modal
+
+                                                else
+                                                    Modal modal
+
+                                            _ ->
+                                                Modal modal
+
+                            Err _ ->
+                                Modal modal
+                   )
+            , Cmd.none
+            )
 
 
 msgs : Msgs
@@ -349,7 +564,36 @@ msgs =
     , slide = Slide
     , inputBondOut = InputBondOut
     , inputInsuranceOut = InputInsuranceOut
+    , approveLend = ApproveLend
+    , lend = Lend
     }
+
+
+port queryLend : Value -> Cmd msg
+
+
+port queryLendPerSecond : Value -> Cmd msg
+
+
+port approveLend : Value -> Cmd msg
+
+
+port lend : Value -> Cmd msg
+
+
+port sdkLendMsg : (Value -> msg) -> Sub msg
+
+
+subscriptions : { model | time : Posix } -> Modal -> Sub Msg
+subscriptions { time } (Modal { pool }) =
+    if pool.maturity |> Maturity.isActive time then
+        Sub.batch
+            [ Time.every 1000 ReceiveTime
+            , sdkLendMsg SdkLendMsg
+            ]
+
+    else
+        Sub.none
 
 
 view :
@@ -358,9 +602,16 @@ view :
         , time : Posix
         , zoneInfo : Maybe ZoneInfo
         , backdrop : Backdrop
+        , deadline : Deadline
         , images : Images
         , tokenImages : TokenImages
-        , user : Maybe { user | balances : Remote Balances }
+        , user :
+            Maybe
+                { user
+                    | address : Address
+                    , balances : Remote Balances
+                    , allowances : Remote Allowances
+                }
     }
     -> Modal
     -> Element Msg
@@ -387,6 +638,7 @@ view ({ device, backdrop, images } as model) (Modal modal) =
         )
         [ title
         , content model modal
+        , Transaction.view msgs model modal
         ]
 
 
@@ -395,9 +647,9 @@ title =
     el
         [ width shrink
         , height shrink
-        , paddingXY 0 3
+        , paddingXY 0 4
         , Font.bold
-        , Font.size 18
+        , Font.size 24
         , Font.color Color.light100
         ]
         (text "Lend")

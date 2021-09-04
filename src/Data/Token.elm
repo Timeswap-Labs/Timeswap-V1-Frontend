@@ -1,5 +1,8 @@
 module Data.Token exposing
     ( Token(..)
+    , decoder
+    , decoderETH
+    , encode
     , sorter
     , toAssetFragment
     , toCollateralFragment
@@ -10,12 +13,43 @@ module Data.Token exposing
     )
 
 import Data.ERC20 as ERC20 exposing (ERC20)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
 import Sort exposing (Sorter)
 
 
 type Token
     = ETH
     | ERC20 ERC20
+
+
+decoder : Int -> Decoder Token
+decoder id =
+    ERC20.decoder id
+        |> Decode.map ERC20
+
+
+decoderETH : Decoder Token
+decoderETH =
+    Decode.string
+        |> Decode.andThen
+            (\string ->
+                if string == "ETH" then
+                    Decode.succeed ETH
+
+                else
+                    Decode.fail "Not an ETH"
+            )
+
+
+encode : Token -> Value
+encode token =
+    case token of
+        ETH ->
+            Encode.string "ETH"
+
+        ERC20 erc20 ->
+            ERC20.encode erc20
 
 
 toKey : Token -> String
