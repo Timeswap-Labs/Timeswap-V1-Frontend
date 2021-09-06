@@ -1609,7 +1609,12 @@ collateralBalance msgs balances { pool, tooltip } =
                                     |> Token.toSymbol
                                     |> (\symbol ->
                                             el
-                                                [ paddingXY 0 3
+                                                [ paddingEach
+                                                    { top = 3
+                                                    , right = 0
+                                                    , bottom = 2
+                                                    , left = 0
+                                                    }
                                                 , Font.regular
                                                 , Border.widthEach
                                                     { top = 0
@@ -1618,7 +1623,7 @@ collateralBalance msgs balances { pool, tooltip } =
                                                     , left = 0
                                                     }
                                                 , Border.dashed
-                                                , Border.color Color.transparent300
+                                                , Border.color Color.transparent200
                                                 , Events.onMouseEnter (msgs.onMouseEnter Tooltip.CollateralBalance)
                                                 , Events.onMouseLeave msgs.onMouseLeave
                                                 , (case tooltip of

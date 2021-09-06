@@ -695,7 +695,7 @@ assetBalance { tooltip } pool asset =
                                     , left = 0
                                     }
                                 , Border.dashed
-                                , Border.color Color.transparent300
+                                , Border.color Color.transparent200
                                 , Font.size 18
                                 , Events.onMouseEnter (OnMouseEnter (Tooltip.Bond pool))
                                 , Events.onMouseLeave OnMouseLeave
@@ -789,7 +789,7 @@ collateralBalance { tooltip } pool collateral =
                                     , left = 0
                                     }
                                 , Border.dashed
-                                , Border.color Color.transparent300
+                                , Border.color Color.transparent200
                                 , Font.size 18
                                 , Events.onMouseEnter (OnMouseEnter (Tooltip.Insurance pool))
                                 , Events.onMouseLeave OnMouseLeave

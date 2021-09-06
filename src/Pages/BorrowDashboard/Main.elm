@@ -1,4 +1,12 @@
-module Pages.BorrowDashboard.Main exposing (Msg, Page, fromFragment, getFilter, init, update, view)
+module Pages.BorrowDashboard.Main exposing
+    ( Msg
+    , Page
+    , fromFragment
+    , getFilter
+    , init
+    , update
+    , view
+    )
 
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
@@ -18,7 +26,6 @@ import Element
         , alignLeft
         , alignRight
         , alignTop
-        , below
         , centerX
         , centerY
         , column
@@ -790,7 +797,7 @@ assetBalance { tooltip } pool tokenId asset =
                                     , left = 0
                                     }
                                 , Border.dashed
-                                , Border.color Color.transparent300
+                                , Border.color Color.transparent200
                                 , Font.size 18
                                 , Events.onMouseEnter (OnMouseEnter (Tooltip.Debt pool tokenId))
                                 , Events.onMouseLeave OnMouseLeave
@@ -884,7 +891,7 @@ collateralBalance { tooltip } pool tokenId collateral =
                                     , left = 0
                                     }
                                 , Border.dashed
-                                , Border.color Color.transparent300
+                                , Border.color Color.transparent200
                                 , Font.size 18
                                 , Events.onMouseEnter (OnMouseEnter (Tooltip.Collateral pool tokenId))
                                 , Events.onMouseLeave OnMouseLeave
