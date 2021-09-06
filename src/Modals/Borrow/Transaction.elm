@@ -1,4 +1,4 @@
-module Modals.Lend.Transaction exposing (view)
+module Modals.Borrow.Transaction exposing (view)
 
 import Data.Address as Address exposing (Address)
 import Data.Allowances as Allowances exposing (Allowances)
@@ -39,7 +39,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Json.Encode as Encode exposing (Value)
-import Modals.Lend.ClaimsOut as ClaimsOut exposing (ClaimsOut)
+import Modals.Borrow.DuesOut as DuesOut exposing (DuesOut)
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Image as Image
@@ -49,37 +49,37 @@ import Utility.Router as Router
 
 type Transaction
     = GivenPercent TransactionPercent
-    | GivenBond TransactionBond
-    | GivenInsurance TransactionInsurance
+    | GivenDebt TransactionDebt
+    | GivenCollateral TransactionCollateral
 
 
 type alias TransactionPercent =
     { pool : Pool
     , to : Address
-    , assetIn : Uint
+    , assetOut : Uint
     , percent : Percent
-    , minBond : Uint
-    , minInsurance : Uint
+    , maxDebt : Uint
+    , maxCollateral : Uint
     , deadline : Int
     }
 
 
-type alias TransactionBond =
+type alias TransactionDebt =
     { pool : Pool
     , to : Address
-    , assetIn : Uint
-    , bondOut : Uint
-    , minInsurance : Uint
+    , assetOut : Uint
+    , debtIn : Uint
+    , maxCollateral : Uint
     , deadline : Int
     }
 
 
-type alias TransactionInsurance =
+type alias TransactionCollateral =
     { pool : Pool
     , to : Address
-    , assetIn : Uint
-    , insuranceOut : Uint
-    , minBond : Uint
+    , assetOut : Uint
+    , collateralIn : Uint
+    , maxDebt : Uint
     , deadline : Int
     }
 
@@ -90,97 +90,97 @@ toTransaction :
         , deadline : Deadline
         , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
     }
-    -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut }
+    -> { modal | pool : Pool, assetOut : String, duesOut : DuesOut }
     -> Maybe Transaction
-toTransaction ({ time, deadline, user } as model) ({ pool, assetIn, claimsOut } as modal) =
+toTransaction ({ time, deadline, user } as model) ({ pool, assetOut, duesOut } as modal) =
     if
         (pool.maturity |> Maturity.isActive time)
-            && (assetIn |> Input.isZero |> not)
-            && (claimsOut |> ClaimsOut.hasZeroInput |> not)
+            && (assetOut |> Input.isZero |> not)
+            && (duesOut |> DuesOut.hasZeroInput |> not)
             && hasAllowance model modal
     then
-        case claimsOut of
-            ClaimsOut.Default (Success { minBond, minInsurance }) ->
+        case duesOut of
+            DuesOut.Default (Success { maxDebt, maxCollateral }) ->
                 Maybe.map4
-                    (\address uintAssetIn uintMinBond uintMinInsurance ->
+                    (\address uintAssetOut uintMaxDebt uintMaxCollateral ->
                         { pool = pool
                         , to = address
-                        , assetIn = uintAssetIn
+                        , assetOut = uintAssetOut
                         , percent = Percent.init
-                        , minBond = uintMinBond
-                        , minInsurance = uintMinInsurance
+                        , maxDebt = uintMaxDebt
+                        , maxCollateral = uintMaxCollateral
                         , deadline = deadline |> Deadline.toInt time
                         }
                             |> GivenPercent
                     )
                     (user |> Maybe.map .address)
-                    (assetIn |> Uint.fromString)
-                    (minBond |> Uint.fromString)
-                    (minInsurance |> Uint.fromString)
+                    (assetOut |> Uint.fromString)
+                    (maxDebt |> Uint.fromString)
+                    (maxCollateral |> Uint.fromString)
 
-            ClaimsOut.Slider { percent, claims } ->
-                case claims of
-                    Success { minBond, minInsurance } ->
+            DuesOut.Slider { percent, dues } ->
+                case dues of
+                    Success { maxDebt, maxCollateral } ->
                         Maybe.map4
-                            (\address uintAssetIn uintMinBond uintMinInsurance ->
+                            (\address uintAssetOut uintMaxDebt uintMaxCollateral ->
                                 { pool = pool
                                 , to = address
-                                , assetIn = uintAssetIn
+                                , assetOut = uintAssetOut
                                 , percent = percent
-                                , minBond = uintMinBond
-                                , minInsurance = uintMinInsurance
+                                , maxDebt = uintMaxDebt
+                                , maxCollateral = uintMaxCollateral
                                 , deadline = deadline |> Deadline.toInt time
                                 }
                                     |> GivenPercent
                             )
                             (user |> Maybe.map .address)
-                            (assetIn |> Uint.fromString)
-                            (minBond |> Uint.fromString)
-                            (minInsurance |> Uint.fromString)
+                            (assetOut |> Uint.fromString)
+                            (maxDebt |> Uint.fromString)
+                            (maxCollateral |> Uint.fromString)
 
                     _ ->
                         Nothing
 
-            ClaimsOut.Bond { bond, claims } ->
-                case claims of
-                    Success { minInsurance } ->
+            DuesOut.Debt { debt, dues } ->
+                case dues of
+                    Success { maxCollateral } ->
                         Maybe.map4
-                            (\address uintAssetIn uintBondOut uintMinInsurance ->
+                            (\address uintAssetOut uintDebtIn uintMaxCollateral ->
                                 { pool = pool
                                 , to = address
-                                , assetIn = uintAssetIn
-                                , bondOut = uintBondOut
-                                , minInsurance = uintMinInsurance
+                                , assetOut = uintAssetOut
+                                , debtIn = uintDebtIn
+                                , maxCollateral = uintMaxCollateral
                                 , deadline = deadline |> Deadline.toInt time
                                 }
-                                    |> GivenBond
+                                    |> GivenDebt
                             )
                             (user |> Maybe.map .address)
-                            (assetIn |> Uint.fromString)
-                            (bond |> Uint.fromString)
-                            (minInsurance |> Uint.fromString)
+                            (assetOut |> Uint.fromString)
+                            (debt |> Uint.fromString)
+                            (maxCollateral |> Uint.fromString)
 
                     _ ->
                         Nothing
 
-            ClaimsOut.Insurance { insurance, claims } ->
-                case claims of
-                    Success { minBond } ->
+            DuesOut.Collateral { collateral, dues } ->
+                case dues of
+                    Success { maxDebt } ->
                         Maybe.map4
-                            (\address uintAssetIn uintInsuranceOut uintMinBond ->
+                            (\address uintAssetOut uintCollateralIn uintMaxDebt ->
                                 { pool = pool
                                 , to = address
-                                , assetIn = uintAssetIn
-                                , insuranceOut = uintInsuranceOut
-                                , minBond = uintMinBond
+                                , assetOut = uintAssetOut
+                                , collateralIn = uintCollateralIn
+                                , maxDebt = uintMaxDebt
                                 , deadline = deadline |> Deadline.toInt time
                                 }
-                                    |> GivenInsurance
+                                    |> GivenCollateral
                             )
                             (user |> Maybe.map .address)
-                            (assetIn |> Uint.fromString)
-                            (insurance |> Uint.fromString)
-                            (minBond |> Uint.fromString)
+                            (assetOut |> Uint.fromString)
+                            (collateral |> Uint.fromString)
+                            (maxDebt |> Uint.fromString)
 
                     _ ->
                         Nothing
@@ -195,42 +195,42 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetIn, claimsOut } 
 encode : Transaction -> Value
 encode transaction =
     case transaction of
-        GivenPercent { pool, to, assetIn, percent, minBond, minInsurance, deadline } ->
+        GivenPercent { pool, to, assetOut, percent, maxDebt, maxCollateral, deadline } ->
             [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
             , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
             , ( "maturity", pool.maturity |> Maturity.encode )
-            , ( "bondTo", to |> Address.encode )
-            , ( "insuranceTo", to |> Address.encode )
-            , ( "assetIn", assetIn |> Uint.encode )
+            , ( "assetTo", to |> Address.encode )
+            , ( "dueTo", to |> Address.encode )
+            , ( "assetOut", assetOut |> Uint.encode )
             , ( "percent", percent |> Percent.encode )
-            , ( "minBond", minBond |> Uint.encode )
-            , ( "minInsurance", minInsurance |> Uint.encode )
+            , ( "maxDebt", maxDebt |> Uint.encode )
+            , ( "maxCollateral", maxCollateral |> Uint.encode )
             , ( "deadline", deadline |> Encode.int )
             ]
                 |> Encode.object
 
-        GivenBond { pool, to, assetIn, bondOut, minInsurance, deadline } ->
+        GivenDebt { pool, to, assetOut, debtIn, maxCollateral, deadline } ->
             [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
             , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
             , ( "maturity", pool.maturity |> Maturity.encode )
-            , ( "bondTo", to |> Address.encode )
-            , ( "insuranceTo", to |> Address.encode )
-            , ( "assetIn", assetIn |> Uint.encode )
-            , ( "bondOut", bondOut |> Uint.encode )
-            , ( "minInsurance", minInsurance |> Uint.encode )
+            , ( "assetTo", to |> Address.encode )
+            , ( "dueTo", to |> Address.encode )
+            , ( "assetOut", assetOut |> Uint.encode )
+            , ( "debtIn", debtIn |> Uint.encode )
+            , ( "maxCollateral", maxCollateral |> Uint.encode )
             , ( "deadline", deadline |> Encode.int )
             ]
                 |> Encode.object
 
-        GivenInsurance { pool, to, assetIn, insuranceOut, minBond, deadline } ->
+        GivenCollateral { pool, to, assetOut, collateralIn, maxDebt, deadline } ->
             [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
             , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
             , ( "maturity", pool.maturity |> Maturity.encode )
-            , ( "bondTo", to |> Address.encode )
-            , ( "insuranceTo", to |> Address.encode )
-            , ( "assetIn", assetIn |> Uint.encode )
-            , ( "insuranceOut", insuranceOut |> Uint.encode )
-            , ( "minBond", minBond |> Uint.encode )
+            , ( "assetTo", to |> Address.encode )
+            , ( "dueTo", to |> Address.encode )
+            , ( "assetOut", assetOut |> Uint.encode )
+            , ( "collateralIn", collateralIn |> Uint.encode )
+            , ( "maxDebt", maxDebt |> Uint.encode )
             , ( "deadline", deadline |> Encode.int )
             ]
                 |> Encode.object
@@ -238,19 +238,56 @@ encode transaction =
 
 hasAllowance :
     { model | user : Maybe { user | balances : Remote Balances, allowances : Remote Allowances } }
-    -> { modal | pool : { pool | pair : Pair }, assetIn : String }
+    -> { modal | pool : { pool | pair : Pair }, duesOut : DuesOut }
     -> Bool
-hasAllowance { user } { pool, assetIn } =
+hasAllowance { user } { pool, duesOut } =
     user
         |> Maybe.map
             (\{ balances, allowances } ->
                 case ( balances, allowances ) of
                     ( Success successBalances, Success successAllowances ) ->
-                        (successBalances
-                            |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+                        (case duesOut of
+                            DuesOut.Default (Success { maxCollateral }) ->
+                                Just maxCollateral
+
+                            DuesOut.Slider { dues } ->
+                                case dues of
+                                    Success { maxCollateral } ->
+                                        Just maxCollateral
+
+                                    _ ->
+                                        Nothing
+
+                            DuesOut.Debt { dues } ->
+                                case dues of
+                                    Success { maxCollateral } ->
+                                        Just maxCollateral
+
+                                    _ ->
+                                        Nothing
+
+                            DuesOut.Collateral { collateral } ->
+                                Just collateral
+
+                            _ ->
+                                Nothing
                         )
-                            && (successAllowances
-                                    |> Allowances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+                            |> (\maybeCollateral ->
+                                    maybeCollateral
+                                        |> Maybe.map
+                                            (\collateralOut ->
+                                                (successBalances
+                                                    |> Balances.hasEnough
+                                                        (pool.pair |> Pair.toCollateral)
+                                                        collateralOut
+                                                )
+                                                    && (successAllowances
+                                                            |> Allowances.hasEnough
+                                                                (pool.pair |> Pair.toCollateral)
+                                                                collateralOut
+                                                       )
+                                            )
+                                        |> Maybe.withDefault False
                                )
 
                     _ ->
@@ -260,7 +297,7 @@ hasAllowance { user } { pool, assetIn } =
 
 
 view :
-    { msgs | approveLend : Value -> msg, lend : Value -> msg }
+    { msgs | approveBorrow : Value -> msg, borrow : Value -> msg }
     ->
         { model
             | device : Device
@@ -269,7 +306,7 @@ view :
             , images : Images
             , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
         }
-    -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut }
+    -> { modal | pool : Pool, assetOut : String, duesOut : DuesOut }
     -> Element msg
 view msgs ({ user } as model) modal =
     column
@@ -294,7 +331,7 @@ view msgs ({ user } as model) modal =
                             [ width fill
                             , height shrink
                             ]
-                            (lendSection msgs model modal)
+                            (borrowSection msgs model modal)
                         ]
                 )
             |> Maybe.withDefault (connectButton model)
@@ -383,18 +420,18 @@ rinkebyLabel =
 
 
 approveSection :
-    { msgs | approveLend : Value -> msg }
+    { msgs | approveBorrow : Value -> msg }
     ->
         { model
             | device : Device
             , time : Posix
             , user : Maybe { user | balances : Remote Balances, allowances : Remote Allowances }
         }
-    -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut }
+    -> { modal | pool : Pool, assetOut : String, duesOut : DuesOut }
     -> Element msg
 approveSection msgs model modal =
     if
-        ClaimsOut.hasTransaction model modal
+        DuesOut.hasTransaction model modal
             && (hasAllowance model modal |> not)
     then
         approveButton msgs model modal
@@ -404,7 +441,7 @@ approveSection msgs model modal =
 
 
 approveButton :
-    { msgs | approveLend : Value -> msg }
+    { msgs | approveBorrow : Value -> msg }
     -> { model | device : Device }
     -> { modal | pool : { pool | pair : Pair } }
     -> Element msg
@@ -435,9 +472,9 @@ approveButton msgs { device } { pool } =
         )
         { onPress =
             pool.pair
-                |> Pair.toAsset
+                |> Pair.toCollateral
                 |> Token.encode
-                |> msgs.approveLend
+                |> msgs.approveBorrow
                 |> Just
         , label =
             el
@@ -490,8 +527,8 @@ disabledApprove { device } =
         )
 
 
-lendSection :
-    { msgs | lend : Value -> msg }
+borrowSection :
+    { msgs | borrow : Value -> msg }
     ->
         { model
             | device : Device
@@ -499,20 +536,20 @@ lendSection :
             , deadline : Deadline
             , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
         }
-    -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut }
+    -> { modal | pool : Pool, assetOut : String, duesOut : DuesOut }
     -> Element msg
-lendSection msgs model modal =
+borrowSection msgs model modal =
     toTransaction model modal
-        |> Maybe.map (lendButton msgs model)
-        |> Maybe.withDefault (disabledLend model)
+        |> Maybe.map (borrowButton msgs model)
+        |> Maybe.withDefault (disabledBorrow model)
 
 
-lendButton :
-    { msgs | lend : Value -> msg }
+borrowButton :
+    { msgs | borrow : Value -> msg }
     -> { model | device : Device }
     -> Transaction
     -> Element msg
-lendButton msgs { device } transaction =
+borrowButton msgs { device } transaction =
     Input.button
         ([ width fill
          , paddingEach
@@ -540,7 +577,7 @@ lendButton msgs { device } transaction =
         { onPress =
             transaction
                 |> encode
-                |> msgs.lend
+                |> msgs.borrow
                 |> Just
         , label =
             el
@@ -552,12 +589,12 @@ lendButton msgs { device } transaction =
                 , Font.size 16
                 , Font.color Color.light100
                 ]
-                (text "Lend")
+                (text "Borrow")
         }
 
 
-disabledLend : { model | device : Device } -> Element msg
-disabledLend { device } =
+disabledBorrow : { model | device : Device } -> Element msg
+disabledBorrow { device } =
     el
         ([ width fill
          , paddingEach
@@ -589,7 +626,7 @@ disabledLend { device } =
             , Font.size 16
             , Font.color Color.transparent100
             ]
-            (text "Lend")
+            (text "Borrow")
         )
 
 

@@ -52,6 +52,7 @@ import Json.Encode exposing (Value)
 import Modals.Lend.AssetIn as AssetIn
 import Modals.Lend.ClaimsOut as ClaimsOut exposing (ClaimsOut)
 import Modals.Lend.Query as Query
+import Modals.Lend.Tooltip exposing (Tooltip)
 import Modals.Lend.Transaction as Transaction
 import Modals.Lend.Warning as Warning
 import Page exposing (Page)
@@ -70,6 +71,7 @@ type Modal
         , claimsOut : ClaimsOut
         , apr : Remote String
         , cf : Remote String
+        , tooltip : Maybe Tooltip
         }
 
 
@@ -80,6 +82,7 @@ init pool =
     , claimsOut = ClaimsOut.init
     , apr = Success ""
     , cf = Success ""
+    , tooltip = Nothing
     }
         |> Modal
 
@@ -123,6 +126,8 @@ type Msg
     | Lend Value
     | ReceiveTime Posix
     | SdkLendMsg Value
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
 
 
 type alias Msgs =
@@ -134,6 +139,8 @@ type alias Msgs =
     , inputInsuranceOut : String -> Msg
     , approveLend : Value -> Msg
     , lend : Value -> Msg
+    , onMouseEnter : Tooltip -> Msg
+    , onMouseLeave : Msg
     }
 
 
@@ -555,6 +562,18 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
             , Cmd.none
             )
 
+        OnMouseEnter tooltip ->
+            ( { modal | tooltip = Just tooltip }
+                |> Modal
+            , Cmd.none
+            )
+
+        OnMouseLeave ->
+            ( { modal | tooltip = Nothing }
+                |> Modal
+            , Cmd.none
+            )
+
 
 msgs : Msgs
 msgs =
@@ -566,6 +585,8 @@ msgs =
     , inputInsuranceOut = InputInsuranceOut
     , approveLend = ApproveLend
     , lend = Lend
+    , onMouseEnter = OnMouseEnter
+    , onMouseLeave = OnMouseLeave
     }
 
 
@@ -623,7 +644,7 @@ view ({ device, backdrop, images } as model) (Modal modal) =
          , centerY
          , Exit.button images |> inFront
          ]
-            ++ Glass.darkPrimaryModal backdrop 0
+            ++ Glass.lightPrimaryModal backdrop 0
             ++ (if Device.isPhone device then
                     [ width fill
                     , height shrink
@@ -672,6 +693,7 @@ content :
             , claimsOut : ClaimsOut
             , apr : Remote String
             , cf : Remote String
+            , tooltip : Maybe Tooltip
         }
     -> Element Msg
 content ({ images } as model) modal =

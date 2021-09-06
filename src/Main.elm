@@ -126,7 +126,7 @@ init { width, time, hasBackdropSupport, images, tokenImages, whitelist } url key
                     [ Time.now |> Task.perform ReceiveTime
                     , Task.map2 ZoneInfo Time.here Time.getZoneName
                         |> Task.perform ReceiveZoneInfo
-                    , Route.pushUrl model url
+                    , Route.pushUrl ModalMsg model url
                     ]
                 )
            )
@@ -152,6 +152,8 @@ type Msg
     | ServiceMsg Service.Msg
     | MetamaskMsg Value
     | NoMetamask Value
+    | SdkPoolsMsg Value
+    | SdkPositionsMsg Value
     | Disconnect
 
 
@@ -170,7 +172,7 @@ update msg model =
     case msg of
         RequestUrl (Browser.Internal url) ->
             ( model
-            , Route.pushUrl model url
+            , Route.pushUrl ModalMsg model url
             )
 
         RequestUrl (Browser.External url) ->
@@ -179,13 +181,13 @@ update msg model =
             )
 
         ChangeUrl url ->
-            ( url
+            url
                 |> Route.fromUrl model
                 |> Maybe.map
                     (\route ->
                         case route of
                             Route.Page page ->
-                                { model
+                                ( { model
                                     | device = model.device |> Device.closeAside
                                     , page =
                                         if Page.same model.page page then
@@ -195,10 +197,12 @@ update msg model =
                                             page
                                     , modal = Nothing
                                     , service = Nothing
-                                }
+                                  }
+                                , Cmd.none
+                                )
 
-                            Route.Modal modal ->
-                                { model
+                            Route.Modal ( modal, cmd ) ->
+                                ( { model
                                     | device = model.device |> Device.closeAside
                                     , modal =
                                         model.modal
@@ -212,10 +216,12 @@ update msg model =
                                                 )
                                             |> Maybe.withDefault (Just modal)
                                     , service = Nothing
-                                }
+                                  }
+                                , cmd |> Cmd.map ModalMsg
+                                )
 
                             Route.Service service ->
-                                { model
+                                ( { model
                                     | device = model.device |> Device.closeAside
                                     , service =
                                         model.service
@@ -228,16 +234,20 @@ update msg model =
                                                         Just service
                                                 )
                                             |> Maybe.withDefault (Just service)
-                                }
+                                  }
+                                , Cmd.none
+                                )
 
                             Route.Aside ->
-                                { model | device = model.device |> Device.openAside }
+                                ( { model | device = model.device |> Device.openAside }
+                                , Cmd.none
+                                )
 
                             Route.Exit ->
-                                if model.device |> Device.checkAsideStatus then
+                                ( if model.device |> Device.checkAsideStatus then
                                     { model | device = model.device |> Device.closeAside }
 
-                                else
+                                  else
                                     model.service
                                         |> Maybe.map (\_ -> { model | service = Nothing })
                                         |> Maybe.withDefault
@@ -245,10 +255,10 @@ update msg model =
                                                 |> Maybe.map (\_ -> { model | modal = Nothing })
                                                 |> Maybe.withDefault { model | page = Page.init model }
                                             )
+                                , Cmd.none
+                                )
                     )
-                |> Maybe.withDefault model
-            , Cmd.none
-            )
+                |> Maybe.withDefault ( model, Cmd.none )
 
         ResizeWindow width _ ->
             ( { model | device = Device.fromDeviceWidth model.device width }
@@ -406,6 +416,16 @@ update msg model =
             , Navigation.pushUrl model.key "#nometamask"
             )
 
+        SdkPoolsMsg value ->
+            ( model
+            , Cmd.none
+            )
+
+        SdkPositionsMsg value ->
+            ( model
+            , Cmd.none
+            )
+
         Disconnect ->
             ( { model | user = Nothing }
             , Cmd.none
@@ -416,6 +436,12 @@ port metamaskMsg : (Value -> msg) -> Sub msg
 
 
 port noMetamask : (Value -> msg) -> Sub msg
+
+
+port sdkPoolsMsg : (Value -> msg) -> Sub msg
+
+
+port sdkPositionsMsg : (Value -> msg) -> Sub msg
 
 
 subscriptions : Model -> Sub Msg
@@ -429,6 +455,8 @@ subscriptions ({ modal, service } as model) =
         , onClickOutsideDeadline model
         , metamaskMsg MetamaskMsg
         , noMetamask NoMetamask
+        , sdkPoolsMsg SdkPoolsMsg
+        , sdkPositionsMsg SdkPositionsMsg
         , service
             |> Maybe.map (\_ -> Sub.none)
             |> Maybe.withDefault

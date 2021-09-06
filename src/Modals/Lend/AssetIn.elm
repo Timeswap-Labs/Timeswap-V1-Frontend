@@ -10,6 +10,7 @@ import Element
         ( Element
         , alignLeft
         , alignRight
+        , below
         , centerY
         , column
         , el
@@ -27,16 +28,24 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Modals.Lend.ClaimsOut as ClaimsOut exposing (ClaimsOut)
+import Modals.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Utility.Color as Color
 import Utility.Loading as Loading
 import Utility.TokenImage as TokenImage
+import Utility.Truncate as Truncate
 
 
 view :
-    { msgs | inputAssetIn : String -> msg, inputMax : msg }
+    { msgs
+        | inputAssetIn : String -> msg
+        , inputMax : msg
+        , onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
     ->
         { model
             | tokenImages : TokenImages
@@ -47,6 +56,7 @@ view :
             | pool : { pool | pair : Pair }
             , assetIn : String
             , claimsOut : ClaimsOut
+            , tooltip : Maybe Tooltip
         }
     -> Element msg
 view msgs model modal =
@@ -60,16 +70,20 @@ view msgs model modal =
         , Border.color Color.transparent100
         , Border.rounded 4
         ]
-        [ title model modal
+        [ title msgs model modal
         , assetInTextbox msgs model modal
         ]
 
 
 title :
-    { model | user : Maybe { user | balances : Remote Balances } }
-    -> { modal | pool : { pool | pair : Pair } }
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
+    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { modal | pool : { pool | pair : Pair }, tooltip : Maybe Tooltip }
     -> Element msg
-title { user } { pool } =
+title msgs { user } { pool, tooltip } =
     row
         [ width fill
         , height shrink
@@ -89,7 +103,8 @@ title { user } { pool } =
                             case balances of
                                 Loading ->
                                     [ el
-                                        [ alignRight
+                                        [ height <| px 20
+                                        , alignRight
                                         , centerY
                                         ]
                                         Loading.view
@@ -99,24 +114,89 @@ title { user } { pool } =
                                     []
 
                                 Success successBalances ->
-                                    [ el
-                                        [ alignRight
-                                        , centerY
-                                        , paddingXY 0 3
-                                        , Font.regular
-                                        , Font.size 14
-                                        , Font.color Color.transparent300
-                                        ]
-                                        ([ "Your Balance:"
-                                         , successBalances
-                                            |> Balances.get (pool.pair |> Pair.toAsset)
-                                         , pool.pair
-                                            |> Pair.toAsset
-                                            |> Token.toSymbol
-                                         ]
-                                            |> String.join " "
-                                            |> text
-                                        )
+                                    [ successBalances
+                                        |> Balances.get (pool.pair |> Pair.toAsset)
+                                        |> Truncate.amount
+                                        |> (\{ full, truncated } ->
+                                                truncated
+                                                    |> Maybe.map
+                                                        (\short ->
+                                                            row
+                                                                [ height <| px 20
+                                                                , alignRight
+                                                                , centerY
+                                                                , Font.size 14
+                                                                , Font.color Color.transparent300
+                                                                ]
+                                                                [ el
+                                                                    [ paddingXY 0 3
+                                                                    , Font.regular
+                                                                    ]
+                                                                    (text "Your Balance: ")
+                                                                , pool.pair
+                                                                    |> Pair.toAsset
+                                                                    |> Token.toSymbol
+                                                                    |> (\symbol ->
+                                                                            el
+                                                                                ([ paddingXY 0 3
+                                                                                 , Font.regular
+                                                                                 , Border.widthEach
+                                                                                    { top = 0
+                                                                                    , right = 0
+                                                                                    , bottom = 1
+                                                                                    , left = 0
+                                                                                    }
+                                                                                 , Border.dashed
+                                                                                 , Border.color Color.transparent300
+                                                                                 , Events.onMouseEnter (msgs.onMouseEnter Tooltip.AssetBalance)
+                                                                                 , Events.onMouseLeave msgs.onMouseLeave
+                                                                                 ]
+                                                                                    ++ (tooltip
+                                                                                            |> Maybe.map
+                                                                                                (\tooltipJust ->
+                                                                                                    case tooltipJust of
+                                                                                                        Tooltip.AssetBalance ->
+                                                                                                            [ [ full
+                                                                                                              , symbol
+                                                                                                              ]
+                                                                                                                |> String.join " "
+                                                                                                                |> Tooltip.assetBalance
+                                                                                                                |> below
+                                                                                                            ]
+                                                                                                )
+                                                                                            |> Maybe.withDefault []
+                                                                                       )
+                                                                                )
+                                                                                ([ short
+                                                                                 , symbol
+                                                                                 ]
+                                                                                    |> String.join " "
+                                                                                    |> text
+                                                                                )
+                                                                       )
+                                                                ]
+                                                        )
+                                                    |> Maybe.withDefault
+                                                        (el
+                                                            [ height <| px 20
+                                                            , alignRight
+                                                            , centerY
+                                                            , paddingXY 0 3
+                                                            , Font.regular
+                                                            , Font.size 14
+                                                            , Font.color Color.transparent300
+                                                            ]
+                                                            ([ "Your Balance:"
+                                                             , full
+                                                             , pool.pair
+                                                                |> Pair.toAsset
+                                                                |> Token.toSymbol
+                                                             ]
+                                                                |> String.join " "
+                                                                |> text
+                                                            )
+                                                        )
+                                           )
                                     ]
                         )
                     |> Maybe.withDefault []

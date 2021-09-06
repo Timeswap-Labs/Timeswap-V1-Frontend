@@ -1,26 +1,73 @@
-module Modals.Pay.Main exposing
+port module Modals.Pay.Main exposing
     ( Flags
     , Modal
     , Msg
     , fromFragment
     , getFlags
     , same
+    , subscriptions
     , update
+    , view
     )
 
+import Browser.Navigation as Navigation exposing (Key)
+import Data.Address exposing (Address)
+import Data.Allowances exposing (Allowances)
+import Data.Backdrop exposing (Backdrop)
+import Data.Balances as Balances exposing (Balances)
+import Data.Deadline exposing (Deadline)
+import Data.Device as Device exposing (Device)
+import Data.Images exposing (Images)
 import Data.Maturity as Maturity
+import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Pools as Pools exposing (Pools)
+import Data.Positions exposing (Positions)
+import Data.Remote exposing (Remote(..))
+import Data.Token as Token
 import Data.TokenId as TokenId exposing (TokenId)
+import Data.TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
+import Element
+    exposing
+        ( Element
+        , alignBottom
+        , alignLeft
+        , centerX
+        , centerY
+        , column
+        , el
+        , fill
+        , height
+        , inFront
+        , none
+        , paddingXY
+        , px
+        , shrink
+        , spacing
+        , text
+        , width
+        )
+import Element.Font as Font
+import Json.Decode as Decode
+import Json.Encode exposing (Value)
+import Modals.Pay.DuesIn as DuesIn exposing (DuesIn)
+import Modals.Pay.Query as Query
+import Modals.Pay.Transaction as Transaction
+import Page exposing (Page)
 import Sort.Set exposing (Set)
 import Time exposing (Posix)
+import Utility.Color as Color
+import Utility.Exit as Exit
+import Utility.Glass as Glass
+import Utility.Loading as Loading
 
 
 type Modal
     = Modal
         { pool : Pool
         , tokenIds : Set TokenId
+        , duesIn : DuesIn
         }
 
 
@@ -30,19 +77,29 @@ type alias Flags =
     }
 
 
-init : Flags -> Modal
-init { pool, tokenIds } =
-    { pool = pool
-    , tokenIds = tokenIds
-    }
+init : Positions -> Flags -> ( Modal, Cmd Msg )
+init positions { pool, tokenIds } =
+    ( { pool = pool
+      , tokenIds = tokenIds
+      , duesIn = DuesIn.init
+      }
         |> Modal
+    , Query.givenTokenIds positions pool tokenIds
+        |> Maybe.map queryPay
+        |> Maybe.withDefault Cmd.none
+    )
 
 
 fromFragment :
-    { model | time : Posix, tokens : Tokens, pools : Pools }
+    { model
+        | time : Posix
+        , tokens : Tokens
+        , pools : Pools
+    }
+    -> Positions
     -> String
-    -> Maybe Modal
-fromFragment { time, tokens, pools } string =
+    -> Maybe ( Modal, Cmd Msg )
+fromFragment { time, tokens, pools } positions string =
     string
         |> String.split "&"
         |> (\list ->
@@ -65,7 +122,7 @@ fromFragment { time, tokens, pools } string =
                                     else
                                         Nothing
                                 )
-                            |> Maybe.map init
+                            |> Maybe.map (init positions)
 
                     _ ->
                         Nothing
@@ -85,11 +142,200 @@ getFlags (Modal { pool, tokenIds }) =
 
 
 type Msg
-    = Msg
+    = ApprovePay Value
+    | Pay Value
+    | ReceiveTime Posix
+    | SdkPayMsg Value
 
 
-update : Msg -> Modal -> ( Modal, Cmd Msg )
-update msg model =
+type alias Msgs =
+    { approvePay : Value -> Msg
+    , pay : Value -> Msg
+    }
+
+
+update :
+    { model
+        | key : Key
+        , tokens : Tokens
+        , pools : Pools
+        , page : Page
+    }
+    -> Msg
+    -> Modal
+    -> ( Modal, Cmd Msg )
+update { key, tokens, pools, page } msg (Modal modal) =
     case msg of
-        Msg ->
-            ( model, Cmd.none )
+        ApprovePay value ->
+            ( Modal modal, approvePay value )
+
+        Pay value ->
+            ( Modal modal
+            , Cmd.batch
+                [ pay value
+                , page
+                    |> Page.toUrl
+                    |> Navigation.pushUrl key
+                ]
+            )
+
+        ReceiveTime posix ->
+            ( Modal modal
+            , if modal.pool.maturity |> Maturity.isActive posix then
+                Cmd.none
+
+              else
+                page
+                    |> Page.toUrl
+                    |> Navigation.pushUrl key
+            )
+
+        SdkPayMsg value ->
+            ( value
+                |> Decode.decodeValue (Query.decoder pools tokens)
+                |> (\result ->
+                        case result of
+                            Ok { pool, ids, dues } ->
+                                if
+                                    (modal.pool == pool)
+                                        && (modal.tokenIds == ids)
+                                then
+                                    { modal
+                                        | duesIn =
+                                            Query.updateQuery modal dues
+                                    }
+                                        |> Modal
+
+                                else
+                                    Modal modal
+
+                            Err _ ->
+                                Modal modal
+                   )
+            , Cmd.none
+            )
+
+
+msgs : Msgs
+msgs =
+    { approvePay = ApprovePay
+    , pay = Pay
+    }
+
+
+port queryPay : Value -> Cmd msg
+
+
+port approvePay : Value -> Cmd msg
+
+
+port pay : Value -> Cmd msg
+
+
+port sdkPayMsg : (Value -> msg) -> Sub msg
+
+
+subscriptions : { model | time : Posix } -> Modal -> Sub Msg
+subscriptions { time } (Modal { pool }) =
+    if pool.maturity |> Maturity.isActive time then
+        sdkPayMsg SdkPayMsg
+
+    else
+        Sub.none
+
+
+view :
+    { model
+        | device : Device
+        , time : Posix
+        , backdrop : Backdrop
+        , deadline : Deadline
+        , images : Images
+        , tokenImages : TokenImages
+    }
+    ->
+        { user
+            | address : Address
+            , balances : Remote Balances
+            , allowances : Remote Allowances
+        }
+    -> Positions
+    -> Modal
+    -> Element Msg
+view ({ device, backdrop, images } as model) user positions (Modal modal) =
+    column
+        ([ paddingXY 32 20
+         , spacing 20
+         , centerX
+         , centerY
+         , Exit.button images |> inFront
+         ]
+            ++ Glass.lightPrimaryModal backdrop 0
+            ++ (if Device.isPhone device then
+                    [ width fill
+                    , height shrink
+                    , alignBottom
+                    ]
+
+                else
+                    [ width <| px 533
+                    , height shrink
+                    ]
+               )
+        )
+        [ title
+        , balance user modal
+        , DuesIn.view model modal
+        , Transaction.view msgs model user positions modal
+        ]
+
+
+title : Element msg
+title =
+    el
+        [ width shrink
+        , height shrink
+        , paddingXY 0 4
+        , Font.bold
+        , Font.size 24
+        , Font.color Color.light100
+        ]
+        (text "Unlock collateral")
+
+
+balance :
+    { user | balances : Remote Balances }
+    -> { modal | pool : { pool | pair : Pair } }
+    -> Element msg
+balance { balances } { pool } =
+    case balances of
+        Loading ->
+            el
+                [ height <| px 20
+                , alignLeft
+                ]
+                Loading.view
+
+        Failure ->
+            none
+
+        Success successBalances ->
+            el
+                [ width shrink
+                , height <| px 20
+                , alignLeft
+                , paddingXY 0 3
+                , Font.bold
+                , Font.size 14
+                , Font.color Color.transparent300
+                ]
+                ([ "Your Balance:"
+                 , successBalances
+                    |> Balances.get (pool.pair |> Pair.toAsset)
+                 , pool.pair
+                    |> Pair.toAsset
+                    |> Token.toSymbol
+                 ]
+                    |> String.join " "
+                    |> text
+                )

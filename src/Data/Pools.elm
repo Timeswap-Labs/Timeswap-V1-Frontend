@@ -13,7 +13,6 @@ module Data.Pools exposing
     , toPairs
     )
 
-import Data.Address as Address
 import Data.Chain exposing (Chain(..))
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
@@ -21,6 +20,7 @@ import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Token as Token
 import Data.Tokens as Tokens exposing (Tokens)
+import Data.Uint as Uint exposing (Uint)
 import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)

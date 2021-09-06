@@ -73,7 +73,7 @@ view ({ device, backdrop, images } as model) =
          , centerY
          , Exit.button images |> inFront
          ]
-            ++ Glass.darkPrimaryModal backdrop 0
+            ++ Glass.lightPrimaryModal backdrop 0
             ++ (if Device.isPhone device then
                     [ width fill
                     , height shrink
@@ -133,22 +133,20 @@ content model =
 metamaskButton : { model | images : Images } -> Element Msg
 metamaskButton { images } =
     link
-        [ width fill
-        , height <| px 64
-        , paddingEach
+        ([ width fill
+         , height <| px 64
+         , paddingEach
             { top = 16
             , right = 20
             , bottom = 16
             , left = 16
             }
-        , Border.solid
-        , Border.width 1
-        , Border.color Color.primary100
-        , Border.rounded 4
-        , mouseDown [ Background.color Color.primary300 ]
-        , mouseOver [ Background.color Color.primary100 ]
-        , Events.onClick ConnectMetamask
-        ]
+         , mouseDown [ Background.color Color.primary300 ]
+         , mouseOver [ Background.color Color.primary100 ]
+         , Events.onClick ConnectMetamask
+         ]
+            ++ Glass.lightWhiteModal 4
+        )
         { url = Router.exit
         , label =
             row

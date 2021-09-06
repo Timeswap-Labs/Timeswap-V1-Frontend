@@ -66,6 +66,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Time exposing (Posix)
 import Utility.Color as Color
+import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Loading as Loading
@@ -259,15 +260,12 @@ hasTransaction { time, user } ({ pool, assetIn, claimsOut } as modal) =
                 |> Maybe.map
                     (\{ balances } ->
                         case balances of
-                            Loading ->
-                                True
-
-                            Failure ->
-                                False
-
                             Success successBalances ->
                                 successBalances
                                     |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+
+                            _ ->
+                                False
                     )
                 |> Maybe.withDefault False
            )
@@ -910,14 +908,14 @@ estimatedAPR :
     -> Element msg
 estimatedAPR { apr } =
     row
-        [ width shrink
-        , height <| px 32
-        , paddingXY 12 0
-        , spacing 5
-        , centerX
-        , Background.color Color.primary100
-        , Border.rounded 20
-        ]
+        ([ width shrink
+         , height <| px 32
+         , paddingXY 12 0
+         , spacing 5
+         , centerX
+         ]
+            ++ Glass.lightWhiteModal 20
+        )
         [ el
             [ width shrink
             , height shrink
@@ -972,14 +970,14 @@ collateralFactor :
     -> Element msg
 collateralFactor { pool, cf } =
     row
-        [ width shrink
-        , height <| px 32
-        , paddingXY 12 0
-        , spacing 5
-        , centerX
-        , Background.color Color.primary100
-        , Border.rounded 20
-        ]
+        ([ width shrink
+         , height <| px 32
+         , paddingXY 12 0
+         , spacing 5
+         , centerX
+         ]
+            ++ Glass.lightWhiteModal 20
+        )
         [ el
             [ width shrink
             , height shrink
@@ -1712,7 +1710,7 @@ maturityInfo { time, images } { pool } =
             ]
             (text "Time to maturity")
         , el
-            [ width <| px 140
+            [ width <| px 144
             , paddingXY 0 3
             , alignRight
             , centerY

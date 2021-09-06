@@ -129,7 +129,7 @@ view msgs ({ device, backdrop, images } as model) settings =
          , centerY
          , inFront (Exit.buttonWithMsg images msgs.exitSettings)
          ]
-            ++ Glass.darkPrimaryModal backdrop 0
+            ++ Glass.lightPrimaryModal backdrop 0
             ++ (if Device.isPhone device then
                     [ width fill
                     , height shrink

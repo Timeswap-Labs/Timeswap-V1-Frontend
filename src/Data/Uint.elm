@@ -1,5 +1,7 @@
 module Data.Uint exposing
-    ( Uint
+    (  Uint(..)
+       -- temporary
+
     , compare
     , decoder
     , encode
@@ -218,8 +220,8 @@ uint256 =
 
 example : List Uint
 example =
-    [ Uint "785"
+    [ Uint "78560000000000000000000"
     , Uint "1"
-    , Uint "2"
+    , Uint "221300000000000000000000054600"
     , Uint "3"
     ]

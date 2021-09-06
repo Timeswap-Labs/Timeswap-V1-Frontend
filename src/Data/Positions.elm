@@ -7,16 +7,20 @@ module Data.Positions exposing
     , Positions
     , Return
     , example
+    , getClaimReturn
     , getFirstClaim
     , getFirstDue
     , isClaimEmpty
     , isDuesEmpty
+    , isOwner
     , toClaimList
     , toClaimListByPair
     , toClaimPools
+    , toClaimTransaction
     , toDueList
     , toDueListByPair
     , toDuePools
+    , toDueTransaction
     )
 
 import Data.Chain exposing (Chain(..))
@@ -26,16 +30,38 @@ import Data.Pool as Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Status exposing (Status(..))
 import Data.TokenId as TokenId exposing (TokenId)
+import Data.Uint as Uint exposing (Uint)
 import Sort.Dict as Dict exposing (Dict)
+import Sort.Set as Set exposing (Set)
 import Time exposing (Posix)
 
 
 type Positions
     = Positions
         { liquidities : Dict Pool (Status String Return)
-        , claims : Dict Pool (Status Claim Return)
-        , dues : Dict Pool (Dict TokenId Due)
+        , claims : Dict Pool (Status ClaimUint ReturnUint)
+        , dues : Dict Pool (Dict TokenId DueUint)
         }
+
+
+type alias ClaimUint =
+    { bond : Uint
+    , insurance : Uint
+    }
+
+
+type alias ReturnUint =
+    { bond : Uint
+    , insurance : Uint
+    , asset : Uint
+    , collateral : Uint
+    }
+
+
+type alias DueUint =
+    { debt : Uint
+    , collateral : Uint
+    }
 
 
 type alias Return =
@@ -113,6 +139,23 @@ isClaimEmpty (Positions { claims }) =
 isDuesEmpty : Positions -> Bool
 isDuesEmpty (Positions { dues }) =
     dues |> Dict.isEmpty
+
+
+isOwner : Pool -> Set TokenId -> Positions -> Bool
+isOwner pool set (Positions { dues }) =
+    dues
+        |> Dict.get pool
+        |> Maybe.map
+            (\dict ->
+                set
+                    |> Set.foldl
+                        (\tokenId accumulator ->
+                            (tokenId |> Dict.memberOf dict)
+                                && accumulator
+                        )
+                        True
+            )
+        |> Maybe.withDefault False
 
 
 getFirstClaim : Posix -> Maybe Pair -> Positions -> Maybe Pool
@@ -298,24 +341,23 @@ toClaimList time (Positions { claims }) =
             (\dict ->
                 dict
                     |> Dict.foldl
-                        (\pool status accumulator ->
+                        (\({ pair } as pool) status accumulator ->
                             case status of
-                                Active claim ->
+                                Active { bond, insurance } ->
                                     accumulator
-                                        |> Dict.insert pool claim
+                                        |> Dict.insert pool
+                                            { bond =
+                                                bond
+                                                    |> Uint.toAmount (pair |> Pair.toAsset)
+                                            , insurance =
+                                                insurance
+                                                    |> Uint.toAmount (pair |> Pair.toCollateral)
+                                            }
 
                                 Matured _ ->
                                     accumulator
                         )
-                        (dict
-                            |> Dict.dropIf (\_ _ -> True)
-                            |> Dict.map
-                                (\_ _ ->
-                                    { bond = ""
-                                    , insurance = ""
-                                    }
-                                )
-                        )
+                        (Dict.empty Pool.sorter)
                     |> Dict.toList
                     |> List.map
                         (\( pool, claim ) ->
@@ -327,13 +369,20 @@ toClaimList time (Positions { claims }) =
             (\dict ->
                 dict
                     |> Dict.map
-                        (\_ status ->
+                        (\{ pair } status ->
                             case status of
                                 Active _ ->
                                     Nothing
 
-                                Matured return ->
-                                    Just return
+                                Matured { asset, collateral } ->
+                                    { asset =
+                                        asset
+                                            |> Uint.toAmount (pair |> Pair.toAsset)
+                                    , collateral =
+                                        collateral
+                                            |> Uint.toAmount (pair |> Pair.toCollateral)
+                                    }
+                                        |> Just
                         )
                     |> Dict.toList
                     |> List.map
@@ -354,14 +403,18 @@ toDueList time (Positions { dues }) =
             (\dict ->
                 dict
                     |> Dict.map
-                        (\_ innerDict ->
+                        (\{ pair } innerDict ->
                             innerDict
                                 |> Dict.toList
                                 |> List.map
                                     (\( tokenId, { debt, collateral } ) ->
                                         { tokenId = tokenId
-                                        , debt = debt
-                                        , collateral = collateral
+                                        , debt =
+                                            debt
+                                                |> Uint.toAmount (pair |> Pair.toAsset)
+                                        , collateral =
+                                            collateral
+                                                |> Uint.toAmount (pair |> Pair.toCollateral)
                                         }
                                     )
                         )
@@ -376,14 +429,18 @@ toDueList time (Positions { dues }) =
             (\dict ->
                 dict
                     |> Dict.map
-                        (\_ innerDict ->
+                        (\{ pair } innerDict ->
                             innerDict
                                 |> Dict.toList
                                 |> List.map
                                     (\( tokenId, { debt, collateral } ) ->
                                         { tokenId = tokenId
-                                        , debt = debt
-                                        , collateral = collateral
+                                        , debt =
+                                            debt
+                                                |> Uint.toAmount (pair |> Pair.toAsset)
+                                        , collateral =
+                                            collateral
+                                                |> Uint.toAmount (pair |> Pair.toCollateral)
                                         }
                                     )
                         )
@@ -397,6 +454,64 @@ toDueList time (Positions { dues }) =
             )
 
 
+getClaimReturn : Pool -> Positions -> Maybe Return
+getClaimReturn ({ pair } as pool) (Positions { claims }) =
+    claims
+        |> Dict.get pool
+        |> Maybe.andThen
+            (\status ->
+                case status of
+                    Active _ ->
+                        Nothing
+
+                    Matured { asset, collateral } ->
+                        { asset = asset |> Uint.toAmount (pair |> Pair.toAsset)
+                        , collateral = collateral |> Uint.toAmount (pair |> Pair.toCollateral)
+                        }
+                            |> Just
+            )
+
+
+toClaimTransaction : Pool -> Positions -> Maybe ClaimUint
+toClaimTransaction pool (Positions { claims }) =
+    claims
+        |> Dict.get pool
+        |> Maybe.andThen
+            (\status ->
+                case status of
+                    Active _ ->
+                        Nothing
+
+                    Matured { bond, insurance } ->
+                        { bond = bond
+                        , insurance = insurance
+                        }
+                            |> Just
+            )
+
+
+toDueTransaction : Pool -> Set TokenId -> Positions -> Maybe (Dict TokenId Uint)
+toDueTransaction pool set (Positions { dues }) =
+    dues
+        |> Dict.get pool
+        |> Maybe.andThen
+            (\dict ->
+                set
+                    |> Set.foldl
+                        (\tokenId accumulator ->
+                            dict
+                                |> Dict.get tokenId
+                                |> Maybe.map .debt
+                                |> Maybe.andThen
+                                    (\debt ->
+                                        accumulator
+                                            |> Maybe.map (Dict.insert tokenId debt)
+                                    )
+                        )
+                        (Dict.empty TokenId.sorter |> Just)
+            )
+
+
 example : Positions
 example =
     { liquidities = Dict.empty Pool.sorter
@@ -405,22 +520,32 @@ example =
             [ ( { pair = Pair.daiEthRinkeby
                 , maturity = Maturity.unix962654400
                 }
-              , Matured { asset = "1200", collateral = "3.56" }
+              , Matured
+                    { bond = Uint.Uint "21213131"
+                    , insurance = Uint.Uint "213141212"
+                    , asset = Uint.Uint "1200"
+                    , collateral = Uint.Uint "356"
+                    }
               )
             , ( { pair = Pair.daiEthRinkeby
                 , maturity = Maturity.unix1635364800
                 }
-              , Active { bond = "1200", insurance = "2.0008" }
+              , Active { bond = Uint.Uint "1200", insurance = Uint.Uint "20008" }
               )
             , ( { pair = Pair.daiEthRinkeby
                 , maturity = Maturity.unix1650889815
                 }
-              , Matured { asset = "45", collateral = "3.2" }
+              , Matured
+                    { bond = Uint.Uint "21213131"
+                    , insurance = Uint.Uint "213141212"
+                    , asset = Uint.Uint "45"
+                    , collateral = Uint.Uint "32"
+                    }
               )
             , ( { pair = Pair.daiMaticRinkeby
                 , maturity = Maturity.unix1635364800
                 }
-              , Active { bond = "2133", insurance = "21313" }
+              , Active { bond = Uint.Uint "2133", insurance = Uint.Uint "21313" }
               )
             ]
     , dues =
@@ -430,7 +555,7 @@ example =
                 }
               , Dict.fromList TokenId.sorter
                     (TokenId.exampleList
-                        |> List.map (\tokenId -> ( tokenId, Due "3000" "200" ))
+                        |> List.map (\tokenId -> ( tokenId, DueUint (Uint.Uint "3000") (Uint.Uint "200") ))
                     )
               )
             , ( { pair = Pair.daiEthRinkeby
@@ -438,7 +563,7 @@ example =
                 }
               , Dict.fromList TokenId.sorter
                     (TokenId.exampleList
-                        |> List.map (\tokenId -> ( tokenId, Due "3000" "200" ))
+                        |> List.map (\tokenId -> ( tokenId, DueUint (Uint.Uint "3000") (Uint.Uint "200") ))
                     )
               )
             , ( { pair = Pair.daiEthRinkeby
@@ -446,7 +571,7 @@ example =
                 }
               , Dict.fromList TokenId.sorter
                     (TokenId.exampleList
-                        |> List.map (\tokenId -> ( tokenId, Due "3000" "200" ))
+                        |> List.map (\tokenId -> ( tokenId, DueUint (Uint.Uint "3000") (Uint.Uint "200") ))
                     )
               )
             , ( { pair = Pair.daiEthRinkeby
@@ -454,7 +579,7 @@ example =
                 }
               , Dict.fromList TokenId.sorter
                     (TokenId.exampleList
-                        |> List.map (\tokenId -> ( tokenId, Due "3000" "200" ))
+                        |> List.map (\tokenId -> ( tokenId, DueUint (Uint.Uint "3000") (Uint.Uint "200") ))
                     )
               )
             ]

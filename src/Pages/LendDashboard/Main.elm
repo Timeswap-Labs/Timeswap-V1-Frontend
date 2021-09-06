@@ -311,7 +311,7 @@ singleMaturedPosition :
     -> Page
     -> MaturedClaimInfo
     -> Element Msg
-singleMaturedPosition ({ tokenImages } as model) ((Page { expandedSet }) as page) ({ pool } as maturedClaimInfo) =
+singleMaturedPosition ({ tokenImages } as model) ((Page { expandedSet }) as page) ({ pool, return } as maturedClaimInfo) =
     column
         [ width fill
         , height shrink
@@ -319,7 +319,11 @@ singleMaturedPosition ({ tokenImages } as model) ((Page { expandedSet }) as page
         [ el
             [ width fill
             , height shrink
-            , claimButton maturedClaimInfo |> inFront
+            , (return
+                |> Maybe.map (\_ -> claimButton maturedClaimInfo)
+                |> Maybe.withDefault claimButtonOff
+              )
+                |> inFront
             ]
             (Input.button
                 [ width fill

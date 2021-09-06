@@ -1,14 +1,12 @@
 module Utility.Glass exposing
     ( darkPrimary
-    , darkPrimaryModal
     , lightPrimary
+    , lightPrimaryModal
     , lightTransparent
     , lightTransparent100
     , lightTransparent300
-    , lightTransparentModal
-    , lightTransparentModal100
-    , lightTransparentModal300
     , lightWhite
+    , lightWhiteModal
     )
 
 import Data.Backdrop exposing (Backdrop(..))
@@ -17,11 +15,17 @@ import Element
         ( Attribute
         , Color
         , Element
+        , alpha
         , behindContent
+        , el
+        , fill
         , fromRgb
+        , height
         , html
         , htmlAttribute
+        , none
         , rgba255
+        , width
         )
 import Element.Background as Background
 import Element.Border as Border
@@ -43,7 +47,23 @@ darkPrimary =
 
 lightWhite : Int -> List (Attribute msg)
 lightWhite =
-    glass 0.02 0.02 blur21 <| rgba255 255 255 255 0.02
+    glass 0.02 0.02 blur21 (rgba255 255 255 255 0.02)
+
+
+lightWhiteModal : Int -> List (Attribute msg)
+lightWhiteModal corner =
+    [ behindContent <| gradientBorder corner
+    , el
+        ([ width fill
+         , height fill
+         , alpha 0.32
+         ]
+            ++ lightWhite corner
+        )
+        none
+        |> behindContent
+    , Border.rounded corner
+    ]
 
 
 lightTransparent : Int -> List (Attribute msg)
@@ -61,41 +81,11 @@ lightTransparent100 =
     glass 0.24 0.12 blur40 Color.completelyTransparent
 
 
-darkPrimaryModal : Backdrop -> Int -> List (Attribute msg)
-darkPrimaryModal backdrop corner =
+lightPrimaryModal : Backdrop -> Int -> List (Attribute msg)
+lightPrimaryModal backdrop corner =
     case backdrop of
         Supported ->
-            darkPrimary corner
-
-        NotSupported ->
-            solid Color.darkModal corner
-
-
-lightTransparentModal : Backdrop -> Int -> List (Attribute msg)
-lightTransparentModal backdrop corner =
-    case backdrop of
-        Supported ->
-            lightTransparent corner
-
-        NotSupported ->
-            solid Color.darkModal corner
-
-
-lightTransparentModal300 : Backdrop -> Int -> List (Attribute msg)
-lightTransparentModal300 backdrop corner =
-    case backdrop of
-        Supported ->
-            lightTransparent300 corner
-
-        NotSupported ->
-            solid Color.darkModal corner
-
-
-lightTransparentModal100 : Backdrop -> Int -> List (Attribute msg)
-lightTransparentModal100 backdrop corner =
-    case backdrop of
-        Supported ->
-            lightTransparent100 corner
+            lightPrimary corner
 
         NotSupported ->
             solid Color.darkModal corner

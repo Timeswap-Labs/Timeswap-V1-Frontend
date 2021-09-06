@@ -1,5 +1,7 @@
 module Data.TokenId exposing
     ( TokenId
+    , decoder
+    , encode
     , exampleList
     , fromFragment
     , sorter
@@ -7,12 +9,20 @@ module Data.TokenId exposing
     )
 
 import Data.Uint as Uint exposing (Uint)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode exposing (Value)
 import Sort exposing (Sorter)
 import Sort.Set as Set exposing (Set)
 
 
 type TokenId
     = TokenId Uint
+
+
+decoder : Decoder TokenId
+decoder =
+    Uint.decoder
+        |> Decode.map TokenId
 
 
 fromFragment : String -> Maybe (Set TokenId)
@@ -54,6 +64,12 @@ toFragment set =
         |> List.map Uint.toString
         |> String.join ","
         |> (++) "tokenIds="
+
+
+encode : TokenId -> Value
+encode (TokenId uint) =
+    uint
+        |> Uint.encode
 
 
 sorter : Sorter TokenId

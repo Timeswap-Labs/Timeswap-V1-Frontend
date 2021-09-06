@@ -8,7 +8,7 @@ import Data.Pools exposing (Pools)
 import Data.Positions exposing (Positions)
 import Data.Remote exposing (Remote)
 import Data.Tokens exposing (Tokens)
-import Modal exposing (Modal)
+import Modal as Modal exposing (Modal)
 import Page exposing (Page)
 import Service exposing (Service)
 import Time exposing (Posix)
@@ -19,46 +19,57 @@ import Utility.Router as Router
 
 type Route
     = Page Page
-    | Modal Modal
+    | Modal ( Modal, Cmd Modal.Msg )
     | Service Service
     | Aside
     | Exit
 
 
 pushUrl :
-    { model
-        | device : Device
-        , time : Posix
-        , key : Key
-        , tokens : Tokens
-        , pools : Pools
-        , user : Maybe { user | chain : Chain, positions : Remote Positions }
-        , page : Page
-        , modal : Maybe Modal
-        , service : Maybe Service
-    }
+    (Modal.Msg -> msg)
+    ->
+        { model
+            | device : Device
+            , time : Posix
+            , key : Key
+            , tokens : Tokens
+            , pools : Pools
+            , user : Maybe { user | chain : Chain, positions : Remote Positions }
+            , page : Page
+            , modal : Maybe Modal
+            , service : Maybe Service
+        }
     -> Url
     -> Cmd msg
-pushUrl ({ device, key } as model) url =
+pushUrl cmdMap ({ device, key } as model) url =
     url
         |> Parser.parse (match model)
         |> Maybe.map
             (\route ->
                 case route of
                     Page page ->
-                        page |> Page.toUrl
+                        page
+                            |> Page.toUrl
+                            |> Navigation.pushUrl key
 
-                    Modal modal ->
-                        modal |> Modal.toUrl
+                    Modal ( modal, modalCmd ) ->
+                        Cmd.batch
+                            [ modal
+                                |> Modal.toUrl
+                                |> Navigation.pushUrl key
+                            , modalCmd |> Cmd.map cmdMap
+                            ]
 
                     Service service ->
-                        service |> Service.toUrl
+                        service
+                            |> Service.toUrl
+                            |> Navigation.pushUrl key
 
                     Aside ->
-                        if device |> Device.isPhoneOrTablet then
+                        (if device |> Device.isPhoneOrTablet then
                             Aside.toUrl
 
-                        else
+                         else
                             model.service
                                 |> Maybe.map Service.toUrl
                                 |> Maybe.withDefault
@@ -66,6 +77,8 @@ pushUrl ({ device, key } as model) url =
                                         |> Maybe.map Modal.toUrl
                                         |> Maybe.withDefault (model.page |> Page.toUrl)
                                     )
+                        )
+                            |> Navigation.pushUrl key
 
                     Exit ->
                         model.service
@@ -80,9 +93,10 @@ pushUrl ({ device, key } as model) url =
                                     |> Maybe.map (\_ -> model.page |> Page.toUrl)
                                     |> Maybe.withDefault Router.toAllMarket
                                 )
+                            |> Navigation.pushUrl key
             )
-        |> Maybe.withDefault Router.toAllMarket
-        |> Navigation.pushUrl key
+        |> Maybe.withDefault
+            (Router.toAllMarket |> Navigation.pushUrl key)
 
 
 fromUrl :

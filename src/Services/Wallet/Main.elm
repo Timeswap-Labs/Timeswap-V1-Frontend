@@ -44,7 +44,7 @@ view msgs ({ device, backdrop, images } as model) user =
          , centerY
          , Exit.button images |> inFront
          ]
-            ++ Glass.darkPrimaryModal backdrop 0
+            ++ Glass.lightPrimaryModal backdrop 0
             ++ (if Device.isPhone device then
                     [ width fill
                     , height shrink

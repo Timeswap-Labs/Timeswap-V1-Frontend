@@ -52,6 +52,8 @@ import Json.Encode exposing (Value)
 import Modals.Borrow.AssetOut as AssetOut
 import Modals.Borrow.DuesOut as DuesOut exposing (DuesOut)
 import Modals.Borrow.Query as Query
+import Modals.Borrow.Tooltip as Tooltip exposing (Tooltip)
+import Modals.Borrow.Transaction as Transaction
 import Modals.Borrow.Warning as Warning
 import Page exposing (Page)
 import Time exposing (Posix)
@@ -69,6 +71,7 @@ type Modal
         , duesOut : DuesOut
         , apr : Remote String
         , cf : Remote String
+        , tooltip : Maybe Tooltip
         }
 
 
@@ -79,6 +82,7 @@ init pool =
     , duesOut = DuesOut.init
     , apr = Success ""
     , cf = Success ""
+    , tooltip = Nothing
     }
         |> Modal
 
@@ -122,6 +126,8 @@ type Msg
     | Borrow Value
     | ReceiveTime Posix
     | SdkBorrowMsg Value
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
 
 
 type alias Msgs =
@@ -131,6 +137,10 @@ type alias Msgs =
     , inputDebtIn : String -> Msg
     , inputCollateralIn : String -> Msg
     , inputMax : Msg
+    , approveBorrow : Value -> Msg
+    , borrow : Value -> Msg
+    , onMouseEnter : Tooltip -> Msg
+    , onMouseLeave : Msg
     }
 
 
@@ -533,6 +543,18 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
             , Cmd.none
             )
 
+        OnMouseEnter tooltip ->
+            ( { modal | tooltip = Just tooltip }
+                |> Modal
+            , Cmd.none
+            )
+
+        OnMouseLeave ->
+            ( { modal | tooltip = Nothing }
+                |> Modal
+            , Cmd.none
+            )
+
 
 msgs : Msgs
 msgs =
@@ -542,6 +564,10 @@ msgs =
     , inputDebtIn = InputDebtIn
     , inputCollateralIn = InputCollateralIn
     , inputMax = InputMax
+    , approveBorrow = ApproveBorrow
+    , borrow = Borrow
+    , onMouseEnter = OnMouseEnter
+    , onMouseLeave = OnMouseLeave
     }
 
 
@@ -599,7 +625,7 @@ view ({ device, backdrop, images } as model) (Modal modal) =
          , centerY
          , Exit.button images |> inFront
          ]
-            ++ Glass.darkPrimaryModal backdrop 0
+            ++ Glass.lightPrimaryModal backdrop 0
             ++ (if Device.isPhone device then
                     [ width fill
                     , height shrink
@@ -614,6 +640,7 @@ view ({ device, backdrop, images } as model) (Modal modal) =
         )
         [ title
         , content model modal
+        , Transaction.view msgs model modal
         ]
 
 
@@ -647,6 +674,7 @@ content :
             , duesOut : DuesOut
             , apr : Remote String
             , cf : Remote String
+            , tooltip : Maybe Tooltip
         }
     -> Element Msg
 content ({ images } as model) modal =
