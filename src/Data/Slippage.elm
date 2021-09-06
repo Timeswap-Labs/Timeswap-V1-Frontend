@@ -7,6 +7,7 @@ module Data.Slippage exposing
     , init
     , isCorrect
     , toOption
+    , toPercent
     , toString
     )
 
@@ -67,6 +68,20 @@ toString (Slippage int) =
                         |> String.join "."
                )
             |> Just
+
+
+toPercent : Slippage -> String
+toPercent (Slippage int) =
+    int
+        |> String.fromInt
+        |> String.padLeft 3 '0'
+        |> (\string ->
+                [ string |> String.dropRight 2
+                , string |> String.right 2
+                , "%"
+                ]
+                    |> String.join "."
+           )
 
 
 isCorrect : String -> Bool

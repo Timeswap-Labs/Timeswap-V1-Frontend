@@ -29,7 +29,9 @@ import Element
         , mouseOver
         , moveLeft
         , none
+        , onRight
         , padding
+        , paddingEach
         , paddingXY
         , px
         , rotate
@@ -41,9 +43,11 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
+import Pages.LendDashboard.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Set as Set exposing (Set)
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -53,12 +57,14 @@ import Utility.Loading as Loading
 import Utility.PairInfo as PairInfo
 import Utility.PositionsInfo as PositionsInfo
 import Utility.Router as Router
+import Utility.Truncate as Truncate
 
 
 type Page
     = Page
         { filter : Maybe Pair
         , expandedSet : Set Pool
+        , tooltip : Maybe Tooltip
         }
 
 
@@ -85,6 +91,7 @@ init { time, user } filter =
                                 |> Maybe.map (Set.singleton Pool.sorter)
                 )
             |> Maybe.withDefault (Set.empty Pool.sorter)
+    , tooltip = Nothing
     }
         |> Page
 
@@ -112,6 +119,8 @@ getFilter (Page { filter }) =
 type Msg
     = Expand Pool
     | Collapse Pool
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
 
 
 update :
@@ -151,6 +160,14 @@ update { user } msg (Page page) =
             { page
                 | expandedSet = page.expandedSet |> Set.remove pool
             }
+                |> Page
+
+        OnMouseEnter tooltip ->
+            { page | tooltip = Just tooltip }
+                |> Page
+
+        OnMouseLeave ->
+            { page | tooltip = Nothing }
                 |> Page
 
 
@@ -311,7 +328,7 @@ singleMaturedPosition :
     -> Page
     -> MaturedClaimInfo
     -> Element Msg
-singleMaturedPosition ({ tokenImages } as model) ((Page { expandedSet }) as page) ({ pool, return } as maturedClaimInfo) =
+singleMaturedPosition ({ tokenImages } as model) (Page ({ expandedSet } as page)) ({ pool, return } as maturedClaimInfo) =
     column
         [ width fill
         , height shrink
@@ -364,7 +381,7 @@ singleMaturedPosition ({ tokenImages } as model) ((Page { expandedSet }) as page
                 , Border.width 1
                 , Border.color Color.transparent100
                 ]
-                (maturedBalances maturedClaimInfo)
+                (maturedBalances page maturedClaimInfo)
 
           else
             none
@@ -376,7 +393,7 @@ singleActivePosition :
     -> Page
     -> ActiveClaimInfo
     -> Element Msg
-singleActivePosition ({ tokenImages } as model) ((Page { expandedSet }) as page) ({ pool } as activeClaimInfo) =
+singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page)) ({ pool } as activeClaimInfo) =
     column
         [ width fill
         , height shrink
@@ -426,7 +443,7 @@ singleActivePosition ({ tokenImages } as model) ((Page { expandedSet }) as page)
                 , Border.width 1
                 , Border.color Color.transparent100
                 ]
-                (activeBalances activeClaimInfo)
+                (activeBalances page activeClaimInfo)
 
           else
             none
@@ -519,10 +536,10 @@ claimButtonOff =
 
 discloser :
     { model | images : Images }
-    -> Page
+    -> { page | expandedSet : Set Pool }
     -> { positionsInfo | pool : Pool }
     -> Element Msg
-discloser { images } (Page { expandedSet }) { pool } =
+discloser { images } { expandedSet } { pool } =
     Image.discloser images
         [ width <| px 12
         , alignRight
@@ -536,9 +553,14 @@ discloser { images } (Page { expandedSet }) { pool } =
 
 
 maturedBalances :
-    { maturedClaimInfo | pool : { pool | pair : Pair }, return : Maybe Return }
-    -> Element msg
-maturedBalances { pool, return } =
+    { page | tooltip : Maybe Tooltip }
+    ->
+        { maturedClaimInfo
+            | pool : Pool
+            , return : Maybe Return
+        }
+    -> Element Msg
+maturedBalances page { pool, return } =
     row
         ([ width fill
          , height <| px 56
@@ -568,39 +590,13 @@ maturedBalances { pool, return } =
                         , spacing 4
                         , Font.size 18
                         ]
-                        [ el
-                            [ Font.bold
-                            , Font.color Color.transparent500
-                            ]
-                            (text asset)
-                        , el
-                            [ Font.bold
-                            , Font.color Color.transparent300
-                            ]
-                            (pool.pair
-                                |> Pair.toAsset
-                                |> Token.toSymbol
-                                |> text
-                            )
+                        [ assetBalance page pool asset
                         , el
                             [ Font.bold
                             , Font.color Color.transparent500
                             ]
                             (text "+")
-                        , el
-                            [ Font.bold
-                            , Font.color Color.transparent500
-                            ]
-                            (text collateral)
-                        , el
-                            [ Font.bold
-                            , Font.color Color.transparent300
-                            ]
-                            (pool.pair
-                                |> Pair.toCollateral
-                                |> Token.toSymbol
-                                |> text
-                            )
+                        , collateralBalance page pool collateral
                         ]
                 )
             |> Maybe.withDefault
@@ -616,9 +612,10 @@ maturedBalances { pool, return } =
 
 
 activeBalances :
-    { activeClaimInfo | pool : { pool | pair : Pair }, claim : Claim }
-    -> Element msg
-activeBalances { pool, claim } =
+    { page | tooltip : Maybe Tooltip }
+    -> { activeClaimInfo | pool : Pool, claim : Claim }
+    -> Element Msg
+activeBalances page { pool, claim } =
     row
         ([ width fill
          , height <| px 56
@@ -637,29 +634,7 @@ activeBalances { pool, claim } =
             , Font.color Color.transparent300
             ]
             (text "Amount at maturity")
-        , row
-            [ width shrink
-            , height shrink
-            , alignLeft
-            , centerY
-            , spacing 4
-            , Font.size 18
-            ]
-            [ el
-                [ Font.bold
-                , Font.color Color.transparent500
-                ]
-                (text claim.bond)
-            , el
-                [ Font.bold
-                , Font.color Color.transparent300
-                ]
-                (pool.pair
-                    |> Pair.toAsset
-                    |> Token.toSymbol
-                    |> text
-                )
-            ]
+        , assetBalance page pool claim.bond
         , line
         , el
             [ width shrink
@@ -671,29 +646,7 @@ activeBalances { pool, claim } =
             , Font.color Color.transparent300
             ]
             (text "Insurance in case of default")
-        , row
-            [ width shrink
-            , height shrink
-            , alignLeft
-            , centerY
-            , spacing 4
-            , Font.size 18
-            ]
-            [ el
-                [ Font.bold
-                , Font.color Color.transparent500
-                ]
-                (text claim.insurance)
-            , el
-                [ Font.bold
-                , Font.color Color.transparent300
-                ]
-                (pool.pair
-                    |> Pair.toCollateral
-                    |> Token.toSymbol
-                    |> text
-                )
-            ]
+        , collateralBalance page pool claim.insurance
         ]
 
 
@@ -714,3 +667,191 @@ line =
         , Border.color Color.transparent100
         ]
         none
+
+
+assetBalance : { page | tooltip : Maybe Tooltip } -> Pool -> String -> Element Msg
+assetBalance { tooltip } pool asset =
+    asset
+        |> Truncate.amount
+        |> (\{ full, truncated } ->
+                truncated
+                    |> Maybe.map
+                        (\short ->
+                            row
+                                [ alignLeft
+                                , centerY
+                                , paddingEach
+                                    { top = 3
+                                    , right = 0
+                                    , bottom = 2
+                                    , left = 0
+                                    }
+                                , spacing 4
+                                , Font.regular
+                                , Border.widthEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 1
+                                    , left = 0
+                                    }
+                                , Border.dashed
+                                , Border.color Color.transparent300
+                                , Font.size 18
+                                , Events.onMouseEnter (OnMouseEnter (Tooltip.Bond pool))
+                                , Events.onMouseLeave OnMouseLeave
+                                , (case tooltip of
+                                    Just (Tooltip.Bond chosenPool) ->
+                                        if chosenPool == pool then
+                                            [ full
+                                            , pool.pair
+                                                |> Pair.toAsset
+                                                |> Token.toSymbol
+                                            ]
+                                                |> String.join " "
+                                                |> Tooltip.amount
+
+                                        else
+                                            none
+
+                                    _ ->
+                                        none
+                                  )
+                                    |> onRight
+                                ]
+                                [ el
+                                    [ Font.bold
+                                    , Font.color Color.transparent500
+                                    ]
+                                    (text short)
+                                , el
+                                    [ Font.bold
+                                    , Font.color Color.transparent300
+                                    ]
+                                    (pool.pair
+                                        |> Pair.toAsset
+                                        |> Token.toSymbol
+                                        |> text
+                                    )
+                                ]
+                        )
+                    |> Maybe.withDefault
+                        (row
+                            [ width shrink
+                            , height shrink
+                            , alignLeft
+                            , centerY
+                            , spacing 4
+                            , Font.size 18
+                            , Font.color Color.transparent300
+                            ]
+                            [ el
+                                [ Font.bold
+                                , Font.color Color.transparent500
+                                ]
+                                (text full)
+                            , el
+                                [ Font.bold
+                                , Font.color Color.transparent300
+                                ]
+                                (pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toSymbol
+                                    |> text
+                                )
+                            ]
+                        )
+           )
+
+
+collateralBalance : { page | tooltip : Maybe Tooltip } -> Pool -> String -> Element Msg
+collateralBalance { tooltip } pool collateral =
+    collateral
+        |> Truncate.amount
+        |> (\{ full, truncated } ->
+                truncated
+                    |> Maybe.map
+                        (\short ->
+                            row
+                                [ alignLeft
+                                , centerY
+                                , paddingEach
+                                    { top = 3
+                                    , right = 0
+                                    , bottom = 2
+                                    , left = 0
+                                    }
+                                , spacing 4
+                                , Font.regular
+                                , Border.widthEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 1
+                                    , left = 0
+                                    }
+                                , Border.dashed
+                                , Border.color Color.transparent300
+                                , Font.size 18
+                                , Events.onMouseEnter (OnMouseEnter (Tooltip.Insurance pool))
+                                , Events.onMouseLeave OnMouseLeave
+                                , (case tooltip of
+                                    Just (Tooltip.Insurance chosenPool) ->
+                                        if chosenPool == pool then
+                                            [ full
+                                            , pool.pair
+                                                |> Pair.toCollateral
+                                                |> Token.toSymbol
+                                            ]
+                                                |> String.join " "
+                                                |> Tooltip.amount
+
+                                        else
+                                            none
+
+                                    _ ->
+                                        none
+                                  )
+                                    |> onRight
+                                ]
+                                [ el
+                                    [ Font.bold
+                                    , Font.color Color.transparent500
+                                    ]
+                                    (text short)
+                                , el
+                                    [ Font.bold
+                                    , Font.color Color.transparent300
+                                    ]
+                                    (pool.pair
+                                        |> Pair.toCollateral
+                                        |> Token.toSymbol
+                                        |> text
+                                    )
+                                ]
+                        )
+                    |> Maybe.withDefault
+                        (row
+                            [ width shrink
+                            , height shrink
+                            , alignLeft
+                            , centerY
+                            , spacing 4
+                            , Font.size 18
+                            , Font.color Color.transparent300
+                            ]
+                            [ el
+                                [ Font.bold
+                                , Font.color Color.transparent500
+                                ]
+                                (text full)
+                            , el
+                                [ Font.bold
+                                , Font.color Color.transparent300
+                                ]
+                                (pool.pair
+                                    |> Pair.toCollateral
+                                    |> Token.toSymbol
+                                    |> text
+                                )
+                            ]
+                        )
+           )

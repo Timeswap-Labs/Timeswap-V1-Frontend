@@ -11,11 +11,13 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
+import Data.Slippage exposing (Slippage)
 import Data.Token as Token
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , below
         , centerX
         , centerY
         , column
@@ -25,6 +27,7 @@ import Element
         , link
         , mouseDown
         , mouseOver
+        , none
         , paddingEach
         , paddingXY
         , px
@@ -36,10 +39,12 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Json.Encode as Encode exposing (Value)
 import Modals.Lend.ClaimsOut as ClaimsOut exposing (ClaimsOut)
+import Modals.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Image as Image
@@ -260,16 +265,22 @@ hasAllowance { user } { pool, assetIn } =
 
 
 view :
-    { msgs | approveLend : Value -> msg, lend : Value -> msg }
+    { msgs
+        | approveLend : Value -> msg
+        , lend : Value -> msg
+        , onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
     ->
         { model
             | device : Device
             , time : Posix
+            , slippage : Slippage
             , deadline : Deadline
             , images : Images
             , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
         }
-    -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut }
+    -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element msg
 view msgs ({ user } as model) modal =
     column
@@ -298,7 +309,7 @@ view msgs ({ user } as model) modal =
                         ]
                 )
             |> Maybe.withDefault (connectButton model)
-        , transactionInfo model
+        , transactionInfo msgs model modal
         ]
 
 
@@ -593,8 +604,18 @@ disabledLend { device } =
         )
 
 
-transactionInfo : { modal | images : Images } -> Element msg
-transactionInfo { images } =
+transactionInfo :
+    { msgs | onMouseEnter : Tooltip -> msg, onMouseLeave : msg }
+    -> { model | time : Posix, slippage : Slippage, images : Images }
+    ->
+        { modal
+            | pool : Pool
+            , assetIn : String
+            , claimsOut : ClaimsOut
+            , tooltip : Maybe Tooltip
+        }
+    -> Element msg
+transactionInfo msgs { time, slippage, images } { pool, assetIn, claimsOut, tooltip } =
     row
         [ width shrink
         , height shrink
@@ -603,6 +624,61 @@ transactionInfo { images } =
         , Font.regular
         , Font.size 14
         , Font.color Color.transparent300
+        , Events.onMouseEnter (msgs.onMouseEnter Tooltip.TransactionInfo)
+        , Events.onMouseLeave msgs.onMouseLeave
+        , (if
+            (pool.maturity |> Maturity.isActive time)
+                && (assetIn |> Input.isZero |> not)
+                && (claimsOut |> ClaimsOut.hasZeroInput |> not)
+           then
+            case tooltip of
+                Just Tooltip.TransactionInfo ->
+                    case claimsOut of
+                        ClaimsOut.Default (Success { minBond, minInsurance }) ->
+                            Tooltip.transactionInfoPercent pool.pair
+                                ( minBond, minInsurance )
+                                slippage
+
+                        ClaimsOut.Slider { claims } ->
+                            case claims of
+                                Success { minBond, minInsurance } ->
+                                    Tooltip.transactionInfoPercent pool.pair
+                                        ( minBond, minInsurance )
+                                        slippage
+
+                                _ ->
+                                    none
+
+                        ClaimsOut.Bond { claims } ->
+                            case claims of
+                                Success { minInsurance } ->
+                                    Tooltip.transactionInfoBond pool.pair
+                                        minInsurance
+                                        slippage
+
+                                _ ->
+                                    none
+
+                        ClaimsOut.Insurance { claims } ->
+                            case claims of
+                                Success { minBond } ->
+                                    Tooltip.transactionInfoInsurance pool.pair
+                                        minBond
+                                        slippage
+
+                                _ ->
+                                    none
+
+                        _ ->
+                            none
+
+                _ ->
+                    none
+
+           else
+            none
+          )
+            |> below
         ]
         [ el
             [ paddingXY 0 3 ]

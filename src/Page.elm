@@ -37,6 +37,7 @@ import Element.Font as Font
 import Pages.AllMarket.Main as AllMarket
 import Pages.BorrowDashboard.Main as BorrowDashboard
 import Pages.LendDashboard.Main as LendDashboard
+import Pages.LiquidityProvider.Main as LiquidityProvider
 import Pages.PairMarket.Main as PairMarket
 import Time exposing (Posix)
 import Utility.Router as Router
@@ -300,6 +301,6 @@ view model page =
                 BorrowDashboard.view model borrowDashboard
                     |> Element.map BorrowDashboardMsg
 
-            _ ->
-                none
+            LiquidityProvider ->
+                LiquidityProvider.view
         )

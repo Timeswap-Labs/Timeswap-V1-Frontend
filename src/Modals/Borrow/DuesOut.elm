@@ -47,6 +47,7 @@ import Element
         , height
         , newTabLink
         , none
+        , onRight
         , padding
         , paddingEach
         , paddingXY
@@ -711,11 +712,15 @@ view msgs model modal =
 
 
 title :
-    { msgs | switchBorrowSetting : Bool -> msg }
+    { msgs
+        | switchBorrowSetting : Bool -> msg
+        , onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
     -> { model | images : Images }
-    -> { modal | duesOut : DuesOut }
+    -> { modal | duesOut : DuesOut, tooltip : Maybe Tooltip }
     -> Element msg
-title msgs { images } modal =
+title msgs { images } ({ tooltip } as modal) =
     row
         [ width fill
         , height shrink
@@ -744,6 +749,16 @@ title msgs { images } modal =
             [ width <| px 16
             , alignLeft
             , centerY
+            , Events.onMouseEnter (msgs.onMouseEnter Tooltip.Dues)
+            , Events.onMouseLeave msgs.onMouseLeave
+            , (case tooltip of
+                Just Tooltip.Dues ->
+                    Tooltip.dues
+
+                _ ->
+                    none
+              )
+                |> onRight
             ]
         , el
             [ alignRight
@@ -1111,7 +1126,11 @@ collateralFactor { pool, cf } =
 
 
 debtInSection :
-    { msgs | inputDebtIn : String -> msg }
+    { msgs
+        | inputDebtIn : String -> msg
+        , onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
     ->
         { model
             | images : Images
@@ -1123,9 +1142,10 @@ debtInSection :
             | pool : { pool | pair : Pair }
             , assetOut : String
             , duesOut : DuesOut
+            , tooltip : Maybe Tooltip
         }
     -> Element msg
-debtInSection msgs ({ images } as model) ({ duesOut } as modal) =
+debtInSection msgs ({ images } as model) ({ duesOut, tooltip } as modal) =
     column
         [ width fill
         , height shrink
@@ -1150,6 +1170,16 @@ debtInSection msgs ({ images } as model) ({ duesOut } as modal) =
             , Image.info images
                 [ width <| px 16
                 , centerY
+                , Events.onMouseEnter (msgs.onMouseEnter Tooltip.Debt)
+                , Events.onMouseLeave msgs.onMouseLeave
+                , (case tooltip of
+                    Just Tooltip.Debt ->
+                        Tooltip.debt
+
+                    _ ->
+                        none
+                  )
+                    |> onRight
                 ]
             , (case duesOut of
                 Default Loading ->
@@ -1451,7 +1481,7 @@ collateralInSection :
             , tooltip : Maybe Tooltip
         }
     -> Element msg
-collateralInSection msgs ({ images, user } as model) ({ pool, duesOut, tooltip } as modal) =
+collateralInSection msgs ({ images, user } as model) ({ duesOut, tooltip } as modal) =
     column
         [ width fill
         , height shrink
@@ -1463,7 +1493,7 @@ collateralInSection msgs ({ images, user } as model) ({ pool, duesOut, tooltip }
             , height shrink
             , spacing 8
             ]
-            ([ el
+            [ el
                 [ width shrink
                 , height shrink
                 , paddingXY 0 3
@@ -1473,33 +1503,43 @@ collateralInSection msgs ({ images, user } as model) ({ pool, duesOut, tooltip }
                 , Font.color Color.transparent400
                 ]
                 (text "Collateral to lock")
-             , Image.info images
+            , Image.info images
                 [ width <| px 16
                 , centerY
-                ]
-             , (case duesOut of
-                    Default Loading ->
-                        True
-
-                    Slider { dues } ->
-                        case dues of
-                            Loading ->
-                                True
-
-                            _ ->
-                                False
-
-                    Debt { dues } ->
-                        case dues of
-                            Loading ->
-                                True
-
-                            _ ->
-                                False
+                , Events.onMouseEnter (msgs.onMouseEnter Tooltip.Collateral)
+                , Events.onMouseLeave msgs.onMouseLeave
+                , (case tooltip of
+                    Just Tooltip.Collateral ->
+                        Tooltip.collateral
 
                     _ ->
-                        False
-               )
+                        none
+                  )
+                    |> onRight
+                ]
+            , (case duesOut of
+                Default Loading ->
+                    True
+
+                Slider { dues } ->
+                    case dues of
+                        Loading ->
+                            True
+
+                        _ ->
+                            False
+
+                Debt { dues } ->
+                    case dues of
+                        Loading ->
+                            True
+
+                        _ ->
+                            False
+
+                _ ->
+                    False
+              )
                 |> (\isLoading ->
                         if isLoading then
                             el
@@ -1512,114 +1552,118 @@ collateralInSection msgs ({ images, user } as model) ({ pool, duesOut, tooltip }
                         else
                             none
                    )
-             ]
-                ++ (user
-                        |> Maybe.map
-                            (\{ balances } ->
-                                case balances of
-                                    Loading ->
-                                        [ el
-                                            [ height <| px 20
-                                            , alignRight
-                                            , centerY
-                                            ]
-                                            Loading.view
-                                        ]
+            , user
+                |> Maybe.map
+                    (\{ balances } ->
+                        case balances of
+                            Loading ->
+                                el
+                                    [ height <| px 20
+                                    , alignRight
+                                    , centerY
+                                    ]
+                                    Loading.view
 
-                                    Failure ->
-                                        []
+                            Failure ->
+                                none
 
-                                    Success successBalances ->
-                                        [ successBalances
-                                            |> Balances.get (pool.pair |> Pair.toCollateral)
-                                            |> Truncate.amount
-                                            |> (\{ full, truncated } ->
-                                                    truncated
-                                                        |> Maybe.map
-                                                            (\short ->
-                                                                row
-                                                                    [ height <| px 20
-                                                                    , alignRight
-                                                                    , centerY
-                                                                    , Font.size 14
-                                                                    , Font.color Color.transparent300
-                                                                    ]
-                                                                    [ el
-                                                                        [ paddingXY 0 3
-                                                                        , Font.regular
-                                                                        ]
-                                                                        (text "Your Balance: ")
-                                                                    , pool.pair
-                                                                        |> Pair.toCollateral
-                                                                        |> Token.toSymbol
-                                                                        |> (\symbol ->
-                                                                                el
-                                                                                    ([ paddingXY 0 3
-                                                                                     , Font.regular
-                                                                                     , Border.widthEach
-                                                                                        { top = 0
-                                                                                        , right = 0
-                                                                                        , bottom = 1
-                                                                                        , left = 0
-                                                                                        }
-                                                                                     , Border.dashed
-                                                                                     , Border.color Color.transparent300
-                                                                                     , Events.onMouseEnter (msgs.onMouseEnter Tooltip.CollateralBalance)
-                                                                                     , Events.onMouseLeave msgs.onMouseLeave
-                                                                                     ]
-                                                                                        ++ (tooltip
-                                                                                                |> Maybe.map
-                                                                                                    (\tooltipJust ->
-                                                                                                        case tooltipJust of
-                                                                                                            Tooltip.CollateralBalance ->
-                                                                                                                [ [ full
-                                                                                                                  , symbol
-                                                                                                                  ]
-                                                                                                                    |> String.join " "
-                                                                                                                    |> Tooltip.collateralBalance
-                                                                                                                    |> below
-                                                                                                                ]
-                                                                                                    )
-                                                                                                |> Maybe.withDefault []
-                                                                                           )
-                                                                                    )
-                                                                                    ([ short
-                                                                                     , symbol
-                                                                                     ]
-                                                                                        |> String.join " "
-                                                                                        |> text
-                                                                                    )
-                                                                           )
-                                                                    ]
-                                                            )
-                                                        |> Maybe.withDefault
-                                                            (el
-                                                                [ height <| px 20
-                                                                , alignRight
-                                                                , centerY
-                                                                , paddingXY 0 3
-                                                                , Font.regular
-                                                                , Font.size 14
-                                                                , Font.color Color.transparent300
-                                                                ]
-                                                                ([ "Your Balance:"
-                                                                 , full
-                                                                 , pool.pair
-                                                                    |> Pair.toCollateral
-                                                                    |> Token.toSymbol
-                                                                 ]
-                                                                    |> String.join " "
-                                                                    |> text
-                                                                )
-                                                            )
-                                               )
-                                        ]
-                            )
-                        |> Maybe.withDefault []
-                   )
-            )
+                            Success successBalances ->
+                                collateralBalance msgs successBalances modal
+                    )
+                |> Maybe.withDefault none
+            ]
         , collateralInTextbox msgs model modal
         ]
+
+
+collateralBalance :
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
+    -> Balances
+    -> { modal | pool : { pool | pair : Pair }, tooltip : Maybe Tooltip }
+    -> Element msg
+collateralBalance msgs balances { pool, tooltip } =
+    balances
+        |> Balances.get (pool.pair |> Pair.toCollateral)
+        |> Truncate.amount
+        |> (\{ full, truncated } ->
+                truncated
+                    |> Maybe.map
+                        (\short ->
+                            row
+                                [ height <| px 20
+                                , alignRight
+                                , centerY
+                                , Font.size 14
+                                , Font.color Color.transparent300
+                                ]
+                                [ el
+                                    [ paddingXY 0 3
+                                    , Font.regular
+                                    ]
+                                    (text "Your Balance: ")
+                                , pool.pair
+                                    |> Pair.toCollateral
+                                    |> Token.toSymbol
+                                    |> (\symbol ->
+                                            el
+                                                [ paddingXY 0 3
+                                                , Font.regular
+                                                , Border.widthEach
+                                                    { top = 0
+                                                    , right = 0
+                                                    , bottom = 1
+                                                    , left = 0
+                                                    }
+                                                , Border.dashed
+                                                , Border.color Color.transparent300
+                                                , Events.onMouseEnter (msgs.onMouseEnter Tooltip.CollateralBalance)
+                                                , Events.onMouseLeave msgs.onMouseLeave
+                                                , (case tooltip of
+                                                    Just Tooltip.CollateralBalance ->
+                                                        [ full
+                                                        , symbol
+                                                        ]
+                                                            |> String.join " "
+                                                            |> Tooltip.collateralBalance
+
+                                                    _ ->
+                                                        none
+                                                  )
+                                                    |> below
+                                                ]
+                                                ([ short
+                                                 , symbol
+                                                 ]
+                                                    |> String.join " "
+                                                    |> text
+                                                )
+                                       )
+                                ]
+                        )
+                    |> Maybe.withDefault
+                        (el
+                            [ height <| px 20
+                            , alignRight
+                            , centerY
+                            , paddingXY 0 3
+                            , Font.regular
+                            , Font.size 14
+                            , Font.color Color.transparent300
+                            ]
+                            ([ "Your Balance:"
+                             , full
+                             , pool.pair
+                                |> Pair.toCollateral
+                                |> Token.toSymbol
+                             ]
+                                |> String.join " "
+                                |> text
+                            )
+                        )
+           )
 
 
 collateralInTextbox :

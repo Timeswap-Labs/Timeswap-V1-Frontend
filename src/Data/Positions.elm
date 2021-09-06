@@ -523,8 +523,8 @@ example =
               , Matured
                     { bond = Uint.Uint "21213131"
                     , insurance = Uint.Uint "213141212"
-                    , asset = Uint.Uint "1200"
-                    , collateral = Uint.Uint "356"
+                    , asset = Uint.Uint "1200000000000000000000"
+                    , collateral = Uint.Uint "35600000000000000000000000000000000"
                     }
               )
             , ( { pair = Pair.daiEthRinkeby

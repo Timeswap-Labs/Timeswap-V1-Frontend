@@ -50,7 +50,7 @@ toTransaction :
     -> Pool
     -> Maybe Transaction
 toTransaction { time } { address } positions pool =
-    if pool.maturity |> Maturity.isActive time then
+    if pool.maturity |> Maturity.isActive time |> not then
         positions
             |> Positions.toClaimTransaction pool
             |> Maybe.map

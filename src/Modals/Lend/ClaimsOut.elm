@@ -47,9 +47,9 @@ import Element
         , el
         , fill
         , height
-        , inFront
         , newTabLink
         , none
+        , onRight
         , padding
         , paddingEach
         , paddingXY
@@ -62,8 +62,10 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
+import Modals.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Glass as Glass
@@ -608,6 +610,8 @@ view :
         , slide : Float -> msg
         , inputBondOut : String -> msg
         , inputInsuranceOut : String -> msg
+        , onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
     }
     ->
         { model
@@ -623,6 +627,7 @@ view :
             , claimsOut : ClaimsOut
             , apr : Remote String
             , cf : Remote String
+            , tooltip : Maybe Tooltip
         }
     -> Element msg
 view msgs model modal =
@@ -637,11 +642,15 @@ view msgs model modal =
 
 
 title :
-    { msgs | switchLendSetting : Bool -> msg }
+    { msgs
+        | switchLendSetting : Bool -> msg
+        , onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
     -> { model | images : Images }
-    -> { modal | claimsOut : ClaimsOut }
+    -> { modal | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element msg
-title msgs { images } modal =
+title msgs { images } ({ tooltip } as modal) =
     row
         [ width fill
         , height shrink
@@ -670,6 +679,16 @@ title msgs { images } modal =
             [ width <| px 16
             , alignLeft
             , centerY
+            , Events.onMouseEnter (msgs.onMouseEnter Tooltip.Claims)
+            , Events.onMouseLeave msgs.onMouseLeave
+            , (case tooltip of
+                Just Tooltip.Claims ->
+                    Tooltip.claims
+
+                _ ->
+                    none
+              )
+                |> onRight
             ]
         , el
             [ alignRight
@@ -749,6 +768,8 @@ position :
         | slide : Float -> msg
         , inputBondOut : String -> msg
         , inputInsuranceOut : String -> msg
+        , onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
     }
     ->
         { model
@@ -763,6 +784,7 @@ position :
             , claimsOut : ClaimsOut
             , apr : Remote String
             , cf : Remote String
+            , tooltip : Maybe Tooltip
         }
     -> Element msg
 position msgs model ({ claimsOut } as modal) =
@@ -1033,7 +1055,11 @@ collateralFactor { pool, cf } =
 
 
 bondOutSection :
-    { msgs | inputBondOut : String -> msg }
+    { msgs
+        | inputBondOut : String -> msg
+        , onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
     ->
         { model
             | images : Images
@@ -1045,9 +1071,10 @@ bondOutSection :
             | pool : { pool | pair : Pair }
             , assetIn : String
             , claimsOut : ClaimsOut
+            , tooltip : Maybe Tooltip
         }
     -> Element msg
-bondOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
+bondOutSection msgs ({ images } as model) ({ claimsOut, tooltip } as modal) =
     column
         [ width fill
         , height shrink
@@ -1072,6 +1099,16 @@ bondOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
             , Image.info images
                 [ width <| px 16
                 , centerY
+                , Events.onMouseEnter (msgs.onMouseEnter Tooltip.Bond)
+                , Events.onMouseLeave msgs.onMouseLeave
+                , (case tooltip of
+                    Just Tooltip.Bond ->
+                        Tooltip.bond
+
+                    _ ->
+                        none
+                  )
+                    |> onRight
                 ]
             , (case claimsOut of
                 Default Loading ->
@@ -1353,7 +1390,11 @@ bondOutInput msgs model ({ claimsOut } as modal) =
 
 
 insuranceOutSection :
-    { msgs | inputInsuranceOut : String -> msg }
+    { msgs
+        | inputInsuranceOut : String -> msg
+        , onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
     ->
         { model
             | images : Images
@@ -1365,9 +1406,10 @@ insuranceOutSection :
             | pool : { pool | pair : Pair }
             , assetIn : String
             , claimsOut : ClaimsOut
+            , tooltip : Maybe Tooltip
         }
     -> Element msg
-insuranceOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
+insuranceOutSection msgs ({ images } as model) ({ claimsOut, tooltip } as modal) =
     column
         [ width fill
         , height shrink
@@ -1392,6 +1434,16 @@ insuranceOutSection msgs ({ images } as model) ({ claimsOut } as modal) =
             , Image.info images
                 [ width <| px 16
                 , centerY
+                , Events.onMouseEnter (msgs.onMouseEnter Tooltip.Insurance)
+                , Events.onMouseLeave msgs.onMouseLeave
+                , (case tooltip of
+                    Just Tooltip.Insurance ->
+                        Tooltip.insurance
+
+                    _ ->
+                        none
+                  )
+                    |> onRight
                 ]
             , (case claimsOut of
                 Default Loading ->

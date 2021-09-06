@@ -83,13 +83,13 @@ title :
     -> { model | user : Maybe { user | balances : Remote Balances } }
     -> { modal | pool : { pool | pair : Pair }, tooltip : Maybe Tooltip }
     -> Element msg
-title msgs { user } { pool, tooltip } =
+title msgs { user } modal =
     row
         [ width fill
         , height shrink
         , spacing 4
         ]
-        (el
+        [ el
             [ alignLeft
             , paddingXY 0 4
             , Font.bold
@@ -97,111 +97,116 @@ title msgs { user } { pool, tooltip } =
             , Font.color Color.transparent500
             ]
             (text "Amount to lend")
-            :: (user
+        , user
+            |> Maybe.map
+                (\{ balances } ->
+                    case balances of
+                        Loading ->
+                            el
+                                [ height <| px 20
+                                , alignRight
+                                , centerY
+                                ]
+                                Loading.view
+
+                        Failure ->
+                            none
+
+                        Success successBalances ->
+                            assetBalance msgs successBalances modal
+                )
+            |> Maybe.withDefault none
+        ]
+
+
+assetBalance :
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
+    -> Balances
+    -> { modal | pool : { pool | pair : Pair }, tooltip : Maybe Tooltip }
+    -> Element msg
+assetBalance msgs balances { pool, tooltip } =
+    balances
+        |> Balances.get (pool.pair |> Pair.toAsset)
+        |> Truncate.amount
+        |> (\{ full, truncated } ->
+                truncated
                     |> Maybe.map
-                        (\{ balances } ->
-                            case balances of
-                                Loading ->
-                                    [ el
-                                        [ height <| px 20
-                                        , alignRight
-                                        , centerY
-                                        ]
-                                        Loading.view
+                        (\short ->
+                            row
+                                [ height <| px 20
+                                , alignRight
+                                , centerY
+                                , Font.size 14
+                                , Font.color Color.transparent300
+                                ]
+                                [ el
+                                    [ paddingXY 0 3
+                                    , Font.regular
                                     ]
+                                    (text "Your Balance: ")
+                                , pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toSymbol
+                                    |> (\symbol ->
+                                            el
+                                                [ paddingXY 0 3
+                                                , Font.regular
+                                                , Border.widthEach
+                                                    { top = 0
+                                                    , right = 0
+                                                    , bottom = 1
+                                                    , left = 0
+                                                    }
+                                                , Border.dashed
+                                                , Border.color Color.transparent300
+                                                , Events.onMouseEnter (msgs.onMouseEnter Tooltip.AssetBalance)
+                                                , Events.onMouseLeave msgs.onMouseLeave
+                                                , (case tooltip of
+                                                    Just Tooltip.AssetBalance ->
+                                                        [ full
+                                                        , symbol
+                                                        ]
+                                                            |> String.join " "
+                                                            |> Tooltip.assetBalance
 
-                                Failure ->
-                                    []
-
-                                Success successBalances ->
-                                    [ successBalances
-                                        |> Balances.get (pool.pair |> Pair.toAsset)
-                                        |> Truncate.amount
-                                        |> (\{ full, truncated } ->
-                                                truncated
-                                                    |> Maybe.map
-                                                        (\short ->
-                                                            row
-                                                                [ height <| px 20
-                                                                , alignRight
-                                                                , centerY
-                                                                , Font.size 14
-                                                                , Font.color Color.transparent300
-                                                                ]
-                                                                [ el
-                                                                    [ paddingXY 0 3
-                                                                    , Font.regular
-                                                                    ]
-                                                                    (text "Your Balance: ")
-                                                                , pool.pair
-                                                                    |> Pair.toAsset
-                                                                    |> Token.toSymbol
-                                                                    |> (\symbol ->
-                                                                            el
-                                                                                ([ paddingXY 0 3
-                                                                                 , Font.regular
-                                                                                 , Border.widthEach
-                                                                                    { top = 0
-                                                                                    , right = 0
-                                                                                    , bottom = 1
-                                                                                    , left = 0
-                                                                                    }
-                                                                                 , Border.dashed
-                                                                                 , Border.color Color.transparent300
-                                                                                 , Events.onMouseEnter (msgs.onMouseEnter Tooltip.AssetBalance)
-                                                                                 , Events.onMouseLeave msgs.onMouseLeave
-                                                                                 ]
-                                                                                    ++ (tooltip
-                                                                                            |> Maybe.map
-                                                                                                (\tooltipJust ->
-                                                                                                    case tooltipJust of
-                                                                                                        Tooltip.AssetBalance ->
-                                                                                                            [ [ full
-                                                                                                              , symbol
-                                                                                                              ]
-                                                                                                                |> String.join " "
-                                                                                                                |> Tooltip.assetBalance
-                                                                                                                |> below
-                                                                                                            ]
-                                                                                                )
-                                                                                            |> Maybe.withDefault []
-                                                                                       )
-                                                                                )
-                                                                                ([ short
-                                                                                 , symbol
-                                                                                 ]
-                                                                                    |> String.join " "
-                                                                                    |> text
-                                                                                )
-                                                                       )
-                                                                ]
-                                                        )
-                                                    |> Maybe.withDefault
-                                                        (el
-                                                            [ height <| px 20
-                                                            , alignRight
-                                                            , centerY
-                                                            , paddingXY 0 3
-                                                            , Font.regular
-                                                            , Font.size 14
-                                                            , Font.color Color.transparent300
-                                                            ]
-                                                            ([ "Your Balance:"
-                                                             , full
-                                                             , pool.pair
-                                                                |> Pair.toAsset
-                                                                |> Token.toSymbol
-                                                             ]
-                                                                |> String.join " "
-                                                                |> text
-                                                            )
-                                                        )
-                                           )
-                                    ]
+                                                    _ ->
+                                                        none
+                                                  )
+                                                    |> below
+                                                ]
+                                                ([ short
+                                                 , symbol
+                                                 ]
+                                                    |> String.join " "
+                                                    |> text
+                                                )
+                                       )
+                                ]
                         )
-                    |> Maybe.withDefault []
-               )
-        )
+                    |> Maybe.withDefault
+                        (el
+                            [ height <| px 20
+                            , alignRight
+                            , centerY
+                            , paddingXY 0 3
+                            , Font.regular
+                            , Font.size 14
+                            , Font.color Color.transparent300
+                            ]
+                            ([ "Your Balance:"
+                             , full
+                             , pool.pair
+                                |> Pair.toAsset
+                                |> Token.toSymbol
+                             ]
+                                |> String.join " "
+                                |> text
+                            )
+                        )
+           )
 
 
 assetInTextbox :

@@ -623,6 +623,7 @@ view :
         , time : Posix
         , zoneInfo : Maybe ZoneInfo
         , backdrop : Backdrop
+        , slippage : Slippage
         , deadline : Deadline
         , images : Images
         , tokenImages : TokenImages
