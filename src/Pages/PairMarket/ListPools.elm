@@ -163,7 +163,7 @@ maturityInfo { time, zoneInfo, images } maturity =
                 ]
                 ((case maturity |> Maturity.toDuration time of
                     Active string ->
-                        "Matured in " ++ string
+                        "Matures in " ++ string
 
                     Matured string ->
                         "Matured " ++ string ++ " ago"
