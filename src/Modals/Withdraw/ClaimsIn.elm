@@ -10,14 +10,11 @@ import Element
         ( Element
         , alignLeft
         , alignRight
-        , alpha
-        , behindContent
         , centerY
         , column
         , el
         , fill
         , height
-        , none
         , paddingXY
         , px
         , row

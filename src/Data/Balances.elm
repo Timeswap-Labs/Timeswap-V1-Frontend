@@ -1,8 +1,22 @@
-module Data.Balances exposing (BalanceInfo, Balances, example, get, hasEnough, isEmpty, toList)
+module Data.Balances exposing
+    ( BalanceInfo
+    , Balances
+    , example
+    , get
+    , hasEnough
+    , init
+    , isEmpty
+    , toList
+    , update
+    )
 
 import Data.ERC20 as ERC20
+import Data.Remote exposing (Remote(..))
 import Data.Token as Token exposing (Token)
+import Data.Tokens as Tokens exposing (Tokens)
 import Data.Uint as Uint exposing (Uint)
+import Json.Decode as Decode exposing (Decoder, Value)
+import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
 
 
@@ -14,6 +28,44 @@ type alias BalanceInfo =
     { token : Token
     , balance : String
     }
+
+
+decoder : Tokens -> Decoder Balances
+decoder tokens =
+    Decode.succeed (Dict.singleton Token.sorter)
+        |> Pipeline.required "token" (Tokens.decoderToken tokens)
+        |> Pipeline.required "balance" Uint.decoder
+        |> Decode.map Balances
+
+
+init : Tokens -> Value -> Remote Balances
+init tokens value =
+    value
+        |> Decode.decodeValue (decoder tokens)
+        |> (\result ->
+                case result of
+                    Ok balances ->
+                        Success balances
+
+                    _ ->
+                        Loading
+           )
+
+
+update : Tokens -> Value -> Balances -> Balances
+update tokens value (Balances balances) =
+    value
+        |> Decode.decodeValue (decoder tokens)
+        |> (\result ->
+                case result of
+                    Ok (Balances dict) ->
+                        balances
+                            |> Dict.insertAll dict
+                            |> Balances
+
+                    _ ->
+                        Balances balances
+           )
 
 
 isEmpty : Balances -> Bool

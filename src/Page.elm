@@ -28,7 +28,6 @@ import Element
         , el
         , fill
         , height
-        , none
         , paddingXY
         , scrollbarY
         , width

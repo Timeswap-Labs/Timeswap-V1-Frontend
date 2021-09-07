@@ -11,6 +11,7 @@ module Data.Pools exposing
     , toList
     , toListSinglePair
     , toPairs
+    , update
     )
 
 import Data.Chain exposing (Chain(..))
@@ -18,7 +19,6 @@ import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
-import Data.Token as Token
 import Data.Tokens as Tokens exposing (Tokens)
 import Data.Uint as Uint exposing (Uint)
 import Json.Decode as Decode exposing (Decoder, Value)
@@ -28,7 +28,15 @@ import Time exposing (Posix)
 
 
 type Pools
-    = Pools (Dict Pair (Dict Maturity (Remote PoolInfo))) -- fix in the future
+    = Pools (Dict Pair (Dict Maturity (Remote PoolUint))) -- fix in the future
+
+
+type alias PoolUint =
+    { assetLiquidity : Uint
+    , collateralLiquidity : Uint
+    , apr : Float
+    , cf : Uint
+    }
 
 
 type alias PoolInfo =
@@ -122,6 +130,78 @@ decoderPool (Pools dict) tokens =
         |> Decode.andThen identity
 
 
+decoderPoolUint : Decoder PoolUint
+decoderPoolUint =
+    Decode.succeed PoolUint
+        |> Pipeline.required "assetLiquidity" Uint.decoder
+        |> Pipeline.required "collateralLiquidity" Uint.decoder
+        |> Pipeline.required "apr" Decode.float
+        |> Pipeline.required "cf" Uint.decoder
+
+
+decoderUpdate : Pools -> Tokens -> Decoder Pools
+decoderUpdate pools tokens =
+    Decode.succeed Tuple.pair
+        |> Pipeline.custom (decoderPool pools tokens)
+        |> Pipeline.custom decoderPoolUint
+        |> Decode.list
+        |> Decode.map
+            (\list ->
+                list
+                    |> List.foldl
+                        (\( { pair, maturity }, poolInfo ) accumulator ->
+                            accumulator
+                                |> Dict.get pair
+                                |> Maybe.map
+                                    (\dict ->
+                                        dict
+                                            |> Dict.insert maturity (Success poolInfo)
+                                            |> (\newDict ->
+                                                    accumulator
+                                                        |> Dict.insert pair newDict
+                                               )
+                                    )
+                                |> Maybe.withDefault
+                                    (accumulator
+                                        |> Dict.insert pair
+                                            (Dict.singleton Maturity.sorter maturity (Success poolInfo))
+                                    )
+                        )
+                        (Dict.empty Pair.sorter)
+                    |> Pools
+            )
+
+
+update : Tokens -> Value -> Pools -> Pools
+update tokens value ((Pools dict) as pools) =
+    value
+        |> Decode.decodeValue (decoderUpdate pools tokens)
+        |> (\result ->
+                case result of
+                    Ok (Pools newDict) ->
+                        newDict
+                            |> Dict.foldl
+                                (\pair newInnerDict accumulator ->
+                                    accumulator
+                                        |> Dict.insert pair
+                                            (accumulator
+                                                |> Dict.get pair
+                                                |> Maybe.map
+                                                    (\innerDict ->
+                                                        innerDict
+                                                            |> Dict.insertAll newInnerDict
+                                                    )
+                                                |> Maybe.withDefault newInnerDict
+                                            )
+                                )
+                                dict
+                            |> Pools
+
+                    Err _ ->
+                        Pools dict
+           )
+
+
 empty : Pools
 empty =
     Dict.empty Pair.sorter
@@ -202,7 +282,7 @@ example =
         |> Dict.insert Pair.daiEthRinkeby
             (Dict.fromList Maturity.sorter
                 [ ( Maturity.unix962654400, Loading )
-                , ( Maturity.unix1635364800, Success (PoolInfo "1.2M" "1.3K" "12%" "2450.809") )
+                , ( Maturity.unix1635364800, Loading )
                 , ( Maturity.unix1650889815, Loading )
                 ]
             )
@@ -224,12 +304,46 @@ toList : Posix -> Pools -> List ( Pair, List ( Maturity, Remote PoolInfo ) )
 toList time (Pools dict) =
     dict
         |> Dict.toList
-        |> (List.map << Tuple.mapSecond)
-            (\innerDict ->
-                innerDict
+        |> List.map
+            (\( pair, innerDict ) ->
+                ( pair
+                , innerDict
                     |> Dict.keepIf
                         (\maturity _ -> maturity |> Maturity.isActive time)
+                    |> Dict.map
+                        (\_ remote ->
+                            case remote of
+                                Success { assetLiquidity, collateralLiquidity, apr, cf } ->
+                                    { assetLiquidity =
+                                        assetLiquidity
+                                            |> Uint.toAmount (pair |> Pair.toAsset)
+                                    , collateralLiquidity =
+                                        collateralLiquidity
+                                            |> Uint.toAmount (pair |> Pair.toCollateral)
+                                    , apr =
+                                        (apr * 10000)
+                                            |> truncate
+                                            |> String.fromInt
+                                            |> (\string ->
+                                                    [ string |> String.dropRight 2
+                                                    , string |> String.right 2
+                                                    ]
+                                                        |> String.join "."
+                                               )
+                                    , cf =
+                                        cf
+                                            |> Uint.toAmount (pair |> Pair.toAsset)
+                                    }
+                                        |> Success
+
+                                Loading ->
+                                    Loading
+
+                                Failure ->
+                                    Failure
+                        )
                     |> Dict.toList
+                )
             )
 
 
@@ -239,6 +353,38 @@ toListSinglePair time pair (Pools dict) =
         |> Dict.get pair
         |> Maybe.map
             (Dict.keepIf (\maturity _ -> maturity |> Maturity.isActive time))
+        |> (Maybe.map << Dict.map)
+            (\_ remote ->
+                case remote of
+                    Success { assetLiquidity, collateralLiquidity, apr, cf } ->
+                        { assetLiquidity =
+                            assetLiquidity
+                                |> Uint.toAmount (pair |> Pair.toAsset)
+                        , collateralLiquidity =
+                            collateralLiquidity
+                                |> Uint.toAmount (pair |> Pair.toCollateral)
+                        , apr =
+                            (apr * 10000)
+                                |> truncate
+                                |> String.fromInt
+                                |> (\string ->
+                                        [ string |> String.dropRight 2
+                                        , string |> String.right 2
+                                        ]
+                                            |> String.join "."
+                                   )
+                        , cf =
+                            cf
+                                |> Uint.toAmount (pair |> Pair.toAsset)
+                        }
+                            |> Success
+
+                    Loading ->
+                        Loading
+
+                    Failure ->
+                        Failure
+            )
         |> Maybe.map Dict.toList
         |> Maybe.withDefault []
 

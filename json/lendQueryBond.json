@@ -1,0 +1,8 @@
+{
+  "asset": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+  "collateral": "ETH",
+  "maturity": 1650889815,
+  "assetIn": "134234235352",
+  "bondOut": "3431414",
+  "slippage": 0.001
+}

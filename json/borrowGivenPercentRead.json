@@ -1,0 +1,13 @@
+{
+  "asset": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+  "collateral": "ETH",
+  "maturity": 1650889815,
+  "assetOut": "134234235352",
+  "percent": 3431414,
+  "apr": 0.3134,
+  "cf": "23523059823054",
+  "debtIn": "2354235235",
+  "collateralIn": "1342352352345",
+  "maxDebt": "342352353525",
+  "maxCollateral": "1234235235235"
+}

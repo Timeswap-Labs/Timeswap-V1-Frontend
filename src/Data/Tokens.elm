@@ -1,6 +1,7 @@
 module Data.Tokens exposing
     ( Tokens
     , decoder
+    , decoderERC20
     , decoderToken
     , fromAssetFragment
     , fromCollateralFragment
@@ -8,7 +9,7 @@ module Data.Tokens exposing
     )
 
 import Data.Address as Address exposing (Address)
-import Data.ERC20 as ERC20
+import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Token as Token exposing (Token)
 import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Decode.Pipeline as Pipeline
@@ -77,26 +78,31 @@ decoderToken : Tokens -> Decoder Token
 decoderToken tokens =
     Decode.oneOf
         [ Token.decoderETH
-        , Address.decoder
-            |> Decode.andThen
-                (\address ->
-                    tokens
-                        |> Set.foldl
-                            (\token accumulator ->
-                                case token of
-                                    Token.ETH ->
-                                        accumulator
-
-                                    Token.ERC20 erc20 ->
-                                        if (erc20 |> ERC20.toAddress) == address then
-                                            Decode.succeed token
-
-                                        else
-                                            accumulator
-                            )
-                            (Decode.fail "not in whitelist")
-                )
+        , decoderERC20 tokens |> Decode.map Token.ERC20
         ]
+
+
+decoderERC20 : Tokens -> Decoder ERC20
+decoderERC20 tokens =
+    Address.decoder
+        |> Decode.andThen
+            (\address ->
+                tokens
+                    |> Set.foldl
+                        (\token accumulator ->
+                            case token of
+                                Token.ETH ->
+                                    accumulator
+
+                                Token.ERC20 erc20 ->
+                                    if (erc20 |> ERC20.toAddress) == address then
+                                        Decode.succeed erc20
+
+                                    else
+                                        accumulator
+                        )
+                        (Decode.fail "not in whitelist")
+            )
 
 
 fromAssetFragment : Tokens -> String -> Maybe Token

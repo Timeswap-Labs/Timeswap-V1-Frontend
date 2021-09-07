@@ -1,0 +1,12 @@
+{
+  "asset": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+  "collateral": "ETH",
+  "maturity": 1650889815,
+  "assetIn": "134234235352",
+  "bondOut": "2354235235",
+  "apr": 0.3134,
+  "cf": "23523059823054",
+  "percent": 3431414,
+  "insuranceOut": "1342352352345",
+  "minInsurance": "1234235235235"
+}

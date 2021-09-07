@@ -10,6 +10,7 @@ module Data.Positions exposing
     , getClaimReturn
     , getFirstClaim
     , getFirstDue
+    , init
     , isClaimEmpty
     , isDuesEmpty
     , isOwner
@@ -21,16 +22,21 @@ module Data.Positions exposing
     , toDueListByPair
     , toDuePools
     , toDueTransaction
+    , update
     )
 
 import Data.Chain exposing (Chain(..))
 import Data.Maturity as Maturity
 import Data.Pair as Pair exposing (Pair)
 import Data.Pool as Pool exposing (Pool)
+import Data.Pools as Pools exposing (Pools)
 import Data.Remote exposing (Remote(..))
 import Data.Status exposing (Status(..))
 import Data.TokenId as TokenId exposing (TokenId)
+import Data.Tokens exposing (Tokens)
 import Data.Uint as Uint exposing (Uint)
+import Json.Decode as Decode exposing (Decoder, Value)
+import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
 import Sort.Set as Set exposing (Set)
 import Time exposing (Posix)
@@ -38,10 +44,21 @@ import Time exposing (Posix)
 
 type Positions
     = Positions
-        { liquidities : Dict Pool (Status String Return)
+        { liquidities : Dict Pool (Status LiquidityUint LiquidityReturnUint)
         , claims : Dict Pool (Status ClaimUint ReturnUint)
         , dues : Dict Pool (Dict TokenId DueUint)
         }
+
+
+type alias LiquidityUint =
+    Uint
+
+
+type alias LiquidityReturnUint =
+    { liquidity : Uint
+    , asset : Uint
+    , collateral : Uint
+    }
 
 
 type alias ClaimUint =
@@ -117,6 +134,199 @@ type alias DueInfo =
     , debt : String
     , collateral : String
     }
+
+
+decoder : Pools -> Tokens -> Decoder Positions
+decoder pools tokens =
+    Decode.oneOf
+        [ decoderLiquidities pools tokens
+        , decoderClaims pools tokens
+        , decoderDues pools tokens
+        ]
+        |> Decode.list
+        |> Decode.map
+            (\list ->
+                list
+                    |> List.foldl
+                        (\(Positions { liquidities, claims, dues }) (Positions accumulator) ->
+                            { liquidities =
+                                accumulator.liquidities
+                                    |> Dict.insertAll liquidities
+                            , claims =
+                                accumulator.claims
+                                    |> Dict.insertAll claims
+                            , dues =
+                                accumulator.dues
+                                    |> Dict.insertAll dues
+                            }
+                                |> Positions
+                        )
+                        ({ liquidities = Dict.empty Pool.sorter
+                         , claims = Dict.empty Pool.sorter
+                         , dues = Dict.empty Pool.sorter
+                         }
+                            |> Positions
+                        )
+            )
+
+
+decoderLiquidities : Pools -> Tokens -> Decoder Positions
+decoderLiquidities pools tokens =
+    Decode.succeed
+        (\pool status ->
+            Dict.singleton Pool.sorter pool status
+        )
+        |> Pipeline.custom (Pools.decoderPool pools tokens)
+        |> Pipeline.custom
+            (Decode.oneOf
+                [ decoderLiquidityUint |> Decode.map Active
+                , decoderLiquidityReturnUint |> Decode.map Matured
+                ]
+            )
+        |> Decode.map
+            (\liquidities ->
+                { liquidities = liquidities
+                , claims = Dict.empty Pool.sorter
+                , dues = Dict.empty Pool.sorter
+                }
+                    |> Positions
+            )
+
+
+decoderLiquidityUint : Decoder LiquidityUint
+decoderLiquidityUint =
+    Decode.field "liquidity" Uint.decoder
+
+
+decoderLiquidityReturnUint : Decoder LiquidityReturnUint
+decoderLiquidityReturnUint =
+    Decode.succeed LiquidityReturnUint
+        |> Pipeline.required "liquidity" Uint.decoder
+        |> Pipeline.required "asset" Uint.decoder
+        |> Pipeline.required "collateral" Uint.decoder
+
+
+decoderClaims : Pools -> Tokens -> Decoder Positions
+decoderClaims pools tokens =
+    Decode.succeed
+        (\pool status ->
+            Dict.singleton Pool.sorter pool status
+        )
+        |> Pipeline.custom (Pools.decoderPool pools tokens)
+        |> Pipeline.custom
+            (Decode.oneOf
+                [ decoderClaimUint |> Decode.map Active
+                , decoderReturnUint |> Decode.map Matured
+                ]
+            )
+        |> Decode.map
+            (\claims ->
+                { liquidities = Dict.empty Pool.sorter
+                , claims = claims
+                , dues = Dict.empty Pool.sorter
+                }
+                    |> Positions
+            )
+
+
+decoderClaimUint : Decoder ClaimUint
+decoderClaimUint =
+    Decode.succeed ClaimUint
+        |> Pipeline.required "bond" Uint.decoder
+        |> Pipeline.required "insurance" Uint.decoder
+
+
+decoderReturnUint : Decoder ReturnUint
+decoderReturnUint =
+    Decode.succeed ReturnUint
+        |> Pipeline.required "bond" Uint.decoder
+        |> Pipeline.required "insurance" Uint.decoder
+        |> Pipeline.required "asset" Uint.decoder
+        |> Pipeline.required "collateral" Uint.decoder
+
+
+decoderDues : Pools -> Tokens -> Decoder Positions
+decoderDues pools tokens =
+    Decode.succeed
+        (\pool dues ->
+            Dict.singleton Pool.sorter pool dues
+        )
+        |> Pipeline.custom (Pools.decoderPool pools tokens)
+        |> Pipeline.required "dues" decoderDuesUint
+        |> Decode.map
+            (\dues ->
+                { liquidities = Dict.empty Pool.sorter
+                , claims = Dict.empty Pool.sorter
+                , dues = dues
+                }
+                    |> Positions
+            )
+
+
+decoderDueUint : Decoder DueUint
+decoderDueUint =
+    Decode.succeed DueUint
+        |> Pipeline.required "debt" Uint.decoder
+        |> Pipeline.required "collateral" Uint.decoder
+
+
+decoderDuesUint : Decoder (Dict TokenId DueUint)
+decoderDuesUint =
+    Decode.succeed
+        (\tokenId due ->
+            Dict.singleton TokenId.sorter tokenId due
+        )
+        |> Pipeline.required "id" TokenId.decoder
+        |> Pipeline.custom decoderDueUint
+        |> Decode.list
+        |> Decode.map
+            (\list ->
+                list
+                    |> List.foldl
+                        (\dict accumulator ->
+                            accumulator
+                                |> Dict.insertAll dict
+                        )
+                        (Dict.empty TokenId.sorter)
+            )
+
+
+init : Pools -> Tokens -> Value -> Remote Positions
+init pools tokens value =
+    value
+        |> Decode.decodeValue (decoder pools tokens)
+        |> (\result ->
+                case result of
+                    Ok positions ->
+                        Success positions
+
+                    Err _ ->
+                        Loading
+           )
+
+
+update : Pools -> Tokens -> Value -> Positions -> Positions
+update pools tokens value (Positions positions) =
+    value
+        |> Decode.decodeValue (decoder pools tokens)
+        |> (\result ->
+                case result of
+                    Ok (Positions { liquidities, claims, dues }) ->
+                        { liquidities =
+                            positions.liquidities
+                                |> Dict.insertAll liquidities
+                        , claims =
+                            positions.claims
+                                |> Dict.insertAll claims
+                        , dues =
+                            positions.dues
+                                |> Dict.insertAll dues
+                        }
+                            |> Positions
+
+                    Err _ ->
+                        Positions positions
+           )
 
 
 toClaimPools : Positions -> List Pool

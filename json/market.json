@@ -1,0 +1,11 @@
+[
+  {
+    "asset": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+    "collateral": "ETH",
+    "maturity": 1650889815,
+    "assetLiquidity": "124123144124",
+    "collateralLiquidity": "13412312412241",
+    "apr": 0.0024,
+    "cf": "1311423134134"
+  }
+]

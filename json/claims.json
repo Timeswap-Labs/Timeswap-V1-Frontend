@@ -1,0 +1,18 @@
+[
+  {
+    "asset": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+    "collateral": "ETH",
+    "maturity": 1650889815,
+    "bondBalance": "221413413414",
+    "insuranceBalance": "324235234234325"
+  },
+  {
+    "asset": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+    "collateral": "ETH",
+    "maturity": 1650889815,
+    "bondBalance": "221413413414",
+    "insuranceBalance": "324235234234325",
+    "assetOut": "1342354235235",
+    "collateralOut": "12142354235235"
+  }
+]

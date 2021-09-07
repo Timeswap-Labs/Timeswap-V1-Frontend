@@ -52,7 +52,7 @@ import Json.Encode exposing (Value)
 import Modals.Borrow.AssetOut as AssetOut
 import Modals.Borrow.DuesOut as DuesOut exposing (DuesOut)
 import Modals.Borrow.Query as Query
-import Modals.Borrow.Tooltip as Tooltip exposing (Tooltip)
+import Modals.Borrow.Tooltip exposing (Tooltip)
 import Modals.Borrow.Transaction as Transaction
 import Modals.Borrow.Warning as Warning
 import Page exposing (Page)

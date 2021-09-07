@@ -18,23 +18,14 @@ import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
         ( Element
-        , above
-        , alignLeft
         , alignRight
         , alignTop
-        , alpha
-        , below
         , centerX
         , centerY
         , column
         , el
         , fill
         , height
-        , none
-        , padding
-        , paddingEach
-        , paddingXY
-        , paragraph
         , px
         , row
         , shrink

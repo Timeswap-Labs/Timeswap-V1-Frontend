@@ -10,7 +10,8 @@ import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
 import Data.Images as Images exposing (Images)
 import Data.Or exposing (Or(..))
-import Data.Pools exposing (Pools)
+import Data.Pools as Pools exposing (Pools)
+import Data.Remote exposing (Remote(..))
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.TokenImages as TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
@@ -154,6 +155,8 @@ type Msg
     | NoMetamask Value
     | SdkPoolsMsg Value
     | SdkPositionsMsg Value
+    | SdkBalancesMsg Value
+    | SdkAllowancesMsg Value
     | Disconnect
 
 
@@ -417,12 +420,34 @@ update msg model =
             )
 
         SdkPoolsMsg value ->
-            ( model
+            ( { model | pools = model.pools |> Pools.update model.tokens value }
             , Cmd.none
             )
 
         SdkPositionsMsg value ->
-            ( model
+            ( { model
+                | user =
+                    model.user
+                        |> Maybe.map (User.updatePositions model.pools model.tokens value)
+              }
+            , Cmd.none
+            )
+
+        SdkBalancesMsg value ->
+            ( { model
+                | user =
+                    model.user
+                        |> Maybe.map (User.updateBalances model.tokens value)
+              }
+            , Cmd.none
+            )
+
+        SdkAllowancesMsg value ->
+            ( { model
+                | user =
+                    model.user
+                        |> Maybe.map (User.updateAllowances model.tokens value)
+              }
             , Cmd.none
             )
 
@@ -444,6 +469,12 @@ port sdkPoolsMsg : (Value -> msg) -> Sub msg
 port sdkPositionsMsg : (Value -> msg) -> Sub msg
 
 
+port sdkBalancesMsg : (Value -> msg) -> Sub msg
+
+
+port sdkAllowancesMsg : (Value -> msg) -> Sub msg
+
+
 subscriptions : Model -> Sub Msg
 subscriptions ({ modal, service } as model) =
     Sub.batch
@@ -457,6 +488,8 @@ subscriptions ({ modal, service } as model) =
         , noMetamask NoMetamask
         , sdkPoolsMsg SdkPoolsMsg
         , sdkPositionsMsg SdkPositionsMsg
+        , sdkBalancesMsg SdkBalancesMsg
+        , sdkAllowancesMsg SdkAllowancesMsg
         , service
             |> Maybe.map (\_ -> Sub.none)
             |> Maybe.withDefault
