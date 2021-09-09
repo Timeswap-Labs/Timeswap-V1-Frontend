@@ -1,9 +1,10 @@
-module Pages.LendDashboard.Tooltip exposing
+module Pages.PairMarket.Tooltip exposing
     ( Tooltip(..)
     , amount
     )
 
-import Data.Pool exposing (Pool)
+import Data.Maturity exposing (Maturity)
+import Data.Pair exposing (Pair)
 import Element
     exposing
         ( Element
@@ -28,8 +29,9 @@ import Utility.Tooltip as Tooltip
 
 
 type Tooltip
-    = Bond Pool
-    | Insurance Pool
+    = AssetLiquidity Pair Maturity
+    | CollateralLiquidity Pair Maturity
+    | CollateralFactor Pair Maturity
 
 
 amount : String -> Element msg

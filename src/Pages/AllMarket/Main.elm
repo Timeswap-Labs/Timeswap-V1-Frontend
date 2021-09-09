@@ -34,6 +34,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import Pages.PairMarket.ListPools as ListPools
+import Pages.PairMarket.Tooltip exposing (Tooltip)
 import Sort.Set as Set exposing (Set)
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -43,41 +44,77 @@ import Utility.PairInfo as PairInfo
 
 
 type Page
-    = Page (Set Pair)
+    = Page
+        { expandedSet : Set Pair
+        , tooltip : Maybe Tooltip
+        }
 
 
 init : { model | pools : Pools } -> Page
 init { pools } =
-    pools
-        |> Pools.getFirst
-        |> Maybe.map (Set.singleton Pair.sorter)
-        |> Maybe.withDefault (Set.empty Pair.sorter)
+    { expandedSet =
+        pools
+            |> Pools.getFirst
+            |> Maybe.map (Set.singleton Pair.sorter)
+            |> Maybe.withDefault (Set.empty Pair.sorter)
+    , tooltip = Nothing
+    }
         |> Page
 
 
 type Msg
     = Expand Pair
     | Collapse Pair
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
+
+
+type alias Msgs =
+    { onMouseEnter : Tooltip -> Msg
+    , onMouseLeave : Msg
+    }
 
 
 update : { model | pools : Pools } -> Msg -> Page -> Page
-update { pools } msg (Page set) =
+update { pools } msg (Page page) =
     case msg of
         Expand pair ->
-            pools
-                |> Pools.toPairs
-                |> (\list ->
-                        if list |> List.member pair then
-                            set
-                                |> Set.insert pair
-                                |> Page
+            { page
+                | expandedSet =
+                    pools
+                        |> Pools.toPairs
+                        |> (\list ->
+                                if list |> List.member pair then
+                                    page.expandedSet
+                                        |> Set.insert pair
 
-                        else
-                            Page set
-                   )
+                                else
+                                    page.expandedSet
+                           )
+            }
+                |> Page
 
         Collapse pair ->
-            set |> Set.remove pair |> Page
+            { page
+                | expandedSet =
+                    page.expandedSet |> Set.remove pair
+            }
+                |> Page
+
+        OnMouseEnter tooltip ->
+            { page | tooltip = Just tooltip }
+                |> Page
+
+        OnMouseLeave ->
+            { page | tooltip = Nothing }
+                |> Page
+
+
+msgs : Msgs
+msgs =
+    { onMouseEnter = OnMouseEnter
+    , onMouseLeave = OnMouseLeave
+    }
 
 
 view :
@@ -91,7 +128,7 @@ view :
     }
     -> Page
     -> Element Msg
-view ({ device } as model) page =
+view ({ device } as model) (Page page) =
     column
         [ (if Device.isPhone device then
             px 335
@@ -137,7 +174,7 @@ allPairs :
         , tokenImages : TokenImages
         , pools : Pools
     }
-    -> Page
+    -> { page | expandedSet : Set Pair, tooltip : Maybe Tooltip }
     -> Element Msg
 allPairs ({ time, pools } as model) page =
     Keyed.column
@@ -165,10 +202,10 @@ singlePair :
         , tokenImages : TokenImages
         , pools : Pools
     }
-    -> Page
+    -> { page | expandedSet : Set Pair, tooltip : Maybe Tooltip }
     -> ( Pair, List ( Maturity, Remote PoolInfo ) )
     -> Element Msg
-singlePair ({ tokenImages } as model) ((Page set) as page) ( pair, list ) =
+singlePair ({ tokenImages } as model) ({ expandedSet, tooltip } as page) ( pair, list ) =
     column
         [ width fill
         , height shrink
@@ -196,7 +233,7 @@ singlePair ({ tokenImages } as model) ((Page set) as page) ( pair, list ) =
                             , height shrink
                             ]
                             { onPress =
-                                if pair |> Set.memberOf set then
+                                if pair |> Set.memberOf expandedSet then
                                     Collapse pair |> Just
 
                                 else
@@ -204,8 +241,8 @@ singlePair ({ tokenImages } as model) ((Page set) as page) ( pair, list ) =
                             , label = element
                             }
                )
-        , if (pair |> Set.memberOf set) && (list |> List.isEmpty |> not) then
-            ListPools.view model pair list
+        , if (pair |> Set.memberOf expandedSet) && (list |> List.isEmpty |> not) then
+            ListPools.view msgs model { pair = pair, tooltip = tooltip } list
 
           else
             none
@@ -237,8 +274,12 @@ pairSize list =
         )
 
 
-discloser : { model | images : Images } -> Page -> ( Pair, List ( Maturity, Remote PoolInfo ) ) -> Element Msg
-discloser { images } (Page set) ( pair, list ) =
+discloser :
+    { model | images : Images }
+    -> { page | expandedSet : Set Pair }
+    -> ( Pair, List ( Maturity, Remote PoolInfo ) )
+    -> Element Msg
+discloser { images } { expandedSet } ( pair, list ) =
     if list |> List.isEmpty then
         el
             [ width <| px 12
@@ -253,7 +294,7 @@ discloser { images } (Page set) ( pair, list ) =
             [ width <| px 12
             , alignRight
             , centerY
-            , if pair |> Set.memberOf set then
+            , if pair |> Set.memberOf expandedSet then
                 degrees 180 |> rotate
 
               else

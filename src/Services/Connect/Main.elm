@@ -34,7 +34,6 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
-import Json.Encode as Encode exposing (Value)
 import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Glass as Glass
@@ -50,12 +49,10 @@ update : Msg -> Cmd Msg
 update msg =
     case msg of
         ConnectMetamask ->
-            Encode.object
-                [ ( "method", Encode.string "eth_requestAccounts" ) ]
-                |> connectMetamask
+            connectMetamask ()
 
 
-port connectMetamask : Value -> Cmd msg
+port connectMetamask : () -> Cmd msg
 
 
 view :

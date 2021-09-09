@@ -1,4 +1,4 @@
-module Pages.LendDashboard.Tooltip exposing
+module Pages.AllMarket.Tooltip exposing
     ( Tooltip(..)
     , amount
     )
@@ -28,8 +28,9 @@ import Utility.Tooltip as Tooltip
 
 
 type Tooltip
-    = Bond Pool
-    | Insurance Pool
+    = AssetLiquidity Pool
+    | CollateralLiquidity Pool
+    | CollateralFactor Pool
 
 
 amount : String -> Element msg
@@ -48,7 +49,7 @@ amount string =
             [ alignTop
             , height <| px 24
             ]
-            (el [ centerY ] Tooltip.triangleLeft)
+            (el [ centerY ] Tooltip.triangleUp)
         , el
             [ width shrink
             , height shrink

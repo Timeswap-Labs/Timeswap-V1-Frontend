@@ -61,8 +61,10 @@ decoder tokens =
                     |> Decode.decodeValue
                         (Decode.succeed Tuple.pair
                             |> Pipeline.custom (Pair.decoder tokens id)
-                            |> Pipeline.required "maturities"
-                                (Maturity.decoder |> Decode.list)
+                            |> Pipeline.required "pools"
+                                (Decode.field "maturity" Maturity.decoder
+                                    |> Decode.list
+                                )
                             |> Decode.index id
                         )
                     |> (\result ->
@@ -282,7 +284,14 @@ example =
         |> Dict.insert Pair.daiEthRinkeby
             (Dict.fromList Maturity.sorter
                 [ ( Maturity.unix962654400, Loading )
-                , ( Maturity.unix1635364800, Loading )
+                , ( Maturity.unix1635364800
+                  , { assetLiquidity = Uint.Uint "1001313"
+                    , collateralLiquidity = Uint.Uint "1001313000000000000000000000000000000"
+                    , apr = 0.12
+                    , cf = Uint.Uint "1300000000000000000000000"
+                    }
+                        |> Success
+                  )
                 , ( Maturity.unix1650889815, Loading )
                 ]
             )

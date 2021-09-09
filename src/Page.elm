@@ -291,6 +291,7 @@ view model page =
 
             PairMarket pairMarket ->
                 PairMarket.view model pairMarket
+                    |> Element.map PairMarketMsg
 
             LendDashboard lendDashboard ->
                 LendDashboard.view model lendDashboard

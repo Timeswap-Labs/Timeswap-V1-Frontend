@@ -35,18 +35,25 @@ import Element
         )
 import Element.Font as Font
 import Pages.PairMarket.ListPools as ListPools
+import Pages.PairMarket.Tooltip exposing (Tooltip)
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.PairInfo as PairInfo
 
 
 type Page
-    = Page Pair
+    = Page
+        { pair : Pair
+        , tooltip : Maybe Tooltip
+        }
 
 
 init : Pair -> Page
 init pair =
-    Page pair
+    Page
+        { pair = pair
+        , tooltip = Nothing
+        }
 
 
 fromFragment :
@@ -60,17 +67,38 @@ fromFragment { tokens, pools } string =
 
 
 getPair : Page -> Pair
-getPair (Page pair) =
+getPair (Page { pair }) =
     pair
 
 
 type Msg
-    = Msg
+    = OnMouseEnter Tooltip
+    | OnMouseLeave
+
+
+type alias Msgs =
+    { onMouseEnter : Tooltip -> Msg
+    , onMouseLeave : Msg
+    }
 
 
 update : Msg -> Page -> Page
-update msg page =
-    page
+update msg (Page page) =
+    case msg of
+        OnMouseEnter tooltip ->
+            { page | tooltip = Just tooltip }
+                |> Page
+
+        OnMouseLeave ->
+            { page | tooltip = Nothing }
+                |> Page
+
+
+msgs : Msgs
+msgs =
+    { onMouseEnter = OnMouseEnter
+    , onMouseLeave = OnMouseLeave
+    }
 
 
 view :
@@ -83,8 +111,8 @@ view :
         , pools : Pools
     }
     -> Page
-    -> Element msg
-view ({ device, time, pools } as model) ((Page pair) as page) =
+    -> Element Msg
+view ({ device, time, pools } as model) (Page ({ pair } as page)) =
     column
         [ (if Device.isPhone device then
             px 335
@@ -104,7 +132,7 @@ view ({ device, time, pools } as model) ((Page pair) as page) =
         [ title model page
         , pools
             |> Pools.toListSinglePair time pair
-            |> ListPools.view model pair
+            |> ListPools.view msgs model page
         ]
 
 
@@ -115,9 +143,9 @@ title :
         , tokenImages : TokenImages
         , pools : Pools
     }
-    -> Page
+    -> { page | pair : Pair }
     -> Element msg
-title ({ tokenImages } as model) ((Page pair) as page) =
+title ({ tokenImages } as model) ({ pair } as page) =
     row
         [ width fill
         , height shrink
@@ -129,8 +157,11 @@ title ({ tokenImages } as model) ((Page pair) as page) =
         ]
 
 
-pairSize : { model | device : Device, time : Posix, pools : Pools } -> Page -> Element msg
-pairSize { device, time, pools } (Page pair) =
+pairSize :
+    { model | device : Device, time : Posix, pools : Pools }
+    -> { page | pair : Pair }
+    -> Element msg
+pairSize { device, time, pools } { pair } =
     el
         [ width shrink
         , height shrink
