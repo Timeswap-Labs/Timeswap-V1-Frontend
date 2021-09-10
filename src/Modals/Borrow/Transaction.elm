@@ -11,11 +11,13 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
+import Data.Slippage exposing (Slippage)
 import Data.Token as Token
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , below
         , centerX
         , centerY
         , column
@@ -25,6 +27,7 @@ import Element
         , link
         , mouseDown
         , mouseOver
+        , none
         , paddingEach
         , paddingXY
         , px
@@ -36,10 +39,12 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Json.Encode as Encode exposing (Value)
 import Modals.Borrow.DuesOut as DuesOut exposing (DuesOut)
+import Modals.Borrow.Tooltip as Tooltip exposing (Tooltip)
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Image as Image
@@ -297,16 +302,28 @@ hasAllowance { user } { pool, duesOut } =
 
 
 view :
-    { msgs | approveBorrow : Value -> msg, borrow : Value -> msg }
+    { msgs
+        | approveBorrow : Value -> msg
+        , borrow : Value -> msg
+        , onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
     ->
         { model
             | device : Device
             , time : Posix
+            , slippage : Slippage
             , deadline : Deadline
             , images : Images
             , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
         }
-    -> { modal | pool : Pool, assetOut : String, duesOut : DuesOut }
+    ->
+        { modal
+            | pool : Pool
+            , assetOut : String
+            , duesOut : DuesOut
+            , tooltip : Maybe Tooltip
+        }
     -> Element msg
 view msgs ({ user } as model) modal =
     column
@@ -335,7 +352,7 @@ view msgs ({ user } as model) modal =
                         ]
                 )
             |> Maybe.withDefault (connectButton model)
-        , transactionInfo model
+        , transactionInfo msgs model modal
         ]
 
 
@@ -630,20 +647,88 @@ disabledBorrow { device } =
         )
 
 
-transactionInfo : { modal | images : Images } -> Element msg
-transactionInfo { images } =
+transactionInfo :
+    { msgs | onMouseEnter : Tooltip -> msg, onMouseLeave : msg }
+    -> { model | time : Posix, slippage : Slippage, images : Images }
+    ->
+        { modal
+            | pool : Pool
+            , assetOut : String
+            , duesOut : DuesOut
+            , tooltip : Maybe Tooltip
+        }
+    -> Element msg
+transactionInfo msgs ({ slippage, images } as model) ({ pool, duesOut, tooltip } as modal) =
     row
         [ width shrink
-        , height shrink
+        , height <| px 20
         , spacing 5
         , centerX
         , Font.regular
         , Font.size 14
         , Font.color Color.transparent300
+        , Events.onMouseEnter (msgs.onMouseEnter Tooltip.TransactionInfo)
+        , Events.onMouseLeave msgs.onMouseLeave
+        , (if DuesOut.hasTransactionInfo model modal then
+            case tooltip of
+                Just Tooltip.TransactionInfo ->
+                    (case duesOut of
+                        DuesOut.Default (Success { maxDebt, maxCollateral }) ->
+                            Just ( maxDebt, maxCollateral )
+
+                        DuesOut.Slider { dues } ->
+                            case dues of
+                                Success { maxDebt, maxCollateral } ->
+                                    Just ( maxDebt, maxCollateral )
+
+                                _ ->
+                                    Nothing
+
+                        DuesOut.Debt { debt, dues } ->
+                            case dues of
+                                Success { maxCollateral } ->
+                                    Just ( debt, maxCollateral )
+
+                                _ ->
+                                    Nothing
+
+                        DuesOut.Collateral { collateral, dues } ->
+                            case dues of
+                                Success { maxDebt } ->
+                                    Just ( maxDebt, collateral )
+
+                                _ ->
+                                    Nothing
+
+                        _ ->
+                            Nothing
+                    )
+                        |> Maybe.map
+                            (\min ->
+                                Tooltip.transactionInfo pool.pair min slippage
+                            )
+                        |> Maybe.withDefault none
+
+                _ ->
+                    none
+
+           else
+            none
+          )
+            |> below
         ]
-        [ el
-            [ paddingXY 0 3 ]
-            (text "View more transaction info")
-        , Image.info images
-            [ width <| px 20 ]
-        ]
+        (if DuesOut.hasTransactionInfo model modal then
+            [ el
+                [ paddingXY 0 3
+                , centerY
+                ]
+                (text "View more transaction info")
+            , Image.info images
+                [ width <| px 20
+                , centerY
+                ]
+            ]
+
+         else
+            []
+        )

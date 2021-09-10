@@ -4,11 +4,16 @@ module Modals.Borrow.Tooltip exposing
     , collateralBalance
     , debt
     , dues
+    , transactionInfo
     )
 
+import Data.Pair as Pair exposing (Pair)
+import Data.Slippage as Slippage exposing (Slippage)
+import Data.Token as Token
 import Element
     exposing
         ( Element
+        , alignLeft
         , alignRight
         , alignTop
         , centerX
@@ -20,10 +25,12 @@ import Element
         , moveUp
         , padding
         , paddingEach
+        , paddingXY
         , paragraph
         , px
         , row
         , shrink
+        , spacing
         , text
         , width
         )
@@ -184,5 +191,129 @@ collateral =
                 the collateral is greater than the value of the debt near maturity.
                 """
                 |> text
+            ]
+        ]
+
+
+transactionInfo : Pair -> ( String, String ) -> Slippage -> Element msg
+transactionInfo pair ( minBond, minInsurance ) slippage =
+    column
+        [ width shrink
+        , height shrink
+        , centerX
+        , paddingEach
+            { top = 4
+            , right = 0
+            , bottom = 0
+            , left = 0
+            }
+        ]
+        [ el
+            [ centerX ]
+            Tooltip.triangleUp
+        , column
+            [ width shrink
+            , height shrink
+            , padding 12
+            , spacing 12
+            , alignRight
+            , Background.color Color.dark500
+            , Border.rounded 4
+            , Tooltip.shadow
+            , Font.size 14
+            ]
+            [ row
+                [ width fill
+                , height shrink
+                , paddingXY 0 3
+                , spacing 72
+                ]
+                [ el
+                    [ width shrink
+                    , height shrink
+                    , alignLeft
+                    , Font.regular
+                    , Font.color Color.transparent300
+                    ]
+                    (text "Maximum debt receive")
+                , row
+                    [ alignRight
+                    , spacing 4
+                    ]
+                    [ el
+                        [ Font.regular
+                        , Font.color Color.transparent500
+                        ]
+                        (text minBond)
+                    , el
+                        [ Font.regular
+                        , Font.color Color.transparent300
+                        ]
+                        (pair
+                            |> Pair.toAsset
+                            |> Token.toSymbol
+                            |> text
+                        )
+                    ]
+                ]
+            , row
+                [ width fill
+                , height shrink
+                , paddingXY 0 3
+                , spacing 72
+                ]
+                [ el
+                    [ width shrink
+                    , height shrink
+                    , spacing 24
+                    , alignLeft
+                    , Font.regular
+                    , Font.color Color.transparent300
+                    ]
+                    (text "Maximum collateral lock")
+                , row
+                    [ alignRight
+                    , spacing 4
+                    ]
+                    [ el
+                        [ Font.regular
+                        , Font.color Color.transparent500
+                        ]
+                        (text minInsurance)
+                    , el
+                        [ Font.regular
+                        , Font.color Color.transparent300
+                        ]
+                        (pair
+                            |> Pair.toCollateral
+                            |> Token.toSymbol
+                            |> text
+                        )
+                    ]
+                ]
+            , row
+                [ width fill
+                , height shrink
+                , paddingXY 0 3
+                , spacing 72
+                ]
+                [ el
+                    [ width shrink
+                    , height shrink
+                    , alignLeft
+                    , Font.regular
+                    , Font.color Color.transparent300
+                    ]
+                    (text "Slippage tolerance")
+                , el
+                    [ alignRight
+                    , Font.regular
+                    , Font.color Color.transparent500
+                    ]
+                    (slippage
+                        |> Slippage.toPercent
+                        |> text
+                    )
+                ]
             ]
         ]

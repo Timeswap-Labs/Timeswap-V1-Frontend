@@ -2,6 +2,7 @@ module Modals.Borrow.DuesOut exposing
     ( DuesOut(..)
     , hasFailure
     , hasTransaction
+    , hasTransactionInfo
     , hasZeroInput
     , init
     , isCorrect
@@ -289,9 +290,8 @@ hasTransaction :
             , duesOut : DuesOut
         }
     -> Bool
-hasTransaction { time, user } ({ pool, duesOut } as modal) =
-    (pool.maturity |> Maturity.isActive time)
-        && (modal |> isAmount)
+hasTransaction ({ user } as model) ({ pool, duesOut } as modal) =
+    hasTransactionInfo model modal
         && (user
                 |> Maybe.map
                     (\{ balances } ->
@@ -340,6 +340,20 @@ hasTransaction { time, user } ({ pool, duesOut } as modal) =
                     )
                 |> Maybe.withDefault False
            )
+
+
+hasTransactionInfo :
+    { model | time : Posix }
+    ->
+        { modal
+            | pool : Pool
+            , assetOut : String
+            , duesOut : DuesOut
+        }
+    -> Bool
+hasTransactionInfo { time } ({ pool, duesOut } as modal) =
+    (pool.maturity |> Maturity.isActive time)
+        && (modal |> isAmount)
         && (case duesOut of
                 Default (Success { debt, collateral, maxDebt, maxCollateral }) ->
                     (debt |> Input.isZero |> not)

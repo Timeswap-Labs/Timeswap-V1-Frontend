@@ -4,9 +4,7 @@ module Modals.Lend.Tooltip exposing
     , bond
     , claims
     , insurance
-    , transactionInfoBond
-    , transactionInfoInsurance
-    , transactionInfoPercent
+    , transactionInfo
     )
 
 import Data.Pair as Pair exposing (Pair)
@@ -197,8 +195,8 @@ insurance =
         ]
 
 
-transactionInfoPercent : Pair -> ( String, String ) -> Slippage -> Element msg
-transactionInfoPercent pair ( minBond, minInsurance ) slippage =
+transactionInfo : Pair -> ( String, String ) -> Slippage -> Element msg
+transactionInfo pair ( minBond, minInsurance ) slippage =
     column
         [ width shrink
         , height shrink
@@ -288,185 +286,6 @@ transactionInfoPercent pair ( minBond, minInsurance ) slippage =
                         ]
                         (pair
                             |> Pair.toCollateral
-                            |> Token.toSymbol
-                            |> text
-                        )
-                    ]
-                ]
-            , row
-                [ width fill
-                , height shrink
-                , paddingXY 0 3
-                , spacing 72
-                ]
-                [ el
-                    [ width shrink
-                    , height shrink
-                    , alignLeft
-                    , Font.regular
-                    , Font.color Color.transparent300
-                    ]
-                    (text "Slippage tolerance")
-                , el
-                    [ alignRight
-                    , Font.regular
-                    , Font.color Color.transparent500
-                    ]
-                    (slippage
-                        |> Slippage.toPercent
-                        |> text
-                    )
-                ]
-            ]
-        ]
-
-
-transactionInfoBond : Pair -> String -> Slippage -> Element msg
-transactionInfoBond pair minInsurance slippage =
-    column
-        [ width shrink
-        , height shrink
-        , centerX
-        , paddingEach
-            { top = 4
-            , right = 0
-            , bottom = 0
-            , left = 0
-            }
-        ]
-        [ el
-            [ centerX ]
-            Tooltip.triangleUp
-        , column
-            [ width shrink
-            , height shrink
-            , padding 12
-            , spacing 12
-            , alignRight
-            , Background.color Color.dark500
-            , Border.rounded 4
-            , Tooltip.shadow
-            , Font.size 14
-            ]
-            [ row
-                [ width fill
-                , height shrink
-                , paddingXY 0 3
-                , spacing 72
-                ]
-                [ el
-                    [ width shrink
-                    , height shrink
-                    , spacing 24
-                    , alignLeft
-                    , Font.regular
-                    , Font.color Color.transparent300
-                    ]
-                    (text "Minimum insurance receive")
-                , row
-                    [ alignRight
-                    , spacing 4
-                    ]
-                    [ el
-                        [ Font.regular
-                        , Font.color Color.transparent500
-                        ]
-                        (text minInsurance)
-                    , el
-                        [ Font.regular
-                        , Font.color Color.transparent300
-                        ]
-                        (pair
-                            |> Pair.toCollateral
-                            |> Token.toSymbol
-                            |> text
-                        )
-                    ]
-                ]
-            , row
-                [ width fill
-                , height shrink
-                , paddingXY 0 3
-                , spacing 72
-                ]
-                [ el
-                    [ width shrink
-                    , height shrink
-                    , alignLeft
-                    , Font.regular
-                    , Font.color Color.transparent300
-                    ]
-                    (text "Slippage tolerance")
-                , el
-                    [ alignRight
-                    , Font.regular
-                    , Font.color Color.transparent500
-                    ]
-                    (slippage
-                        |> Slippage.toPercent
-                        |> text
-                    )
-                ]
-            ]
-        ]
-
-
-transactionInfoInsurance : Pair -> String -> Slippage -> Element msg
-transactionInfoInsurance pair minBond slippage =
-    column
-        [ width shrink
-        , height shrink
-        , centerX
-        , paddingEach
-            { top = 4
-            , right = 0
-            , bottom = 0
-            , left = 0
-            }
-        ]
-        [ el
-            [ centerX ]
-            Tooltip.triangleUp
-        , column
-            [ width shrink
-            , height shrink
-            , padding 12
-            , spacing 12
-            , alignRight
-            , Background.color Color.dark500
-            , Border.rounded 4
-            , Tooltip.shadow
-            , Font.size 14
-            ]
-            [ row
-                [ width fill
-                , height shrink
-                , paddingXY 0 3
-                , spacing 72
-                ]
-                [ el
-                    [ width shrink
-                    , height shrink
-                    , alignLeft
-                    , Font.regular
-                    , Font.color Color.transparent300
-                    ]
-                    (text "Minimum bond receive")
-                , row
-                    [ alignRight
-                    , spacing 4
-                    ]
-                    [ el
-                        [ Font.regular
-                        , Font.color Color.transparent500
-                        ]
-                        (text minBond)
-                    , el
-                        [ Font.regular
-                        , Font.color Color.transparent300
-                        ]
-                        (pair
-                            |> Pair.toAsset
                             |> Token.toSymbol
                             |> text
                         )

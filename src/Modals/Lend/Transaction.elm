@@ -615,10 +615,10 @@ transactionInfo :
             , tooltip : Maybe Tooltip
         }
     -> Element msg
-transactionInfo msgs { time, slippage, images } { pool, assetIn, claimsOut, tooltip } =
+transactionInfo msgs ({ slippage, images } as model) ({ pool, claimsOut, tooltip } as modal) =
     row
         [ width shrink
-        , height shrink
+        , height <| px 20
         , spacing 5
         , centerX
         , Font.regular
@@ -626,51 +626,45 @@ transactionInfo msgs { time, slippage, images } { pool, assetIn, claimsOut, tool
         , Font.color Color.transparent300
         , Events.onMouseEnter (msgs.onMouseEnter Tooltip.TransactionInfo)
         , Events.onMouseLeave msgs.onMouseLeave
-        , (if
-            (pool.maturity |> Maturity.isActive time)
-                && (assetIn |> Input.isZero |> not)
-                && (claimsOut |> ClaimsOut.hasZeroInput |> not)
-           then
+        , (if ClaimsOut.hasTransactionInfo model modal then
             case tooltip of
                 Just Tooltip.TransactionInfo ->
-                    case claimsOut of
+                    (case claimsOut of
                         ClaimsOut.Default (Success { minBond, minInsurance }) ->
-                            Tooltip.transactionInfoPercent pool.pair
-                                ( minBond, minInsurance )
-                                slippage
+                            Just ( minBond, minInsurance )
 
                         ClaimsOut.Slider { claims } ->
                             case claims of
                                 Success { minBond, minInsurance } ->
-                                    Tooltip.transactionInfoPercent pool.pair
-                                        ( minBond, minInsurance )
-                                        slippage
+                                    Just ( minBond, minInsurance )
 
                                 _ ->
-                                    none
+                                    Nothing
 
-                        ClaimsOut.Bond { claims } ->
+                        ClaimsOut.Bond { bond, claims } ->
                             case claims of
                                 Success { minInsurance } ->
-                                    Tooltip.transactionInfoBond pool.pair
-                                        minInsurance
-                                        slippage
+                                    Just ( bond, minInsurance )
 
                                 _ ->
-                                    none
+                                    Nothing
 
-                        ClaimsOut.Insurance { claims } ->
+                        ClaimsOut.Insurance { insurance, claims } ->
                             case claims of
                                 Success { minBond } ->
-                                    Tooltip.transactionInfoInsurance pool.pair
-                                        minBond
-                                        slippage
+                                    Just ( minBond, insurance )
 
                                 _ ->
-                                    none
+                                    Nothing
 
                         _ ->
-                            none
+                            Nothing
+                    )
+                        |> Maybe.map
+                            (\min ->
+                                Tooltip.transactionInfo pool.pair min slippage
+                            )
+                        |> Maybe.withDefault none
 
                 _ ->
                     none
@@ -680,9 +674,18 @@ transactionInfo msgs { time, slippage, images } { pool, assetIn, claimsOut, tool
           )
             |> below
         ]
-        [ el
-            [ paddingXY 0 3 ]
-            (text "View more transaction info")
-        , Image.info images
-            [ width <| px 20 ]
-        ]
+        (if ClaimsOut.hasTransactionInfo model modal then
+            [ el
+                [ paddingXY 0 3
+                , centerY
+                ]
+                (text "View more transaction info")
+            , Image.info images
+                [ width <| px 20
+                , centerY
+                ]
+            ]
+
+         else
+            []
+        )

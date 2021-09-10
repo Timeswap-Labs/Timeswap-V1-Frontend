@@ -5,6 +5,7 @@ module Modals.Lend.ClaimsOut exposing
     , SliderInput
     , hasFailure
     , hasTransaction
+    , hasTransactionInfo
     , hasZeroInput
     , init
     , isCorrect
@@ -255,9 +256,8 @@ hasTransaction :
             , claimsOut : ClaimsOut
         }
     -> Bool
-hasTransaction { time, user } ({ pool, assetIn, claimsOut } as modal) =
-    (pool.maturity |> Maturity.isActive time)
-        && (modal |> isAmount)
+hasTransaction ({ user } as model) ({ pool, assetIn } as modal) =
+    hasTransactionInfo model modal
         && (user
                 |> Maybe.map
                     (\{ balances } ->
@@ -271,6 +271,20 @@ hasTransaction { time, user } ({ pool, assetIn, claimsOut } as modal) =
                     )
                 |> Maybe.withDefault False
            )
+
+
+hasTransactionInfo :
+    { model | time : Posix }
+    ->
+        { modal
+            | pool : Pool
+            , assetIn : String
+            , claimsOut : ClaimsOut
+        }
+    -> Bool
+hasTransactionInfo { time } ({ pool, claimsOut } as modal) =
+    (pool.maturity |> Maturity.isActive time)
+        && (modal |> isAmount)
         && (case claimsOut of
                 Default (Success { bond, insurance, minBond, minInsurance }) ->
                     (bond |> Input.isZero |> not)
@@ -289,19 +303,21 @@ hasTransaction { time, user } ({ pool, assetIn, claimsOut } as modal) =
                         _ ->
                             False
 
-                Bond { claims } ->
+                Bond { bond, claims } ->
                     case claims of
                         Success { insurance, minInsurance } ->
-                            (insurance |> Input.isZero |> not)
+                            (bond |> Input.isZero |> not)
+                                && (insurance |> Input.isZero |> not)
                                 && (minInsurance |> Input.isZero |> not)
 
                         _ ->
                             False
 
-                Insurance { claims } ->
+                Insurance { insurance, claims } ->
                     case claims of
                         Success { bond, minBond } ->
                             (bond |> Input.isZero |> not)
+                                && (insurance |> Input.isZero |> not)
                                 && (minBond |> Input.isZero |> not)
 
                         _ ->
