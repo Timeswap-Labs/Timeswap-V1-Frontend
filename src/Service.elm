@@ -25,6 +25,8 @@ import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Remote exposing (Remote)
 import Data.Slippage as Slippage exposing (Slippage)
+import Data.TokenImages exposing (TokenImages)
+import Data.Tokens exposing (Tokens)
 import Element
     exposing
         ( Element
@@ -139,6 +141,7 @@ same service1 service2 =
 
 type Msg
     = ConnectMsg Connect.Msg
+    | FaucetMsg Faucet.Msg
 
 
 update : Msg -> Cmd Msg
@@ -147,6 +150,10 @@ update msg =
         ConnectMsg connectMsg ->
             Connect.update connectMsg
                 |> Cmd.map ConnectMsg
+
+        FaucetMsg faucetMsg ->
+            Faucet.update faucetMsg
+                |> Cmd.map FaucetMsg
 
 
 inputSlippage : String -> Service -> Service
@@ -234,7 +241,9 @@ view :
             , backdrop : Backdrop
             , slippage : Slippage
             , deadline : Deadline
+            , tokens : Tokens
             , images : Images
+            , tokenImages : TokenImages
             , user : Maybe { user | address : Address, balances : Remote Balances }
         }
     -> Service
@@ -329,4 +338,5 @@ view msgs ({ device, user } as model) service =
                 , Font.family Typography.supreme
                 ]
                 (Lazy.lazy Faucet.view model)
+                |> Element.map FaucetMsg
                 |> Either

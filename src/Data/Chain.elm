@@ -1,4 +1,7 @@
-module Data.Chain exposing (Chain(..), decoder)
+module Data.Chain exposing
+    ( Chain(..)
+    , decoder
+    )
 
 import Json.Decode as Decode exposing (Decoder)
 
@@ -14,9 +17,8 @@ decoder =
         |> Decode.andThen
             (\string ->
                 case string of
-                    "0x1" ->
-                        Decode.succeed Mainnet
-
+                    -- "0x1" ->
+                    --     Decode.succeed Mainnet
                     "0x4" ->
                         Decode.succeed Rinkeby
 

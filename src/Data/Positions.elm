@@ -202,8 +202,8 @@ decoderLiquidityReturnUint : Decoder LiquidityReturnUint
 decoderLiquidityReturnUint =
     Decode.succeed LiquidityReturnUint
         |> Pipeline.required "liquidity" Uint.decoder
-        |> Pipeline.required "asset" Uint.decoder
-        |> Pipeline.required "collateral" Uint.decoder
+        |> Pipeline.required "assetOut" Uint.decoder
+        |> Pipeline.required "collateralOut" Uint.decoder
 
 
 decoderClaims : Pools -> Tokens -> Decoder Positions
@@ -241,8 +241,8 @@ decoderReturnUint =
     Decode.succeed ReturnUint
         |> Pipeline.required "bond" Uint.decoder
         |> Pipeline.required "insurance" Uint.decoder
-        |> Pipeline.required "asset" Uint.decoder
-        |> Pipeline.required "collateral" Uint.decoder
+        |> Pipeline.required "assetOut" Uint.decoder
+        |> Pipeline.required "collateralOut" Uint.decoder
 
 
 decoderDues : Pools -> Tokens -> Decoder Positions

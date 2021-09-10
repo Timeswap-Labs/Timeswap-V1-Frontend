@@ -6,6 +6,7 @@ module Data.Tokens exposing
     , fromAssetFragment
     , fromCollateralFragment
     , getToken
+    , toERC20s
     )
 
 import Data.Address as Address exposing (Address)
@@ -169,3 +170,19 @@ fromCollateralFragment tokens string =
                     _ ->
                         Nothing
            )
+
+
+toERC20s : Tokens -> Set ERC20
+toERC20s tokens =
+    tokens
+        |> Set.foldl
+            (\token accumulator ->
+                case token of
+                    Token.ETH ->
+                        accumulator
+
+                    Token.ERC20 erc20 ->
+                        accumulator
+                            |> Set.insert erc20
+            )
+            (Set.empty ERC20.sorter)
