@@ -166,7 +166,6 @@ type Msg
     | SdkPositionsMsg Value
     | SdkBalancesMsg Value
     | SdkAllowancesMsg Value
-    | Disconnect
 
 
 type alias Msgs =
@@ -175,7 +174,6 @@ type alias Msgs =
     , chooseDeadlineOption : Deadline.Option -> Msg
     , inputSlippage : String -> Msg
     , inputDeadline : String -> Msg
-    , disconnect : Msg
     }
 
 
@@ -389,10 +387,15 @@ update msg model =
                 |> Maybe.withDefault ( model, Cmd.none )
 
         ServiceMsg serviceMsg ->
-            ( model
-            , Service.update serviceMsg
-                |> Cmd.map ServiceMsg
-            )
+            model.service
+                |> Maybe.map (Service.update model serviceMsg)
+                |> Maybe.map
+                    (\( service, cmd ) ->
+                        ( { model | service = Just service }
+                        , cmd |> Cmd.map ServiceMsg
+                        )
+                    )
+                |> Maybe.withDefault ( model, Cmd.none )
 
         MetamaskMsg value ->
             ( value
@@ -457,11 +460,6 @@ update msg model =
                     model.user
                         |> Maybe.map (User.updateAllowances model.tokens value)
               }
-            , Cmd.none
-            )
-
-        Disconnect ->
-            ( { model | user = Nothing }
             , Cmd.none
             )
 
@@ -600,7 +598,6 @@ msgs =
     , chooseDeadlineOption = ChooseDeadlineOption
     , inputSlippage = InputSlippage
     , inputDeadline = InputDeadline
-    , disconnect = Disconnect
     }
 
 

@@ -1,5 +1,6 @@
 port module Services.Connect.Main exposing (Msg, update, view)
 
+import Browser.Navigation as Navigation exposing (Key)
 import Data.Backdrop exposing (Backdrop)
 import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
@@ -32,24 +33,46 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
-import Element.Events as Events
 import Element.Font as Font
+import Element.Input as Input
+import Modal exposing (Modal)
+import Page exposing (Page)
 import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Glass as Glass
 import Utility.Image as Image
-import Utility.Router as Router
 
 
 type Msg
     = ConnectMetamask
 
 
-update : Msg -> Cmd Msg
-update msg =
+update :
+    { model
+        | key : Key
+        , page : Page
+        , modal : Maybe Modal
+    }
+    -> Msg
+    -> Cmd Msg
+update { key, page, modal } msg =
     case msg of
         ConnectMetamask ->
-            connectMetamask ()
+            Cmd.batch
+                [ connectMetamask ()
+                , modal
+                    |> Maybe.map
+                        (\modalJust ->
+                            modalJust
+                                |> Modal.toUrl
+                                |> Navigation.pushUrl key
+                        )
+                    |> Maybe.withDefault
+                        (page
+                            |> Page.toUrl
+                            |> Navigation.pushUrl key
+                        )
+                ]
 
 
 port connectMetamask : () -> Cmd msg
@@ -129,7 +152,7 @@ content model =
 
 metamaskButton : { model | images : Images } -> Element Msg
 metamaskButton { images } =
-    link
+    Input.button
         ([ width fill
          , height <| px 64
          , paddingEach
@@ -140,11 +163,10 @@ metamaskButton { images } =
             }
          , mouseDown [ Background.color Color.primary300 ]
          , mouseOver [ Background.color Color.primary100 ]
-         , Events.onClick ConnectMetamask
          ]
             ++ Glass.lightWhiteModal 4
         )
-        { url = Router.exit
+        { onPress = Just ConnectMetamask
         , label =
             row
                 [ width fill

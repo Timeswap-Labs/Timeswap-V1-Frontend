@@ -15,6 +15,7 @@ module Service exposing
     , view
     )
 
+import Browser.Navigation exposing (Key)
 import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Balances exposing (Balances)
@@ -41,6 +42,8 @@ import Element
 import Element.Background as Background
 import Element.Font as Font
 import Element.Lazy as Lazy
+import Modal exposing (Modal)
+import Page exposing (Page)
 import Services.Connect.Main as Connect
 import Services.Faucet.Main as Faucet
 import Services.NoMetamask.Main as NoMetamask
@@ -54,7 +57,7 @@ import Utility.Typography as Typography
 type Service
     = Connect
     | NoMetamask
-    | Wallet
+    | Wallet Wallet.Service
     | Settings Settings
     | Faucet
 
@@ -74,7 +77,7 @@ fromFragment { user } string =
 
         "wallet" ->
             user
-                |> Maybe.andThen (\_ -> Just Wallet)
+                |> Maybe.andThen (\_ -> Wallet Wallet.init |> Just)
 
         "settings" ->
             Settings.init
@@ -107,7 +110,7 @@ toUrl service =
         NoMetamask ->
             Router.toNoMetamask
 
-        Wallet ->
+        Wallet _ ->
             Router.toWallet
 
         Settings _ ->
@@ -126,7 +129,7 @@ same service1 service2 =
         ( NoMetamask, NoMetamask ) ->
             True
 
-        ( Wallet, Wallet ) ->
+        ( Wallet _, Wallet _ ) ->
             True
 
         ( Settings _, Settings _ ) ->
@@ -141,19 +144,44 @@ same service1 service2 =
 
 type Msg
     = ConnectMsg Connect.Msg
+    | WalletMsg Wallet.Msg
     | FaucetMsg Faucet.Msg
 
 
-update : Msg -> Cmd Msg
-update msg =
-    case msg of
-        ConnectMsg connectMsg ->
-            Connect.update connectMsg
+update :
+    { model
+        | key : Key
+        , page : Page
+        , modal : Maybe Modal
+    }
+    -> Msg
+    -> Service
+    -> ( Service, Cmd Msg )
+update model msg service =
+    case ( msg, service ) of
+        ( ConnectMsg connectMsg, Connect ) ->
+            ( Connect
+            , Connect.update model connectMsg
                 |> Cmd.map ConnectMsg
+            )
 
-        FaucetMsg faucetMsg ->
-            Faucet.update faucetMsg
+        ( WalletMsg walletMsg, Wallet wallet ) ->
+            wallet
+                |> Wallet.update walletMsg
+                |> (\( updatedWallet, cmd ) ->
+                        ( Wallet updatedWallet
+                        , cmd |> Cmd.map WalletMsg
+                        )
+                   )
+
+        ( FaucetMsg faucetMsg, Faucet ) ->
+            ( Faucet
+            , Faucet.update faucetMsg
                 |> Cmd.map FaucetMsg
+            )
+
+        _ ->
+            ( service, Cmd.none )
 
 
 inputSlippage : String -> Service -> Service
@@ -233,7 +261,6 @@ view :
         , chooseDeadlineOption : Deadline.Option -> msg
         , inputSlippage : String -> msg
         , inputDeadline : String -> msg
-        , disconnect : msg
     }
     ->
         { model
@@ -287,7 +314,7 @@ view msgs ({ device, user } as model) service =
                         |> Either
                     )
 
-        Wallet ->
+        Wallet wallet ->
             user
                 |> Maybe.map
                     (\userJust ->
@@ -303,8 +330,9 @@ view msgs ({ device, user } as model) service =
                             , Background.color Color.modal
                             , Font.family Typography.supreme
                             ]
-                            (Lazy.lazy3 Wallet.view msgs model userJust)
-                            |> Or
+                            (Lazy.lazy3 Wallet.view model userJust wallet)
+                            |> Element.map WalletMsg
+                            |> Either
                     )
                 |> Maybe.withDefault (none |> Either)
 

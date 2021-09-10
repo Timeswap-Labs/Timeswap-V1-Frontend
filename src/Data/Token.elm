@@ -123,10 +123,10 @@ compare token1 token2 =
             EQ
 
         ( ETH, ERC20 _ ) ->
-            GT
+            LT
 
         ( ERC20 _, ETH ) ->
-            LT
+            GT
 
         ( ERC20 erc20a, ERC20 erc20b ) ->
             ERC20.compare erc20a erc20b

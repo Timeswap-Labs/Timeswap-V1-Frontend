@@ -17,9 +17,9 @@ var app = Elm.Main.init({
   },
 });
 
-app.ports.connectMetamask.subscribe((request) => {
+app.ports.connectMetamask.subscribe(() => {
   if (typeof window.ethereum !== "undefined") {
-    ethereum.request(request).then((accounts) => {
+    ethereum.request({ method: "eth_requestAccounts" }).then((accounts) => {
       app.ports.metamaskMsg.send({
         chainId: ethereum.chainId,
         user: accounts[0],
@@ -46,6 +46,10 @@ app.ports.connectMetamask.subscribe((request) => {
           user: accounts[0],
         });
       });
+    });
+
+    app.ports.disconnect.subscribe(() => {
+      app.ports.metamaskMsg.send(null);
     });
 
     //     app.ports.call.subscribe(request => {
