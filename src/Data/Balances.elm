@@ -30,9 +30,11 @@ type alias BalanceInfo =
 
 decoder : Tokens -> Decoder Balances
 decoder tokens =
-    Decode.succeed (Dict.singleton Token.sorter)
+    Decode.succeed Tuple.pair
         |> Pipeline.required "token" (Tokens.decoderToken tokens)
         |> Pipeline.required "balance" Uint.decoder
+        |> Decode.list
+        |> Decode.map (Dict.fromList Token.sorter)
         |> Decode.map Balances
 
 

@@ -22,9 +22,11 @@ type Allowances
 
 decoder : Tokens -> Decoder Allowances
 decoder tokens =
-    Decode.succeed (Dict.singleton ERC20.sorter)
+    Decode.succeed Tuple.pair
         |> Pipeline.required "erc20" (Tokens.decoderERC20 tokens)
         |> Pipeline.required "allowance" Uint.decoder
+        |> Decode.list
+        |> Decode.map (Dict.fromList ERC20.sorter)
         |> Decode.map Allowances
 
 
