@@ -5,6 +5,7 @@ import Data.Remote exposing (Remote(..))
 import Element
     exposing
         ( Element
+        , alignRight
         , centerX
         , centerY
         , el
@@ -14,12 +15,14 @@ import Element
         , paddingXY
         , px
         , row
+        , shrink
         , spacing
         , text
         , width
         )
 import Element.Background as Background
 import Element.Font as Font
+import Element.Input as Input
 import User
 import Utility.Color as Color
 import Utility.Image as Image
@@ -27,18 +30,20 @@ import Utility.Typography as Typography
 
 
 view :
-    { model
-        | images : Images
-        , user : Remote User.Error user
-    }
+    { msgs | closeError : msg }
+    ->
+        { model
+            | images : Images
+            , user : Remote User.Error user
+        }
     -> Element msg
-view { images, user } =
+view msgs { images, user } =
     case user of
         Failure error ->
             row
                 [ width fill
                 , height <| px 44
-                , paddingXY 44 0
+                , paddingXY 20 0
                 , spacing 6
                 , Background.color Color.negative400
                 , Font.family Typography.supreme
@@ -61,6 +66,15 @@ view { images, user } =
                         |> User.errorToMessage
                         |> text
                     )
+                , Input.button
+                    [ width shrink
+                    , height shrink
+                    , alignRight
+                    , centerY
+                    ]
+                    { onPress = Just msgs.closeError
+                    , label = Image.close images [ width <| px 24 ]
+                    }
                 ]
 
         _ ->

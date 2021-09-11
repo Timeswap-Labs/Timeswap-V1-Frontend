@@ -29,7 +29,7 @@ import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
-import Data.Remote exposing (Remote(..))
+import Data.Remote as Remote exposing (Remote(..))
 import Data.Status exposing (Status(..))
 import Data.Token as Token
 import Data.TokenImages exposing (TokenImages)
@@ -88,18 +88,24 @@ type alias ClaimsGivenPercent =
     , insurance : String
     , minBond : String
     , minInsurance : String
+    , apr : String
+    , cf : String
     }
 
 
 type alias ClaimsGivenBond =
     { insurance : String
     , minInsurance : String
+    , apr : String
+    , cf : String
     }
 
 
 type alias ClaimsGivenInsurance =
     { bond : String
     , minBond : String
+    , apr : String
+    , cf : String
     }
 
 
@@ -129,6 +135,8 @@ init =
     , insurance = ""
     , minBond = ""
     , minInsurance = ""
+    , apr = ""
+    , cf = ""
     }
         |> Success
         |> Default
@@ -286,39 +294,47 @@ hasTransactionInfo { time } ({ pool, claimsOut } as modal) =
     (pool.maturity |> Maturity.isActive time)
         && (modal |> isAmount)
         && (case claimsOut of
-                Default (Success { bond, insurance, minBond, minInsurance }) ->
+                Default (Success { bond, insurance, minBond, minInsurance, apr, cf }) ->
                     (bond |> Input.isZero |> not)
                         && (insurance |> Input.isZero |> not)
                         && (minBond |> Input.isZero |> not)
                         && (minInsurance |> Input.isZero |> not)
+                        && (apr |> Input.isZero |> not)
+                        && (cf |> Input.isZero |> not)
 
                 Slider { claims } ->
                     case claims of
-                        Success { bond, insurance, minBond, minInsurance } ->
+                        Success { bond, insurance, minBond, minInsurance, apr, cf } ->
                             (bond |> Input.isZero |> not)
                                 && (insurance |> Input.isZero |> not)
                                 && (minBond |> Input.isZero |> not)
                                 && (minInsurance |> Input.isZero |> not)
+                                && (apr |> Input.isZero |> not)
+                                && (cf |> Input.isZero |> not)
 
                         _ ->
                             False
 
                 Bond { bond, claims } ->
                     case claims of
-                        Success { insurance, minInsurance } ->
+                        Success { insurance, minInsurance, apr, cf } ->
                             (bond |> Input.isZero |> not)
                                 && (insurance |> Input.isZero |> not)
                                 && (minInsurance |> Input.isZero |> not)
+                                && (apr |> Input.isZero |> not)
+                                && (cf |> Input.isZero |> not)
 
                         _ ->
                             False
 
                 Insurance { insurance, claims } ->
                     case claims of
-                        Success { bond, minBond } ->
+                        Success { bond, minBond, apr, cf } ->
                             (bond |> Input.isZero |> not)
                                 && (insurance |> Input.isZero |> not)
                                 && (minBond |> Input.isZero |> not)
+                                && (apr |> Input.isZero |> not)
+                                && (cf |> Input.isZero |> not)
 
                         _ ->
                             False
@@ -336,6 +352,8 @@ updateAssetInZero claimsOut =
             , insurance = ""
             , minBond = ""
             , minInsurance = ""
+            , apr = ""
+            , cf = ""
             }
                 |> Success
                 |> Default
@@ -347,6 +365,8 @@ updateAssetInZero claimsOut =
                     , insurance = ""
                     , minBond = ""
                     , minInsurance = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
             }
@@ -357,6 +377,8 @@ updateAssetInZero claimsOut =
                 | claims =
                     { insurance = ""
                     , minInsurance = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
             }
@@ -367,6 +389,8 @@ updateAssetInZero claimsOut =
                 | claims =
                     { bond = ""
                     , minBond = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
             }
@@ -389,6 +413,8 @@ updateAssetIn claimsOut =
                     if bond |> Input.isZero then
                         { insurance = ""
                         , minInsurance = ""
+                        , apr = ""
+                        , cf = ""
                         }
                             |> Success
 
@@ -403,6 +429,8 @@ updateAssetIn claimsOut =
                     if insurance |> Input.isZero then
                         { bond = ""
                         , minBond = ""
+                        , apr = ""
+                        , cf = ""
                         }
                             |> Success
 
@@ -423,6 +451,8 @@ switchLendSettingZero checked claimsOut =
                     , insurance = ""
                     , minBond = ""
                     , minInsurance = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
                 }
@@ -436,6 +466,8 @@ switchLendSettingZero checked claimsOut =
         , insurance = ""
         , minBond = ""
         , minInsurance = ""
+        , apr = ""
+        , cf = ""
         }
             |> Success
             |> Default
@@ -478,6 +510,8 @@ slideZero float =
         , insurance = ""
         , minBond = ""
         , minInsurance = ""
+        , apr = ""
+        , cf = ""
         }
             |> Success
     }
@@ -514,6 +548,8 @@ updateBondOutZero string claimsOut =
                 , claims =
                     { insurance = ""
                     , minInsurance = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
                 }
@@ -545,6 +581,8 @@ updateBondOut string claimsOut =
                     if string |> Input.isZero then
                         { insurance = ""
                         , minInsurance = ""
+                        , apr = ""
+                        , cf = ""
                         }
                             |> Success
 
@@ -577,6 +615,8 @@ updateInsuranceOutZero string claimsOut =
                 , claims =
                     { bond = ""
                     , minBond = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
                 , insurance = string
@@ -608,6 +648,8 @@ updateInsuranceOut string claimsOut =
                     if string |> Input.isZero then
                         { bond = ""
                         , minBond = ""
+                        , apr = ""
+                        , cf = ""
                         }
                             |> Success
 
@@ -641,8 +683,6 @@ view :
             | pool : Pool
             , assetIn : String
             , claimsOut : ClaimsOut
-            , apr : Remote () String
-            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element msg
@@ -798,8 +838,6 @@ position :
             | pool : { pool | pair : Pair }
             , assetIn : String
             , claimsOut : ClaimsOut
-            , apr : Remote () String
-            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element msg
@@ -942,9 +980,9 @@ slider msgs model modal percent =
 
 
 estimatedAPR :
-    { modal | apr : Remote () String }
+    { modal | claimsOut : ClaimsOut }
     -> Element msg
-estimatedAPR { apr } =
+estimatedAPR { claimsOut } =
     row
         ([ width shrink
          , height <| px 32
@@ -973,19 +1011,34 @@ estimatedAPR { apr } =
             , Font.size 18
             , Font.color Color.positive500
             ]
-            (case apr of
-                Loading ->
-                    el
-                        [ width <| px 50
-                        , height shrink
-                        ]
-                        Loading.view
+            ((case claimsOut of
+                Default claims ->
+                    claims |> Remote.map .apr
 
-                Failure _ ->
-                    none
+                Slider { claims } ->
+                    claims |> Remote.map .apr
 
-                Success successAPR ->
-                    text successAPR
+                Bond { claims } ->
+                    claims |> Remote.map .apr
+
+                Insurance { claims } ->
+                    claims |> Remote.map .apr
+             )
+                |> (\result ->
+                        case result of
+                            Loading ->
+                                el
+                                    [ width <| px 50
+                                    , height shrink
+                                    ]
+                                    Loading.view
+
+                            Failure _ ->
+                                none
+
+                            Success apr ->
+                                text apr
+                   )
             )
         , el
             [ paddingXY 4 0
@@ -1001,12 +1054,10 @@ estimatedAPR { apr } =
 collateralFactor :
     { modal
         | pool : { pool | pair : Pair }
-        , assetIn : String
         , claimsOut : ClaimsOut
-        , cf : Remote () String
     }
     -> Element msg
-collateralFactor { pool, cf } =
+collateralFactor { pool, claimsOut } =
     row
         ([ width shrink
          , height <| px 32
@@ -1035,19 +1086,34 @@ collateralFactor { pool, cf } =
             , Font.size 18
             , Font.color Color.transparent500
             ]
-            (case cf of
-                Loading ->
-                    el
-                        [ width <| px 50
-                        , height shrink
-                        ]
-                        Loading.view
+            ((case claimsOut of
+                Default claims ->
+                    claims |> Remote.map .cf
 
-                Failure _ ->
-                    none
+                Slider { claims } ->
+                    claims |> Remote.map .cf
 
-                Success successCF ->
-                    text successCF
+                Bond { claims } ->
+                    claims |> Remote.map .cf
+
+                Insurance { claims } ->
+                    claims |> Remote.map .cf
+             )
+                |> (\result ->
+                        case result of
+                            Loading ->
+                                el
+                                    [ width <| px 50
+                                    , height shrink
+                                    ]
+                                    Loading.view
+
+                            Failure _ ->
+                                none
+
+                            Success cf ->
+                                text cf
+                   )
             )
         , el
             [ paddingXY 4 0

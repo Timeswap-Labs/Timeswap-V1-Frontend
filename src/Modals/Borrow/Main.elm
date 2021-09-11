@@ -69,8 +69,6 @@ type Modal
         { pool : Pool
         , assetOut : String
         , duesOut : DuesOut
-        , apr : Remote () String
-        , cf : Remote () String
         , tooltip : Maybe Tooltip
         }
 
@@ -80,8 +78,6 @@ init pool =
     { pool = pool
     , assetOut = ""
     , duesOut = DuesOut.init
-    , apr = Success ""
-    , cf = Success ""
     , tooltip = Nothing
     }
         |> Modal
@@ -171,24 +167,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                         else
                             modal.duesOut |> DuesOut.updateAssetOut
-                    , apr =
-                        if
-                            (string |> Input.isZero)
-                                || (modal.duesOut |> DuesOut.hasZeroInput)
-                        then
-                            Success ""
-
-                        else
-                            Loading
-                    , cf =
-                        if
-                            (string |> Input.isZero)
-                                || (modal.duesOut |> DuesOut.hasZeroInput)
-                        then
-                            Success ""
-
-                        else
-                            Loading
                   }
                     |> Modal
                 , (case modal.duesOut of
@@ -219,24 +197,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                     else
                         modal.duesOut |> DuesOut.switchBorrowSetting checked
-                , apr =
-                    if modal.assetOut |> Input.isZero then
-                        Success ""
-
-                    else if checked || (modal |> DuesOut.isDefault) then
-                        modal.apr
-
-                    else
-                        Loading
-                , cf =
-                    if modal.assetOut |> Input.isZero then
-                        Success ""
-
-                    else if checked || (modal |> DuesOut.isDefault) then
-                        modal.cf
-
-                    else
-                        Loading
               }
                 |> Modal
             , if checked then
@@ -256,18 +216,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                     else
                         DuesOut.slide float
-                , apr =
-                    if modal.assetOut |> Input.isZero then
-                        Success ""
-
-                    else
-                        Loading
-                , cf =
-                    if modal.assetOut |> Input.isZero then
-                        Success ""
-
-                    else
-                        Loading
               }
                 |> Modal
             , Query.givenPercent modal.pool modal.assetOut (float |> Percent.fromFloat) slippage
@@ -287,24 +235,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                         else
                             modal.duesOut |> DuesOut.updateDebtIn string
-                    , apr =
-                        if
-                            (modal.assetOut |> Input.isZero)
-                                || (string |> Input.isZero)
-                        then
-                            Success ""
-
-                        else
-                            Loading
-                    , cf =
-                        if
-                            (modal.assetOut |> Input.isZero)
-                                || (string |> Input.isZero)
-                        then
-                            Success ""
-
-                        else
-                            Loading
                   }
                     |> Modal
                 , Query.givenDebt modal.pool modal.assetOut string slippage
@@ -327,18 +257,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                         else
                             modal.duesOut |> DuesOut.updateCollateralIn string
-                    , apr =
-                        if (modal.assetOut |> Input.isZero) || (string |> Input.isZero) then
-                            Success ""
-
-                        else
-                            Loading
-                    , cf =
-                        if (modal.assetOut |> Input.isZero) || (string |> Input.isZero) then
-                            Success ""
-
-                        else
-                            Loading
                   }
                     |> Modal
                 , Query.givenCollateral modal.pool modal.assetOut string slippage
@@ -370,18 +288,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                                                 else
                                                     modal.duesOut |> DuesOut.updateCollateralIn string
-                                            , apr =
-                                                if (modal.assetOut |> Input.isZero) || (string |> Input.isZero) then
-                                                    Success ""
-
-                                                else
-                                                    Loading
-                                            , cf =
-                                                if (modal.assetOut |> Input.isZero) || (string |> Input.isZero) then
-                                                    Success ""
-
-                                                else
-                                                    Loading
                                           }
                                             |> Modal
                                         , Query.givenCollateral modal.pool modal.assetOut string slippage
@@ -674,8 +580,6 @@ content :
             | pool : Pool
             , assetOut : String
             , duesOut : DuesOut
-            , apr : Remote () String
-            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element Msg

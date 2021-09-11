@@ -17,7 +17,6 @@ import Data.Chain as Chain exposing (Chain(..))
 import Data.Pools exposing (Pools)
 import Data.Positions as Positions exposing (Positions)
 import Data.Remote exposing (Remote(..))
-import Data.Timeout as Timeout exposing (Timeout)
 import Data.Tokens exposing (Tokens)
 import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Decode.Pipeline as Pipeline
@@ -33,7 +32,7 @@ type alias User =
 
 
 type Error
-    = UnsupportedNetwork Timeout
+    = UnsupportedNetwork
 
 
 decoder : Decoder (Remote Error User)
@@ -49,18 +48,12 @@ decoder =
                     , allowances = Loading
                     }
                         |> Success
-                        |> Decode.succeed
 
                 Err _ ->
-                    Timeout.start 10
-                        |> Maybe.map UnsupportedNetwork
-                        |> Maybe.map Failure
-                        |> Maybe.map Decode.succeed
-                        |> Maybe.withDefault (Decode.fail "Wrong timeout")
+                    Failure UnsupportedNetwork
         )
         |> Pipeline.required "chainId" Chain.decoder
         |> Pipeline.required "user" Address.decoder
-        |> Decode.andThen identity
 
 
 same : User -> User -> Bool
@@ -126,5 +119,5 @@ updateAllowances tokens value user =
 errorToMessage : Error -> String
 errorToMessage error =
     case error of
-        UnsupportedNetwork _ ->
+        UnsupportedNetwork ->
             "Wrong network, must connect to Rinkeby network."

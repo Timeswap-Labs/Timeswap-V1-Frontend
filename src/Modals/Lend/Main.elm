@@ -69,8 +69,6 @@ type Modal
         { pool : Pool
         , assetIn : String
         , claimsOut : ClaimsOut
-        , apr : Remote () String
-        , cf : Remote () String
         , tooltip : Maybe Tooltip
         }
 
@@ -80,8 +78,6 @@ init pool =
     { pool = pool
     , assetIn = ""
     , claimsOut = ClaimsOut.init
-    , apr = Success ""
-    , cf = Success ""
     , tooltip = Nothing
     }
         |> Modal
@@ -171,24 +167,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                         else
                             modal.claimsOut |> ClaimsOut.updateAssetIn
-                    , apr =
-                        if
-                            (string |> Input.isZero)
-                                || (modal.claimsOut |> ClaimsOut.hasZeroInput)
-                        then
-                            Success ""
-
-                        else
-                            Loading
-                    , cf =
-                        if
-                            (string |> Input.isZero)
-                                || (modal.claimsOut |> ClaimsOut.hasZeroInput)
-                        then
-                            Success ""
-
-                        else
-                            Loading
                   }
                     |> Modal
                 , (case modal.claimsOut of
@@ -233,24 +211,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                                                 else
                                                     modal.claimsOut |> ClaimsOut.updateAssetIn
-                                            , apr =
-                                                if
-                                                    (string |> Input.isZero)
-                                                        || (modal.claimsOut |> ClaimsOut.hasZeroInput)
-                                                then
-                                                    Success ""
-
-                                                else
-                                                    Loading
-                                            , cf =
-                                                if
-                                                    (string |> Input.isZero)
-                                                        || (modal.claimsOut |> ClaimsOut.hasZeroInput)
-                                                then
-                                                    Success ""
-
-                                                else
-                                                    Loading
                                           }
                                             |> Modal
                                         , (case modal.claimsOut of
@@ -282,24 +242,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                     else
                         modal.claimsOut |> ClaimsOut.switchLendSetting checked
-                , apr =
-                    if modal.assetIn |> Input.isZero then
-                        Success ""
-
-                    else if checked || (modal |> ClaimsOut.isDefault) then
-                        modal.apr
-
-                    else
-                        Loading
-                , cf =
-                    if modal.assetIn |> Input.isZero then
-                        Success ""
-
-                    else if checked || (modal |> ClaimsOut.isDefault) then
-                        modal.cf
-
-                    else
-                        Loading
               }
                 |> Modal
             , if checked then
@@ -319,18 +261,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                     else
                         ClaimsOut.slide float
-                , apr =
-                    if modal.assetIn |> Input.isZero then
-                        Success ""
-
-                    else
-                        Loading
-                , cf =
-                    if modal.assetIn |> Input.isZero then
-                        Success ""
-
-                    else
-                        Loading
               }
                 |> Modal
             , Query.givenPercent modal.pool modal.assetIn (float |> Percent.fromFloat) slippage
@@ -350,24 +280,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                         else
                             modal.claimsOut |> ClaimsOut.updateBondOut string
-                    , apr =
-                        if
-                            (modal.assetIn |> Input.isZero)
-                                || (string |> Input.isZero)
-                        then
-                            Success ""
-
-                        else
-                            Loading
-                    , cf =
-                        if
-                            (modal.assetIn |> Input.isZero)
-                                || (string |> Input.isZero)
-                        then
-                            Success ""
-
-                        else
-                            Loading
                   }
                     |> Modal
                 , Query.givenBond modal.pool modal.assetIn string slippage
@@ -390,18 +302,6 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
                         else
                             modal.claimsOut |> ClaimsOut.updateInsuranceOut string
-                    , apr =
-                        if (modal.assetIn |> Input.isZero) || (string |> Input.isZero) then
-                            Success ""
-
-                        else
-                            Loading
-                    , cf =
-                        if (modal.assetIn |> Input.isZero) || (string |> Input.isZero) then
-                            Success ""
-
-                        else
-                            Loading
                   }
                     |> Modal
                 , Query.givenInsurance modal.pool modal.assetIn string slippage
@@ -693,8 +593,6 @@ content :
             | pool : Pool
             , assetIn : String
             , claimsOut : ClaimsOut
-            , apr : Remote () String
-            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element Msg

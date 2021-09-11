@@ -46,6 +46,8 @@ type alias ClaimsGivenPercent =
     , insurance : Uint
     , minBond : Uint
     , minInsurance : Uint
+    , apr : Float
+    , cf : Uint
     }
 
 
@@ -61,6 +63,8 @@ type alias ClaimsGivenBond =
     { percent : Percent
     , insurance : Uint
     , minInsurance : Uint
+    , apr : Float
+    , cf : Uint
     }
 
 
@@ -76,6 +80,8 @@ type alias ClaimsGivenInsurance =
     { percent : Percent
     , bond : Uint
     , minBond : Uint
+    , apr : Float
+    , cf : Uint
     }
 
 
@@ -100,6 +106,8 @@ decoderGivenPercent pools tokens =
                 |> Pipeline.required "insuranceOut" Uint.decoder
                 |> Pipeline.required "minBond" Uint.decoder
                 |> Pipeline.required "minInsurance" Uint.decoder
+                |> Pipeline.required "apr" Decode.float
+                |> Pipeline.required "cf" Uint.decoder
                 |> Decode.nullable
             )
         |> Decode.map GivenPercent
@@ -116,6 +124,8 @@ decoderGivenBond pools tokens =
                 |> Pipeline.required "percent" Percent.decoder
                 |> Pipeline.required "insuranceOut" Uint.decoder
                 |> Pipeline.required "minInsurance" Uint.decoder
+                |> Pipeline.required "apr" Decode.float
+                |> Pipeline.required "cf" Uint.decoder
                 |> Decode.nullable
             )
         |> Decode.map GivenBond
@@ -132,6 +142,8 @@ decoderGivenInsurance pools tokens =
                 |> Pipeline.required "percent" Percent.decoder
                 |> Pipeline.required "bondOut" Uint.decoder
                 |> Pipeline.required "minBond" Uint.decoder
+                |> Pipeline.required "apr" Decode.float
+                |> Pipeline.required "cf" Uint.decoder
                 |> Decode.nullable
             )
         |> Decode.map GivenInsurance
@@ -200,6 +212,21 @@ givenInsurance pool assetIn insurance slippage =
             (insurance |> Uint.fromString)
 
 
+toAPR : Float -> String
+toAPR float =
+    float
+        |> (*) 10000
+        |> truncate
+        |> String.fromInt
+        |> String.padRight 3 '0'
+        |> (\string ->
+                [ string |> String.dropRight 2
+                , string |> String.right 2
+                ]
+                    |> String.join "."
+           )
+
+
 updateDefaultQuery :
     { modal | pool : { pool | pair : Pair } }
     -> Maybe ClaimsGivenPercent
@@ -210,11 +237,13 @@ updateDefaultQuery { pool } maybeClaims claimsOut =
         ClaimsOut.Default _ ->
             (maybeClaims
                 |> Maybe.map
-                    (\{ bond, insurance, minBond, minInsurance } ->
+                    (\{ bond, insurance, minBond, minInsurance, apr, cf } ->
                         { bond = bond |> Uint.toAmount (pool.pair |> Pair.toAsset)
                         , insurance = insurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                         , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
                         , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                        , apr = apr |> toAPR
+                        , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
                         }
                             |> Success
                     )
@@ -238,11 +267,13 @@ updateSliderQuery { pool } maybeClaims claimsOut =
                 | claims =
                     maybeClaims
                         |> Maybe.map
-                            (\{ bond, insurance, minBond, minInsurance } ->
+                            (\{ bond, insurance, minBond, minInsurance, apr, cf } ->
                                 { bond = bond |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 , insurance = insurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                                 , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                                , apr = apr |> toAPR
+                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 }
                                     |> Success
                             )
@@ -270,9 +301,11 @@ updateBondQuery { pool } maybeClaims claimsOut =
                 , claims =
                     maybeClaims
                         |> Maybe.map
-                            (\{ insurance, minInsurance } ->
+                            (\{ insurance, minInsurance, apr, cf } ->
                                 { insurance = insurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                                 , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                                , apr = apr |> toAPR
+                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 }
                                     |> Success
                             )
@@ -300,9 +333,11 @@ updateInsuranceQuery { pool } maybeClaims claimsOut =
                 , claims =
                     maybeClaims
                         |> Maybe.map
-                            (\{ bond, minBond } ->
+                            (\{ bond, minBond, apr, cf } ->
                                 { bond = bond |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                                , apr = apr |> toAPR
+                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 }
                                     |> Success
                             )

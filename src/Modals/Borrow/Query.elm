@@ -46,6 +46,8 @@ type alias DuesGivenPercent =
     , collateral : Uint
     , maxDebt : Uint
     , maxCollateral : Uint
+    , apr : Float
+    , cf : Uint
     }
 
 
@@ -61,6 +63,8 @@ type alias DuesGivenDebt =
     { percent : Percent
     , collateral : Uint
     , maxCollateral : Uint
+    , apr : Float
+    , cf : Uint
     }
 
 
@@ -76,6 +80,8 @@ type alias DuesGivenCollateral =
     { percent : Percent
     , debt : Uint
     , maxDebt : Uint
+    , apr : Float
+    , cf : Uint
     }
 
 
@@ -100,6 +106,8 @@ decoderGivenPercent pools tokens =
                 |> Pipeline.required "collateralIn" Uint.decoder
                 |> Pipeline.required "maxDebt" Uint.decoder
                 |> Pipeline.required "maxCollateral" Uint.decoder
+                |> Pipeline.required "apr" Decode.float
+                |> Pipeline.required "cf" Uint.decoder
                 |> Decode.nullable
             )
         |> Decode.map GivenPercent
@@ -116,6 +124,8 @@ decoderGivenDebt pools tokens =
                 |> Pipeline.required "percent" Percent.decoder
                 |> Pipeline.required "collateralIn" Uint.decoder
                 |> Pipeline.required "maxCollateral" Uint.decoder
+                |> Pipeline.required "apr" Decode.float
+                |> Pipeline.required "cf" Uint.decoder
                 |> Decode.nullable
             )
         |> Decode.map GivenDebt
@@ -132,6 +142,8 @@ decoderGivenCollateral pools tokens =
                 |> Pipeline.required "percent" Percent.decoder
                 |> Pipeline.required "debtIn" Uint.decoder
                 |> Pipeline.required "maxDebt" Uint.decoder
+                |> Pipeline.required "apr" Decode.float
+                |> Pipeline.required "cf" Uint.decoder
                 |> Decode.nullable
             )
         |> Decode.map GivenCollateral
@@ -200,6 +212,21 @@ givenCollateral pool assetOut collateralIn slippage =
             (collateralIn |> Uint.fromString)
 
 
+toAPR : Float -> String
+toAPR float =
+    float
+        |> (*) 10000
+        |> truncate
+        |> String.fromInt
+        |> String.padRight 3 '0'
+        |> (\string ->
+                [ string |> String.dropRight 2
+                , string |> String.right 2
+                ]
+                    |> String.join "."
+           )
+
+
 updateDefaultQuery :
     { modal | pool : { pool | pair : Pair } }
     -> Maybe DuesGivenPercent
@@ -210,11 +237,13 @@ updateDefaultQuery { pool } maybeDues duesOut =
         DuesOut.Default _ ->
             (maybeDues
                 |> Maybe.map
-                    (\{ debt, collateral, maxDebt, maxCollateral } ->
+                    (\{ debt, collateral, maxDebt, maxCollateral, apr, cf } ->
                         { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                         , collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                         , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                         , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                        , apr = apr |> toAPR
+                        , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
                         }
                             |> Success
                     )
@@ -238,11 +267,13 @@ updateSliderQuery { pool } maybeDues duesOut =
                 | dues =
                     maybeDues
                         |> Maybe.map
-                            (\{ debt, collateral, maxDebt, maxCollateral } ->
+                            (\{ debt, collateral, maxDebt, maxCollateral, apr, cf } ->
                                 { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 , collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                                 , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                                , apr = apr |> toAPR
+                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 }
                                     |> Success
                             )
@@ -270,9 +301,11 @@ updateDebtQuery { pool } maybeDues duesOut =
                 , dues =
                     maybeDues
                         |> Maybe.map
-                            (\{ collateral, maxCollateral } ->
+                            (\{ collateral, maxCollateral, apr, cf } ->
                                 { collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                                 , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                                , apr = apr |> toAPR
+                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 }
                                     |> Success
                             )
@@ -300,9 +333,11 @@ updateCollateralQuery { pool } maybeDues duesOut =
                 , dues =
                     maybeDues
                         |> Maybe.map
-                            (\{ debt, maxDebt } ->
+                            (\{ debt, maxDebt, apr, cf } ->
                                 { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                                , apr = apr |> toAPR
+                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 }
                                     |> Success
                             )

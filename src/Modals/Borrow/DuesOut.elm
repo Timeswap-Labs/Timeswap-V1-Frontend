@@ -26,7 +26,7 @@ import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
-import Data.Remote exposing (Remote(..))
+import Data.Remote as Remote exposing (Remote(..))
 import Data.Status exposing (Status(..))
 import Data.Token as Token
 import Data.TokenImages exposing (TokenImages)
@@ -87,18 +87,24 @@ type alias DuesGivenPercent =
     , collateral : String
     , maxDebt : String
     , maxCollateral : String
+    , apr : String
+    , cf : String
     }
 
 
 type alias DuesGivenDebt =
     { collateral : String
     , maxCollateral : String
+    , apr : String
+    , cf : String
     }
 
 
 type alias DuesGivenCollateral =
     { debt : String
     , maxDebt : String
+    , apr : String
+    , cf : String
     }
 
 
@@ -128,6 +134,8 @@ init =
     , collateral = ""
     , maxDebt = ""
     , maxCollateral = ""
+    , apr = ""
+    , cf = ""
     }
         |> Success
         |> Default
@@ -403,6 +411,8 @@ updateAssetOutZero duesOut =
             , collateral = ""
             , maxDebt = ""
             , maxCollateral = ""
+            , apr = ""
+            , cf = ""
             }
                 |> Success
                 |> Default
@@ -414,6 +424,8 @@ updateAssetOutZero duesOut =
                     , collateral = ""
                     , maxDebt = ""
                     , maxCollateral = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
             }
@@ -424,6 +436,8 @@ updateAssetOutZero duesOut =
                 | dues =
                     { collateral = ""
                     , maxCollateral = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
             }
@@ -434,6 +448,8 @@ updateAssetOutZero duesOut =
                 | dues =
                     { debt = ""
                     , maxDebt = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
             }
@@ -456,6 +472,8 @@ updateAssetOut duesOut =
                     if debt |> Input.isZero then
                         { collateral = ""
                         , maxCollateral = ""
+                        , apr = ""
+                        , cf = ""
                         }
                             |> Success
 
@@ -470,6 +488,8 @@ updateAssetOut duesOut =
                     if collateral |> Input.isZero then
                         { debt = ""
                         , maxDebt = ""
+                        , apr = ""
+                        , cf = ""
                         }
                             |> Success
 
@@ -490,6 +510,8 @@ switchBorrowSettingZero checked duesOut =
                     , collateral = ""
                     , maxDebt = ""
                     , maxCollateral = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
                 }
@@ -503,6 +525,8 @@ switchBorrowSettingZero checked duesOut =
         , collateral = ""
         , maxDebt = ""
         , maxCollateral = ""
+        , apr = ""
+        , cf = ""
         }
             |> Success
             |> Default
@@ -545,6 +569,8 @@ slideZero float =
         , collateral = ""
         , maxDebt = ""
         , maxCollateral = ""
+        , apr = ""
+        , cf = ""
         }
             |> Success
     }
@@ -581,6 +607,8 @@ updateDebtInZero string duesOut =
                 , dues =
                     { collateral = ""
                     , maxCollateral = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
                 }
@@ -612,6 +640,8 @@ updateDebtIn string duesOut =
                     if string |> Input.isZero then
                         { collateral = ""
                         , maxCollateral = ""
+                        , apr = ""
+                        , cf = ""
                         }
                             |> Success
 
@@ -644,6 +674,8 @@ updateCollateralInZero string duesOut =
                 , dues =
                     { debt = ""
                     , maxDebt = ""
+                    , apr = ""
+                    , cf = ""
                     }
                         |> Success
                 , collateral = string
@@ -675,6 +707,8 @@ updateCollateralIn string duesOut =
                     if string |> Input.isZero then
                         { debt = ""
                         , maxDebt = ""
+                        , apr = ""
+                        , cf = ""
                         }
                             |> Success
 
@@ -709,8 +743,6 @@ view :
             | pool : Pool
             , assetOut : String
             , duesOut : DuesOut
-            , apr : Remote () String
-            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element msg
@@ -867,8 +899,6 @@ position :
             | pool : { pool | pair : Pair }
             , assetOut : String
             , duesOut : DuesOut
-            , apr : Remote () String
-            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element msg
@@ -1011,9 +1041,9 @@ slider msgs model modal percent =
 
 
 estimatedAPR :
-    { modal | apr : Remote () String }
+    { modal | duesOut : DuesOut }
     -> Element msg
-estimatedAPR { apr } =
+estimatedAPR { duesOut } =
     row
         ([ width shrink
          , height <| px 32
@@ -1042,19 +1072,34 @@ estimatedAPR { apr } =
             , Font.size 18
             , Font.color Color.negative500
             ]
-            (case apr of
-                Loading ->
-                    el
-                        [ width <| px 50
-                        , height shrink
-                        ]
-                        Loading.view
+            ((case duesOut of
+                Default dues ->
+                    dues |> Remote.map .apr
 
-                Failure _ ->
-                    none
+                Slider { dues } ->
+                    dues |> Remote.map .apr
 
-                Success successAPR ->
-                    text successAPR
+                Debt { dues } ->
+                    dues |> Remote.map .apr
+
+                Collateral { dues } ->
+                    dues |> Remote.map .apr
+             )
+                |> (\result ->
+                        case result of
+                            Loading ->
+                                el
+                                    [ width <| px 50
+                                    , height shrink
+                                    ]
+                                    Loading.view
+
+                            Failure _ ->
+                                none
+
+                            Success apr ->
+                                text apr
+                   )
             )
         , el
             [ paddingXY 4 0
@@ -1070,12 +1115,10 @@ estimatedAPR { apr } =
 collateralFactor :
     { modal
         | pool : { pool | pair : Pair }
-        , assetOut : String
         , duesOut : DuesOut
-        , cf : Remote () String
     }
     -> Element msg
-collateralFactor { pool, cf } =
+collateralFactor { pool, duesOut } =
     row
         ([ width shrink
          , height <| px 32
@@ -1104,19 +1147,34 @@ collateralFactor { pool, cf } =
             , Font.size 18
             , Font.color Color.transparent500
             ]
-            (case cf of
-                Loading ->
-                    el
-                        [ width <| px 50
-                        , height shrink
-                        ]
-                        Loading.view
+            ((case duesOut of
+                Default dues ->
+                    dues |> Remote.map .cf
 
-                Failure _ ->
-                    none
+                Slider { dues } ->
+                    dues |> Remote.map .cf
 
-                Success successCF ->
-                    text successCF
+                Debt { dues } ->
+                    dues |> Remote.map .cf
+
+                Collateral { dues } ->
+                    dues |> Remote.map .cf
+             )
+                |> (\result ->
+                        case result of
+                            Loading ->
+                                el
+                                    [ width <| px 50
+                                    , height shrink
+                                    ]
+                                    Loading.view
+
+                            Failure _ ->
+                                none
+
+                            Success cf ->
+                                text cf
+                   )
             )
         , el
             [ paddingXY 4 0

@@ -13,7 +13,6 @@ import Data.Or exposing (Or(..))
 import Data.Pools as Pools exposing (Pools)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage as Slippage exposing (Slippage)
-import Data.Timeout as Timeout
 import Data.TokenImages as TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
 import Data.Whitelist as Whitelist
@@ -159,6 +158,7 @@ type Msg
     | InputDeadline String
     | ClickOutsideSlippage
     | ClickOutsideDeadline
+    | CloseError
     | PageMsg Page.Msg
     | ModalMsg Modal.Msg
     | ServiceMsg Service.Msg
@@ -176,6 +176,7 @@ type alias Msgs =
     , chooseDeadlineOption : Deadline.Option -> Msg
     , inputSlippage : String -> Msg
     , inputDeadline : String -> Msg
+    , closeError : Msg
     }
 
 
@@ -295,20 +296,7 @@ update msg model =
             )
 
         ReceiveTime posix ->
-            ( { model
-                | time = posix
-                , user =
-                    case model.user of
-                        Failure (User.UnsupportedNetwork timeout) ->
-                            timeout
-                                |> Timeout.countdown
-                                |> Maybe.map User.UnsupportedNetwork
-                                |> Maybe.map Failure
-                                |> Maybe.withDefault Loading
-
-                        _ ->
-                            model.user
-              }
+            ( { model | time = posix }
             , Cmd.none
             )
 
@@ -381,6 +369,19 @@ update msg model =
                         |> Maybe.andThen Service.getDeadline
                         |> Maybe.withDefault model.deadline
                 , service = Just Service.refreshSettings
+              }
+            , Cmd.none
+            )
+
+        CloseError ->
+            ( { model
+                | user =
+                    case model.user of
+                        Failure _ ->
+                            Loading
+
+                        _ ->
+                            model.user
               }
             , Cmd.none
             )
@@ -613,6 +614,7 @@ msgs =
     , chooseDeadlineOption = ChooseDeadlineOption
     , inputSlippage = InputSlippage
     , inputDeadline = InputDeadline
+    , closeError = CloseError
     }
 
 
@@ -735,7 +737,7 @@ html model =
                 , height fill
                 , clip
                 ]
-                [ Lazy.lazy Error.view model
+                [ Lazy.lazy2 Error.view msgs model
                 , Lazy.lazy Header.view model
                 , row
                     [ width fill
