@@ -93,7 +93,7 @@ view :
         , images : Images
         , tokenImages : TokenImages
     }
-    -> { user | address : Address, balances : Remote Balances }
+    -> { user | address : Address, balances : Remote () Balances }
     -> Service
     -> Element Msg
 view ({ device, backdrop, images } as model) user (Service tooltip) =
@@ -204,7 +204,7 @@ userAddress { images } { address } =
 
 multipleBalances :
     { model | tokenImages : TokenImages }
-    -> { user | balances : Remote Balances }
+    -> { user | balances : Remote () Balances }
     -> Maybe Tooltip
     -> Element Msg
 multipleBalances model { balances } tooltip =
@@ -239,7 +239,7 @@ multipleBalances model { balances } tooltip =
             Loading ->
                 loading
 
-            Failure ->
+            Failure _ ->
                 none
 
             Success successBalances ->

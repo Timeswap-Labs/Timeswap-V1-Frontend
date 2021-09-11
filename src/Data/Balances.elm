@@ -1,7 +1,6 @@
 module Data.Balances exposing
     ( BalanceInfo
     , Balances
-    , example
     , get
     , hasEnough
     , init
@@ -10,7 +9,6 @@ module Data.Balances exposing
     , update
     )
 
-import Data.ERC20 as ERC20
 import Data.Remote exposing (Remote(..))
 import Data.Token as Token exposing (Token)
 import Data.Tokens as Tokens exposing (Tokens)
@@ -38,7 +36,7 @@ decoder tokens =
         |> Decode.map Balances
 
 
-init : Tokens -> Value -> Remote Balances
+init : Tokens -> Value -> Remote () Balances
 init tokens value =
     value
         |> Decode.decodeValue (decoder tokens)
@@ -110,16 +108,3 @@ hasEnough token string (Balances dict) =
                         True
             )
         |> Maybe.withDefault False
-
-
-example : Balances
-example =
-    List.map2 Tuple.pair
-        [ Token.ETH
-        , Token.ERC20 ERC20.daiRinkeby
-        , Token.ERC20 ERC20.maticRinkeby
-        , Token.ERC20 ERC20.wethRinkeby
-        ]
-        Uint.example
-        |> Dict.fromList Token.sorter
-        |> Balances

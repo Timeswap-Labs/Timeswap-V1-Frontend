@@ -71,7 +71,7 @@ view :
         , images : Images
         , tokenImages : TokenImages
         , pools : Pools
-        , user : Maybe { user | chain : Chain, positions : Remote Positions }
+        , user : Remote userError { user | chain : Chain, positions : Remote () Positions }
         , page : Page
     }
     -> Element msg
@@ -261,7 +261,7 @@ listPairs :
         | time : Posix
         , tokenImages : TokenImages
         , pools : Pools
-        , user : Maybe { user | positions : Remote Positions }
+        , user : Remote userError { user | positions : Remote () Positions }
         , page : Page
     }
     -> Element msg
@@ -298,50 +298,50 @@ listPairs ({ time, pools, user, page } as model) =
                         )
 
             Filter.LendDashboard _ ->
-                user
-                    |> Maybe.map
-                        (\{ positions } ->
-                            case positions of
-                                Success successPositions ->
-                                    successPositions
-                                        |> Positions.toClaimListByPair time
-                                        |> List.map
-                                            (\( pair, size ) ->
-                                                ( pair |> Pair.toKey
-                                                , ( pair
-                                                  , size
-                                                  )
-                                                    |> singlePair model
-                                                )
+                case user of
+                    Success { positions } ->
+                        case positions of
+                            Success successPositions ->
+                                successPositions
+                                    |> Positions.toClaimListByPair time
+                                    |> List.map
+                                        (\( pair, size ) ->
+                                            ( pair |> Pair.toKey
+                                            , ( pair
+                                              , size
+                                              )
+                                                |> singlePair model
                                             )
+                                        )
 
-                                _ ->
-                                    []
-                        )
-                    |> Maybe.withDefault []
+                            _ ->
+                                []
+
+                    _ ->
+                        []
 
             Filter.BorrowDashboard _ ->
-                user
-                    |> Maybe.map
-                        (\{ positions } ->
-                            case positions of
-                                Success successPositions ->
-                                    successPositions
-                                        |> Positions.toDueListByPair time
-                                        |> List.map
-                                            (\( pair, size ) ->
-                                                ( pair |> Pair.toKey
-                                                , ( pair
-                                                  , size
-                                                  )
-                                                    |> singlePair model
-                                                )
+                case user of
+                    Success { positions } ->
+                        case positions of
+                            Success successPositions ->
+                                successPositions
+                                    |> Positions.toDueListByPair time
+                                    |> List.map
+                                        (\( pair, size ) ->
+                                            ( pair |> Pair.toKey
+                                            , ( pair
+                                              , size
+                                              )
+                                                |> singlePair model
                                             )
+                                        )
 
-                                _ ->
-                                    []
-                        )
-                    |> Maybe.withDefault []
+                            _ ->
+                                []
+
+                    _ ->
+                        []
 
             Filter.LiquidityProvider ->
                 []

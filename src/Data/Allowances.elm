@@ -28,7 +28,7 @@ decoder tokens =
         |> Decode.map Allowances
 
 
-init : Tokens -> Value -> Remote Allowances
+init : Tokens -> Value -> Remote () Allowances
 init tokens value =
     value
         |> Decode.decodeValue (decoder tokens)

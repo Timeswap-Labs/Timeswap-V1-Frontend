@@ -11,8 +11,9 @@ import Data.Device as Device exposing (Device)
 import Data.Images as Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Pools as Pools exposing (Pools)
-import Data.Remote exposing (Remote(..))
+import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage as Slippage exposing (Slippage)
+import Data.Timeout as Timeout
 import Data.TokenImages as TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
 import Data.Whitelist as Whitelist
@@ -45,6 +46,7 @@ import Element
 import Element.Background as Background
 import Element.Font as Font
 import Element.Lazy as Lazy
+import Error
 import Header
 import Html exposing (Html)
 import Json.Decode as Decode exposing (Decoder)
@@ -87,7 +89,7 @@ type alias Model =
     , images : Images
     , tokenImages : TokenImages
     , pools : Pools
-    , user : Maybe User
+    , user : Remote User.Error User
     , page : Page
     , modal : Maybe Modal
     , service : Maybe Service
@@ -120,11 +122,11 @@ init { width, time, hasBackdropSupport, images, tokenImages, whitelist } url key
                 , images = Images.init images
                 , tokenImages = TokenImages.init tokenImages
                 , pools = pools
-                , user = Nothing
+                , user = Loading
                 , page =
                     Page.init
                         { pools = pools
-                        , user = Nothing
+                        , user = Loading
                         }
                 , modal = Nothing
                 , service = Nothing
@@ -293,7 +295,20 @@ update msg model =
             )
 
         ReceiveTime posix ->
-            ( { model | time = posix }
+            ( { model
+                | time = posix
+                , user =
+                    case model.user of
+                        Failure (User.UnsupportedNetwork timeout) ->
+                            timeout
+                                |> Timeout.countdown
+                                |> Maybe.map User.UnsupportedNetwork
+                                |> Maybe.map Failure
+                                |> Maybe.withDefault Loading
+
+                        _ ->
+                            model.user
+              }
             , Cmd.none
             )
 
@@ -400,29 +415,29 @@ update msg model =
         MetamaskMsg value ->
             ( value
                 |> Decode.decodeValue (User.decoder |> Decode.nullable)
-                |> Result.map
-                    (\maybeUser ->
-                        { model
-                            | user =
-                                case ( model.user, maybeUser ) of
-                                    ( Just modelUser, Just user ) ->
-                                        if User.same modelUser user then
-                                            model.user
+                |> (\result ->
+                        case result of
+                            Ok maybeUser ->
+                                { model
+                                    | user =
+                                        case ( model.user, maybeUser ) of
+                                            ( _, Nothing ) ->
+                                                Loading
 
-                                        else
-                                            maybeUser
+                                            ( Success modelUser, Just (Success user) ) ->
+                                                if User.same modelUser user then
+                                                    model.user
 
-                                    ( Just _, Nothing ) ->
-                                        Nothing
+                                                else
+                                                    Success user
 
-                                    ( Nothing, Just _ ) ->
-                                        maybeUser
+                                            ( _, Just remoteUser ) ->
+                                                remoteUser
+                                }
 
-                                    ( Nothing, Nothing ) ->
-                                        Nothing
-                        }
-                    )
-                |> Result.withDefault model
+                            _ ->
+                                model
+                   )
             , Cmd.none
             )
 
@@ -440,7 +455,7 @@ update msg model =
             ( { model
                 | user =
                     model.user
-                        |> Maybe.map (User.updatePositions model.pools model.tokens value)
+                        |> Remote.map (User.updatePositions model.pools model.tokens value)
               }
             , Cmd.none
             )
@@ -449,7 +464,7 @@ update msg model =
             ( { model
                 | user =
                     model.user
-                        |> Maybe.map (User.updateBalances model.tokens value)
+                        |> Remote.map (User.updateBalances model.tokens value)
               }
             , Cmd.none
             )
@@ -458,7 +473,7 @@ update msg model =
             ( { model
                 | user =
                     model.user
-                        |> Maybe.map (User.updateAllowances model.tokens value)
+                        |> Remote.map (User.updateAllowances model.tokens value)
               }
             , Cmd.none
             )
@@ -644,7 +659,7 @@ html model =
         --      , Background.color Color.dark400
         --      ]
         --         ++ (if Device.checkAsideStatus model.device then
-        --                 [ Lazy.lazy Aside.view model |> inFront ]
+        --                 [ lazy Aside.view model |> inFront ]
         --             else
         --                 model.service
         --                     |> Maybe.map
@@ -665,7 +680,7 @@ html model =
         --                         (model.modal
         --                             |> Maybe.map
         --                                 (\modal ->
-        --                                     [ Lazy.lazy2 Modal.view model modal |> Element.map ModalMsg |> inFront ]
+        --                                     [ lazy2 Modal.view model modal |> Element.map ModalMsg |> inFront ]
         --                                 )
         --                         )
         --                     |> Maybe.withDefault []
@@ -676,8 +691,8 @@ html model =
         --         , height fill
         --         , clip
         --         ]
-        --         [ Lazy.lazy Header.view model
-        --         , Lazy.lazy2 Page.view model model.page |> Element.map PageMsg
+        --         [ lazy Header.view model
+        --         , lazy2 Page.view model model.page |> Element.map PageMsg
         --         ]
         --     )
 
@@ -720,7 +735,8 @@ html model =
                 , height fill
                 , clip
                 ]
-                [ Lazy.lazy Header.view model
+                [ Lazy.lazy Error.view model
+                , Lazy.lazy Header.view model
                 , row
                     [ width fill
                     , height fill

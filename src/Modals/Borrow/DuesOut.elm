@@ -76,7 +76,7 @@ import Utility.Truncate as Truncate
 
 
 type DuesOut
-    = Default (Remote DuesGivenPercent)
+    = Default (Remote () DuesGivenPercent)
     | Slider SliderInput
     | Debt DebtInput
     | Collateral CollateralInput
@@ -104,20 +104,20 @@ type alias DuesGivenCollateral =
 
 type alias SliderInput =
     { percent : Percent
-    , dues : Remote DuesGivenPercent
+    , dues : Remote () DuesGivenPercent
     }
 
 
 type alias DebtInput =
     { percent : Percent
     , debt : String
-    , dues : Remote DuesGivenDebt
+    , dues : Remote () DuesGivenDebt
     }
 
 
 type alias CollateralInput =
     { percent : Percent
-    , dues : Remote DuesGivenCollateral
+    , dues : Remote () DuesGivenCollateral
     , collateral : String
     }
 
@@ -136,12 +136,12 @@ init =
 hasFailure : { modal | duesOut : DuesOut } -> Bool
 hasFailure { duesOut } =
     case duesOut of
-        Default Failure ->
+        Default (Failure _) ->
             True
 
         Slider { dues } ->
             case dues of
-                Failure ->
+                Failure _ ->
                     True
 
                 _ ->
@@ -149,7 +149,7 @@ hasFailure { duesOut } =
 
         Debt { dues } ->
             case dues of
-                Failure ->
+                Failure _ ->
                     True
 
                 _ ->
@@ -157,7 +157,7 @@ hasFailure { duesOut } =
 
         Collateral { dues } ->
             case dues of
-                Failure ->
+                Failure _ ->
                     True
 
                 _ ->
@@ -186,64 +186,64 @@ isAmount { pool, assetOut, duesOut } =
 
 
 hasBalanceIfUser :
-    { model | user : Maybe { user | balances : Remote Balances } }
+    { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, duesOut : DuesOut }
     -> Bool
 hasBalanceIfUser { user } { pool, duesOut } =
-    user
-        |> Maybe.map
-            (\{ balances } ->
-                case balances of
-                    Loading ->
-                        True
+    case user of
+        Success { balances } ->
+            case balances of
+                Loading ->
+                    True
 
-                    Failure ->
-                        False
+                Failure _ ->
+                    False
 
-                    Success successBalances ->
-                        (case duesOut of
-                            Default (Success { maxCollateral }) ->
-                                Just maxCollateral
+                Success successBalances ->
+                    (case duesOut of
+                        Default (Success { maxCollateral }) ->
+                            Just maxCollateral
 
-                            Slider { dues } ->
-                                case dues of
-                                    Success { maxCollateral } ->
-                                        Just maxCollateral
+                        Slider { dues } ->
+                            case dues of
+                                Success { maxCollateral } ->
+                                    Just maxCollateral
 
-                                    _ ->
-                                        Nothing
+                                _ ->
+                                    Nothing
 
-                            Debt { dues } ->
-                                case dues of
-                                    Success { maxCollateral } ->
-                                        Just maxCollateral
+                        Debt { dues } ->
+                            case dues of
+                                Success { maxCollateral } ->
+                                    Just maxCollateral
 
-                                    _ ->
-                                        Nothing
+                                _ ->
+                                    Nothing
 
-                            Collateral { collateral } ->
-                                Just collateral
+                        Collateral { collateral } ->
+                            Just collateral
 
-                            _ ->
-                                Nothing
-                        )
-                            |> (\maybeCollateral ->
-                                    maybeCollateral
-                                        |> Maybe.map
-                                            (\collateralIn ->
-                                                successBalances
-                                                    |> Balances.hasEnough
-                                                        (pool.pair |> Pair.toCollateral)
-                                                        collateralIn
-                                            )
-                                        |> Maybe.withDefault True
-                               )
-            )
-        |> Maybe.withDefault True
+                        _ ->
+                            Nothing
+                    )
+                        |> (\maybeCollateral ->
+                                maybeCollateral
+                                    |> Maybe.map
+                                        (\collateralIn ->
+                                            successBalances
+                                                |> Balances.hasEnough
+                                                    (pool.pair |> Pair.toCollateral)
+                                                    collateralIn
+                                        )
+                                    |> Maybe.withDefault True
+                           )
+
+        _ ->
+            True
 
 
 isCorrect :
-    { model | user : Maybe { user | balances : Remote Balances } }
+    { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetOut : String, duesOut : DuesOut }
     -> Bool
 isCorrect model modal =
@@ -281,7 +281,7 @@ isDefault { duesOut } =
 hasTransaction :
     { model
         | time : Posix
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
     }
     ->
         { modal
@@ -292,53 +292,53 @@ hasTransaction :
     -> Bool
 hasTransaction ({ user } as model) ({ pool, duesOut } as modal) =
     hasTransactionInfo model modal
-        && (user
-                |> Maybe.map
-                    (\{ balances } ->
-                        case balances of
-                            Success successBalances ->
-                                (case duesOut of
-                                    Default (Success { maxCollateral }) ->
-                                        Just maxCollateral
+        && (case user of
+                Success { balances } ->
+                    case balances of
+                        Success successBalances ->
+                            (case duesOut of
+                                Default (Success { maxCollateral }) ->
+                                    Just maxCollateral
 
-                                    Slider { dues } ->
-                                        case dues of
-                                            Success { maxCollateral } ->
-                                                Just maxCollateral
+                                Slider { dues } ->
+                                    case dues of
+                                        Success { maxCollateral } ->
+                                            Just maxCollateral
 
-                                            _ ->
-                                                Nothing
+                                        _ ->
+                                            Nothing
 
-                                    Debt { dues } ->
-                                        case dues of
-                                            Success { maxCollateral } ->
-                                                Just maxCollateral
+                                Debt { dues } ->
+                                    case dues of
+                                        Success { maxCollateral } ->
+                                            Just maxCollateral
 
-                                            _ ->
-                                                Nothing
+                                        _ ->
+                                            Nothing
 
-                                    Collateral { collateral } ->
-                                        Just collateral
+                                Collateral { collateral } ->
+                                    Just collateral
 
-                                    _ ->
-                                        Nothing
-                                )
-                                    |> (\maybeCollateral ->
-                                            maybeCollateral
-                                                |> Maybe.map
-                                                    (\collateralOut ->
-                                                        successBalances
-                                                            |> Balances.hasEnough
-                                                                (pool.pair |> Pair.toAsset)
-                                                                collateralOut
-                                                    )
-                                                |> Maybe.withDefault False
-                                       )
+                                _ ->
+                                    Nothing
+                            )
+                                |> (\maybeCollateral ->
+                                        maybeCollateral
+                                            |> Maybe.map
+                                                (\collateralOut ->
+                                                    successBalances
+                                                        |> Balances.hasEnough
+                                                            (pool.pair |> Pair.toAsset)
+                                                            collateralOut
+                                                )
+                                            |> Maybe.withDefault False
+                                   )
 
-                            _ ->
-                                False
-                    )
-                |> Maybe.withDefault False
+                        _ ->
+                            False
+
+                _ ->
+                    False
            )
 
 
@@ -702,15 +702,15 @@ view :
             | time : Posix
             , images : Images
             , tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
             | pool : Pool
             , assetOut : String
             , duesOut : DuesOut
-            , apr : Remote String
-            , cf : Remote String
+            , apr : Remote () String
+            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element msg
@@ -860,15 +860,15 @@ position :
         { model
             | images : Images
             , tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
             | pool : { pool | pair : Pair }
             , assetOut : String
             , duesOut : DuesOut
-            , apr : Remote String
-            , cf : Remote String
+            , apr : Remote () String
+            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element msg
@@ -917,7 +917,7 @@ position msgs model ({ duesOut } as modal) =
 
 sliderSection :
     { msgs | slide : Float -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetOut : String, duesOut : DuesOut }
     -> Percent
     -> Element msg
@@ -970,7 +970,7 @@ sliderSection msgs model modal percent =
 
 slider :
     { msgs | slide : Float -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetOut : String, duesOut : DuesOut }
     -> Percent
     -> Element msg
@@ -1011,7 +1011,7 @@ slider msgs model modal percent =
 
 
 estimatedAPR :
-    { modal | apr : Remote String }
+    { modal | apr : Remote () String }
     -> Element msg
 estimatedAPR { apr } =
     row
@@ -1050,7 +1050,7 @@ estimatedAPR { apr } =
                         ]
                         Loading.view
 
-                Failure ->
+                Failure _ ->
                     none
 
                 Success successAPR ->
@@ -1072,7 +1072,7 @@ collateralFactor :
         | pool : { pool | pair : Pair }
         , assetOut : String
         , duesOut : DuesOut
-        , cf : Remote String
+        , cf : Remote () String
     }
     -> Element msg
 collateralFactor { pool, cf } =
@@ -1112,7 +1112,7 @@ collateralFactor { pool, cf } =
                         ]
                         Loading.view
 
-                Failure ->
+                Failure _ ->
                     none
 
                 Success successCF ->
@@ -1149,7 +1149,7 @@ debtInSection :
         { model
             | images : Images
             , tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -1240,7 +1240,7 @@ debtInTextbox :
     ->
         { model
             | tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -1262,7 +1262,7 @@ debtInTextbox msgs model modal =
 debtInLogo :
     { model
         | tokenImages : TokenImages
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
     }
     ->
         { modal
@@ -1323,7 +1323,7 @@ debtInLogo ({ tokenImages } as model) ({ pool } as modal) =
 
 debtInAmount :
     { msgs | inputDebtIn : String -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
@@ -1378,7 +1378,7 @@ debtInAmount msgs model ({ duesOut } as modal) =
 
 debtInInput :
     { msgs | inputDebtIn : String -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
@@ -1485,7 +1485,7 @@ collateralInSection :
         { model
             | images : Images
             , tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -1566,25 +1566,25 @@ collateralInSection msgs ({ images, user } as model) ({ duesOut, tooltip } as mo
                         else
                             none
                    )
-            , user
-                |> Maybe.map
-                    (\{ balances } ->
-                        case balances of
-                            Loading ->
-                                el
-                                    [ height <| px 20
-                                    , alignRight
-                                    , centerY
-                                    ]
-                                    Loading.view
+            , case user of
+                Success { balances } ->
+                    case balances of
+                        Loading ->
+                            el
+                                [ height <| px 20
+                                , alignRight
+                                , centerY
+                                ]
+                                Loading.view
 
-                            Failure ->
-                                none
+                        Failure _ ->
+                            none
 
-                            Success successBalances ->
-                                collateralBalance msgs successBalances modal
-                    )
-                |> Maybe.withDefault none
+                        Success successBalances ->
+                            collateralBalance msgs successBalances modal
+
+                _ ->
+                    none
             ]
         , collateralInTextbox msgs model modal
         ]
@@ -1690,7 +1690,7 @@ collateralInTextbox :
     ->
         { model
             | tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -1712,7 +1712,7 @@ collateralInTextbox msgs model modal =
 collateralInLogo :
     { model
         | tokenImages : TokenImages
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
     }
     ->
         { modal
@@ -1773,7 +1773,7 @@ collateralInLogo ({ tokenImages } as model) ({ pool } as modal) =
 
 collateralInAmount :
     { msgs | inputCollateralIn : String -> msg, inputMax : msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
@@ -1824,28 +1824,28 @@ collateralInAmount msgs ({ user } as model) ({ duesOut } as modal) =
                )
         )
         [ collateralInInput msgs model modal
-        , user
-            |> Maybe.map
-                (\{ balances } ->
-                    case balances of
-                        Success _ ->
-                            case duesOut of
-                                Default _ ->
-                                    none
+        , case user of
+            Success { balances } ->
+                case balances of
+                    Success _ ->
+                        case duesOut of
+                            Default _ ->
+                                none
 
-                                _ ->
-                                    maxButton msgs
+                            _ ->
+                                maxButton msgs
 
-                        _ ->
-                            none
-                )
-            |> Maybe.withDefault none
+                    _ ->
+                        none
+
+            _ ->
+                none
         ]
 
 
 collateralInInput :
     { msgs | inputCollateralIn : String -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }

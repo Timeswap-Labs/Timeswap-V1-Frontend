@@ -1,4 +1,14 @@
-module User exposing (User, decoder, same, toChain, updateAllowances, updateBalances, updatePositions)
+module User exposing
+    ( Error(..)
+    , User
+    , decoder
+    , errorToMessage
+    , same
+    , toChain
+    , updateAllowances
+    , updateBalances
+    , updatePositions
+    )
 
 import Data.Address as Address exposing (Address)
 import Data.Allowances as Allowances exposing (Allowances)
@@ -7,6 +17,7 @@ import Data.Chain as Chain exposing (Chain(..))
 import Data.Pools exposing (Pools)
 import Data.Positions as Positions exposing (Positions)
 import Data.Remote exposing (Remote(..))
+import Data.Timeout as Timeout exposing (Timeout)
 import Data.Tokens exposing (Tokens)
 import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Decode.Pipeline as Pipeline
@@ -15,20 +26,41 @@ import Json.Decode.Pipeline as Pipeline
 type alias User =
     { chain : Chain
     , address : Address
-    , positions : Remote Positions
-    , balances : Remote Balances
-    , allowances : Remote Allowances
+    , positions : Remote () Positions
+    , balances : Remote () Balances
+    , allowances : Remote () Allowances
     }
 
 
-decoder : Decoder User
+type Error
+    = UnsupportedNetwork Timeout
+
+
+decoder : Decoder (Remote Error User)
 decoder =
-    Decode.succeed User
+    Decode.succeed
+        (\result address ->
+            case result of
+                Ok chain ->
+                    { chain = chain
+                    , address = address
+                    , positions = Loading
+                    , balances = Loading
+                    , allowances = Loading
+                    }
+                        |> Success
+                        |> Decode.succeed
+
+                Err _ ->
+                    Timeout.start 10
+                        |> Maybe.map UnsupportedNetwork
+                        |> Maybe.map Failure
+                        |> Maybe.map Decode.succeed
+                        |> Maybe.withDefault (Decode.fail "Wrong timeout")
+        )
         |> Pipeline.required "chainId" Chain.decoder
         |> Pipeline.required "user" Address.decoder
-        |> Pipeline.custom (Decode.succeed (Success Positions.example))
-        |> Pipeline.custom (Decode.succeed (Success Balances.example))
-        |> Pipeline.custom (Decode.succeed (Success Allowances.example))
+        |> Decode.andThen identity
 
 
 same : User -> User -> Bool
@@ -36,11 +68,14 @@ same user1 user2 =
     user1.chain == user2.chain && user1.address == user2.address
 
 
-toChain : Maybe { user | chain : Chain } -> Chain
+toChain : Remote userError { user | chain : Chain } -> Chain
 toChain user =
-    user
-        |> Maybe.map .chain
-        |> Maybe.withDefault Rinkeby
+    case user of
+        Success { chain } ->
+            chain
+
+        _ ->
+            Rinkeby
 
 
 updatePositions : Pools -> Tokens -> Value -> User -> User
@@ -86,3 +121,10 @@ updateAllowances tokens value user =
                 _ ->
                     Allowances.init tokens value
     }
+
+
+errorToMessage : Error -> String
+errorToMessage error =
+    case error of
+        UnsupportedNetwork _ ->
+            "Wrong network, must connect to Rinkeby network."

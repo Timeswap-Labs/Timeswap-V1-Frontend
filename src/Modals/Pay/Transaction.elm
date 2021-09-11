@@ -60,15 +60,15 @@ toTransaction :
     ->
         { user
             | address : Address
-            , balances : Remote Balances
-            , allowances : Remote Allowances
+            , balances : Remote () Balances
+            , allowances : Remote () Allowances
         }
     -> Positions
     ->
         { modal
             | pool : Pool
             , tokenIds : Set TokenId
-            , duesIn : Remote { due | assetIn : String }
+            , duesIn : Remote () { due | assetIn : String }
         }
     -> Maybe Transaction
 toTransaction { time, deadline } ({ address } as user) positions ({ pool, tokenIds } as modal) =
@@ -110,8 +110,8 @@ encode { pool, to, dict, deadline } =
 
 
 hasAllowance :
-    { user | balances : Remote Balances, allowances : Remote Allowances }
-    -> { modal | pool : { pool | pair : Pair }, duesIn : Remote { due | assetIn : String } }
+    { user | balances : Remote () Balances, allowances : Remote () Allowances }
+    -> { modal | pool : { pool | pair : Pair }, duesIn : Remote () { due | assetIn : String } }
     -> Bool
 hasAllowance { balances, allowances } { pool, duesIn } =
     case ( balances, allowances, duesIn ) of
@@ -139,8 +139,8 @@ view :
     ->
         { user
             | address : Address
-            , balances : Remote Balances
-            , allowances : Remote Allowances
+            , balances : Remote () Balances
+            , allowances : Remote () Allowances
         }
     -> Positions
     -> { modal | pool : Pool, tokenIds : Set TokenId, duesIn : DuesIn }
@@ -170,8 +170,8 @@ approveSection :
     ->
         { user
             | address : Address
-            , balances : Remote Balances
-            , allowances : Remote Allowances
+            , balances : Remote () Balances
+            , allowances : Remote () Allowances
         }
     -> Positions
     -> { modal | pool : Pool, tokenIds : Set TokenId, duesIn : DuesIn }
@@ -285,8 +285,8 @@ paySection :
     ->
         { user
             | address : Address
-            , balances : Remote Balances
-            , allowances : Remote Allowances
+            , balances : Remote () Balances
+            , allowances : Remote () Allowances
         }
     -> Positions
     -> { modal | pool : Pool, tokenIds : Set TokenId, duesIn : DuesIn }

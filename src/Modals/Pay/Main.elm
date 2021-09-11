@@ -256,8 +256,8 @@ view :
     ->
         { user
             | address : Address
-            , balances : Remote Balances
-            , allowances : Remote Allowances
+            , balances : Remote () Balances
+            , allowances : Remote () Allowances
         }
     -> Positions
     -> Modal
@@ -304,7 +304,7 @@ title =
 
 
 balance :
-    { user | balances : Remote Balances }
+    { user | balances : Remote () Balances }
     -> { modal | pool : { pool | pair : Pair } }
     -> Element msg
 balance { balances } { pool } =
@@ -316,7 +316,7 @@ balance { balances } { pool } =
                 ]
                 Loading.view
 
-        Failure ->
+        Failure _ ->
             none
 
         Success successBalances ->

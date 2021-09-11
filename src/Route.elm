@@ -34,7 +34,7 @@ pushUrl :
             , key : Key
             , tokens : Tokens
             , pools : Pools
-            , user : Maybe { user | chain : Chain, positions : Remote Positions }
+            , user : Remote userError { user | chain : Chain, positions : Remote () Positions }
             , page : Page
             , modal : Maybe Modal
             , service : Maybe Service
@@ -105,7 +105,7 @@ fromUrl :
         , time : Posix
         , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | chain : Chain, positions : Remote Positions }
+        , user : Remote userError { user | chain : Chain, positions : Remote () Positions }
     }
     -> Url
     -> Maybe Route
@@ -119,7 +119,7 @@ match :
         , time : Posix
         , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | chain : Chain, positions : Remote Positions }
+        , user : Remote userError { user | chain : Chain, positions : Remote () Positions }
     }
     -> Parser (Route -> a) a
 match model =
@@ -132,7 +132,7 @@ fromFragment :
         , time : Posix
         , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | chain : Chain, positions : Remote Positions }
+        , user : Remote userError { user | chain : Chain, positions : Remote () Positions }
     }
     -> Maybe String
     -> Route

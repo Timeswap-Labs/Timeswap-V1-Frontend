@@ -4,6 +4,7 @@ import Data.Backdrop exposing (Backdrop)
 import Data.Device as Device exposing (Device)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
+import Data.Remote exposing (Remote(..))
 import Data.Token as Token
 import Data.TokenImages exposing (TokenImages)
 import Data.Tokens as Tokens exposing (Tokens)
@@ -69,7 +70,7 @@ view :
         , tokens : Tokens
         , images : Images
         , tokenImages : TokenImages
-        , user : Maybe user
+        , user : Remote userError user
     }
     -> Element Msg
 view ({ device, backdrop, images, user } as model) =
@@ -96,9 +97,12 @@ view ({ device, backdrop, images, user } as model) =
         ([ title
          , content model
          ]
-            ++ (user
-                    |> Maybe.map (\_ -> [])
-                    |> Maybe.withDefault [ connectButton model ]
+            ++ (case user of
+                    Success _ ->
+                        []
+
+                    _ ->
+                        [ connectButton model ]
                )
         )
 

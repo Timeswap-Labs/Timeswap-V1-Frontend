@@ -69,8 +69,8 @@ type Modal
         { pool : Pool
         , assetIn : String
         , claimsOut : ClaimsOut
-        , apr : Remote String
-        , cf : Remote String
+        , apr : Remote () String
+        , cf : Remote () String
         , tooltip : Maybe Tooltip
         }
 
@@ -150,7 +150,7 @@ update :
         , slippage : Slippage
         , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
         , page : Page
     }
     -> Msg
@@ -212,67 +212,67 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
                 ( Modal modal, Cmd.none )
 
         InputMax ->
-            user
-                |> Maybe.map
-                    (\{ balances } ->
-                        case balances of
-                            Loading ->
-                                ( Modal modal, Cmd.none )
+            case user of
+                Success { balances } ->
+                    case balances of
+                        Loading ->
+                            ( Modal modal, Cmd.none )
 
-                            Failure ->
-                                ( Modal modal, Cmd.none )
+                        Failure _ ->
+                            ( Modal modal, Cmd.none )
 
-                            Success successBalances ->
-                                successBalances
-                                    |> Balances.get (modal.pool.pair |> Pair.toAsset)
-                                    |> (\string ->
-                                            ( { modal
-                                                | assetIn = string
-                                                , claimsOut =
-                                                    if string |> Input.isZero then
-                                                        modal.claimsOut |> ClaimsOut.updateAssetInZero
+                        Success successBalances ->
+                            successBalances
+                                |> Balances.get (modal.pool.pair |> Pair.toAsset)
+                                |> (\string ->
+                                        ( { modal
+                                            | assetIn = string
+                                            , claimsOut =
+                                                if string |> Input.isZero then
+                                                    modal.claimsOut |> ClaimsOut.updateAssetInZero
 
-                                                    else
-                                                        modal.claimsOut |> ClaimsOut.updateAssetIn
-                                                , apr =
-                                                    if
-                                                        (string |> Input.isZero)
-                                                            || (modal.claimsOut |> ClaimsOut.hasZeroInput)
-                                                    then
-                                                        Success ""
+                                                else
+                                                    modal.claimsOut |> ClaimsOut.updateAssetIn
+                                            , apr =
+                                                if
+                                                    (string |> Input.isZero)
+                                                        || (modal.claimsOut |> ClaimsOut.hasZeroInput)
+                                                then
+                                                    Success ""
 
-                                                    else
-                                                        Loading
-                                                , cf =
-                                                    if
-                                                        (string |> Input.isZero)
-                                                            || (modal.claimsOut |> ClaimsOut.hasZeroInput)
-                                                    then
-                                                        Success ""
+                                                else
+                                                    Loading
+                                            , cf =
+                                                if
+                                                    (string |> Input.isZero)
+                                                        || (modal.claimsOut |> ClaimsOut.hasZeroInput)
+                                                then
+                                                    Success ""
 
-                                                    else
-                                                        Loading
-                                              }
-                                                |> Modal
-                                            , (case modal.claimsOut of
-                                                ClaimsOut.Default _ ->
-                                                    Query.givenPercent modal.pool string Percent.init slippage
+                                                else
+                                                    Loading
+                                          }
+                                            |> Modal
+                                        , (case modal.claimsOut of
+                                            ClaimsOut.Default _ ->
+                                                Query.givenPercent modal.pool string Percent.init slippage
 
-                                                ClaimsOut.Slider { percent } ->
-                                                    Query.givenPercent modal.pool string percent slippage
+                                            ClaimsOut.Slider { percent } ->
+                                                Query.givenPercent modal.pool string percent slippage
 
-                                                ClaimsOut.Bond { bond } ->
-                                                    Query.givenBond modal.pool string bond slippage
+                                            ClaimsOut.Bond { bond } ->
+                                                Query.givenBond modal.pool string bond slippage
 
-                                                ClaimsOut.Insurance { insurance } ->
-                                                    Query.givenInsurance modal.pool string insurance slippage
-                                              )
-                                                |> Maybe.map queryLend
-                                                |> Maybe.withDefault Cmd.none
-                                            )
-                                       )
-                    )
-                |> Maybe.withDefault ( Modal modal, Cmd.none )
+                                            ClaimsOut.Insurance { insurance } ->
+                                                Query.givenInsurance modal.pool string insurance slippage
+                                          )
+                                            |> Maybe.map queryLend
+                                            |> Maybe.withDefault Cmd.none
+                                        )
+                                   )
+
+                _ ->
+                    ( Modal modal, Cmd.none )
 
         SwitchLendSetting checked ->
             ( { modal
@@ -628,11 +628,12 @@ view :
         , images : Images
         , tokenImages : TokenImages
         , user :
-            Maybe
+            Remote
+                userError
                 { user
                     | address : Address
-                    , balances : Remote Balances
-                    , allowances : Remote Allowances
+                    , balances : Remote () Balances
+                    , allowances : Remote () Allowances
                 }
     }
     -> Modal
@@ -685,15 +686,15 @@ content :
         , backdrop : Backdrop
         , images : Images
         , tokenImages : TokenImages
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
     }
     ->
         { modal
             | pool : Pool
             , assetIn : String
             , claimsOut : ClaimsOut
-            , apr : Remote String
-            , cf : Remote String
+            , apr : Remote () String
+            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element Msg

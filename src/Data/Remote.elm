@@ -1,34 +1,21 @@
-module Data.Remote exposing (Remote(..), map, withDefault)
+module Data.Remote exposing (Remote(..), map)
 
 
-type Remote a
+type Remote error a
     = Loading
-    | Failure
+    | Failure error
     | Success a
 
 
-map : (a -> b) -> Remote a -> Remote b
+map : (a -> b) -> Remote error a -> Remote error b
 map functor remote =
     case remote of
         Loading ->
             Loading
 
-        Failure ->
-            Failure
+        Failure error ->
+            Failure error
 
         Success success ->
             functor success
                 |> Success
-
-
-withDefault : a -> a -> Remote a -> a
-withDefault default fail remote =
-    case remote of
-        Loading ->
-            default
-
-        Failure ->
-            fail
-
-        Success success ->
-            success

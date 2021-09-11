@@ -28,7 +28,7 @@ import Time exposing (Posix)
 
 
 type Pools
-    = Pools (Dict Pair (Dict Maturity (Remote PoolUint))) -- fix in the future
+    = Pools (Dict Pair (Dict Maturity (Remote () PoolUint))) -- fix in the future
 
 
 type alias PoolUint =
@@ -309,7 +309,7 @@ toPairs (Pools dict) =
     dict |> Dict.keys
 
 
-toList : Posix -> Pools -> List ( Pair, List ( Maturity, Remote PoolInfo ) )
+toList : Posix -> Pools -> List ( Pair, List ( Maturity, Remote () PoolInfo ) )
 toList time (Pools dict) =
     dict
         |> Dict.toList
@@ -348,15 +348,15 @@ toList time (Pools dict) =
                                 Loading ->
                                     Loading
 
-                                Failure ->
-                                    Failure
+                                Failure error ->
+                                    Failure error
                         )
                     |> Dict.toList
                 )
             )
 
 
-toListSinglePair : Posix -> Pair -> Pools -> List ( Maturity, Remote PoolInfo )
+toListSinglePair : Posix -> Pair -> Pools -> List ( Maturity, Remote () PoolInfo )
 toListSinglePair time pair (Pools dict) =
     dict
         |> Dict.get pair
@@ -391,8 +391,8 @@ toListSinglePair time pair (Pools dict) =
                     Loading ->
                         Loading
 
-                    Failure ->
-                        Failure
+                    Failure error ->
+                        Failure error
             )
         |> Maybe.map Dict.toList
         |> Maybe.withDefault []

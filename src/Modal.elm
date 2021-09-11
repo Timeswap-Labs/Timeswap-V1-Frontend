@@ -62,7 +62,7 @@ fromFragment :
         | time : Posix
         , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | positions : Remote Positions }
+        , user : Remote userError { user | positions : Remote () Positions }
     }
     -> String
     -> Maybe ( Modal, Cmd Msg )
@@ -90,32 +90,34 @@ fromFragment ({ user } as model) string =
                                 )
 
                     "withdraw" :: parameter :: _ ->
-                        user
-                            |> Maybe.andThen
-                                (\_ ->
-                                    parameter
-                                        |> Withdraw.fromFragment model
-                                        |> Maybe.map Withdraw
-                                )
-                            |> Maybe.map
-                                (\modal ->
-                                    ( modal, Cmd.none )
-                                )
+                        case user of
+                            Success _ ->
+                                parameter
+                                    |> Withdraw.fromFragment model
+                                    |> Maybe.map Withdraw
+                                    |> Maybe.map
+                                        (\modal ->
+                                            ( modal, Cmd.none )
+                                        )
+
+                            _ ->
+                                Nothing
 
                     "pay" :: parameter :: _ ->
-                        user
-                            |> Maybe.andThen
-                                (\{ positions } ->
-                                    case positions of
-                                        Success successPositions ->
-                                            parameter
-                                                |> Pay.fromFragment model successPositions
-                                                |> Maybe.map
-                                                    (Tuple.mapBoth Pay (Cmd.map PayMsg))
+                        case user of
+                            Success { positions } ->
+                                case positions of
+                                    Success successPositions ->
+                                        parameter
+                                            |> Pay.fromFragment model successPositions
+                                            |> Maybe.map
+                                                (Tuple.mapBoth Pay (Cmd.map PayMsg))
 
-                                        _ ->
-                                            Nothing
-                                )
+                                    _ ->
+                                        Nothing
+
+                            _ ->
+                                Nothing
 
                     _ ->
                         Nothing
@@ -180,7 +182,7 @@ update :
         , slippage : Slippage
         , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
         , page : Page
     }
     -> Msg
@@ -239,12 +241,13 @@ view :
         , images : Images
         , tokenImages : TokenImages
         , user :
-            Maybe
+            Remote
+                userError
                 { user
                     | address : Address
-                    , positions : Remote Positions
-                    , balances : Remote Balances
-                    , allowances : Remote Allowances
+                    , positions : Remote () Positions
+                    , balances : Remote () Balances
+                    , allowances : Remote () Allowances
                 }
     }
     -> Modal
@@ -294,48 +297,48 @@ view ({ device, time, user } as model) modal =
                         withdraw
                             |> Withdraw.getPool
                             |> (\{ maturity } ->
-                                    user
-                                        |> Maybe.map
-                                            (\({ positions } as userJust) ->
-                                                case positions of
-                                                    Success successPositions ->
-                                                        if maturity |> Maturity.isActive time |> not then
-                                                            Withdraw.view model userJust successPositions withdraw
-                                                                |> Element.map WithdrawMsg
-                                                                |> element
+                                    case user of
+                                        Success ({ positions } as userJust) ->
+                                            case positions of
+                                                Success successPositions ->
+                                                    if maturity |> Maturity.isActive time |> not then
+                                                        Withdraw.view model userJust successPositions withdraw
+                                                            |> Element.map WithdrawMsg
+                                                            |> element
 
-                                                        else
-                                                            none
-
-                                                    _ ->
+                                                    else
                                                         none
-                                            )
-                                        |> Maybe.withDefault none
+
+                                                _ ->
+                                                    none
+
+                                        _ ->
+                                            none
                                )
 
                     Pay pay ->
                         pay
                             |> Pay.getFlags
                             |> (\{ pool, tokenIds } ->
-                                    user
-                                        |> Maybe.map
-                                            (\({ positions } as userJust) ->
-                                                case positions of
-                                                    Success successPositions ->
-                                                        if
-                                                            (pool.maturity |> Maturity.isActive time)
-                                                                && (successPositions |> Positions.isOwner pool tokenIds)
-                                                        then
-                                                            Pay.view model userJust successPositions pay
-                                                                |> Element.map PayMsg
-                                                                |> element
+                                    case user of
+                                        Success ({ positions } as userJust) ->
+                                            case positions of
+                                                Success successPositions ->
+                                                    if
+                                                        (pool.maturity |> Maturity.isActive time)
+                                                            && (successPositions |> Positions.isOwner pool tokenIds)
+                                                    then
+                                                        Pay.view model userJust successPositions pay
+                                                            |> Element.map PayMsg
+                                                            |> element
 
-                                                        else
-                                                            none
-
-                                                    _ ->
+                                                    else
                                                         none
-                                            )
-                                        |> Maybe.withDefault none
+
+                                                _ ->
+                                                    none
+
+                                        _ ->
+                                            none
                                )
            )

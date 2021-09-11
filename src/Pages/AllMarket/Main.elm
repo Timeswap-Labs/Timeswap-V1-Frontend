@@ -203,7 +203,7 @@ singlePair :
         , pools : Pools
     }
     -> { page | expandedSet : Set Pair, tooltip : Maybe Tooltip }
-    -> ( Pair, List ( Maturity, Remote PoolInfo ) )
+    -> ( Pair, List ( Maturity, Remote () PoolInfo ) )
     -> Element Msg
 singlePair ({ tokenImages } as model) ({ expandedSet, tooltip } as page) ( pair, list ) =
     column
@@ -249,7 +249,7 @@ singlePair ({ tokenImages } as model) ({ expandedSet, tooltip } as page) ( pair,
         ]
 
 
-pairSize : List ( Maturity, Remote PoolInfo ) -> Element msg
+pairSize : List ( Maturity, Remote () PoolInfo ) -> Element msg
 pairSize list =
     el
         [ width shrink
@@ -277,7 +277,7 @@ pairSize list =
 discloser :
     { model | images : Images }
     -> { page | expandedSet : Set Pair }
-    -> ( Pair, List ( Maturity, Remote PoolInfo ) )
+    -> ( Pair, List ( Maturity, Remote () PoolInfo ) )
     -> Element Msg
 discloser { images } { expandedSet } ( pair, list ) =
     if list |> List.isEmpty then

@@ -93,7 +93,7 @@ toTransaction :
     { model
         | time : Posix
         , deadline : Deadline
-        , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
+        , user : Remote userError { user | address : Address, balances : Remote () Balances, allowances : Remote () Allowances }
     }
     -> { modal | pool : Pool, assetOut : String, duesOut : DuesOut }
     -> Maybe Transaction
@@ -118,7 +118,13 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetOut, duesOut } a
                         }
                             |> GivenPercent
                     )
-                    (user |> Maybe.map .address)
+                    (case user of
+                        Success { address } ->
+                            Just address
+
+                        _ ->
+                            Nothing
+                    )
                     (assetOut |> Uint.fromString)
                     (maxDebt |> Uint.fromString)
                     (maxCollateral |> Uint.fromString)
@@ -138,7 +144,13 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetOut, duesOut } a
                                 }
                                     |> GivenPercent
                             )
-                            (user |> Maybe.map .address)
+                            (case user of
+                                Success { address } ->
+                                    Just address
+
+                                _ ->
+                                    Nothing
+                            )
                             (assetOut |> Uint.fromString)
                             (maxDebt |> Uint.fromString)
                             (maxCollateral |> Uint.fromString)
@@ -160,7 +172,13 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetOut, duesOut } a
                                 }
                                     |> GivenDebt
                             )
-                            (user |> Maybe.map .address)
+                            (case user of
+                                Success { address } ->
+                                    Just address
+
+                                _ ->
+                                    Nothing
+                            )
                             (assetOut |> Uint.fromString)
                             (debt |> Uint.fromString)
                             (maxCollateral |> Uint.fromString)
@@ -182,7 +200,13 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetOut, duesOut } a
                                 }
                                     |> GivenCollateral
                             )
-                            (user |> Maybe.map .address)
+                            (case user of
+                                Success { address } ->
+                                    Just address
+
+                                _ ->
+                                    Nothing
+                            )
                             (assetOut |> Uint.fromString)
                             (collateral |> Uint.fromString)
                             (maxDebt |> Uint.fromString)
@@ -242,63 +266,63 @@ encode transaction =
 
 
 hasAllowance :
-    { model | user : Maybe { user | balances : Remote Balances, allowances : Remote Allowances } }
+    { model | user : Remote userError { user | balances : Remote () Balances, allowances : Remote () Allowances } }
     -> { modal | pool : { pool | pair : Pair }, duesOut : DuesOut }
     -> Bool
 hasAllowance { user } { pool, duesOut } =
-    user
-        |> Maybe.map
-            (\{ balances, allowances } ->
-                case ( balances, allowances ) of
-                    ( Success successBalances, Success successAllowances ) ->
-                        (case duesOut of
-                            DuesOut.Default (Success { maxCollateral }) ->
-                                Just maxCollateral
+    case user of
+        Success { balances, allowances } ->
+            case ( balances, allowances ) of
+                ( Success successBalances, Success successAllowances ) ->
+                    (case duesOut of
+                        DuesOut.Default (Success { maxCollateral }) ->
+                            Just maxCollateral
 
-                            DuesOut.Slider { dues } ->
-                                case dues of
-                                    Success { maxCollateral } ->
-                                        Just maxCollateral
+                        DuesOut.Slider { dues } ->
+                            case dues of
+                                Success { maxCollateral } ->
+                                    Just maxCollateral
 
-                                    _ ->
-                                        Nothing
+                                _ ->
+                                    Nothing
 
-                            DuesOut.Debt { dues } ->
-                                case dues of
-                                    Success { maxCollateral } ->
-                                        Just maxCollateral
+                        DuesOut.Debt { dues } ->
+                            case dues of
+                                Success { maxCollateral } ->
+                                    Just maxCollateral
 
-                                    _ ->
-                                        Nothing
+                                _ ->
+                                    Nothing
 
-                            DuesOut.Collateral { collateral } ->
-                                Just collateral
+                        DuesOut.Collateral { collateral } ->
+                            Just collateral
 
-                            _ ->
-                                Nothing
-                        )
-                            |> (\maybeCollateral ->
-                                    maybeCollateral
-                                        |> Maybe.map
-                                            (\collateralOut ->
-                                                (successBalances
-                                                    |> Balances.hasEnough
-                                                        (pool.pair |> Pair.toCollateral)
-                                                        collateralOut
-                                                )
-                                                    && (successAllowances
-                                                            |> Allowances.hasEnough
-                                                                (pool.pair |> Pair.toCollateral)
-                                                                collateralOut
-                                                       )
+                        _ ->
+                            Nothing
+                    )
+                        |> (\maybeCollateral ->
+                                maybeCollateral
+                                    |> Maybe.map
+                                        (\collateralOut ->
+                                            (successBalances
+                                                |> Balances.hasEnough
+                                                    (pool.pair |> Pair.toCollateral)
+                                                    collateralOut
                                             )
-                                        |> Maybe.withDefault False
-                               )
+                                                && (successAllowances
+                                                        |> Allowances.hasEnough
+                                                            (pool.pair |> Pair.toCollateral)
+                                                            collateralOut
+                                                   )
+                                        )
+                                    |> Maybe.withDefault False
+                           )
 
-                    _ ->
-                        False
-            )
-        |> Maybe.withDefault False
+                _ ->
+                    False
+
+        _ ->
+            False
 
 
 view :
@@ -315,7 +339,7 @@ view :
             , slippage : Slippage
             , deadline : Deadline
             , images : Images
-            , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
+            , user : Remote userError { user | address : Address, balances : Remote () Balances, allowances : Remote () Allowances }
         }
     ->
         { modal
@@ -331,27 +355,27 @@ view msgs ({ user } as model) modal =
         , height shrink
         , spacing 12
         ]
-        [ user
-            |> Maybe.map
-                (\_ ->
-                    row
+        [ case user of
+            Success _ ->
+                row
+                    [ width fill
+                    , height shrink
+                    , spacing 20
+                    ]
+                    [ el
                         [ width fill
                         , height shrink
-                        , spacing 20
                         ]
-                        [ el
-                            [ width fill
-                            , height shrink
-                            ]
-                            (approveSection msgs model modal)
-                        , el
-                            [ width fill
-                            , height shrink
-                            ]
-                            (borrowSection msgs model modal)
+                        (approveSection msgs model modal)
+                    , el
+                        [ width fill
+                        , height shrink
                         ]
-                )
-            |> Maybe.withDefault (connectButton model)
+                        (borrowSection msgs model modal)
+                    ]
+
+            _ ->
+                connectButton model
         , transactionInfo msgs model modal
         ]
 
@@ -442,7 +466,7 @@ approveSection :
         { model
             | device : Device
             , time : Posix
-            , user : Maybe { user | balances : Remote Balances, allowances : Remote Allowances }
+            , user : Remote userError { user | balances : Remote () Balances, allowances : Remote () Allowances }
         }
     -> { modal | pool : Pool, assetOut : String, duesOut : DuesOut }
     -> Element msg
@@ -551,7 +575,7 @@ borrowSection :
             | device : Device
             , time : Posix
             , deadline : Deadline
-            , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
+            , user : Remote userError { user | address : Address, balances : Remote () Balances, allowances : Remote () Allowances }
         }
     -> { modal | pool : Pool, assetOut : String, duesOut : DuesOut }
     -> Element msg

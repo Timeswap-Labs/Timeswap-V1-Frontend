@@ -49,7 +49,7 @@ view :
     ->
         { model
             | tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -80,7 +80,7 @@ title :
         | onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, tooltip : Maybe Tooltip }
     -> Element msg
 title msgs { user } modal =
@@ -97,25 +97,25 @@ title msgs { user } modal =
             , Font.color Color.transparent500
             ]
             (text "Amount to lend")
-        , user
-            |> Maybe.map
-                (\{ balances } ->
-                    case balances of
-                        Loading ->
-                            el
-                                [ height <| px 20
-                                , alignRight
-                                , centerY
-                                ]
-                                Loading.view
+        , case user of
+            Success { balances } ->
+                case balances of
+                    Loading ->
+                        el
+                            [ height <| px 20
+                            , alignRight
+                            , centerY
+                            ]
+                            Loading.view
 
-                        Failure ->
-                            none
+                    Failure _ ->
+                        none
 
-                        Success successBalances ->
-                            assetBalance msgs successBalances modal
-                )
-            |> Maybe.withDefault none
+                    Success successBalances ->
+                        assetBalance msgs successBalances modal
+
+            _ ->
+                none
         ]
 
 
@@ -219,7 +219,7 @@ assetInTextbox :
     ->
         { model
             | tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -241,7 +241,7 @@ assetInTextbox msgs model modal =
 logo :
     { model
         | tokenImages : TokenImages
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
     }
     ->
         { modal
@@ -302,7 +302,7 @@ logo ({ tokenImages } as model) ({ pool } as modal) =
 
 amount :
     { msgs | inputAssetIn : String -> msg, inputMax : msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
@@ -343,23 +343,23 @@ amount msgs ({ user } as model) modal =
             }
         ]
         [ assetInInput msgs model modal
-        , user
-            |> Maybe.map
-                (\{ balances } ->
-                    case balances of
-                        Success _ ->
-                            maxButton msgs
+        , case user of
+            Success { balances } ->
+                case balances of
+                    Success _ ->
+                        maxButton msgs
 
-                        _ ->
-                            none
-                )
-            |> Maybe.withDefault none
+                    _ ->
+                        none
+
+            _ ->
+                none
         ]
 
 
 assetInInput :
     { msgs | inputAssetIn : String -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }

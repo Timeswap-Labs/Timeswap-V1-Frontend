@@ -83,4 +83,4 @@ updateQuery { pool } maybeDues =
                 }
                     |> Success
             )
-        |> Maybe.withDefault Failure
+        |> Maybe.withDefault (Failure ())

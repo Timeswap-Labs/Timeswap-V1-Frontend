@@ -37,7 +37,7 @@ view :
     ->
         { model
             | tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -85,7 +85,7 @@ assetOutTextbox :
     ->
         { model
             | tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -107,7 +107,7 @@ assetOutTextbox msgs model modal =
 logo :
     { model
         | tokenImages : TokenImages
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
     }
     ->
         { modal
@@ -168,7 +168,7 @@ logo ({ tokenImages } as model) ({ pool } as modal) =
 
 amount :
     { msgs | inputAssetOut : String -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
@@ -213,7 +213,7 @@ amount msgs model modal =
 
 assetOutInput :
     { msgs | inputAssetOut : String -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }

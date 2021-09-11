@@ -24,7 +24,7 @@ import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
-import Data.Remote exposing (Remote)
+import Data.Remote exposing (Remote(..))
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
@@ -62,40 +62,29 @@ type Service
     | Faucet
 
 
-fromFragment : { model | user : Maybe { user | chain : Chain } } -> String -> Maybe Service
+fromFragment : { model | user : Remote userError { user | chain : Chain } } -> String -> Maybe Service
 fromFragment { user } string =
-    case string of
-        "connect" ->
-            user
-                |> Maybe.map (\_ -> Nothing)
-                |> Maybe.withDefault (Just Connect)
+    case ( string, user ) of
+        ( "connect", Loading ) ->
+            Just Connect
 
-        "nometamask" ->
-            user
-                |> Maybe.map (\_ -> Nothing)
-                |> Maybe.withDefault (Just NoMetamask)
+        ( "connect", Failure _ ) ->
+            Just Connect
 
-        "wallet" ->
-            user
-                |> Maybe.andThen (\_ -> Wallet Wallet.init |> Just)
+        ( "nometamask", Loading ) ->
+            Just NoMetamask
 
-        "settings" ->
-            Settings.init
-                |> Settings
-                |> Just
+        ( "nometamask", Failure _ ) ->
+            Just NoMetamask
 
-        "faucet" ->
-            user
-                |> Maybe.map .chain
-                |> Maybe.withDefault Rinkeby
-                |> (\chain ->
-                        case chain of
-                            Mainnet ->
-                                Nothing
+        ( "wallet", Success _ ) ->
+            Wallet Wallet.init |> Just
 
-                            Rinkeby ->
-                                Just Faucet
-                   )
+        ( "settings", _ ) ->
+            Settings Settings.init |> Just
+
+        ( "faucet", _ ) ->
+            Just Faucet
 
         _ ->
             Nothing
@@ -271,13 +260,13 @@ view :
             , tokens : Tokens
             , images : Images
             , tokenImages : TokenImages
-            , user : Maybe { user | address : Address, balances : Remote Balances }
+            , user : Remote userError { user | address : Address, balances : Remote () Balances }
         }
     -> Service
     -> Or (Element Msg) (Element msg)
 view msgs ({ device, user } as model) service =
-    case service of
-        Connect ->
+    case ( service, user ) of
+        ( Connect, Loading ) ->
             el
                 [ width fill
                 , height fill
@@ -294,49 +283,73 @@ view msgs ({ device, user } as model) service =
                 |> Element.map ConnectMsg
                 |> Either
 
-        NoMetamask ->
-            user
-                |> Maybe.map (\_ -> none |> Either)
-                |> Maybe.withDefault
-                    (el
-                        [ width fill
-                        , height fill
-                        , if Device.isPhone device then
-                            padding 0
+        ( Connect, Failure _ ) ->
+            el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    padding 0
 
-                          else
-                            padding 80
-                        , scrollbarY
-                        , Background.color Color.modal
-                        , Font.family Typography.supreme
-                        ]
-                        (Lazy.lazy NoMetamask.view model)
-                        |> Either
-                    )
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+                (Lazy.lazy Connect.view model)
+                |> Element.map ConnectMsg
+                |> Either
 
-        Wallet wallet ->
-            user
-                |> Maybe.map
-                    (\userJust ->
-                        el
-                            [ width fill
-                            , height fill
-                            , if Device.isPhone device then
-                                padding 0
+        ( NoMetamask, Loading ) ->
+            el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    padding 0
 
-                              else
-                                padding 80
-                            , scrollbarY
-                            , Background.color Color.modal
-                            , Font.family Typography.supreme
-                            ]
-                            (Lazy.lazy3 Wallet.view model userJust wallet)
-                            |> Element.map WalletMsg
-                            |> Either
-                    )
-                |> Maybe.withDefault (none |> Either)
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+                (Lazy.lazy NoMetamask.view model)
+                |> Either
 
-        Settings settings ->
+        ( NoMetamask, Failure _ ) ->
+            el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    padding 0
+
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+                (Lazy.lazy NoMetamask.view model)
+                |> Either
+
+        ( Wallet wallet, Success successUser ) ->
+            el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    padding 0
+
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+                (Lazy.lazy3 Wallet.view model successUser wallet)
+                |> Element.map WalletMsg
+                |> Either
+
+        ( Settings settings, _ ) ->
             el
                 [ width fill
                 , height fill
@@ -352,7 +365,7 @@ view msgs ({ device, user } as model) service =
                 (Lazy.lazy3 Settings.view msgs model settings)
                 |> Or
 
-        Faucet ->
+        ( Faucet, _ ) ->
             el
                 [ width fill
                 , height fill
@@ -368,3 +381,6 @@ view msgs ({ device, user } as model) service =
                 (Lazy.lazy Faucet.view model)
                 |> Element.map FaucetMsg
                 |> Either
+
+        _ ->
+            Either none

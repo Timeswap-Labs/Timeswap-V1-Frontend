@@ -69,28 +69,29 @@ type Page
 
 
 init :
-    { model | time : Posix, user : Maybe { user | positions : Remote Positions } }
+    { model | time : Posix, user : Remote error { user | positions : Remote () Positions } }
     -> Maybe Pair
     -> Page
 init { time, user } filter =
     { filter = filter
     , expandedSet =
-        user
-            |> Maybe.andThen
-                (\{ positions } ->
-                    case positions of
-                        Loading ->
-                            Set.empty Pool.sorter |> Just
+        case user of
+            Success { positions } ->
+                case positions of
+                    Loading ->
+                        Set.empty Pool.sorter
 
-                        Failure ->
-                            Set.empty Pool.sorter |> Just
+                    Failure _ ->
+                        Set.empty Pool.sorter
 
-                        Success successPositions ->
-                            successPositions
-                                |> Positions.getFirstClaim time filter
-                                |> Maybe.map (Set.singleton Pool.sorter)
-                )
-            |> Maybe.withDefault (Set.empty Pool.sorter)
+                    Success successPositions ->
+                        successPositions
+                            |> Positions.getFirstClaim time filter
+                            |> Maybe.map (Set.singleton Pool.sorter)
+                            |> Maybe.withDefault (Set.empty Pool.sorter)
+
+            _ ->
+                Set.empty Pool.sorter
     , tooltip = Nothing
     }
         |> Page
@@ -101,7 +102,7 @@ fromFragment :
         | time : Posix
         , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | positions : Remote Positions }
+        , user : Remote error { user | positions : Remote () Positions }
     }
     -> String
     -> Page
@@ -124,37 +125,37 @@ type Msg
 
 
 update :
-    { model | user : Maybe { user | positions : Remote Positions } }
+    { model | user : Remote error { user | positions : Remote () Positions } }
     -> Msg
     -> Page
     -> Page
 update { user } msg (Page page) =
     case msg of
         Expand pool ->
-            user
-                |> Maybe.map
-                    (\{ positions } ->
-                        case positions of
-                            Success successPositions ->
-                                successPositions
-                                    |> Positions.toClaimPools
-                                    |> (\list ->
-                                            if list |> List.member pool then
-                                                { page
-                                                    | expandedSet =
-                                                        page.expandedSet
-                                                            |> Set.insert pool
-                                                }
-                                                    |> Page
+            case user of
+                Success { positions } ->
+                    case positions of
+                        Success successPositions ->
+                            successPositions
+                                |> Positions.toClaimPools
+                                |> (\list ->
+                                        if list |> List.member pool then
+                                            { page
+                                                | expandedSet =
+                                                    page.expandedSet
+                                                        |> Set.insert pool
+                                            }
+                                                |> Page
 
-                                            else
-                                                Page page
-                                       )
+                                        else
+                                            Page page
+                                   )
 
-                            _ ->
-                                Page page
-                    )
-                |> Maybe.withDefault (Page page)
+                        _ ->
+                            Page page
+
+                _ ->
+                    Page page
 
         Collapse pool ->
             { page
@@ -177,7 +178,7 @@ view :
         , time : Posix
         , images : Images
         , tokenImages : TokenImages
-        , user : Maybe { user | positions : Remote Positions }
+        , user : Remote error { user | positions : Remote () Positions }
     }
     -> Page
     -> Element Msg
@@ -200,27 +201,26 @@ view ({ device, time, user } as model) page =
         ]
         [ switch
         , title
-        , user
-            |> Maybe.map
-                (\{ positions } ->
-                    case positions of
-                        Loading ->
-                            PositionsInfo.loading
+        , case user of
+            Success { positions } ->
+                case positions of
+                    Loading ->
+                        PositionsInfo.loading
 
-                        Failure ->
-                            none
+                    Failure _ ->
+                        none
 
-                        -- fix
-                        Success successPositions ->
-                            if successPositions |> Positions.isClaimEmpty then
-                                PositionsInfo.noLendPosition model
+                    Success successPositions ->
+                        if successPositions |> Positions.isClaimEmpty then
+                            PositionsInfo.noLendPosition model
 
-                            else
-                                successPositions
-                                    |> Positions.toClaimList time
-                                    |> allPositions model page
-                )
-            |> Maybe.withDefault (PositionsInfo.noUser model)
+                        else
+                            successPositions
+                                |> Positions.toClaimList time
+                                |> allPositions model page
+
+            _ ->
+                PositionsInfo.noUser model
         ]
 
 

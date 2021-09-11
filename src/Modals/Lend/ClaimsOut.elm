@@ -77,7 +77,7 @@ import Utility.TokenImage as TokenImage
 
 
 type ClaimsOut
-    = Default (Remote ClaimsGivenPercent)
+    = Default (Remote () ClaimsGivenPercent)
     | Slider SliderInput
     | Bond BondInput
     | Insurance InsuranceInput
@@ -105,20 +105,20 @@ type alias ClaimsGivenInsurance =
 
 type alias SliderInput =
     { percent : Percent
-    , claims : Remote ClaimsGivenPercent
+    , claims : Remote () ClaimsGivenPercent
     }
 
 
 type alias BondInput =
     { percent : Percent
     , bond : String
-    , claims : Remote ClaimsGivenBond
+    , claims : Remote () ClaimsGivenBond
     }
 
 
 type alias InsuranceInput =
     { percent : Percent
-    , claims : Remote ClaimsGivenInsurance
+    , claims : Remote () ClaimsGivenInsurance
     , insurance : String
     }
 
@@ -137,12 +137,12 @@ init =
 hasFailure : { modal | claimsOut : ClaimsOut } -> Bool
 hasFailure { claimsOut } =
     case claimsOut of
-        Default Failure ->
+        Default (Failure _) ->
             True
 
         Slider { claims } ->
             case claims of
-                Failure ->
+                Failure _ ->
                     True
 
                 _ ->
@@ -150,7 +150,7 @@ hasFailure { claimsOut } =
 
         Bond { claims } ->
             case claims of
-                Failure ->
+                Failure _ ->
                     True
 
                 _ ->
@@ -158,7 +158,7 @@ hasFailure { claimsOut } =
 
         Insurance { claims } ->
             case claims of
-                Failure ->
+                Failure _ ->
                     True
 
                 _ ->
@@ -187,29 +187,29 @@ isAmount { pool, assetIn, claimsOut } =
 
 
 hasBalanceIfUser :
-    { model | user : Maybe { user | balances : Remote Balances } }
+    { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String }
     -> Bool
 hasBalanceIfUser { user } { pool, assetIn } =
-    user
-        |> Maybe.map
-            (\{ balances } ->
-                case balances of
-                    Loading ->
-                        True
+    case user of
+        Success { balances } ->
+            case balances of
+                Loading ->
+                    True
 
-                    Failure ->
-                        False
+                Failure _ ->
+                    False
 
-                    Success successBalances ->
-                        successBalances
-                            |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
-            )
-        |> Maybe.withDefault True
+                Success successBalances ->
+                    successBalances
+                        |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+
+        _ ->
+            True
 
 
 isCorrect :
-    { model | user : Maybe { user | balances : Remote Balances } }
+    { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
     -> Bool
 isCorrect model modal =
@@ -247,7 +247,7 @@ isDefault { claimsOut } =
 hasTransaction :
     { model
         | time : Posix
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
     }
     ->
         { modal
@@ -258,18 +258,18 @@ hasTransaction :
     -> Bool
 hasTransaction ({ user } as model) ({ pool, assetIn } as modal) =
     hasTransactionInfo model modal
-        && (user
-                |> Maybe.map
-                    (\{ balances } ->
-                        case balances of
-                            Success successBalances ->
-                                successBalances
-                                    |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+        && (case user of
+                Success { balances } ->
+                    case balances of
+                        Success successBalances ->
+                            successBalances
+                                |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
 
-                            _ ->
-                                False
-                    )
-                |> Maybe.withDefault False
+                        _ ->
+                            False
+
+                _ ->
+                    False
            )
 
 
@@ -634,15 +634,15 @@ view :
             | time : Posix
             , images : Images
             , tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
             | pool : Pool
             , assetIn : String
             , claimsOut : ClaimsOut
-            , apr : Remote String
-            , cf : Remote String
+            , apr : Remote () String
+            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element msg
@@ -791,15 +791,15 @@ position :
         { model
             | images : Images
             , tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
             | pool : { pool | pair : Pair }
             , assetIn : String
             , claimsOut : ClaimsOut
-            , apr : Remote String
-            , cf : Remote String
+            , apr : Remote () String
+            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element msg
@@ -848,7 +848,7 @@ position msgs model ({ claimsOut } as modal) =
 
 sliderSection :
     { msgs | slide : Float -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
     -> Percent
     -> Element msg
@@ -901,7 +901,7 @@ sliderSection msgs model modal percent =
 
 slider :
     { msgs | slide : Float -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
     -> Percent
     -> Element msg
@@ -942,7 +942,7 @@ slider msgs model modal percent =
 
 
 estimatedAPR :
-    { modal | apr : Remote String }
+    { modal | apr : Remote () String }
     -> Element msg
 estimatedAPR { apr } =
     row
@@ -981,7 +981,7 @@ estimatedAPR { apr } =
                         ]
                         Loading.view
 
-                Failure ->
+                Failure _ ->
                     none
 
                 Success successAPR ->
@@ -1003,7 +1003,7 @@ collateralFactor :
         | pool : { pool | pair : Pair }
         , assetIn : String
         , claimsOut : ClaimsOut
-        , cf : Remote String
+        , cf : Remote () String
     }
     -> Element msg
 collateralFactor { pool, cf } =
@@ -1043,7 +1043,7 @@ collateralFactor { pool, cf } =
                         ]
                         Loading.view
 
-                Failure ->
+                Failure _ ->
                     none
 
                 Success successCF ->
@@ -1080,7 +1080,7 @@ bondOutSection :
         { model
             | images : Images
             , tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -1171,7 +1171,7 @@ bondOutTextbox :
     ->
         { model
             | tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -1193,7 +1193,7 @@ bondOutTextbox msgs model modal =
 bondOutLogo :
     { model
         | tokenImages : TokenImages
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
     }
     ->
         { modal
@@ -1254,7 +1254,7 @@ bondOutLogo ({ tokenImages } as model) ({ pool } as modal) =
 
 bondOutAmount :
     { msgs | inputBondOut : String -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
@@ -1309,7 +1309,7 @@ bondOutAmount msgs model ({ claimsOut } as modal) =
 
 bondOutInput :
     { msgs | inputBondOut : String -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
@@ -1415,7 +1415,7 @@ insuranceOutSection :
         { model
             | images : Images
             , tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -1506,7 +1506,7 @@ insuranceOutTextbox :
     ->
         { model
             | tokenImages : TokenImages
-            , user : Maybe { user | balances : Remote Balances }
+            , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
         { modal
@@ -1528,7 +1528,7 @@ insuranceOutTextbox msgs model modal =
 insuranceOutLogo :
     { model
         | tokenImages : TokenImages
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
     }
     ->
         { modal
@@ -1589,7 +1589,7 @@ insuranceOutLogo ({ tokenImages } as model) ({ pool } as modal) =
 
 insuranceOutAmount :
     { msgs | inputInsuranceOut : String -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }
@@ -1644,7 +1644,7 @@ insuranceOutAmount msgs model ({ claimsOut } as modal) =
 
 insuranceOutInput :
     { msgs | inputInsuranceOut : String -> msg }
-    -> { model | user : Maybe { user | balances : Remote Balances } }
+    -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
             | pool : { pool | pair : Pair }

@@ -61,7 +61,7 @@ view :
             , images : Images
         }
     -> { page | pair : Pair, tooltip : Maybe Tooltip }
-    -> List ( Maturity, Remote PoolInfo )
+    -> List ( Maturity, Remote () PoolInfo )
     -> Element msg
 view msgs model page list =
     column
@@ -109,7 +109,7 @@ singlePool :
     }
     -> { model | device : Device, time : Posix, zoneInfo : Maybe ZoneInfo, images : Images }
     -> { page | pair : Pair, tooltip : Maybe Tooltip }
-    -> ( Maturity, Remote PoolInfo )
+    -> ( Maturity, Remote () PoolInfo )
     -> Element msg
 singlePool msgs ({ device } as model) page (( maturity, poolInfo ) as info) =
     if device |> Device.isPhoneOrTablet then
@@ -202,7 +202,7 @@ liquidities :
     -> { page | pair : Pair, tooltip : Maybe Tooltip }
     ->
         ( Maturity
-        , Remote { poolInfo | assetLiquidity : String, collateralLiquidity : String }
+        , Remote () { poolInfo | assetLiquidity : String, collateralLiquidity : String }
         )
     -> Element msg
 liquidities msgs { device } page ( maturity, poolInfo ) =
@@ -229,7 +229,7 @@ liquidities msgs { device } page ( maturity, poolInfo ) =
                 Loading ->
                     [ Loading.view ]
 
-                Failure ->
+                Failure _ ->
                     []
 
                 Success { assetLiquidity, collateralLiquidity } ->
@@ -248,7 +248,7 @@ liquidities msgs { device } page ( maturity, poolInfo ) =
 
 estimatedAPR :
     { model | device : Device }
-    -> Remote { poolInfo | apr : String }
+    -> Remote () { poolInfo | apr : String }
     -> Element msg
 estimatedAPR { device } poolInfo =
     el
@@ -268,7 +268,7 @@ estimatedAPR { device } poolInfo =
                     [ centerX ]
                     Loading.view
 
-            Failure ->
+            Failure _ ->
                 none
 
             Success { apr } ->
@@ -300,7 +300,7 @@ collateralFactor :
     }
     -> { model | device : Device }
     -> { page | pair : Pair, tooltip : Maybe Tooltip }
-    -> ( Maturity, Remote { poolInfo | cf : String } )
+    -> ( Maturity, Remote () { poolInfo | cf : String } )
     -> Element msg
 collateralFactor msgs { device } page ( maturity, poolInfo ) =
     el
@@ -320,7 +320,7 @@ collateralFactor msgs { device } page ( maturity, poolInfo ) =
                     [ centerX ]
                     Loading.view
 
-            Failure ->
+            Failure _ ->
                 none
 
             Success { cf } ->

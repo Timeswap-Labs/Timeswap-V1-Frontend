@@ -51,7 +51,7 @@ type Page
     | LiquidityProvider
 
 
-init : { model | pools : Pools, user : Maybe { user | chain : Chain } } -> Page
+init : { model | pools : Pools, user : Remote userError { user | chain : Chain } } -> Page
 init model =
     AllMarket.init model
         |> AllMarket
@@ -62,7 +62,7 @@ fromFragment :
         | time : Posix
         , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | positions : Remote Positions }
+        , user : Remote userError { user | positions : Remote () Positions }
     }
     -> String
     -> Maybe Page
@@ -233,7 +233,7 @@ type Msg
 update :
     { model
         | pools : Pools
-        , user : Maybe { user | positions : Remote Positions }
+        , user : Remote userError { user | positions : Remote () Positions }
     }
     -> Msg
     -> Page
@@ -272,7 +272,7 @@ view :
         , images : Images
         , tokenImages : TokenImages
         , pools : Pools
-        , user : Maybe { user | positions : Remote Positions }
+        , user : Remote userError { user | positions : Remote () Positions }
     }
     -> Page
     -> Element Msg

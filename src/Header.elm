@@ -6,6 +6,7 @@ import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
 import Data.Pools exposing (Pools)
+import Data.Remote exposing (Remote(..))
 import Data.Tab as Tab exposing (Tab)
 import Element
     exposing
@@ -51,7 +52,7 @@ view :
         | device : Device
         , images : Images
         , pools : Pools
-        , user : Maybe { user | chain : Chain, address : Address }
+        , user : Remote userError { user | chain : Chain, address : Address }
         , page : Page
     }
     -> Element msg
@@ -234,7 +235,7 @@ tabs :
     { model
         | device : Device
         , pools : Pools
-        , user : Maybe { user | chain : Chain }
+        , user : Remote userError { user | chain : Chain }
         , page : Page
     }
     -> Element msg
@@ -368,7 +369,7 @@ buttons :
     { model
         | device : Device
         , images : Images
-        , user : Maybe { user | chain : Chain, address : Address }
+        , user : Remote userError { user | chain : Chain, address : Address }
     }
     -> Element msg
 buttons ({ user } as model) =
@@ -388,9 +389,12 @@ buttons ({ user } as model) =
                             [ faucetButton model ]
                )
          )
-            ++ [ user
-                    |> Maybe.map (walletButton model)
-                    |> Maybe.withDefault (connectButton model)
+            ++ [ case user of
+                    Success successUser ->
+                        walletButton model successUser
+
+                    _ ->
+                        connectButton model
                , settingsButton model
                ]
         )

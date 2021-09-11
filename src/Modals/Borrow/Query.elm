@@ -218,7 +218,7 @@ updateDefaultQuery { pool } maybeDues duesOut =
                         }
                             |> Success
                     )
-                |> Maybe.withDefault Failure
+                |> Maybe.withDefault (Failure ())
             )
                 |> DuesOut.Default
 
@@ -246,7 +246,7 @@ updateSliderQuery { pool } maybeDues duesOut =
                                 }
                                     |> Success
                             )
-                        |> Maybe.withDefault Failure
+                        |> Maybe.withDefault (Failure ())
             }
                 |> DuesOut.Slider
 
@@ -276,7 +276,7 @@ updateDebtQuery { pool } maybeDues duesOut =
                                 }
                                     |> Success
                             )
-                        |> Maybe.withDefault Failure
+                        |> Maybe.withDefault (Failure ())
             }
                 |> DuesOut.Debt
 
@@ -306,7 +306,7 @@ updateCollateralQuery { pool } maybeDues duesOut =
                                 }
                                     |> Success
                             )
-                        |> Maybe.withDefault Failure
+                        |> Maybe.withDefault (Failure ())
             }
                 |> DuesOut.Collateral
 

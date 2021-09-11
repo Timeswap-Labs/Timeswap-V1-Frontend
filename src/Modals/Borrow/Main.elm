@@ -69,8 +69,8 @@ type Modal
         { pool : Pool
         , assetOut : String
         , duesOut : DuesOut
-        , apr : Remote String
-        , cf : Remote String
+        , apr : Remote () String
+        , cf : Remote () String
         , tooltip : Maybe Tooltip
         }
 
@@ -150,7 +150,7 @@ update :
         , slippage : Slippage
         , tokens : Tokens
         , pools : Pools
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
         , page : Page
     }
     -> Msg
@@ -350,48 +350,48 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
                 ( Modal modal, Cmd.none )
 
         InputMax ->
-            user
-                |> Maybe.map
-                    (\{ balances } ->
-                        case balances of
-                            Loading ->
-                                ( Modal modal, Cmd.none )
+            case user of
+                Success { balances } ->
+                    case balances of
+                        Loading ->
+                            ( Modal modal, Cmd.none )
 
-                            Failure ->
-                                ( Modal modal, Cmd.none )
+                        Failure _ ->
+                            ( Modal modal, Cmd.none )
 
-                            Success successBalances ->
-                                successBalances
-                                    |> Balances.get (modal.pool.pair |> Pair.toCollateral)
-                                    |> (\string ->
-                                            ( { modal
-                                                | duesOut =
-                                                    if modal.assetOut |> Input.isZero then
-                                                        modal.duesOut |> DuesOut.updateCollateralInZero string
+                        Success successBalances ->
+                            successBalances
+                                |> Balances.get (modal.pool.pair |> Pair.toCollateral)
+                                |> (\string ->
+                                        ( { modal
+                                            | duesOut =
+                                                if modal.assetOut |> Input.isZero then
+                                                    modal.duesOut |> DuesOut.updateCollateralInZero string
 
-                                                    else
-                                                        modal.duesOut |> DuesOut.updateCollateralIn string
-                                                , apr =
-                                                    if (modal.assetOut |> Input.isZero) || (string |> Input.isZero) then
-                                                        Success ""
+                                                else
+                                                    modal.duesOut |> DuesOut.updateCollateralIn string
+                                            , apr =
+                                                if (modal.assetOut |> Input.isZero) || (string |> Input.isZero) then
+                                                    Success ""
 
-                                                    else
-                                                        Loading
-                                                , cf =
-                                                    if (modal.assetOut |> Input.isZero) || (string |> Input.isZero) then
-                                                        Success ""
+                                                else
+                                                    Loading
+                                            , cf =
+                                                if (modal.assetOut |> Input.isZero) || (string |> Input.isZero) then
+                                                    Success ""
 
-                                                    else
-                                                        Loading
-                                              }
-                                                |> Modal
-                                            , Query.givenCollateral modal.pool modal.assetOut string slippage
-                                                |> Maybe.map queryBorrow
-                                                |> Maybe.withDefault Cmd.none
-                                            )
-                                       )
-                    )
-                |> Maybe.withDefault ( Modal modal, Cmd.none )
+                                                else
+                                                    Loading
+                                          }
+                                            |> Modal
+                                        , Query.givenCollateral modal.pool modal.assetOut string slippage
+                                            |> Maybe.map queryBorrow
+                                            |> Maybe.withDefault Cmd.none
+                                        )
+                                   )
+
+                _ ->
+                    ( Modal modal, Cmd.none )
 
         ApproveBorrow value ->
             ( Modal modal, approveBorrow value )
@@ -609,11 +609,12 @@ view :
         , images : Images
         , tokenImages : TokenImages
         , user :
-            Maybe
+            Remote
+                userError
                 { user
                     | address : Address
-                    , balances : Remote Balances
-                    , allowances : Remote Allowances
+                    , balances : Remote () Balances
+                    , allowances : Remote () Allowances
                 }
     }
     -> Modal
@@ -666,15 +667,15 @@ content :
         , backdrop : Backdrop
         , images : Images
         , tokenImages : TokenImages
-        , user : Maybe { user | balances : Remote Balances }
+        , user : Remote userError { user | balances : Remote () Balances }
     }
     ->
         { modal
             | pool : Pool
             , assetOut : String
             , duesOut : DuesOut
-            , apr : Remote String
-            , cf : Remote String
+            , apr : Remote () String
+            , cf : Remote () String
             , tooltip : Maybe Tooltip
         }
     -> Element Msg

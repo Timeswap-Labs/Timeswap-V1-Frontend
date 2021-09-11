@@ -44,6 +44,7 @@ import Utility.TokenImage as TokenImage
 
 type alias DuesIn =
     Remote
+        ()
         { assetIn : String
         , collateralOut : String
         }
@@ -56,7 +57,7 @@ init =
 
 hasTransaction :
     { model | time : Posix }
-    -> { user | balances : Remote Balances }
+    -> { user | balances : Remote () Balances }
     -> Positions
     ->
         { modal
@@ -103,7 +104,7 @@ assetInSection :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , duesIn : Remote { duesIn | assetIn : String }
+            , duesIn : Remote () { duesIn | assetIn : String }
         }
     -> Element msg
 assetInSection { tokenImages } ({ pool } as modal) =
@@ -139,7 +140,7 @@ assetInSection { tokenImages } ({ pool } as modal) =
 assetInAmount :
     { modal
         | pool : { pool | pair : Pair }
-        , duesIn : Remote { duesIn | assetIn : String }
+        , duesIn : Remote () { duesIn | assetIn : String }
     }
     -> Element msg
 assetInAmount { pool, duesIn } =
@@ -152,7 +153,7 @@ assetInAmount { pool, duesIn } =
                 ]
                 Loading.view
 
-        Failure ->
+        Failure _ ->
             none
 
         Success { assetIn } ->
@@ -188,7 +189,7 @@ collateralOutSection :
     ->
         { modal
             | pool : { pool | pair : Pair }
-            , duesIn : Remote { duesIn | collateralOut : String }
+            , duesIn : Remote () { duesIn | collateralOut : String }
         }
     -> Element msg
 collateralOutSection { tokenImages } ({ pool } as modal) =
@@ -224,7 +225,7 @@ collateralOutSection { tokenImages } ({ pool } as modal) =
 collateralOutAmount :
     { modal
         | pool : { pool | pair : Pair }
-        , duesIn : Remote { duesIn | collateralOut : String }
+        , duesIn : Remote () { duesIn | collateralOut : String }
     }
     -> Element msg
 collateralOutAmount { pool, duesIn } =
@@ -237,7 +238,7 @@ collateralOutAmount { pool, duesIn } =
                 ]
                 Loading.view
 
-        Failure ->
+        Failure _ ->
             none
 
         Success { collateralOut } ->

@@ -291,7 +291,7 @@ decoderDuesUint =
             )
 
 
-init : Pools -> Tokens -> Value -> Remote Positions
+init : Pools -> Tokens -> Value -> Remote () Positions
 init pools tokens value =
     value
         |> Decode.decodeValue (decoder pools tokens)

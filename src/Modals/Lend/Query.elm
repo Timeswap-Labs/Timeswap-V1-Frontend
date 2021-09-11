@@ -218,7 +218,7 @@ updateDefaultQuery { pool } maybeClaims claimsOut =
                         }
                             |> Success
                     )
-                |> Maybe.withDefault Failure
+                |> Maybe.withDefault (Failure ())
             )
                 |> ClaimsOut.Default
 
@@ -246,7 +246,7 @@ updateSliderQuery { pool } maybeClaims claimsOut =
                                 }
                                     |> Success
                             )
-                        |> Maybe.withDefault Failure
+                        |> Maybe.withDefault (Failure ())
             }
                 |> ClaimsOut.Slider
 
@@ -276,7 +276,7 @@ updateBondQuery { pool } maybeClaims claimsOut =
                                 }
                                     |> Success
                             )
-                        |> Maybe.withDefault Failure
+                        |> Maybe.withDefault (Failure ())
             }
                 |> ClaimsOut.Bond
 
@@ -306,7 +306,7 @@ updateInsuranceQuery { pool } maybeClaims claimsOut =
                                 }
                                     |> Success
                             )
-                        |> Maybe.withDefault Failure
+                        |> Maybe.withDefault (Failure ())
             }
                 |> ClaimsOut.Insurance
 

@@ -1,5 +1,6 @@
 module Data.Chain exposing
     ( Chain(..)
+    , Error
     , decoder
     )
 
@@ -11,17 +12,21 @@ type Chain
     | Rinkeby
 
 
-decoder : Decoder Chain
+type Error
+    = UnsupportedNetwork
+
+
+decoder : Decoder (Result Error Chain)
 decoder =
     Decode.string
         |> Decode.andThen
             (\string ->
                 case string of
-                    -- "0x1" ->
-                    --     Decode.succeed Mainnet
                     "0x4" ->
-                        Decode.succeed Rinkeby
+                        Ok Rinkeby
+                            |> Decode.succeed
 
                     _ ->
-                        Decode.fail "Not a whitelisted chain"
+                        Err UnsupportedNetwork
+                            |> Decode.succeed
             )

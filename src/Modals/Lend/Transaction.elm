@@ -93,7 +93,7 @@ toTransaction :
     { model
         | time : Posix
         , deadline : Deadline
-        , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
+        , user : Remote userError { user | address : Address, balances : Remote () Balances, allowances : Remote () Allowances }
     }
     -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut }
     -> Maybe Transaction
@@ -118,7 +118,13 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetIn, claimsOut } 
                         }
                             |> GivenPercent
                     )
-                    (user |> Maybe.map .address)
+                    (case user of
+                        Success { address } ->
+                            Just address
+
+                        _ ->
+                            Nothing
+                    )
                     (assetIn |> Uint.fromString)
                     (minBond |> Uint.fromString)
                     (minInsurance |> Uint.fromString)
@@ -138,7 +144,13 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetIn, claimsOut } 
                                 }
                                     |> GivenPercent
                             )
-                            (user |> Maybe.map .address)
+                            (case user of
+                                Success { address } ->
+                                    Just address
+
+                                _ ->
+                                    Nothing
+                            )
                             (assetIn |> Uint.fromString)
                             (minBond |> Uint.fromString)
                             (minInsurance |> Uint.fromString)
@@ -160,7 +172,13 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetIn, claimsOut } 
                                 }
                                     |> GivenBond
                             )
-                            (user |> Maybe.map .address)
+                            (case user of
+                                Success { address } ->
+                                    Just address
+
+                                _ ->
+                                    Nothing
+                            )
                             (assetIn |> Uint.fromString)
                             (bond |> Uint.fromString)
                             (minInsurance |> Uint.fromString)
@@ -182,7 +200,13 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetIn, claimsOut } 
                                 }
                                     |> GivenInsurance
                             )
-                            (user |> Maybe.map .address)
+                            (case user of
+                                Success { address } ->
+                                    Just address
+
+                                _ ->
+                                    Nothing
+                            )
                             (assetIn |> Uint.fromString)
                             (insurance |> Uint.fromString)
                             (minBond |> Uint.fromString)
@@ -242,26 +266,26 @@ encode transaction =
 
 
 hasAllowance :
-    { model | user : Maybe { user | balances : Remote Balances, allowances : Remote Allowances } }
+    { model | user : Remote userError { user | balances : Remote () Balances, allowances : Remote () Allowances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String }
     -> Bool
 hasAllowance { user } { pool, assetIn } =
-    user
-        |> Maybe.map
-            (\{ balances, allowances } ->
-                case ( balances, allowances ) of
-                    ( Success successBalances, Success successAllowances ) ->
-                        (successBalances
-                            |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
-                        )
-                            && (successAllowances
-                                    |> Allowances.hasEnough (pool.pair |> Pair.toAsset) assetIn
-                               )
+    case user of
+        Success { balances, allowances } ->
+            case ( balances, allowances ) of
+                ( Success successBalances, Success successAllowances ) ->
+                    (successBalances
+                        |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+                    )
+                        && (successAllowances
+                                |> Allowances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+                           )
 
-                    _ ->
-                        False
-            )
-        |> Maybe.withDefault False
+                _ ->
+                    False
+
+        _ ->
+            False
 
 
 view :
@@ -278,7 +302,7 @@ view :
             , slippage : Slippage
             , deadline : Deadline
             , images : Images
-            , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
+            , user : Remote userError { user | address : Address, balances : Remote () Balances, allowances : Remote () Allowances }
         }
     -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element msg
@@ -288,27 +312,27 @@ view msgs ({ user } as model) modal =
         , height shrink
         , spacing 12
         ]
-        [ user
-            |> Maybe.map
-                (\_ ->
-                    row
+        [ case user of
+            Success _ ->
+                row
+                    [ width fill
+                    , height shrink
+                    , spacing 20
+                    ]
+                    [ el
                         [ width fill
                         , height shrink
-                        , spacing 20
                         ]
-                        [ el
-                            [ width fill
-                            , height shrink
-                            ]
-                            (approveSection msgs model modal)
-                        , el
-                            [ width fill
-                            , height shrink
-                            ]
-                            (lendSection msgs model modal)
+                        (approveSection msgs model modal)
+                    , el
+                        [ width fill
+                        , height shrink
                         ]
-                )
-            |> Maybe.withDefault (connectButton model)
+                        (lendSection msgs model modal)
+                    ]
+
+            _ ->
+                connectButton model
         , transactionInfo msgs model modal
         ]
 
@@ -399,7 +423,7 @@ approveSection :
         { model
             | device : Device
             , time : Posix
-            , user : Maybe { user | balances : Remote Balances, allowances : Remote Allowances }
+            , user : Remote userError { user | balances : Remote () Balances, allowances : Remote () Allowances }
         }
     -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut }
     -> Element msg
@@ -508,7 +532,7 @@ lendSection :
             | device : Device
             , time : Posix
             , deadline : Deadline
-            , user : Maybe { user | address : Address, balances : Remote Balances, allowances : Remote Allowances }
+            , user : Remote userError { user | address : Address, balances : Remote () Balances, allowances : Remote () Allowances }
         }
     -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut }
     -> Element msg
