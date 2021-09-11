@@ -1,10 +1,21 @@
 {
+  "scripts": {
+    "start": "yarn run parcel index.html",
+    "build": "yarn run parcel build index.html"
+  },
   "dependencies": {
+    "@ethersproject/providers": "^5.4.5",
+    "@timeswap-labs/timeswap-v1-sdk": "^0.1.5",
+    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.4",
     "elm": "^0.19.1-5",
     "parcel-bundler": "^1.12.5"
   },
   "devDependencies": {
+    "@types/elm": "^0.19.1",
+    "@types/regenerator-runtime": "^0.13.1",
     "elm-hot": "^1.1.6",
-    "node-elm-compiler": "^5.0.6"
+    "ethers": "^5.4.6",
+    "node-elm-compiler": "^5.0.6",
+    "typescript": "^4.4.2"
   }
 }
