@@ -12,7 +12,7 @@ import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Token as Token
+import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
@@ -265,6 +265,12 @@ encode transaction =
                 |> Encode.object
 
 
+encodeApprove : Token -> Value
+encodeApprove token =
+    [ ( "token", token |> Token.encode ) ]
+        |> Encode.object
+
+
 hasAllowance :
     { model | user : Remote userError { user | balances : Remote () Balances, allowances : Remote () Allowances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String }
@@ -471,7 +477,7 @@ approveButton msgs { device } { pool } =
         { onPress =
             pool.pair
                 |> Pair.toAsset
-                |> Token.encode
+                |> encodeApprove
                 |> msgs.approveLend
                 |> Just
         , label =

@@ -11,7 +11,7 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Positions as Positions exposing (Positions)
 import Data.Remote exposing (Remote(..))
-import Data.Token as Token
+import Data.Token as Token exposing (Token)
 import Data.TokenId as TokenId exposing (TokenId)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -107,6 +107,12 @@ encode { pool, to, dict, deadline } =
                 ]
                     |> Encode.object
            )
+
+
+encodeApprove : Token -> Value
+encodeApprove token =
+    [ ( "token", token |> Token.encode ) ]
+        |> Encode.object
 
 
 hasAllowance :
@@ -220,7 +226,7 @@ approveButton msgs { device } { pool } =
         { onPress =
             pool.pair
                 |> Pair.toAsset
-                |> Token.encode
+                |> encodeApprove
                 |> msgs.approvePay
                 |> Just
         , label =
