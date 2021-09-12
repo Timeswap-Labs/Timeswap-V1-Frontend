@@ -2,6 +2,7 @@ module Data.Slippage exposing
     ( Option(..)
     , Slippage
     , encode
+    , encodeGivenPercent
     , fromOption
     , fromString
     , init
@@ -29,6 +30,14 @@ encode (Slippage int) =
     int
         |> toFloat
         |> (\float -> float / 1000)
+        |> Encode.float
+
+
+encodeGivenPercent : Slippage -> Value
+encodeGivenPercent (Slippage int) =
+    int
+        |> toFloat
+        |> (\float -> float / 2000)
         |> Encode.float
 
 

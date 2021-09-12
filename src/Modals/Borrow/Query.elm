@@ -164,7 +164,7 @@ givenPercent pool assetOut percent slippage =
                     , ( "maturity", pool.maturity |> Maturity.encode )
                     , ( "assetOut", uintAssetOut |> Uint.encode )
                     , ( "percent", percent |> Percent.encode )
-                    , ( "slippage", slippage |> Slippage.encode )
+                    , ( "slippage", slippage |> Slippage.encodeGivenPercent )
                     ]
                         |> Encode.object
                 )
