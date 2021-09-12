@@ -111,7 +111,7 @@ encode { pool, to, dict, deadline } =
 
 encodeApprove : Token -> Value
 encodeApprove token =
-    [ ( "token", token |> Token.encode ) ]
+    [ ( "erc20", token |> Token.encode ) ]
         |> Encode.object
 
 
