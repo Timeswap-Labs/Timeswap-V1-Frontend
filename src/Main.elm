@@ -332,12 +332,18 @@ update msg model =
             )
 
         ChooseSlippageOption option ->
-            ( { model | slippage = option |> Slippage.fromOption }
+            ( { model
+                | slippage = option |> Slippage.fromOption
+                , service = Just Service.refreshSettings
+              }
             , Cmd.none
             )
 
         ChooseDeadlineOption option ->
-            ( { model | deadline = option |> Deadline.fromOption }
+            ( { model
+                | deadline = option |> Deadline.fromOption
+                , service = Just Service.refreshSettings
+              }
             , Cmd.none
             )
 
@@ -709,14 +715,15 @@ html model =
                         |> Maybe.map
                             (\service ->
                                 [ Service.view msgs model service
-                                    |> (\or ->
+                                    |> Element.map
+                                        (\or ->
                                             case or of
-                                                Either element ->
-                                                    element |> Element.map ServiceMsg
+                                                Either serviceMsg ->
+                                                    serviceMsg |> ServiceMsg
 
-                                                Or element ->
-                                                    element
-                                       )
+                                                Or msg ->
+                                                    msg
+                                        )
                                     |> inFront
                                 ]
                             )

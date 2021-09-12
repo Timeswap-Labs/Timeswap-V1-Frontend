@@ -17,7 +17,6 @@ import Element
         , fill
         , height
         , inFront
-        , link
         , mouseDown
         , mouseOver
         , newTabLink

@@ -1,12 +1,16 @@
 module Services.Settings.Main exposing
-    ( Settings
+    ( Msg
+    , Service
+    , Settings
     , getDeadline
     , getSlippage
     , hasDeadlineInput
     , hasSlippageInput
     , init
+    , initSettings
     , inputDeadline
     , inputSlippage
+    , update
     , view
     )
 
@@ -14,6 +18,7 @@ import Data.Backdrop exposing (Backdrop)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
+import Data.Or exposing (Or(..))
 import Data.Slippage as Slippage exposing (Slippage)
 import Element
     exposing
@@ -27,6 +32,8 @@ import Element
         , height
         , htmlAttribute
         , inFront
+        , none
+        , onRight
         , padding
         , paddingEach
         , paddingXY
@@ -39,12 +46,15 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input exposing (OptionState)
 import Html.Attributes
+import Services.Settings.Tooltip as Tooltip exposing (Tooltip)
 import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Glass as Glass
+import Utility.Image as Image
 import Utility.Input as Input
 
 
@@ -54,11 +64,36 @@ type alias Settings =
     }
 
 
-init : Settings
-init =
+type Service
+    = Service (Maybe Tooltip)
+
+
+initSettings : Settings
+initSettings =
     { slippage = Nothing
     , deadline = Nothing
     }
+
+
+init : Service
+init =
+    Service Nothing
+
+
+type Msg
+    = OnMouseEnter Tooltip
+    | OnMouseLeave
+
+
+update : Msg -> Service
+update msg =
+    case msg of
+        OnMouseEnter tooltip ->
+            Just tooltip
+                |> Service
+
+        OnMouseLeave ->
+            Service Nothing
 
 
 inputSlippage : String -> Settings -> Settings
@@ -119,15 +154,16 @@ view :
             , deadline : Deadline
             , images : Images
         }
+    -> Service
     -> Settings
-    -> Element msg
-view msgs ({ device, backdrop, images } as model) settings =
+    -> Element (Or Msg msg)
+view msgs ({ device, backdrop, images } as model) (Service tooltip) settings =
     column
         ([ padding 40
          , spacing 32
          , centerX
          , centerY
-         , inFront (Exit.buttonWithMsg images msgs.exitSettings)
+         , inFront (Exit.buttonWithMsg images msgs.exitSettings |> Element.map Or)
          ]
             ++ Glass.lightPrimaryModal backdrop 0
             ++ (if Device.isPhone device then
@@ -143,7 +179,7 @@ view msgs ({ device, backdrop, images } as model) settings =
                )
         )
         [ title
-        , content msgs model settings
+        , content msgs model tooltip settings
         ]
 
 
@@ -176,10 +212,12 @@ content :
             , backdrop : Backdrop
             , slippage : Slippage
             , deadline : Deadline
+            , images : Images
         }
+    -> Maybe Tooltip
     -> Settings
-    -> Element msg
-content msgs model settings =
+    -> Element (Or Msg msg)
+content msgs ({ images } as model) tooltip settings =
     column
         [ width fill
         , height shrink
@@ -190,22 +228,42 @@ content msgs model settings =
             , height shrink
             , spacing 12
             ]
-            [ el
+            [ row
                 [ width shrink
                 , height shrink
-                , paddingXY 0 4
-                , Font.regular
-                , Font.size 16
-                , Font.color Color.transparent300
+                , spacing 8
                 ]
-                (text "Slippage tolerance")
+                [ el
+                    [ width shrink
+                    , height shrink
+                    , paddingXY 0 4
+                    , Font.regular
+                    , Font.size 16
+                    , Font.color Color.transparent300
+                    ]
+                    (text "Slippage tolerance")
+                , Image.info images
+                    [ width <| px 16
+                    , centerY
+                    , Events.onMouseEnter (OnMouseEnter Tooltip.Slippage |> Either)
+                    , Events.onMouseLeave (OnMouseLeave |> Either)
+                    , (case tooltip of
+                        Just Tooltip.Slippage ->
+                            Tooltip.slippage
+
+                        _ ->
+                            none
+                      )
+                        |> onRight
+                    ]
+                ]
             , row
                 [ width fill
                 , height shrink
                 , spacing 8
                 ]
-                [ slippageSwitch msgs model
-                , slippageInput msgs model settings
+                [ slippageSwitch msgs model |> Element.map Or
+                , slippageInput msgs model settings |> Element.map Or
                 ]
             ]
         , column
@@ -213,22 +271,42 @@ content msgs model settings =
             , height shrink
             , spacing 12
             ]
-            [ el
+            [ row
                 [ width shrink
                 , height shrink
-                , paddingXY 0 4
-                , Font.regular
-                , Font.size 16
-                , Font.color Color.transparent300
+                , spacing 8
                 ]
-                (text "Transaction deadline")
+                [ el
+                    [ width shrink
+                    , height shrink
+                    , paddingXY 0 4
+                    , Font.regular
+                    , Font.size 16
+                    , Font.color Color.transparent300
+                    ]
+                    (text "Transaction deadline")
+                , Image.info images
+                    [ width <| px 16
+                    , centerY
+                    , Events.onMouseEnter (OnMouseEnter Tooltip.Deadline |> Either)
+                    , Events.onMouseLeave (OnMouseLeave |> Either)
+                    , (case tooltip of
+                        Just Tooltip.Deadline ->
+                            Tooltip.deadline
+
+                        _ ->
+                            none
+                      )
+                        |> onRight
+                    ]
+                ]
             , row
                 [ width fill
                 , height shrink
                 , spacing 8
                 ]
-                [ deadlineSwitch msgs model
-                , deadlineInput msgs model settings
+                [ deadlineSwitch msgs model |> Element.map Or
+                , deadlineInput msgs model settings |> Element.map Or
                 ]
             ]
         ]
@@ -245,6 +323,7 @@ slippageSwitch msgs ({ device, slippage } as model) =
          , spacing 4
          , Background.color Color.transparent100
          , Border.rounded 8
+         , htmlAttribute <| Html.Attributes.id "slippage"
          ]
             ++ (if Device.isPhone device then
                     [ width <| px 199 ]
@@ -287,6 +366,7 @@ deadlineSwitch msgs ({ device, deadline } as model) =
         , spacing 4
         , Background.color Color.transparent100
         , Border.rounded 8
+        , htmlAttribute <| Html.Attributes.id "deadline"
         ]
         { onChange = msgs.chooseDeadlineOption
         , options =

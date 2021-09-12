@@ -23,7 +23,7 @@ import Data.Chain exposing (Chain(..))
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
-import Data.Or exposing (Or(..))
+import Data.Or as Or exposing (Or(..))
 import Data.Remote exposing (Remote(..))
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.TokenImages exposing (TokenImages)
@@ -58,7 +58,7 @@ type Service
     = Connect
     | NoMetamask
     | Wallet Wallet.Service
-    | Settings Settings
+    | Settings Settings.Service Settings
     | Faucet
 
 
@@ -81,7 +81,7 @@ fromFragment { user } string =
             Wallet Wallet.init |> Just
 
         ( "settings", _ ) ->
-            Settings Settings.init |> Just
+            Settings Settings.init Settings.initSettings |> Just
 
         ( "faucet", _ ) ->
             Just Faucet
@@ -102,7 +102,7 @@ toUrl service =
         Wallet _ ->
             Router.toWallet
 
-        Settings _ ->
+        Settings _ _ ->
             Router.toSettings
 
         Faucet ->
@@ -121,7 +121,7 @@ same service1 service2 =
         ( Wallet _, Wallet _ ) ->
             True
 
-        ( Settings _, Settings _ ) ->
+        ( Settings _ _, Settings _ _ ) ->
             True
 
         ( Faucet, Faucet ) ->
@@ -134,6 +134,7 @@ same service1 service2 =
 type Msg
     = ConnectMsg Connect.Msg
     | WalletMsg Wallet.Msg
+    | SettingsMsg Settings.Msg
     | FaucetMsg Faucet.Msg
 
 
@@ -163,6 +164,11 @@ update model msg service =
                         )
                    )
 
+        ( SettingsMsg settingsMsg, Settings _ settings ) ->
+            ( Settings (Settings.update settingsMsg) settings
+            , Cmd.none
+            )
+
         ( FaucetMsg faucetMsg, Faucet ) ->
             ( Faucet
             , Faucet.update faucetMsg
@@ -176,10 +182,10 @@ update model msg service =
 inputSlippage : String -> Service -> Service
 inputSlippage string service =
     case service of
-        Settings settings ->
+        Settings settingsService settings ->
             settings
                 |> Settings.inputSlippage string
-                |> Settings
+                |> Settings settingsService
 
         _ ->
             service
@@ -188,10 +194,10 @@ inputSlippage string service =
 inputDeadline : String -> Service -> Service
 inputDeadline string service =
     case service of
-        Settings settings ->
+        Settings settingsService settings ->
             settings
                 |> Settings.inputDeadline string
-                |> Settings
+                |> Settings settingsService
 
         _ ->
             service
@@ -200,7 +206,7 @@ inputDeadline string service =
 getSlippage : Service -> Maybe Slippage
 getSlippage service =
     case service of
-        Settings settings ->
+        Settings _ settings ->
             settings |> Settings.getSlippage
 
         _ ->
@@ -210,7 +216,7 @@ getSlippage service =
 getDeadline : Service -> Maybe Deadline
 getDeadline service =
     case service of
-        Settings settings ->
+        Settings _ settings ->
             settings |> Settings.getDeadline
 
         _ ->
@@ -219,14 +225,14 @@ getDeadline service =
 
 refreshSettings : Service
 refreshSettings =
-    Settings.init
-        |> Settings
+    Settings.initSettings
+        |> Settings Settings.init
 
 
 hasSlippageInput : Service -> Bool
 hasSlippageInput service =
     case service of
-        Settings settings ->
+        Settings _ settings ->
             settings |> Settings.hasSlippageInput
 
         _ ->
@@ -236,7 +242,7 @@ hasSlippageInput service =
 hasDeadlineInput : Service -> Bool
 hasDeadlineInput service =
     case service of
-        Settings settings ->
+        Settings _ settings ->
             settings |> Settings.hasDeadlineInput
 
         _ ->
@@ -263,7 +269,7 @@ view :
             , user : Remote userError { user | address : Address, balances : Remote () Balances }
         }
     -> Service
-    -> Or (Element Msg) (Element msg)
+    -> Element (Or Msg msg)
 view msgs ({ device, user } as model) service =
     case ( service, user ) of
         ( Connect, Loading ) ->
@@ -281,7 +287,7 @@ view msgs ({ device, user } as model) service =
                 ]
                 (Lazy.lazy Connect.view model)
                 |> Element.map ConnectMsg
-                |> Either
+                |> Element.map Either
 
         ( Connect, Failure _ ) ->
             el
@@ -298,7 +304,7 @@ view msgs ({ device, user } as model) service =
                 ]
                 (Lazy.lazy Connect.view model)
                 |> Element.map ConnectMsg
-                |> Either
+                |> Element.map Either
 
         ( NoMetamask, Loading ) ->
             el
@@ -314,7 +320,7 @@ view msgs ({ device, user } as model) service =
                 , Font.family Typography.supreme
                 ]
                 (Lazy.lazy NoMetamask.view model)
-                |> Either
+                |> Element.map Either
 
         ( NoMetamask, Failure _ ) ->
             el
@@ -330,7 +336,7 @@ view msgs ({ device, user } as model) service =
                 , Font.family Typography.supreme
                 ]
                 (Lazy.lazy NoMetamask.view model)
-                |> Either
+                |> Element.map Either
 
         ( Wallet wallet, Success successUser ) ->
             el
@@ -347,9 +353,9 @@ view msgs ({ device, user } as model) service =
                 ]
                 (Lazy.lazy3 Wallet.view model successUser wallet)
                 |> Element.map WalletMsg
-                |> Either
+                |> Element.map Either
 
-        ( Settings settings, _ ) ->
+        ( Settings settingsService settings, _ ) ->
             el
                 [ width fill
                 , height fill
@@ -362,8 +368,8 @@ view msgs ({ device, user } as model) service =
                 , Background.color Color.modal
                 , Font.family Typography.supreme
                 ]
-                (Lazy.lazy3 Settings.view msgs model settings)
-                |> Or
+                (Lazy.lazy4 Settings.view msgs model settingsService settings)
+                |> (Element.map << Or.mapEither) SettingsMsg
 
         ( Faucet, _ ) ->
             el
@@ -380,7 +386,7 @@ view msgs ({ device, user } as model) service =
                 ]
                 (Lazy.lazy Faucet.view model)
                 |> Element.map FaucetMsg
-                |> Either
+                |> Element.map Either
 
         _ ->
-            Either none
+            none
