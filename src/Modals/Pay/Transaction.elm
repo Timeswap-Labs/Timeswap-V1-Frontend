@@ -5,13 +5,14 @@ import Data.Allowances as Allowances exposing (Allowances)
 import Data.Balances as Balances exposing (Balances)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
+import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
 import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Positions as Positions exposing (Positions)
 import Data.Remote exposing (Remote(..))
-import Data.Token as Token exposing (Token)
+import Data.Token as Token
 import Data.TokenId as TokenId exposing (TokenId)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -109,9 +110,9 @@ encode { pool, to, dict, deadline } =
            )
 
 
-encodeApprove : Token -> Value
-encodeApprove token =
-    [ ( "erc20", token |> Token.encode ) ]
+encodeApprove : ERC20 -> Value
+encodeApprove erc20 =
+    [ ( "erc20", erc20 |> ERC20.encode ) ]
         |> Encode.object
 
 
@@ -151,23 +152,32 @@ view :
     -> Positions
     -> { modal | pool : Pool, tokenIds : Set TokenId, duesIn : DuesIn }
     -> Element msg
-view msgs model user positions modal =
-    row
-        [ width fill
-        , height shrink
-        , spacing 20
-        ]
-        [ el
-            [ width fill
-            , height shrink
-            ]
-            (approveSection msgs model user positions modal)
-        , el
-            [ width fill
-            , height shrink
-            ]
-            (paySection msgs model user positions modal)
-        ]
+view msgs model user positions ({ pool } as modal) =
+    pool.pair
+        |> Pair.toAsset
+        |> (\token ->
+                case token of
+                    Token.ETH ->
+                        paySection msgs model user positions modal
+
+                    Token.ERC20 erc20 ->
+                        row
+                            [ width fill
+                            , height shrink
+                            , spacing 20
+                            ]
+                            [ el
+                                [ width fill
+                                , height shrink
+                                ]
+                                (approveSection msgs model user positions modal erc20)
+                            , el
+                                [ width fill
+                                , height shrink
+                                ]
+                                (paySection msgs model user positions modal)
+                            ]
+           )
 
 
 approveSection :
@@ -181,13 +191,14 @@ approveSection :
         }
     -> Positions
     -> { modal | pool : Pool, tokenIds : Set TokenId, duesIn : DuesIn }
+    -> ERC20
     -> Element msg
-approveSection msgs model user positions modal =
+approveSection msgs model user positions modal erc20 =
     if
         DuesIn.hasTransaction model user positions modal
             && (hasAllowance user modal |> not)
     then
-        approveButton msgs model modal
+        approveButton msgs model erc20
 
     else
         disabledApprove model
@@ -196,9 +207,9 @@ approveSection msgs model user positions modal =
 approveButton :
     { msgs | approvePay : Value -> msg }
     -> { model | device : Device }
-    -> { modal | pool : { pool | pair : Pair } }
+    -> ERC20
     -> Element msg
-approveButton msgs { device } { pool } =
+approveButton msgs { device } erc20 =
     Input.button
         ([ width fill
          , paddingEach
@@ -224,8 +235,7 @@ approveButton msgs { device } { pool } =
                )
         )
         { onPress =
-            pool.pair
-                |> Pair.toAsset
+            erc20
                 |> encodeApprove
                 |> msgs.approvePay
                 |> Just

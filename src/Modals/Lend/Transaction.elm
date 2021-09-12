@@ -5,6 +5,7 @@ import Data.Allowances as Allowances exposing (Allowances)
 import Data.Balances as Balances exposing (Balances)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
+import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
 import Data.Pair as Pair exposing (Pair)
@@ -12,7 +13,7 @@ import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Token as Token exposing (Token)
+import Data.Token as Token
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
@@ -265,9 +266,9 @@ encode transaction =
                 |> Encode.object
 
 
-encodeApprove : Token -> Value
-encodeApprove token =
-    [ ( "erc20", token |> Token.encode ) ]
+encodeApprove : ERC20 -> Value
+encodeApprove erc20 =
+    [ ( "erc20", erc20 |> ERC20.encode ) ]
         |> Encode.object
 
 
@@ -312,7 +313,7 @@ view :
         }
     -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element msg
-view msgs ({ user } as model) modal =
+view msgs ({ user } as model) ({ pool } as modal) =
     column
         [ width fill
         , height shrink
@@ -320,22 +321,31 @@ view msgs ({ user } as model) modal =
         ]
         [ case user of
             Success _ ->
-                row
-                    [ width fill
-                    , height shrink
-                    , spacing 20
-                    ]
-                    [ el
-                        [ width fill
-                        , height shrink
-                        ]
-                        (approveSection msgs model modal)
-                    , el
-                        [ width fill
-                        , height shrink
-                        ]
-                        (lendSection msgs model modal)
-                    ]
+                pool.pair
+                    |> Pair.toAsset
+                    |> (\token ->
+                            case token of
+                                Token.ETH ->
+                                    lendSection msgs model modal
+
+                                Token.ERC20 erc20 ->
+                                    row
+                                        [ width fill
+                                        , height shrink
+                                        , spacing 20
+                                        ]
+                                        [ el
+                                            [ width fill
+                                            , height shrink
+                                            ]
+                                            (approveSection msgs model modal erc20)
+                                        , el
+                                            [ width fill
+                                            , height shrink
+                                            ]
+                                            (lendSection msgs model modal)
+                                        ]
+                       )
 
             _ ->
                 connectButton model
@@ -432,13 +442,14 @@ approveSection :
             , user : Remote userError { user | balances : Remote () Balances, allowances : Remote () Allowances }
         }
     -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut }
+    -> ERC20
     -> Element msg
-approveSection msgs model modal =
+approveSection msgs model modal erc20 =
     if
         ClaimsOut.hasTransaction model modal
             && (hasAllowance model modal |> not)
     then
-        approveButton msgs model modal
+        approveButton msgs model erc20
 
     else
         disabledApprove model
@@ -447,9 +458,9 @@ approveSection msgs model modal =
 approveButton :
     { msgs | approveLend : Value -> msg }
     -> { model | device : Device }
-    -> { modal | pool : { pool | pair : Pair } }
+    -> ERC20
     -> Element msg
-approveButton msgs { device } { pool } =
+approveButton msgs { device } erc20 =
     Input.button
         ([ width fill
          , paddingEach
@@ -475,8 +486,7 @@ approveButton msgs { device } { pool } =
                )
         )
         { onPress =
-            pool.pair
-                |> Pair.toAsset
+            erc20
                 |> encodeApprove
                 |> msgs.approveLend
                 |> Just
