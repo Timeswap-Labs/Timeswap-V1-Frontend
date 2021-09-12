@@ -215,8 +215,8 @@ decoderClaims pools tokens =
         |> Pipeline.custom (Pools.decoderPool pools tokens)
         |> Pipeline.custom
             (Decode.oneOf
-                [ decoderClaimUint |> Decode.map Active
-                , decoderReturnUint |> Decode.map Matured
+                [ decoderReturnUint |> Decode.map Matured
+                , decoderClaimUint |> Decode.map Active
                 ]
             )
         |> Decode.map
