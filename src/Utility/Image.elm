@@ -32,8 +32,14 @@ import Element
     exposing
         ( Attribute
         , Element
+        , el
+        , fill
+        , height
         , image
+        , none
+        , width
         )
+import Element.Background as Background
 import Sort.Dict as Dict
 
 
@@ -47,6 +53,22 @@ view name dict attributes =
                 |> Maybe.withDefault ""
         , description = name
         }
+
+
+background : Images -> Element msg
+background images =
+    el
+        ([ width fill
+         , height fill
+         ]
+            ++ (images
+                    |> Dict.get "Background"
+                    |> Maybe.map Background.image
+                    |> Maybe.map List.singleton
+                    |> Maybe.withDefault []
+               )
+        )
+        none
 
 
 logo : Images -> List (Attribute msg) -> Element msg
@@ -172,8 +194,3 @@ checkboxSelected =
 warning : Images -> List (Attribute msg) -> Element msg
 warning =
     view "Warning"
-
-
-background : Images -> List (Attribute msg) -> Element msg
-background =
-    view "Background"

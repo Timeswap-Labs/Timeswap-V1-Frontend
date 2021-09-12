@@ -4,28 +4,22 @@
   "convenience": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
   "erc20s": [
     {
-      "address": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+      "address": "0x50bddfb60613a870251e067e2cb401526db85c93",
       "name": "DAI Stablecoin",
       "symbol": "DAI",
       "decimals": 18
     },
     {
-      "address": "0x98ea5A9f9621F160EC378e1F1b1Be78A4809eF32",
+      "address": "0xea3f06da2ef068e0f540051b3fd51df108aedf17",
       "name": "Matic Token",
       "symbol": "MATIC",
-      "decimals": 18
-    },
-    {
-      "address": "0xa1fcEeFd0bA04519729815Fc0512E47869C8818e",
-      "name": "Wrapped Ether",
-      "symbol": "WETH",
       "decimals": 18
     }
   ],
   "pairs": [
     {
       "pair": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
-      "asset": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+      "asset": "0x50bddfb60613a870251e067e2cb401526db85c93",
       "collateral": "ETH",
       "pools": [
         {
@@ -53,8 +47,8 @@
     },
     {
       "pair": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
-      "asset": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
-      "collateral": "0x98ea5A9f9621F160EC378e1F1b1Be78A4809eF32",
+      "asset": "0x50bddfb60613a870251e067e2cb401526db85c93",
+      "collateral": "0xea3f06da2ef068e0f540051b3fd51df108aedf17",
       "pools": [
         {
           "maturity": 962654400,
@@ -80,9 +74,21 @@
       ]
     },
     {
-      "pair": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
-      "asset": "0xa1fcEeFd0bA04519729815Fc0512E47869C8818e",
-      "collateral": "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+      "pair": "0xea3f06da2ef06thyf540051b3fd51df108aedf17",
+      "asset": "0xea3f06da2ef068e0f540051b3fd51df108aedf17",
+      "collateral": "ETH",
+      "pools": []
+    },
+    {
+      "pair": "0xea3f06da2ef06thyf54gh51b3fd51df108aedf17",
+      "asset": "ETH",
+      "collateral": "0xea3f06da2ef068e0f540051b3fd51df108aedf17",
+      "pools": []
+    },
+    {
+      "pair": "0xea3f06da2ef06thyf54gh51b3fd51df108aedf17",
+      "asset": "0xea3f06da2ef068e0f540051b3fd51df108aedf17",
+      "collateral": "0x50bddfb60613a870251e067e2cb401526db85c93",
       "pools": []
     }
   ]

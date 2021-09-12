@@ -7,6 +7,7 @@ import tokenImages from "../../image/tokens/*.svg";
 import { Web3Provider } from "@ethersproject/providers";
 
 import { init } from "./init";
+import { balancesInit } from "./balances";
 
 export declare let window: any;
 
@@ -24,7 +25,7 @@ const app = Elm.Main.init({
   },
 });
 
-init();
+init(app);
 
 // Test
 app.ports.sdkPoolsMsg.send([
@@ -52,12 +53,58 @@ app.ports.connectMetamask.subscribe(() => {
           user: accounts[0],
         });
 
+        init(app, metamaskProvider);
+        balancesInit(app, metamaskProvider, accounts[0]);
+
         metamaskSigner = metamaskProvider.getSigner();
 
         app.ports.sdkBalancesMsg.send([
           {
             token: "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
             balance: "1342345235235",
+          },
+        ]);
+
+        app.ports.sdkAllowancesMsg.send([
+          {
+            erc20: "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+            allowance: "1342345235235",
+          },
+        ]);
+
+        app.ports.sdkPositionsMsg.send([
+          {
+            asset: "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+            collateral: "ETH",
+            maturity: 1650889815,
+            bond: "221413413414",
+            insurance: "324235234234325",
+          },
+          {
+            asset: "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+            collateral: "ETH",
+            maturity: 962654400,
+            bond: "221413413414",
+            insurance: "324235234234325",
+            assetOut: "1342354235235",
+            collateralOut: "12142354235235",
+          },
+          {
+            asset: "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba",
+            collateral: "ETH",
+            maturity: 1650889815,
+            dues: [
+              {
+                id: "1241341324",
+                debt: "14324619248719",
+                collateral: "1312413423523",
+              },
+              {
+                id: "1241341324",
+                debt: "14324619248719",
+                collateral: "1312413423523",
+              },
+            ],
           },
         ]);
       });
@@ -70,11 +117,13 @@ app.ports.connectMetamask.subscribe(() => {
             chainId,
             user: accounts[0],
           });
+
+          balancesInit(app, metamaskProvider, accounts[0]);
         });
 
       metamaskProvider = new Web3Provider(window.ethereum);
       metamaskSigner = metamaskProvider.getSigner();
-      init(metamaskProvider);
+      init(app, metamaskProvider);
     });
 
     ethereum.on("accountsChanged", (accounts: string[]) => {
@@ -86,10 +135,15 @@ app.ports.connectMetamask.subscribe(() => {
 
         metamaskProvider = new Web3Provider(window.ethereum);
         metamaskSigner = metamaskProvider.getSigner();
-        init(metamaskProvider);
+        init(app, metamaskProvider);
+        balancesInit(app, metamaskProvider, accounts[0]);
       } else {
         app.ports.metamaskMsg.send(null);
       }
+    });
+
+    app.ports.disconnect.subscribe(() => {
+      app.ports.metamaskMsg.send(null);
     });
   } else {
     app.ports.noMetamask.send();

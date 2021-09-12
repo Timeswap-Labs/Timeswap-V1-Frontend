@@ -5,8 +5,8 @@
   },
   "dependencies": {
     "@ethersproject/providers": "^5.4.5",
-    "@timeswap-labs/timeswap-v1-sdk": "^0.1.5",
-    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.4",
+    "@timeswap-labs/timeswap-v1-sdk": "^0.1.6",
+    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.7",
     "elm": "^0.19.1-5",
     "parcel-bundler": "^1.12.5"
   },

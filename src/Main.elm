@@ -703,7 +703,7 @@ html model =
             { options = options }
             ([ width <| minimum 340 fill
              , Background.color Color.dark400
-             , behindContent <| background
+             , behindContent <| Image.background model.images
              ]
                 ++ (model.service
                         |> Maybe.map
@@ -748,16 +748,6 @@ html model =
                     , Lazy.lazy2 Page.view model model.page |> Element.map PageMsg
                     ]
                 ]
-
-
-background : Element msg
-background =
-    el
-        [ width fill
-        , height fill
-        , Background.image "./../image/Background.svg"
-        ]
-        none
 
 
 options : List Option
