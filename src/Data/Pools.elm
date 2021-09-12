@@ -309,6 +309,21 @@ toPairs (Pools dict) =
     dict |> Dict.keys
 
 
+toAPR : Float -> String
+toAPR float =
+    float
+        |> (*) 10000
+        |> truncate
+        |> String.fromInt
+        |> String.padLeft 3 '0'
+        |> (\string ->
+                [ string |> String.dropRight 2
+                , string |> String.right 2
+                ]
+                    |> String.join "."
+           )
+
+
 toList : Posix -> Pools -> List ( Pair, List ( Maturity, Remote () PoolInfo ) )
 toList time (Pools dict) =
     dict
@@ -329,17 +344,7 @@ toList time (Pools dict) =
                                     , collateralLiquidity =
                                         collateralLiquidity
                                             |> Uint.toAmount (pair |> Pair.toCollateral)
-                                    , apr =
-                                        (apr * 10000)
-                                            |> truncate
-                                            |> String.fromInt
-                                            |> String.padRight 3 '0'
-                                            |> (\string ->
-                                                    [ string |> String.dropRight 2
-                                                    , string |> String.right 2
-                                                    ]
-                                                        |> String.join "."
-                                               )
+                                    , apr = apr |> toAPR
                                     , cf =
                                         cf
                                             |> Uint.toAmount (pair |> Pair.toAsset)
@@ -373,17 +378,7 @@ toListSinglePair time pair (Pools dict) =
                         , collateralLiquidity =
                             collateralLiquidity
                                 |> Uint.toAmount (pair |> Pair.toCollateral)
-                        , apr =
-                            (apr * 10000)
-                                |> truncate
-                                |> String.fromInt
-                                |> String.padRight 3 '0'
-                                |> (\string ->
-                                        [ string |> String.dropRight 2
-                                        , string |> String.right 2
-                                        ]
-                                            |> String.join "."
-                                   )
+                        , apr = apr |> toAPR
                         , cf =
                             cf
                                 |> Uint.toAmount (pair |> Pair.toAsset)

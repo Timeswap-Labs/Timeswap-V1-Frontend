@@ -218,7 +218,7 @@ toAPR float =
         |> (*) 10000
         |> truncate
         |> String.fromInt
-        |> String.padRight 3 '0'
+        |> String.padLeft 3 '0'
         |> (\string ->
                 [ string |> String.dropRight 2
                 , string |> String.right 2
