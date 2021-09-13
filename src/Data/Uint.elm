@@ -1,7 +1,5 @@
 module Data.Uint exposing
-    (  Uint(..)
-       -- temporary
-
+    ( Uint
     , compare
     , decoder
     , encode

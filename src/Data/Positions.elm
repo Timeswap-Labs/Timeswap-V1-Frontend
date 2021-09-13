@@ -6,7 +6,6 @@ module Data.Positions exposing
     , MaturedClaimInfo
     , Positions
     , Return
-    , example
     , getClaimReturn
     , getFirstClaim
     , getFirstDue
@@ -720,78 +719,3 @@ toDueTransaction pool set (Positions { dues }) =
                         )
                         (Dict.empty TokenId.sorter |> Just)
             )
-
-
-example : Positions
-example =
-    { liquidities = Dict.empty Pool.sorter
-    , claims =
-        Dict.fromList Pool.sorter
-            [ ( { pair = Pair.daiEthRinkeby
-                , maturity = Maturity.unix962654400
-                }
-              , Matured
-                    { bond = Uint.Uint "21213131"
-                    , insurance = Uint.Uint "213141212"
-                    , asset = Uint.Uint "1200000000000000000000"
-                    , collateral = Uint.Uint "35600000000000000000000000000000000"
-                    }
-              )
-            , ( { pair = Pair.daiEthRinkeby
-                , maturity = Maturity.unix1635364800
-                }
-              , Active { bond = Uint.Uint "1200", insurance = Uint.Uint "20008" }
-              )
-            , ( { pair = Pair.daiEthRinkeby
-                , maturity = Maturity.unix1650889815
-                }
-              , Matured
-                    { bond = Uint.Uint "21213131"
-                    , insurance = Uint.Uint "213141212"
-                    , asset = Uint.Uint "45"
-                    , collateral = Uint.Uint "32"
-                    }
-              )
-            , ( { pair = Pair.daiMaticRinkeby
-                , maturity = Maturity.unix1635364800
-                }
-              , Active { bond = Uint.Uint "2133", insurance = Uint.Uint "21313" }
-              )
-            ]
-    , dues =
-        Dict.fromList Pool.sorter
-            [ ( { pair = Pair.daiEthRinkeby
-                , maturity = Maturity.unix962654400
-                }
-              , Dict.fromList TokenId.sorter
-                    (TokenId.exampleList
-                        |> List.map (\tokenId -> ( tokenId, DueUint (Uint.Uint "3000") (Uint.Uint "200") ))
-                    )
-              )
-            , ( { pair = Pair.daiEthRinkeby
-                , maturity = Maturity.unix1635364800
-                }
-              , Dict.fromList TokenId.sorter
-                    (TokenId.exampleList
-                        |> List.map (\tokenId -> ( tokenId, DueUint (Uint.Uint "3000") (Uint.Uint "200") ))
-                    )
-              )
-            , ( { pair = Pair.daiEthRinkeby
-                , maturity = Maturity.unix1650889815
-                }
-              , Dict.fromList TokenId.sorter
-                    (TokenId.exampleList
-                        |> List.map (\tokenId -> ( tokenId, DueUint (Uint.Uint "3000") (Uint.Uint "200") ))
-                    )
-              )
-            , ( { pair = Pair.daiEthRinkeby
-                , maturity = Maturity.unix962654400
-                }
-              , Dict.fromList TokenId.sorter
-                    (TokenId.exampleList
-                        |> List.map (\tokenId -> ( tokenId, DueUint (Uint.Uint "3000") (Uint.Uint "200") ))
-                    )
-              )
-            ]
-    }
-        |> Positions

@@ -4,7 +4,6 @@ module Data.Pools exposing
     , decoder
     , decoderPool
     , empty
-    , example
     , fromPairFragment
     , fromPoolFragment
     , getFirst
@@ -272,36 +271,6 @@ fromPoolFragment tokens ((Pools dict) as pools) string =
                     _ ->
                         Nothing
            )
-
-
-
--- dummy data
-
-
-example : Pools
-example =
-    Dict.empty Pair.sorter
-        |> Dict.insert Pair.daiEthRinkeby
-            (Dict.fromList Maturity.sorter
-                [ ( Maturity.unix962654400, Loading )
-                , ( Maturity.unix1635364800
-                  , { assetLiquidity = Uint.Uint "1001313"
-                    , collateralLiquidity = Uint.Uint "1001313000000000000000000000000000000"
-                    , apr = 0.12
-                    , cf = Uint.Uint "1300000000000000000000000"
-                    }
-                        |> Success
-                  )
-                , ( Maturity.unix1650889815, Loading )
-                ]
-            )
-        |> Dict.insert Pair.daiMaticRinkeby
-            (Dict.fromList Maturity.sorter
-                [ ( Maturity.unix1635364800, Loading ) ]
-            )
-        |> Dict.insert Pair.wethDaiRinkeby
-            (Dict.empty Maturity.sorter)
-        |> Pools
 
 
 toPairs : Pools -> List Pair
