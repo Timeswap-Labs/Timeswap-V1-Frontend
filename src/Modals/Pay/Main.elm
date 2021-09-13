@@ -22,7 +22,7 @@ import Data.Maturity as Maturity
 import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Pools as Pools exposing (Pools)
-import Data.Positions exposing (Positions)
+import Data.Positions as Positions exposing (Positions)
 import Data.Remote exposing (Remote(..))
 import Data.Token as Token
 import Data.TokenId as TokenId exposing (TokenId)
@@ -161,10 +161,11 @@ update :
         , pools : Pools
         , page : Page
     }
+    -> Positions
     -> Msg
     -> Modal
     -> ( Modal, Cmd Msg )
-update { key, tokens, pools, page } msg (Modal modal) =
+update { key, tokens, pools, page } positions msg (Modal modal) =
     case msg of
         ApprovePay value ->
             ( Modal modal, approvePay value )
@@ -195,14 +196,14 @@ update { key, tokens, pools, page } msg (Modal modal) =
                 |> Decode.decodeValue (Query.decoder pools tokens)
                 |> (\result ->
                         case result of
-                            Ok { pool, ids, dues } ->
+                            Ok { pool, dues, totalDues } ->
                                 if
                                     (modal.pool == pool)
-                                        && (modal.tokenIds == ids)
+                                        && (dues |> Positions.correctQuery pool positions)
                                 then
                                     { modal
                                         | duesIn =
-                                            Query.updateQuery modal dues
+                                            Query.updateQuery modal totalDues
                                     }
                                         |> Modal
 

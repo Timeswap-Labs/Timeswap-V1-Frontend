@@ -182,7 +182,13 @@ update :
         , slippage : Slippage
         , tokens : Tokens
         , pools : Pools
-        , user : Remote userError { user | balances : Remote () Balances }
+        , user :
+            Remote
+                userError
+                { user
+                    | balances : Remote () Balances
+                    , positions : Remote () Positions
+                }
         , page : Page
     }
     -> Msg
@@ -206,9 +212,19 @@ update model msg modal =
                 |> (\( updateWithdraw, cmd ) -> ( Withdraw updateWithdraw, cmd |> Cmd.map WithdrawMsg ))
 
         ( PayMsg lendMsg, Pay pay ) ->
-            pay
-                |> Pay.update model lendMsg
-                |> (\( updatedPay, cmd ) -> ( Pay updatedPay, cmd |> Cmd.map PayMsg ))
+            case model.user of
+                Success { positions } ->
+                    case positions of
+                        Success successPositions ->
+                            pay
+                                |> Pay.update model successPositions lendMsg
+                                |> (\( updatedPay, cmd ) -> ( Pay updatedPay, cmd |> Cmd.map PayMsg ))
+
+                        _ ->
+                            ( modal, Cmd.none )
+
+                _ ->
+                    ( modal, Cmd.none )
 
         _ ->
             ( modal, Cmd.none )

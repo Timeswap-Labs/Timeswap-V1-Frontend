@@ -101,16 +101,23 @@ decoderGivenPercent pools tokens =
         |> Pipeline.required "assetOut" Uint.decoder
         |> Pipeline.required "percent" Percent.decoder
         |> Pipeline.required "dues"
-            (Decode.succeed DuesGivenPercent
-                |> Pipeline.required "debtIn" Uint.decoder
-                |> Pipeline.required "collateralIn" Uint.decoder
-                |> Pipeline.required "maxDebt" Uint.decoder
-                |> Pipeline.required "maxCollateral" Uint.decoder
-                |> Pipeline.required "apr" Decode.float
-                |> Pipeline.required "cf" Uint.decoder
-                |> Decode.nullable
+            (Decode.oneOf
+                [ decoderDuesGivenPercent |> Decode.map Just
+                , Decode.succeed Nothing
+                ]
             )
         |> Decode.map GivenPercent
+
+
+decoderDuesGivenPercent : Decoder DuesGivenPercent
+decoderDuesGivenPercent =
+    Decode.succeed DuesGivenPercent
+        |> Pipeline.required "debtIn" Uint.decoder
+        |> Pipeline.required "collateralIn" Uint.decoder
+        |> Pipeline.required "maxDebt" Uint.decoder
+        |> Pipeline.required "maxCollateral" Uint.decoder
+        |> Pipeline.required "apr" Decode.float
+        |> Pipeline.required "cf" Uint.decoder
 
 
 decoderGivenDebt : Pools -> Tokens -> Decoder Query
@@ -120,15 +127,22 @@ decoderGivenDebt pools tokens =
         |> Pipeline.required "assetOut" Uint.decoder
         |> Pipeline.required "debtIn" Uint.decoder
         |> Pipeline.required "dues"
-            (Decode.succeed DuesGivenDebt
-                |> Pipeline.required "percent" Percent.decoder
-                |> Pipeline.required "collateralIn" Uint.decoder
-                |> Pipeline.required "maxCollateral" Uint.decoder
-                |> Pipeline.required "apr" Decode.float
-                |> Pipeline.required "cf" Uint.decoder
-                |> Decode.nullable
+            (Decode.oneOf
+                [ decoderDuesGivenDebt |> Decode.map Just
+                , Decode.succeed Nothing
+                ]
             )
         |> Decode.map GivenDebt
+
+
+decoderDuesGivenDebt : Decoder DuesGivenDebt
+decoderDuesGivenDebt =
+    Decode.succeed DuesGivenDebt
+        |> Pipeline.required "percent" Percent.decoder
+        |> Pipeline.required "collateralIn" Uint.decoder
+        |> Pipeline.required "maxCollateral" Uint.decoder
+        |> Pipeline.required "apr" Decode.float
+        |> Pipeline.required "cf" Uint.decoder
 
 
 decoderGivenCollateral : Pools -> Tokens -> Decoder Query
@@ -138,15 +152,22 @@ decoderGivenCollateral pools tokens =
         |> Pipeline.required "assetOut" Uint.decoder
         |> Pipeline.required "collateralIn" Uint.decoder
         |> Pipeline.required "claims"
-            (Decode.succeed DuesGivenCollateral
-                |> Pipeline.required "percent" Percent.decoder
-                |> Pipeline.required "debtIn" Uint.decoder
-                |> Pipeline.required "maxDebt" Uint.decoder
-                |> Pipeline.required "apr" Decode.float
-                |> Pipeline.required "cf" Uint.decoder
-                |> Decode.nullable
+            (Decode.oneOf
+                [ decoderDuesGivenCollateral |> Decode.map Just
+                , Decode.succeed Nothing
+                ]
             )
         |> Decode.map GivenCollateral
+
+
+decoderDuesGivenCollateral : Decoder DuesGivenCollateral
+decoderDuesGivenCollateral =
+    Decode.succeed DuesGivenCollateral
+        |> Pipeline.required "percent" Percent.decoder
+        |> Pipeline.required "debtIn" Uint.decoder
+        |> Pipeline.required "maxDebt" Uint.decoder
+        |> Pipeline.required "apr" Decode.float
+        |> Pipeline.required "cf" Uint.decoder
 
 
 givenPercent : Pool -> String -> Percent -> Slippage -> Maybe Value
@@ -156,7 +177,7 @@ givenPercent pool assetOut percent slippage =
 
     else
         assetOut
-            |> Uint.fromString
+            |> Uint.fromAmount (pool.pair |> Pair.toAsset)
             |> Maybe.map
                 (\uintAssetOut ->
                     [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
@@ -187,8 +208,8 @@ givenDebt pool assetOut debt slippage =
                 ]
                     |> Encode.object
             )
-            (assetOut |> Uint.fromString)
-            (debt |> Uint.fromString)
+            (assetOut |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+            (debt |> Uint.fromAmount (pool.pair |> Pair.toAsset))
 
 
 givenCollateral : Pool -> String -> String -> Slippage -> Maybe Value
@@ -208,8 +229,8 @@ givenCollateral pool assetOut collateralIn slippage =
                 ]
                     |> Encode.object
             )
-            (assetOut |> Uint.fromString)
-            (collateralIn |> Uint.fromString)
+            (assetOut |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+            (collateralIn |> Uint.fromAmount (pool.pair |> Pair.toCollateral))
 
 
 toAPR : Float -> String

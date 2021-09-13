@@ -14,13 +14,14 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode exposing (Value)
 import Modals.Pay.DuesIn exposing (DuesIn)
+import Sort.Dict as Dict exposing (Dict)
 import Sort.Set as Set exposing (Set)
 
 
 type alias Query =
     { pool : Pool
-    , ids : Set TokenId
-    , dues : Maybe Dues
+    , dues : Dict TokenId Positions.DueUint
+    , totalDues : Maybe Dues
     }
 
 
@@ -34,33 +35,61 @@ decoder : Pools -> Tokens -> Decoder Query
 decoder pools tokens =
     Decode.succeed Query
         |> Pipeline.custom (Pools.decoderPool pools tokens)
-        |> Pipeline.required "ids"
-            (TokenId.decoder
-                |> Decode.list
-                |> Decode.map (Set.fromList TokenId.sorter)
-            )
+        |> Pipeline.custom decoderDues
         |> Pipeline.custom
-            (Decode.succeed Dues
-                |> Pipeline.required "assetIn" Uint.decoder
-                |> Pipeline.required "collateralOut" Uint.decoder
-                |> Decode.nullable
+            (Decode.oneOf
+                [ decoderTotalDues |> Decode.map Just
+                , Decode.succeed Nothing
+                ]
             )
+
+
+decoderDues : Decoder (Dict TokenId Positions.DueUint)
+decoderDues =
+    Decode.succeed Tuple.pair
+        |> Pipeline.required "id" TokenId.decoder
+        |> Pipeline.custom
+            (Decode.succeed Positions.DueUint
+                |> Pipeline.required "debt" Uint.decoder
+                |> Pipeline.required "collateral" Uint.decoder
+            )
+        |> Decode.list
+        |> Decode.map (Dict.fromList TokenId.sorter)
+
+
+decoderTotalDues : Decoder Dues
+decoderTotalDues =
+    Decode.succeed Dues
+        |> Pipeline.required "assetIn" Uint.decoder
+        |> Pipeline.required "collateralOut" Uint.decoder
 
 
 givenTokenIds : Positions -> Pool -> Set TokenId -> Maybe Value
 givenTokenIds positions pool ids =
     if positions |> Positions.isOwner pool ids then
-        [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-        , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
-        , ( "maturity", pool.maturity |> Maturity.encode )
-        , ( "ids"
-          , ids
-                |> Set.toList
-                |> Encode.list TokenId.encode
-          )
-        ]
-            |> Encode.object
-            |> Just
+        positions
+            |> Positions.toDueQuery pool ids
+            |> Maybe.map
+                (\dict ->
+                    dict
+                        |> Dict.toList
+                        |> List.map
+                            (\( tokenId, { debt, collateral } ) ->
+                                [ ( "id", tokenId |> TokenId.encode )
+                                , ( "debt", debt |> Uint.encode )
+                                , ( "collateral", collateral |> Uint.encode )
+                                ]
+                            )
+                        |> Encode.list Encode.object
+                        |> (\dues ->
+                                [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
+                                , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
+                                , ( "maturity", pool.maturity |> Maturity.encode )
+                                , ( "dues", dues )
+                                ]
+                                    |> Encode.object
+                           )
+                )
 
     else
         Nothing

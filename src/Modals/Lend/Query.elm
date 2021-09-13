@@ -101,16 +101,23 @@ decoderGivenPercent pools tokens =
         |> Pipeline.required "assetIn" Uint.decoder
         |> Pipeline.required "percent" Percent.decoder
         |> Pipeline.custom
-            (Decode.succeed ClaimsGivenPercent
-                |> Pipeline.required "bondOut" Uint.decoder
-                |> Pipeline.required "insuranceOut" Uint.decoder
-                |> Pipeline.required "minBond" Uint.decoder
-                |> Pipeline.required "minInsurance" Uint.decoder
-                |> Pipeline.required "apr" Decode.float
-                |> Pipeline.required "cf" Uint.decoder
-                |> Decode.map Just
+            (Decode.oneOf
+                [ decoderClaimsGivenPercent |> Decode.map Just
+                , Decode.succeed Nothing
+                ]
             )
         |> Decode.map GivenPercent
+
+
+decoderClaimsGivenPercent : Decoder ClaimsGivenPercent
+decoderClaimsGivenPercent =
+    Decode.succeed ClaimsGivenPercent
+        |> Pipeline.required "bondOut" Uint.decoder
+        |> Pipeline.required "insuranceOut" Uint.decoder
+        |> Pipeline.required "minBond" Uint.decoder
+        |> Pipeline.required "minInsurance" Uint.decoder
+        |> Pipeline.required "apr" Decode.float
+        |> Pipeline.required "cf" Uint.decoder
 
 
 decoderGivenBond : Pools -> Tokens -> Decoder Query
@@ -120,15 +127,22 @@ decoderGivenBond pools tokens =
         |> Pipeline.required "assetIn" Uint.decoder
         |> Pipeline.required "bondOut" Uint.decoder
         |> Pipeline.custom
-            (Decode.succeed ClaimsGivenBond
-                |> Pipeline.required "percent" Percent.decoder
-                |> Pipeline.required "insuranceOut" Uint.decoder
-                |> Pipeline.required "minInsurance" Uint.decoder
-                |> Pipeline.required "apr" Decode.float
-                |> Pipeline.required "cf" Uint.decoder
-                |> Decode.map Just
+            (Decode.oneOf
+                [ decoderClaimsGivenBond |> Decode.map Just
+                , Decode.succeed Nothing
+                ]
             )
         |> Decode.map GivenBond
+
+
+decoderClaimsGivenBond : Decoder ClaimsGivenBond
+decoderClaimsGivenBond =
+    Decode.succeed ClaimsGivenBond
+        |> Pipeline.required "percent" Percent.decoder
+        |> Pipeline.required "insuranceOut" Uint.decoder
+        |> Pipeline.required "minInsurance" Uint.decoder
+        |> Pipeline.required "apr" Decode.float
+        |> Pipeline.required "cf" Uint.decoder
 
 
 decoderGivenInsurance : Pools -> Tokens -> Decoder Query
@@ -138,15 +152,22 @@ decoderGivenInsurance pools tokens =
         |> Pipeline.required "assetIn" Uint.decoder
         |> Pipeline.required "insuranceOut" Uint.decoder
         |> Pipeline.custom
-            (Decode.succeed ClaimsGivenInsurance
-                |> Pipeline.required "percent" Percent.decoder
-                |> Pipeline.required "bondOut" Uint.decoder
-                |> Pipeline.required "minBond" Uint.decoder
-                |> Pipeline.required "apr" Decode.float
-                |> Pipeline.required "cf" Uint.decoder
-                |> Decode.map Just
+            (Decode.oneOf
+                [ decoderClaimsGivenInsurance |> Decode.map Just
+                , Decode.succeed Nothing
+                ]
             )
         |> Decode.map GivenInsurance
+
+
+decoderClaimsGivenInsurance : Decoder ClaimsGivenInsurance
+decoderClaimsGivenInsurance =
+    Decode.succeed ClaimsGivenInsurance
+        |> Pipeline.required "percent" Percent.decoder
+        |> Pipeline.required "bondOut" Uint.decoder
+        |> Pipeline.required "minBond" Uint.decoder
+        |> Pipeline.required "apr" Decode.float
+        |> Pipeline.required "cf" Uint.decoder
 
 
 givenPercent : Pool -> String -> Percent -> Slippage -> Maybe Value
@@ -209,7 +230,7 @@ givenInsurance pool assetIn insurance slippage =
                     |> Encode.object
             )
             (assetIn |> Uint.fromAmount (pool.pair |> Pair.toAsset))
-            (insurance |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+            (insurance |> Uint.fromAmount (pool.pair |> Pair.toCollateral))
 
 
 toAPR : Float -> String

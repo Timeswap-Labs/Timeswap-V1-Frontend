@@ -2,10 +2,12 @@ module Data.Positions exposing
     ( ActiveClaimInfo
     , Claim
     , DueInfo
+    , DueUint
     , DuesInfo
     , MaturedClaimInfo
     , Positions
     , Return
+    , correctQuery
     , getClaimReturn
     , getFirstClaim
     , getFirstDue
@@ -20,6 +22,7 @@ module Data.Positions exposing
     , toDueList
     , toDueListByPair
     , toDuePools
+    , toDueQuery
     , toDueTransaction
     , update
     )
@@ -697,6 +700,43 @@ toClaimTransaction pool (Positions { claims }) =
                         }
                             |> Just
             )
+
+
+toDueQuery : Pool -> Set TokenId -> Positions -> Maybe (Dict TokenId DueUint)
+toDueQuery pool set (Positions { dues }) =
+    dues
+        |> Dict.get pool
+        |> Maybe.andThen
+            (\dict ->
+                set
+                    |> Set.foldl
+                        (\tokenId accumulator ->
+                            dict
+                                |> Dict.get tokenId
+                                |> Maybe.andThen
+                                    (\due ->
+                                        accumulator
+                                            |> Maybe.map (Dict.insert tokenId due)
+                                    )
+                        )
+                        (Dict.empty TokenId.sorter |> Just)
+            )
+
+
+correctQuery : Pool -> Positions -> Dict TokenId DueUint -> Bool
+correctQuery pool positions queryDict =
+    queryDict
+        |> Dict.keys
+        |> Set.fromList TokenId.sorter
+        |> (\set ->
+                positions
+                    |> toDueQuery pool set
+                    |> Maybe.map
+                        (\dict ->
+                            dict == queryDict
+                        )
+                    |> Maybe.withDefault False
+           )
 
 
 toDueTransaction : Pool -> Set TokenId -> Positions -> Maybe (Dict TokenId Uint)
