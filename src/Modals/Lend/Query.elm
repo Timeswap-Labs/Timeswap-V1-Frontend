@@ -108,7 +108,7 @@ decoderGivenPercent pools tokens =
                 |> Pipeline.required "minInsurance" Uint.decoder
                 |> Pipeline.required "apr" Decode.float
                 |> Pipeline.required "cf" Uint.decoder
-                |> Decode.nullable
+                |> Decode.map Just
             )
         |> Decode.map GivenPercent
 
@@ -126,7 +126,7 @@ decoderGivenBond pools tokens =
                 |> Pipeline.required "minInsurance" Uint.decoder
                 |> Pipeline.required "apr" Decode.float
                 |> Pipeline.required "cf" Uint.decoder
-                |> Decode.nullable
+                |> Decode.map Just
             )
         |> Decode.map GivenBond
 
@@ -144,7 +144,7 @@ decoderGivenInsurance pools tokens =
                 |> Pipeline.required "minBond" Uint.decoder
                 |> Pipeline.required "apr" Decode.float
                 |> Pipeline.required "cf" Uint.decoder
-                |> Decode.nullable
+                |> Decode.map Just
             )
         |> Decode.map GivenInsurance
 
@@ -160,7 +160,7 @@ givenPercent pool assetIn percent slippage =
             |> Maybe.map
                 (\uintAssetIn ->
                     [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-                    , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+                    , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
                     , ( "maturity", pool.maturity |> Maturity.encode )
                     , ( "assetIn", uintAssetIn |> Uint.encode )
                     , ( "percent", percent |> Percent.encode )
@@ -179,7 +179,7 @@ givenBond pool assetIn bond slippage =
         Maybe.map2
             (\uintAssetIn uintBondOut ->
                 [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-                , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+                , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
                 , ( "maturity", pool.maturity |> Maturity.encode )
                 , ( "assetIn", uintAssetIn |> Uint.encode )
                 , ( "bondOut", uintBondOut |> Uint.encode )
@@ -200,7 +200,7 @@ givenInsurance pool assetIn insurance slippage =
         Maybe.map2
             (\uintAssetIn uintInsuranceOut ->
                 [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-                , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+                , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
                 , ( "maturity", pool.maturity |> Maturity.encode )
                 , ( "assetIn", uintAssetIn |> Uint.encode )
                 , ( "insuranceOut", uintInsuranceOut |> Uint.encode )
