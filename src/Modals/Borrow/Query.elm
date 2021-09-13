@@ -160,7 +160,7 @@ givenPercent pool assetOut percent slippage =
             |> Maybe.map
                 (\uintAssetOut ->
                     [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-                    , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+                    , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
                     , ( "maturity", pool.maturity |> Maturity.encode )
                     , ( "assetOut", uintAssetOut |> Uint.encode )
                     , ( "percent", percent |> Percent.encode )
@@ -179,7 +179,7 @@ givenDebt pool assetOut debt slippage =
         Maybe.map2
             (\uintAssetOut uintDebtIn ->
                 [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-                , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+                , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
                 , ( "maturity", pool.maturity |> Maturity.encode )
                 , ( "assetOut", uintAssetOut |> Uint.encode )
                 , ( "debtIn", uintDebtIn |> Uint.encode )
@@ -200,7 +200,7 @@ givenCollateral pool assetOut collateralIn slippage =
         Maybe.map2
             (\uintAssetOut uintCollateralIn ->
                 [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-                , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+                , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
                 , ( "maturity", pool.maturity |> Maturity.encode )
                 , ( "assetOut", uintAssetOut |> Uint.encode )
                 , ( "collateralIn", uintCollateralIn |> Uint.encode )

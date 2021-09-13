@@ -156,7 +156,7 @@ givenPercent pool assetIn percent slippage =
 
     else
         assetIn
-            |> Uint.fromString
+            |> Uint.fromAmount (pool.pair |> Pair.toAsset)
             |> Maybe.map
                 (\uintAssetIn ->
                     [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
@@ -187,8 +187,8 @@ givenBond pool assetIn bond slippage =
                 ]
                     |> Encode.object
             )
-            (assetIn |> Uint.fromString)
-            (bond |> Uint.fromString)
+            (assetIn |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+            (bond |> Uint.fromAmount (pool.pair |> Pair.toAsset))
 
 
 givenInsurance : Pool -> String -> String -> Slippage -> Maybe Value
@@ -208,8 +208,8 @@ givenInsurance pool assetIn insurance slippage =
                 ]
                     |> Encode.object
             )
-            (assetIn |> Uint.fromString)
-            (insurance |> Uint.fromString)
+            (assetIn |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+            (insurance |> Uint.fromAmount (pool.pair |> Pair.toAsset))
 
 
 toAPR : Float -> String

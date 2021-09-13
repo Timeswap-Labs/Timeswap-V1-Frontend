@@ -51,7 +51,7 @@ givenTokenIds : Positions -> Pool -> Set TokenId -> Maybe Value
 givenTokenIds positions pool ids =
     if positions |> Positions.isOwner pool ids then
         [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-        , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+        , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
         , ( "maturity", pool.maturity |> Maturity.encode )
         , ( "ids"
           , ids
