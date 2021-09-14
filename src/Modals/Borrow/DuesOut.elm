@@ -1069,7 +1069,7 @@ estimatedAPR { duesOut } =
             , paddingXY 0 3
             , centerY
             , Font.bold
-            , Font.size 18
+            , Font.size 14
             , Font.color Color.negative500
             ]
             ((case duesOut of

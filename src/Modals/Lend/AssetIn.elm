@@ -102,7 +102,7 @@ title msgs { user } modal =
                 case balances of
                     Loading ->
                         el
-                            [ height <| px 20
+                            [ height <| px 50
                             , alignRight
                             , centerY
                             ]

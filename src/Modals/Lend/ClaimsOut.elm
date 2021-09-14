@@ -1083,7 +1083,7 @@ collateralFactor { pool, claimsOut } =
             , paddingXY 0 3
             , centerY
             , Font.bold
-            , Font.size 18
+            , Font.size 14
             , Font.color Color.transparent500
             ]
             ((case claimsOut of
