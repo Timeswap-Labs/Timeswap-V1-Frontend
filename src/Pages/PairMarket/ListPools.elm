@@ -612,8 +612,8 @@ collateralFactorAmount :
     -> Maturity
     -> String
     -> Element msg
-collateralFactorAmount msgs { pair, tooltip } maturity assetLiquidity =
-    assetLiquidity
+collateralFactorAmount msgs { pair, tooltip } maturity factorAmount =
+    factorAmount
         |> Truncate.amount
         |> (\{ full, truncated } ->
                 truncated

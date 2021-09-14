@@ -74,6 +74,7 @@ import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.TokenImage as TokenImage
+import Utility.Truncate as Truncate
 
 
 type ClaimsOut
@@ -877,7 +878,7 @@ position msgs model ({ claimsOut } as modal) =
             , spacing 12
             ]
             [ estimatedAPR modal
-            , collateralFactor modal
+            , collateralFactor msgs modal
             ]
         , bondOutSection msgs model modal
         , insuranceOutSection msgs model modal
@@ -1052,12 +1053,18 @@ estimatedAPR { claimsOut } =
 
 
 collateralFactor :
-    { modal
-        | pool : { pool | pair : Pair }
-        , claimsOut : ClaimsOut
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
     }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , claimsOut : ClaimsOut
+            , tooltip : Maybe Tooltip
+        }
     -> Element msg
-collateralFactor { pool, claimsOut } =
+collateralFactor msgs ({ pool, claimsOut } as modal) =
     row
         ([ width shrink
          , height <| px 32
@@ -1077,63 +1084,201 @@ collateralFactor { pool, claimsOut } =
             , Font.color Color.transparent400
             ]
             (text "Collateral factor:")
-        , el
-            [ width shrink
-            , height shrink
-            , paddingXY 0 3
-            , centerY
-            , Font.bold
-            , Font.size 14
-            , Font.color Color.transparent500
-            ]
-            ((case claimsOut of
-                Default claims ->
-                    claims |> Remote.map .cf
+        , (case claimsOut of
+            Default claims ->
+                claims |> Remote.map .cf
 
-                Slider { claims } ->
-                    claims |> Remote.map .cf
+            Slider { claims } ->
+                claims |> Remote.map .cf
 
-                Bond { claims } ->
-                    claims |> Remote.map .cf
+            Bond { claims } ->
+                claims |> Remote.map .cf
 
-                Insurance { claims } ->
-                    claims |> Remote.map .cf
-             )
-                |> (\result ->
-                        case result of
-                            Loading ->
-                                el
+            Insurance { claims } ->
+                claims |> Remote.map .cf
+          )
+            |> (\result ->
+                    case result of
+                        Loading ->
+                            row
+                                [ width shrink
+                                , height shrink
+                                , spacing 4
+                                , centerY
+                                ]
+                                [ el
                                     [ width <| px 50
                                     , height shrink
+                                    , centerY
                                     ]
                                     Loading.view
+                                , el
+                                    [ paddingXY 4 0
+                                    , centerY
+                                    , Font.bold
+                                    , Font.size 12
+                                    , Font.color Color.transparent300
+                                    ]
+                                    ([ pool.pair
+                                        |> Pair.toAsset
+                                        |> Token.toSymbol
+                                     , "PER"
+                                     , pool.pair
+                                        |> Pair.toCollateral
+                                        |> Token.toSymbol
+                                     ]
+                                        |> String.join " "
+                                        |> text
+                                    )
+                                ]
 
-                            Failure _ ->
-                                none
+                        Failure _ ->
+                            el
+                                [ paddingXY 4 0
+                                , centerY
+                                , Font.bold
+                                , Font.size 12
+                                , Font.color Color.transparent300
+                                ]
+                                ([ pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toSymbol
+                                 , "PER"
+                                 , pool.pair
+                                    |> Pair.toCollateral
+                                    |> Token.toSymbol
+                                 ]
+                                    |> String.join " "
+                                    |> text
+                                )
 
-                            Success cf ->
-                                text cf
-                   )
-            )
-        , el
-            [ paddingXY 4 0
-            , centerY
-            , Font.bold
-            , Font.size 12
-            , Font.color Color.transparent300
-            ]
-            ([ pool.pair
-                |> Pair.toAsset
-                |> Token.toSymbol
-             , "PER"
-             , pool.pair
-                |> Pair.toCollateral
-                |> Token.toSymbol
-             ]
-                |> String.join " "
-                |> text
-            )
+                        Success cf ->
+                            collateralFactorAmount msgs modal cf
+               )
         ]
+
+
+collateralFactorAmount :
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
+    -> { modal | pool : { pool | pair : Pair }, tooltip : Maybe Tooltip }
+    -> String
+    -> Element msg
+collateralFactorAmount msgs { pool, tooltip } factorAmount =
+    factorAmount
+        |> Truncate.amount
+        |> (\{ full, truncated } ->
+                truncated
+                    |> Maybe.map
+                        (\short ->
+                            row
+                                [ alignLeft
+                                , centerY
+                                , spacing 4
+                                , Font.regular
+                                , Border.widthEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 1
+                                    , left = 0
+                                    }
+                                , Border.dashed
+                                , Border.color Color.transparent200
+                                , Font.size 14
+                                , Events.onMouseEnter (msgs.onMouseEnter Tooltip.CollateralFactor)
+                                , Events.onMouseLeave msgs.onMouseLeave
+                                , (case tooltip of
+                                    Just Tooltip.CollateralFactor ->
+                                        [ full
+                                        , pool.pair
+                                            |> Pair.toAsset
+                                            |> Token.toSymbol
+                                        , "PER"
+                                        , pool.pair
+                                            |> Pair.toCollateral
+                                            |> Token.toSymbol
+                                        ]
+                                            |> String.join " "
+                                            |> Tooltip.amount
+
+                                    _ ->
+                                        none
+                                  )
+                                    |> onRight
+                                ]
+                                [ el
+                                    [ paddingEach
+                                        { top = 3
+                                        , right = 0
+                                        , bottom = 2
+                                        , left = 0
+                                        }
+                                    , Font.bold
+                                    , Font.size 14
+                                    , Font.color Color.transparent500
+                                    ]
+                                    (text short)
+                                , el
+                                    [ paddingEach
+                                        { top = 4
+                                        , right = 0
+                                        , bottom = 3
+                                        , left = 0
+                                        }
+                                    , Font.bold
+                                    , Font.size 12
+                                    , Font.color Color.transparent300
+                                    ]
+                                    ([ pool.pair
+                                        |> Pair.toAsset
+                                        |> Token.toSymbol
+                                     , "PER"
+                                     , pool.pair
+                                        |> Pair.toCollateral
+                                        |> Token.toSymbol
+                                     ]
+                                        |> String.join " "
+                                        |> text
+                                    )
+                                ]
+                        )
+                    |> Maybe.withDefault
+                        (row
+                            [ width shrink
+                            , height shrink
+                            , alignLeft
+                            , centerY
+                            , spacing 4
+                            ]
+                            [ el
+                                [ paddingXY 3 0
+                                , Font.bold
+                                , Font.size 14
+                                , Font.color Color.transparent500
+                                ]
+                                (text full)
+                            , el
+                                [ paddingXY 4 0
+                                , Font.bold
+                                , Font.size 12
+                                , Font.color Color.transparent300
+                                ]
+                                ([ pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toSymbol
+                                 , "PER"
+                                 , pool.pair
+                                    |> Pair.toCollateral
+                                    |> Token.toSymbol
+                                 ]
+                                    |> String.join " "
+                                    |> text
+                                )
+                            ]
+                        )
+           )
 
 
 bondOutSection :
