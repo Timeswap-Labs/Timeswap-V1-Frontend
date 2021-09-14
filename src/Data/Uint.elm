@@ -125,7 +125,7 @@ trimZero string =
                     "0"
 
                 else
-                    newString
+                    newString |> String.reverse
            )
 
 
