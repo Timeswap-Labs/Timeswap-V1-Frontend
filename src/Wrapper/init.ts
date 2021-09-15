@@ -1,123 +1,123 @@
 import rinkeby from "../../whitelist/rinkeby.json";
 
-import {
-  FallbackProvider,
-  InfuraProvider,
-  Provider,
-  Web3Provider,
-  getDefaultProvider,
-  Network,
-} from "@ethersproject/providers";
-import { Pool, ERC20Token, NativeToken } from "@timeswap-labs/timeswap-v1-sdk";
+import { Web3Provider } from "@ethersproject/providers";
 
 import "regenerator-runtime/runtime";
-import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { WhiteList } from "./whitelist";
+import { getProvider } from "./provider";
+import { pool } from "./pool";
+import { lend, lendSigner } from "./lend";
+import { GlobalParams } from "./global";
+import { balancesInit } from "./balances";
 
 export declare let window: any;
 
-function getToken(
-  address: string,
-  provider: Provider,
-  network: Network
-): ERC20Token | NativeToken {
-  if (address === "ETH") return new NativeToken(provider, network.chainId, 18);
-  else return new ERC20Token(provider, network.chainId, 18, address);
-}
-
-export async function init(app: ElmApp<Ports>, providerParam?: Provider) {
-  const provider = await getProvider(providerParam);
-  console.log(provider);
-
+export async function init(app: ElmApp<Ports>) {
+  const provider = await getProvider();
   const network = await provider.getNetwork();
+  const globalParams = new GlobalParams(provider);
 
-  const params = await Promise.all(
-    rinkeby.pairs
-      .flatMap((pairParams) => {
-        const asset = getToken(pairParams.asset, provider, network);
-        const collateral = getToken(pairParams.collateral, provider, network);
+  const whitelist = new WhiteList(rinkeby, provider, network);
 
-        return pairParams.pools.map((poolParams) => {
-          return {
-            asset: pairParams.asset,
-            collateral: pairParams.collateral,
-            pool: new Pool(
-              provider,
-              asset,
-              collateral,
-              new Uint256(poolParams.maturity),
-              rinkeby.convenience,
-              pairParams.pair
-            ),
-          };
-        });
-      })
-      .map(async ({ asset, collateral, pool }) => {
-        // const reserves = await pool.getTotalReserves();
-        // const apr = await pool.calculateApr();
-        // const cf = await pool.calculateCf();
+  pool(app, whitelist);
 
-        // return {
-        //   asset: asset,
-        //   collateral: collateral,
-        //   maturity: Number(pool.maturity.value),
-        //   assetLiquidity: reserves.asset.value.toString(),
-        //   collateralLiquidity: reserves.collateral.value.toString(),
-        //   apr: Number(apr.value),
-        //   cf: cf.value.toString(),
-        // };
+  lend(app, whitelist);
+  lendSigner(app, whitelist, globalParams);
 
-        return {
-          asset: asset,
-          collateral: collateral,
-          maturity: Number(pool.maturity.value),
-          assetLiquidity: "12988437928347923874",
-          collateralLiquidity: "9875498792387403284",
-          apr: 2.34,
-          cf: "7387983",
-        };
-      })
-  );
-
-  app.ports.sdkPoolsMsg.send(params);
+  portsInit(app, whitelist, globalParams);
 }
 
-export async function getProvider(provider?: Provider): Promise<Provider> {
-  if (window.ethereum) {
-    const metamaskProvider = new Web3Provider(window.ethereum, "rinkeby");
-    const metamaskConfig = {
-      provider: metamaskProvider,
-      priority: 1,
-      stallTimeout: 0,
-      weight: 1,
-    };
+function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
+  app.ports.connectMetamask.subscribe(() => {
+    if (window.ethereum && ethereum) {
+      gp.metamaskProvider = new Web3Provider(window.ethereum);
 
-    // const infuraProvider = new InfuraProvider(
-    //   // await metamaskProvider.getNetwork(),
-    //   "rinkeby",
-    //   "099fc58e0de9451d80b18d7c74caa7c1"
-    // );
-    // const infuraConfig = {
-    //   provider: infuraProvider,
-    //   priority: 1,
-    //   stallTimeout: 8,
-    //   weight: 1,
-    // };
+      gp.metamaskProvider
+        .send("eth_requestAccounts", [])
+        .then((accounts: string[]) => {
+          app.ports.metamaskMsg.send({
+            chainId: ethereum.chainId,
+            user: accounts[0],
+          });
 
-    return new FallbackProvider([metamaskConfig]);
-  } else if (provider) {
-    const infuraProvider = new InfuraProvider(
-      await provider.getNetwork(),
-      "099fc58e0de9451d80b18d7c74caa7c1"
-    );
-    const infuraConfig = {
-      provider: infuraProvider,
-      priority: 1,
-      stallTimeout: 8,
-      weight: 1,
-    };
+          // TODO: Update the SDK to return a new instance for `connect` similar to `upgrade`
+          balancesInit(app, gp.metamaskProvider!, accounts[0]);
 
-    return new FallbackProvider([infuraConfig]);
-  } else {
-    return getDefaultProvider("rinkeby");
-  }
+          gp.metamaskSigner = gp.metamaskProvider!.getSigner();
+
+          app.ports.sdkPositionsMsg.send([
+            {
+              asset: "0x50bddfb60613a870251e067e2cb401526db85c93",
+              collateral: "ETH",
+              maturity: 1650889815,
+              bond: "221413413414",
+              insurance: "324235234234325",
+            },
+            {
+              asset: "0x50bddfb60613a870251e067e2cb401526db85c93",
+              collateral: "ETH",
+              maturity: 962654400,
+              bond: "221413413414",
+              insurance: "324235234234325",
+              assetOut: "1342354235235",
+              collateralOut: "12142354235235",
+            },
+            {
+              asset: "0x50bddfb60613a870251e067e2cb401526db85c93",
+              collateral: "ETH",
+              maturity: 1650889815,
+              dues: [
+                {
+                  id: "1241341324",
+                  debt: "14324619248719",
+                  collateral: "1312413423523",
+                },
+                {
+                  id: "1241341324",
+                  debt: "14324619248719",
+                  collateral: "1312413423523",
+                },
+              ],
+            },
+          ]);
+        });
+
+      ethereum.on("chainChanged", (chainId: string) => {
+        ethereum
+          .request({ method: "eth_requestAccounts" })
+          .then((accounts: string[]) => {
+            app.ports.metamaskMsg.send({
+              chainId,
+              user: accounts[0],
+            });
+
+            balancesInit(app, gp.metamaskProvider!, accounts[0]);
+          });
+
+        gp.metamaskProvider = new Web3Provider(window.ethereum);
+        gp.metamaskSigner = gp.metamaskProvider.getSigner();
+      });
+
+      ethereum.on("accountsChanged", (accounts: string[]) => {
+        if (accounts[0]) {
+          app.ports.metamaskMsg.send({
+            chainId: ethereum.chainId,
+            user: accounts[0],
+          });
+
+          gp.metamaskProvider = new Web3Provider(window.ethereum);
+          gp.metamaskSigner = gp.metamaskProvider.getSigner();
+          balancesInit(app, gp.metamaskProvider, accounts[0]);
+        } else {
+          app.ports.metamaskMsg.send(null);
+        }
+      });
+
+      app.ports.disconnect.subscribe(() => {
+        app.ports.metamaskMsg.send(null);
+      });
+    } else {
+      app.ports.noMetamask.send();
+    }
+  });
 }

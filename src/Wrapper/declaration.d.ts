@@ -11,10 +11,21 @@ declare interface Ports {
   metamaskMsg: PortToElm<MetamaskMsg | null>;
   noMetamask: PortToElm;
   disconnect: PortFromElm;
+
   sdkPoolsMsg: PortToElm<SdkPoolsMsg[]>;
   sdkBalancesMsg: PortToElm<SdkBalancesMsg[]>;
   sdkAllowancesMsg: PortToElm<SdkAllowancesMsg[]>;
   sdkPositionsMsg: PortToElm<SdkPositionsMsg[]>;
+
+  queryLend: PortFromElm<LendQuery>;
+  queryLendPerSecond: PortFromElm<LendQuery>;
+  approveLend: PortFromElm<Approve>;
+  lend: PortFromElm<Lend>;
+  sdkLendMsg: PortToElm<LendGivenPercentCalculate>;
+
+  queryBorrow: PortFromElm<BorrowQuery>;
+
+  queryPay: PortFromElm<PayQuery>;
 }
 
 interface MetamaskMsg {
@@ -71,4 +82,64 @@ interface SdkPositionsMsg3 {
     debt: string;
     collateral: string;
   }[];
+}
+
+interface Approve {
+  erc20: string;
+}
+
+interface LendQuery {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
+  bondOut?: string;
+  insuranceOut?: string;
+  percent?: number;
+  slippage: number;
+}
+
+interface Lend {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  bondTo: string;
+  insuranceTo: string;
+  assetIn: string;
+  percent: number;
+  minBond: string;
+  minInsurance: string;
+  deadline: number;
+}
+
+interface LendGivenPercentCalculate {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
+  percent: number;
+  bondOut: string;
+  insuranceOut: string;
+  minBond?: string;
+  minInsurance?: string;
+  apr: number;
+  cf: string;
+}
+
+interface BorrowQuery {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetOut: string;
+  debtIn?: string;
+  collateralIn?: string;
+  percent?: number;
+  slippage: number;
+}
+
+interface PayQuery {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  dues: { id: string; debt: string; collateral: string }[];
 }
