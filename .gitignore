@@ -6,12 +6,13 @@ elm-stuff
 
 main.js
 .cache
+.parcel-cache
 
 package-lock.json
 
 dist
 node_modules
-
+typechain
 
 .vscode
 .idea

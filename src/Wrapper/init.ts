@@ -9,6 +9,7 @@ import { pool } from "./pool";
 import { lend, lendSigner } from "./lend";
 import { GlobalParams } from "./global";
 import { balancesInit } from "./balances";
+import { borrow, borrowSigner } from "./borrow";
 
 export declare let window: any;
 
@@ -23,6 +24,9 @@ export async function init(app: ElmApp<Ports>) {
 
   lend(app, whitelist);
   lendSigner(app, whitelist, globalParams);
+
+  borrow(app, whitelist);
+  borrowSigner(app, whitelist, globalParams);
 
   portsInit(app, whitelist, globalParams);
 }
@@ -40,8 +44,7 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
             user: accounts[0],
           });
 
-          // TODO: Update the SDK to return a new instance for `connect` similar to `upgrade`
-          balancesInit(app, gp.metamaskProvider!, accounts[0]);
+          balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
 
           gp.metamaskSigner = gp.metamaskProvider!.getSigner();
 
@@ -91,7 +94,7 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
               user: accounts[0],
             });
 
-            balancesInit(app, gp.metamaskProvider!, accounts[0]);
+            balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
           });
 
         gp.metamaskProvider = new Web3Provider(window.ethereum);
@@ -107,7 +110,7 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
 
           gp.metamaskProvider = new Web3Provider(window.ethereum);
           gp.metamaskSigner = gp.metamaskProvider.getSigner();
-          balancesInit(app, gp.metamaskProvider, accounts[0]);
+          balancesInit(app, whitelist, gp.metamaskProvider, accounts[0]);
         } else {
           app.ports.metamaskMsg.send(null);
         }
