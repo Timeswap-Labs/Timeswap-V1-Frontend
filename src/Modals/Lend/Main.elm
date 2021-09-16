@@ -115,8 +115,11 @@ type Msg
     = InputAssetIn String
     | InputMax
     | SwitchLendSetting Bool
+    | ClickSlider
     | Slide Float
+    | ClickBondOut
     | InputBondOut String
+    | ClickInsuranceOut
     | InputInsuranceOut String
     | ApproveLend Value
     | Lend Value
@@ -130,8 +133,11 @@ type alias Msgs =
     { inputAssetIn : String -> Msg
     , inputMax : Msg
     , switchLendSetting : Bool -> Msg
+    , clickSlider : Msg
     , slide : Float -> Msg
+    , clickBondOut : Msg
     , inputBondOut : String -> Msg
+    , clickInsuranceOut : Msg
     , inputInsuranceOut : String -> Msg
     , approveLend : Value -> Msg
     , lend : Value -> Msg
@@ -253,6 +259,38 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
                     |> Maybe.withDefault Cmd.none
             )
 
+        ClickSlider ->
+            (case modal.claimsOut of
+                ClaimsOut.Bond { percent } ->
+                    Just percent
+
+                ClaimsOut.Insurance { percent } ->
+                    Just percent
+
+                _ ->
+                    Nothing
+            )
+                |> (\percent ->
+                        percent
+                            |> Maybe.map
+                                (\justPercent ->
+                                    ( { modal
+                                        | claimsOut =
+                                            if modal.assetIn |> Input.isZero then
+                                                ClaimsOut.slideZero (justPercent |> Percent.toFloat)
+
+                                            else
+                                                ClaimsOut.slide (justPercent |> Percent.toFloat)
+                                      }
+                                        |> Modal
+                                    , Query.givenPercent modal.pool modal.assetIn justPercent slippage
+                                        |> Maybe.map queryLend
+                                        |> Maybe.withDefault Cmd.none
+                                    )
+                                )
+                            |> Maybe.withDefault ( Modal modal, Cmd.none )
+                   )
+
         Slide float ->
             ( { modal
                 | claimsOut =
@@ -267,6 +305,48 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
                 |> Maybe.map queryLend
                 |> Maybe.withDefault Cmd.none
             )
+
+        ClickBondOut ->
+            (case modal.claimsOut of
+                ClaimsOut.Slider { claims } ->
+                    case claims of
+                        Success { bond } ->
+                            Just bond
+
+                        _ ->
+                            Nothing
+
+                ClaimsOut.Insurance { claims } ->
+                    case claims of
+                        Success { bond } ->
+                            Just bond
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> (\bond ->
+                        bond
+                            |> Maybe.map
+                                (\justBond ->
+                                    ( { modal
+                                        | claimsOut =
+                                            if modal.assetIn |> Input.isZero then
+                                                modal.claimsOut |> ClaimsOut.updateBondOutZero justBond
+
+                                            else
+                                                modal.claimsOut |> ClaimsOut.updateBondOut justBond
+                                      }
+                                        |> Modal
+                                    , Query.givenBond modal.pool modal.assetIn justBond slippage
+                                        |> Maybe.map queryLend
+                                        |> Maybe.withDefault Cmd.none
+                                    )
+                                )
+                            |> Maybe.withDefault ( Modal modal, Cmd.none )
+                   )
 
         InputBondOut string ->
             if
@@ -289,6 +369,48 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
             else
                 ( Modal modal, Cmd.none )
+
+        ClickInsuranceOut ->
+            (case modal.claimsOut of
+                ClaimsOut.Slider { claims } ->
+                    case claims of
+                        Success { insurance } ->
+                            Just insurance
+
+                        _ ->
+                            Nothing
+
+                ClaimsOut.Bond { claims } ->
+                    case claims of
+                        Success { insurance } ->
+                            Just insurance
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> (\insurance ->
+                        insurance
+                            |> Maybe.map
+                                (\justInsurance ->
+                                    ( { modal
+                                        | claimsOut =
+                                            if modal.assetIn |> Input.isZero then
+                                                modal.claimsOut |> ClaimsOut.updateInsuranceOutZero justInsurance
+
+                                            else
+                                                modal.claimsOut |> ClaimsOut.updateInsuranceOut justInsurance
+                                      }
+                                        |> Modal
+                                    , Query.givenInsurance modal.pool modal.assetIn justInsurance slippage
+                                        |> Maybe.map queryLend
+                                        |> Maybe.withDefault Cmd.none
+                                    )
+                                )
+                            |> Maybe.withDefault ( Modal modal, Cmd.none )
+                   )
 
         InputInsuranceOut string ->
             if
@@ -480,8 +602,11 @@ msgs =
     { inputAssetIn = InputAssetIn
     , inputMax = InputMax
     , switchLendSetting = SwitchLendSetting
+    , clickSlider = ClickSlider
     , slide = Slide
+    , clickBondOut = ClickBondOut
     , inputBondOut = InputBondOut
+    , clickInsuranceOut = ClickInsuranceOut
     , inputInsuranceOut = InputInsuranceOut
     , approveLend = ApproveLend
     , lend = Lend

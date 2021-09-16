@@ -666,8 +666,11 @@ updateInsuranceOut string claimsOut =
 view :
     { msgs
         | switchLendSetting : Bool -> msg
+        , clickSlider : msg
         , slide : Float -> msg
+        , clickBondOut : msg
         , inputBondOut : String -> msg
+        , clickInsuranceOut : msg
         , inputInsuranceOut : String -> msg
         , onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
@@ -822,8 +825,11 @@ switch msgs { claimsOut } =
 
 position :
     { msgs
-        | slide : Float -> msg
+        | clickSlider : msg
+        , slide : Float -> msg
+        , clickBondOut : msg
         , inputBondOut : String -> msg
+        , clickInsuranceOut : msg
         , inputInsuranceOut : String -> msg
         , onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
@@ -886,7 +892,7 @@ position msgs model ({ claimsOut } as modal) =
 
 
 sliderSection :
-    { msgs | slide : Float -> msg }
+    { msgs | clickSlider : msg, slide : Float -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
     -> Percent
@@ -939,15 +945,15 @@ sliderSection msgs model modal percent =
 
 
 slider :
-    { msgs | slide : Float -> msg }
+    { msgs | clickSlider : msg, slide : Float -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut }
     -> Percent
     -> Element msg
-slider msgs model modal percent =
+slider msgs model ({ claimsOut } as modal) percent =
     Input.slider
-        [ width fill
-        , el
+        ([ width fill
+         , el
             [ width fill
             , height <| px 2
             , centerY
@@ -961,7 +967,15 @@ slider msgs model modal percent =
             ]
             none
             |> behindContent
-        ]
+         ]
+            ++ (case claimsOut of
+                    Slider _ ->
+                        []
+
+                    _ ->
+                        [ Events.onClick msgs.clickSlider ]
+               )
+        )
         { onChange = msgs.slide
         , label = Input.labelHidden "Slider"
         , min = 0
@@ -1283,7 +1297,8 @@ collateralFactorAmount msgs { pool, tooltip } factorAmount =
 
 bondOutSection :
     { msgs
-        | inputBondOut : String -> msg
+        | clickBondOut : msg
+        , inputBondOut : String -> msg
         , onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
@@ -1378,7 +1393,7 @@ bondOutSection msgs ({ images } as model) ({ claimsOut, tooltip } as modal) =
 
 
 bondOutTextbox :
-    { msgs | inputBondOut : String -> msg }
+    { msgs | clickBondOut : msg, inputBondOut : String -> msg }
     ->
         { model
             | tokenImages : TokenImages
@@ -1464,7 +1479,7 @@ bondOutLogo ({ tokenImages } as model) ({ pool } as modal) =
 
 
 bondOutAmount :
-    { msgs | inputBondOut : String -> msg }
+    { msgs | clickBondOut : msg, inputBondOut : String -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
@@ -1519,7 +1534,7 @@ bondOutAmount msgs model ({ claimsOut } as modal) =
 
 
 bondOutInput :
-    { msgs | inputBondOut : String -> msg }
+    { msgs | clickBondOut : msg, inputBondOut : String -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
@@ -1529,25 +1544,32 @@ bondOutInput :
         }
     -> Element msg
 bondOutInput msgs model ({ claimsOut } as modal) =
-    (\bondOut ->
+    (\bondOut isBond ->
         Input.text
-            [ width fill
-            , height shrink
-            , paddingXY 12 4
-            , alignLeft
-            , centerY
-            , Background.color Color.none
-            , Border.color Color.none
-            , Font.regular
-            , Font.size 16
-            , (if isCorrect model modal then
-                Color.transparent500
+            ([ width fill
+             , height shrink
+             , paddingXY 12 4
+             , alignLeft
+             , centerY
+             , Background.color Color.none
+             , Border.color Color.none
+             , Font.regular
+             , Font.size 16
+             , (if isCorrect model modal then
+                    Color.transparent500
 
-               else
-                Color.negative500
-              )
+                else
+                    Color.negative500
+               )
                 |> Font.color
-            ]
+             ]
+                ++ (if isBond then
+                        []
+
+                    else
+                        [ Events.onClick msgs.clickBondOut ]
+                   )
+            )
             { onChange = msgs.inputBondOut
             , text = bondOut
             , placeholder =
@@ -1598,27 +1620,28 @@ bondOutInput msgs model ({ claimsOut } as modal) =
                     Slider { claims } ->
                         case claims of
                             Success { bond } ->
-                                element bond
+                                element bond False
 
                             _ ->
-                                element ""
+                                element "" False
 
                     Bond { bond } ->
-                        element bond
+                        element bond True
 
                     Insurance { claims } ->
                         case claims of
                             Success { bond } ->
-                                element bond
+                                element bond False
 
                             _ ->
-                                element ""
+                                element "" False
            )
 
 
 insuranceOutSection :
     { msgs
-        | inputInsuranceOut : String -> msg
+        | clickInsuranceOut : msg
+        , inputInsuranceOut : String -> msg
         , onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
@@ -1713,7 +1736,7 @@ insuranceOutSection msgs ({ images } as model) ({ claimsOut, tooltip } as modal)
 
 
 insuranceOutTextbox :
-    { msgs | inputInsuranceOut : String -> msg }
+    { msgs | clickInsuranceOut : msg, inputInsuranceOut : String -> msg }
     ->
         { model
             | tokenImages : TokenImages
@@ -1799,7 +1822,7 @@ insuranceOutLogo ({ tokenImages } as model) ({ pool } as modal) =
 
 
 insuranceOutAmount :
-    { msgs | inputInsuranceOut : String -> msg }
+    { msgs | clickInsuranceOut : msg, inputInsuranceOut : String -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
@@ -1854,7 +1877,7 @@ insuranceOutAmount msgs model ({ claimsOut } as modal) =
 
 
 insuranceOutInput :
-    { msgs | inputInsuranceOut : String -> msg }
+    { msgs | clickInsuranceOut : msg, inputInsuranceOut : String -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
@@ -1864,25 +1887,32 @@ insuranceOutInput :
         }
     -> Element msg
 insuranceOutInput msgs model ({ claimsOut } as modal) =
-    (\insuranceOut ->
+    (\insuranceOut isInsurance ->
         Input.text
-            [ width fill
-            , height shrink
-            , paddingXY 12 4
-            , alignLeft
-            , centerY
-            , Background.color Color.none
-            , Border.color Color.none
-            , Font.regular
-            , Font.size 16
-            , (if isCorrect model modal then
-                Color.transparent500
+            ([ width fill
+             , height shrink
+             , paddingXY 12 4
+             , alignLeft
+             , centerY
+             , Background.color Color.none
+             , Border.color Color.none
+             , Font.regular
+             , Font.size 16
+             , (if isCorrect model modal then
+                    Color.transparent500
 
-               else
-                Color.negative500
-              )
+                else
+                    Color.negative500
+               )
                 |> Font.color
-            ]
+             ]
+                ++ (if isInsurance then
+                        []
+
+                    else
+                        [ Events.onClick msgs.clickInsuranceOut ]
+                   )
+            )
             { onChange = msgs.inputInsuranceOut
             , text = insuranceOut
             , placeholder =
@@ -1933,21 +1963,21 @@ insuranceOutInput msgs model ({ claimsOut } as modal) =
                     Slider { claims } ->
                         case claims of
                             Success { insurance } ->
-                                element insurance
+                                element insurance False
 
                             _ ->
-                                element ""
+                                element "" False
 
                     Bond { claims } ->
                         case claims of
                             Success { insurance } ->
-                                element insurance
+                                element insurance False
 
                             _ ->
-                                element ""
+                                element "" False
 
                     Insurance { insurance } ->
-                        element insurance
+                        element insurance True
            )
 
 

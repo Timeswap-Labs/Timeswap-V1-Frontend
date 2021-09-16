@@ -724,8 +724,11 @@ updateCollateralIn string duesOut =
 view :
     { msgs
         | switchBorrowSetting : Bool -> msg
+        , clickSlider : msg
         , slide : Float -> msg
+        , clickDebtIn : msg
         , inputDebtIn : String -> msg
+        , clickCollateralIn : msg
         , inputCollateralIn : String -> msg
         , inputMax : msg
         , onMouseEnter : Tooltip -> msg
@@ -881,8 +884,11 @@ switch msgs { duesOut } =
 
 position :
     { msgs
-        | slide : Float -> msg
+        | clickSlider : msg
+        , slide : Float -> msg
+        , clickDebtIn : msg
         , inputDebtIn : String -> msg
+        , clickCollateralIn : msg
         , inputCollateralIn : String -> msg
         , inputMax : msg
         , onMouseEnter : Tooltip -> msg
@@ -946,7 +952,7 @@ position msgs model ({ duesOut } as modal) =
 
 
 sliderSection :
-    { msgs | slide : Float -> msg }
+    { msgs | clickSlider : msg, slide : Float -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetOut : String, duesOut : DuesOut }
     -> Percent
@@ -999,15 +1005,15 @@ sliderSection msgs model modal percent =
 
 
 slider :
-    { msgs | slide : Float -> msg }
+    { msgs | clickSlider : msg, slide : Float -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetOut : String, duesOut : DuesOut }
     -> Percent
     -> Element msg
-slider msgs model modal percent =
+slider msgs model ({ duesOut } as modal) percent =
     Input.slider
-        [ width fill
-        , el
+        ([ width fill
+         , el
             [ width fill
             , height <| px 2
             , centerY
@@ -1021,7 +1027,15 @@ slider msgs model modal percent =
             ]
             none
             |> behindContent
-        ]
+         ]
+            ++ (case duesOut of
+                    Slider _ ->
+                        []
+
+                    _ ->
+                        [ Events.onClick msgs.clickSlider ]
+               )
+        )
         { onChange = msgs.slide
         , label = Input.labelHidden "Slider"
         , min = 0
@@ -1342,7 +1356,8 @@ collateralFactorAmount msgs { pool, tooltip } factorAmount =
 
 debtInSection :
     { msgs
-        | inputDebtIn : String -> msg
+        | clickDebtIn : msg
+        , inputDebtIn : String -> msg
         , onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
@@ -1437,7 +1452,7 @@ debtInSection msgs ({ images } as model) ({ duesOut, tooltip } as modal) =
 
 
 debtInTextbox :
-    { msgs | inputDebtIn : String -> msg }
+    { msgs | clickDebtIn : msg, inputDebtIn : String -> msg }
     ->
         { model
             | tokenImages : TokenImages
@@ -1523,7 +1538,7 @@ debtInLogo ({ tokenImages } as model) ({ pool } as modal) =
 
 
 debtInAmount :
-    { msgs | inputDebtIn : String -> msg }
+    { msgs | clickDebtIn : msg, inputDebtIn : String -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
@@ -1578,7 +1593,7 @@ debtInAmount msgs model ({ duesOut } as modal) =
 
 
 debtInInput :
-    { msgs | inputDebtIn : String -> msg }
+    { msgs | clickDebtIn : msg, inputDebtIn : String -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
@@ -1588,25 +1603,32 @@ debtInInput :
         }
     -> Element msg
 debtInInput msgs model ({ duesOut } as modal) =
-    (\debtIn ->
+    (\debtIn isDebt ->
         Input.text
-            [ width fill
-            , height shrink
-            , paddingXY 12 4
-            , alignLeft
-            , centerY
-            , Background.color Color.none
-            , Border.color Color.none
-            , Font.regular
-            , Font.size 16
-            , (if isCorrect model modal then
-                Color.transparent500
+            ([ width fill
+             , height shrink
+             , paddingXY 12 4
+             , alignLeft
+             , centerY
+             , Background.color Color.none
+             , Border.color Color.none
+             , Font.regular
+             , Font.size 16
+             , (if isCorrect model modal then
+                    Color.transparent500
 
-               else
-                Color.negative500
-              )
+                else
+                    Color.negative500
+               )
                 |> Font.color
-            ]
+             ]
+                ++ (if isDebt then
+                        []
+
+                    else
+                        [ Events.onClick msgs.clickDebtIn ]
+                   )
+            )
             { onChange = msgs.inputDebtIn
             , text = debtIn
             , placeholder =
@@ -1657,27 +1679,28 @@ debtInInput msgs model ({ duesOut } as modal) =
                     Slider { dues } ->
                         case dues of
                             Success { debt } ->
-                                element debt
+                                element debt False
 
                             _ ->
-                                element ""
+                                element "" False
 
                     Debt { debt } ->
-                        element debt
+                        element debt True
 
                     Collateral { dues } ->
                         case dues of
                             Success { debt } ->
-                                element debt
+                                element debt False
 
                             _ ->
-                                element ""
+                                element "" False
            )
 
 
 collateralInSection :
     { msgs
-        | inputCollateralIn : String -> msg
+        | clickCollateralIn : msg
+        , inputCollateralIn : String -> msg
         , inputMax : msg
         , onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
@@ -1887,7 +1910,11 @@ collateralBalance msgs balances { pool, tooltip } =
 
 
 collateralInTextbox :
-    { msgs | inputCollateralIn : String -> msg, inputMax : msg }
+    { msgs
+        | clickCollateralIn : msg
+        , inputCollateralIn : String -> msg
+        , inputMax : msg
+    }
     ->
         { model
             | tokenImages : TokenImages
@@ -1973,7 +2000,11 @@ collateralInLogo ({ tokenImages } as model) ({ pool } as modal) =
 
 
 collateralInAmount :
-    { msgs | inputCollateralIn : String -> msg, inputMax : msg }
+    { msgs
+        | clickCollateralIn : msg
+        , inputCollateralIn : String -> msg
+        , inputMax : msg
+    }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
@@ -2045,7 +2076,7 @@ collateralInAmount msgs ({ user } as model) ({ duesOut } as modal) =
 
 
 collateralInInput :
-    { msgs | inputCollateralIn : String -> msg }
+    { msgs | clickCollateralIn : msg, inputCollateralIn : String -> msg }
     -> { model | user : Remote userError { user | balances : Remote () Balances } }
     ->
         { modal
@@ -2055,25 +2086,32 @@ collateralInInput :
         }
     -> Element msg
 collateralInInput msgs model ({ duesOut } as modal) =
-    (\collateralIn ->
+    (\collateralIn isCollateral ->
         Input.text
-            [ width fill
-            , height shrink
-            , paddingXY 12 4
-            , alignLeft
-            , centerY
-            , Background.color Color.none
-            , Border.color Color.none
-            , Font.regular
-            , Font.size 16
-            , (if isCorrect model modal then
-                Color.transparent500
+            ([ width fill
+             , height shrink
+             , paddingXY 12 4
+             , alignLeft
+             , centerY
+             , Background.color Color.none
+             , Border.color Color.none
+             , Font.regular
+             , Font.size 16
+             , (if isCorrect model modal then
+                    Color.transparent500
 
-               else
-                Color.negative500
-              )
+                else
+                    Color.negative500
+               )
                 |> Font.color
-            ]
+             ]
+                ++ (if isCollateral then
+                        []
+
+                    else
+                        [ Events.onClick msgs.clickCollateralIn ]
+                   )
+            )
             { onChange = msgs.inputCollateralIn
             , text = collateralIn
             , placeholder =
@@ -2124,21 +2162,21 @@ collateralInInput msgs model ({ duesOut } as modal) =
                     Slider { dues } ->
                         case dues of
                             Success { collateral } ->
-                                element collateral
+                                element collateral False
 
                             _ ->
-                                element ""
+                                element "" False
 
                     Debt { dues } ->
                         case dues of
                             Success { collateral } ->
-                                element collateral
+                                element collateral False
 
                             _ ->
-                                element ""
+                                element "" False
 
                     Collateral { collateral } ->
-                        element collateral
+                        element collateral True
            )
 
 

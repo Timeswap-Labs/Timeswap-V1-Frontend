@@ -114,8 +114,11 @@ getPool (Modal { pool }) =
 type Msg
     = InputAssetOut String
     | SwitchBorrowSetting Bool
+    | ClickSlider
     | Slide Float
+    | ClickDebtIn
     | InputDebtIn String
+    | ClickCollateralIn
     | InputCollateralIn String
     | InputMax
     | ApproveBorrow Value
@@ -129,8 +132,11 @@ type Msg
 type alias Msgs =
     { inputAssetOut : String -> Msg
     , switchBorrowSetting : Bool -> Msg
+    , clickSlider : Msg
     , slide : Float -> Msg
+    , clickDebtIn : Msg
     , inputDebtIn : String -> Msg
+    , clickCollateralIn : Msg
     , inputCollateralIn : String -> Msg
     , inputMax : Msg
     , approveBorrow : Value -> Msg
@@ -208,6 +214,38 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
                     |> Maybe.withDefault Cmd.none
             )
 
+        ClickSlider ->
+            (case modal.duesOut of
+                DuesOut.Debt { percent } ->
+                    Just percent
+
+                DuesOut.Collateral { percent } ->
+                    Just percent
+
+                _ ->
+                    Nothing
+            )
+                |> (\percent ->
+                        percent
+                            |> Maybe.map
+                                (\justPercent ->
+                                    ( { modal
+                                        | duesOut =
+                                            if modal.assetOut |> Input.isZero then
+                                                DuesOut.slideZero (justPercent |> Percent.toFloat)
+
+                                            else
+                                                DuesOut.slide (justPercent |> Percent.toFloat)
+                                      }
+                                        |> Modal
+                                    , Query.givenPercent modal.pool modal.assetOut justPercent slippage
+                                        |> Maybe.map queryBorrow
+                                        |> Maybe.withDefault Cmd.none
+                                    )
+                                )
+                            |> Maybe.withDefault ( Modal modal, Cmd.none )
+                   )
+
         Slide float ->
             ( { modal
                 | duesOut =
@@ -222,6 +260,48 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
                 |> Maybe.map queryBorrow
                 |> Maybe.withDefault Cmd.none
             )
+
+        ClickDebtIn ->
+            (case modal.duesOut of
+                DuesOut.Slider { dues } ->
+                    case dues of
+                        Success { debt } ->
+                            Just debt
+
+                        _ ->
+                            Nothing
+
+                DuesOut.Collateral { dues } ->
+                    case dues of
+                        Success { debt } ->
+                            Just debt
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> (\debt ->
+                        debt
+                            |> Maybe.map
+                                (\justDebt ->
+                                    ( { modal
+                                        | duesOut =
+                                            if modal.assetOut |> Input.isZero then
+                                                modal.duesOut |> DuesOut.updateDebtInZero justDebt
+
+                                            else
+                                                modal.duesOut |> DuesOut.updateDebtIn justDebt
+                                      }
+                                        |> Modal
+                                    , Query.givenDebt modal.pool modal.assetOut justDebt slippage
+                                        |> Maybe.map queryBorrow
+                                        |> Maybe.withDefault Cmd.none
+                                    )
+                                )
+                            |> Maybe.withDefault ( Modal modal, Cmd.none )
+                   )
 
         InputDebtIn string ->
             if
@@ -244,6 +324,48 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
 
             else
                 ( Modal modal, Cmd.none )
+
+        ClickCollateralIn ->
+            (case modal.duesOut of
+                DuesOut.Slider { dues } ->
+                    case dues of
+                        Success { collateral } ->
+                            Just collateral
+
+                        _ ->
+                            Nothing
+
+                DuesOut.Debt { dues } ->
+                    case dues of
+                        Success { collateral } ->
+                            Just collateral
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> (\collateral ->
+                        collateral
+                            |> Maybe.map
+                                (\justCollateral ->
+                                    ( { modal
+                                        | duesOut =
+                                            if modal.assetOut |> Input.isZero then
+                                                modal.duesOut |> DuesOut.updateCollateralInZero justCollateral
+
+                                            else
+                                                modal.duesOut |> DuesOut.updateCollateralIn justCollateral
+                                      }
+                                        |> Modal
+                                    , Query.givenCollateral modal.pool modal.assetOut justCollateral slippage
+                                        |> Maybe.map queryBorrow
+                                        |> Maybe.withDefault Cmd.none
+                                    )
+                                )
+                            |> Maybe.withDefault ( Modal modal, Cmd.none )
+                   )
 
         InputCollateralIn string ->
             if
@@ -466,8 +588,11 @@ msgs : Msgs
 msgs =
     { inputAssetOut = InputAssetOut
     , switchBorrowSetting = SwitchBorrowSetting
+    , clickSlider = ClickSlider
     , slide = Slide
+    , clickDebtIn = ClickDebtIn
     , inputDebtIn = InputDebtIn
+    , clickCollateralIn = ClickCollateralIn
     , inputCollateralIn = InputCollateralIn
     , inputMax = InputMax
     , approveBorrow = ApproveBorrow
