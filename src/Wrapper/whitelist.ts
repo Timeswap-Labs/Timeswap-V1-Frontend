@@ -108,6 +108,10 @@ export class WhiteList {
       .insurance;
   }
 
+  tokenEntries() {
+    return this.tokens.entries();
+  }
+
   poolEntries() {
     return this.pools.entries();
   }

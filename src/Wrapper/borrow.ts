@@ -24,23 +24,25 @@ export async function borrowSigner(
       .approve(whitelist.convenience, new Uint256((1n << 256n) - 1n));
   });
 
-  //   app.ports.borrow.subscribe(async (params) => {
-  //     const pool = whitelist.getPool(
-  //       params.asset,
-  //       params.collateral,
-  //       params.maturity
-  //     );
+  app.ports.borrow.subscribe(async (params) => {
+    const pool = whitelist.getPool(
+      params.asset,
+      params.collateral,
+      params.maturity
+    );
 
-  //     pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
-  //       bondTo: params.bondTo,
-  //       insuranceTo: params.insuranceTo,
-  //       assetIn: new Uint112(params.assetIn),
-  //       percent: new Uint40(params.percent),
-  //       minBond: new Uint128(params.minBond),
-  //       minInsurance: new Uint128(params.minInsurance),
-  //       deadline: new Uint256(params.deadline),
-  //     });
-  //   });
+    const txn = await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
+      assetTo: params.assetTo,
+      dueTo: params.dueTo,
+      assetOut: new Uint112(params.assetOut),
+      percent: new Uint40(params.percent),
+      maxDebt: new Uint112(params.maxDebt),
+      maxCollateral: new Uint112(params.maxCollateral),
+      deadline: new Uint256(params.deadline),
+    });
+
+    await txn.wait();
+  });
 }
 
 async function borrowQueryCalculation(
@@ -54,7 +56,7 @@ async function borrowQueryCalculation(
     const maturity = new Uint256(query.maturity);
     const currentTime = new Uint256(Date.now()).div(1000);
 
-    const due = await pool.calculateBorrowGivenPercent(
+    const { due } = await pool.calculateBorrowGivenPercent(
       new Uint112(query.assetOut),
       new Uint40(query.percent),
       currentTime

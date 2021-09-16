@@ -12,7 +12,7 @@ package-lock.json
 
 dist
 node_modules
-
+typechain
 
 .vscode
 .idea
