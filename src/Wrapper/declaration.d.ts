@@ -21,13 +21,13 @@ declare interface Ports {
   queryLendPerSecond: PortFromElm<LendQuery>;
   approveLend: PortFromElm<Approve>;
   lend: PortFromElm<Lend>;
-  sdkLendMsg: PortToElm<LendGivenPercentCalculate>;
+  sdkLendMsg: PortToElm<LendCalculate>;
 
   queryBorrow: PortFromElm<BorrowQuery>;
   queryBorrowPerSecond: PortFromElm<BorrowQuery>;
   approveBorrow: PortFromElm<Approve>;
   borrow: PortFromElm<Borrow>;
-  sdkBorrowMsg: PortToElm<BorrowGivenPercentCalculate>;
+  sdkBorrowMsg: PortToElm<BorrowCalculate>;
 
   queryPay: PortFromElm<PayQuery>;
 }
@@ -116,18 +116,82 @@ interface Lend {
   deadline: number;
 }
 
-interface LendGivenPercentCalculate {
+type LendCalculate =
+  | LendGivenPercentError
+  | LendGivenPercent
+  | LendGivenBondError
+  | LendGivenBond
+  | LendGivenInsuranceError
+  | LendGivenInsurance;
+
+interface LendGivenPercentError {
   asset: string;
   collateral: string;
   maturity: number;
   assetIn: string;
   percent: number;
+}
+
+interface LendGivenPercent {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
+  percent: number;
+  result: {
+    bondOut: string;
+    insuranceOut: string;
+    minBond: string;
+    minInsurance: string;
+    apr: number;
+    cf: string;
+  };
+}
+
+interface LendGivenBondError {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
   bondOut: string;
+}
+
+interface LendGivenBond {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
+  bondOut: string;
+  result: {
+    percent: number;
+    insuranceOut: string;
+    minInsurance: string;
+    apr: number;
+    cf: string;
+  };
+}
+
+interface LendGivenInsuranceError {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
   insuranceOut: string;
-  minBond?: string;
-  minInsurance?: string;
-  apr: number;
-  cf: string;
+}
+
+interface LendGivenInsurance {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
+  insuranceOut: string;
+  result: {
+    percent: number;
+    bondOut: string;
+    minBond: string;
+    apr: number;
+    cf: string;
+  };
 }
 
 interface BorrowQuery {
@@ -166,6 +230,84 @@ interface BorrowGivenPercentCalculate {
   maxCollateral?: string;
   apr: number;
   cf: string;
+}
+
+type BorrowCalculate =
+  | BorrowGivenPercentError
+  | BorrowGivenPercent
+  | BorrowGivenDebtError
+  | BorrowGivenDebt
+  | BorrowGivenCollateralError
+  | BorrowGivenCollateral;
+
+interface BorrowGivenPercentError {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetOut: string;
+  percent: number;
+}
+
+interface BorrowGivenPercent {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetOut: string;
+  percent: number;
+  result: {
+    debtIn: string;
+    collateralIn: string;
+    maxDebt: string;
+    maxCollateral: string;
+    apr: number;
+    cf: string;
+  };
+}
+
+interface BorrowGivenDebtError {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
+  debtIn: string;
+}
+
+interface BorrowGivenDebt {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
+  debtIn: string;
+  result: {
+    percent: number;
+    collateralIn: string;
+    maxCollateral: string;
+    apr: number;
+    cf: string;
+  };
+}
+
+interface BorrowGivenCollateralError {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
+  collateralIn: string;
+}
+
+interface BorrowGivenCollateral {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetIn: string;
+  collateralIn: string;
+  result: {
+    percent: number;
+    debtIn: string;
+    maxDebt: string;
+    apr: number;
+    cf: string;
+  };
 }
 
 interface PayQuery {

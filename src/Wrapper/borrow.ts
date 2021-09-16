@@ -91,12 +91,14 @@ async function borrowQueryCalculation(
       maturity: query.maturity,
       assetOut: query.assetOut,
       percent: query.percent,
-      debtIn,
-      collateralIn,
-      maxDebt,
-      maxCollateral,
-      apr: Number(apr.value) / 10000,
-      cf,
+      result: {
+        debtIn,
+        collateralIn,
+        maxDebt,
+        maxCollateral,
+        apr: Number(apr.value) / 10000,
+        cf,
+      },
     });
   }
   //   else if (query.bondOut) {
