@@ -227,7 +227,7 @@ encode transaction =
     case transaction of
         GivenPercent { pool, to, assetOut, percent, maxDebt, maxCollateral, deadline } ->
             [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-            , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+            , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
             , ( "maturity", pool.maturity |> Maturity.encode )
             , ( "assetTo", to |> Address.encode )
             , ( "dueTo", to |> Address.encode )
@@ -241,7 +241,7 @@ encode transaction =
 
         GivenDebt { pool, to, assetOut, debtIn, maxCollateral, deadline } ->
             [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-            , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+            , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
             , ( "maturity", pool.maturity |> Maturity.encode )
             , ( "assetTo", to |> Address.encode )
             , ( "dueTo", to |> Address.encode )
@@ -254,7 +254,7 @@ encode transaction =
 
         GivenCollateral { pool, to, assetOut, collateralIn, maxDebt, deadline } ->
             [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-            , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+            , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
             , ( "maturity", pool.maturity |> Maturity.encode )
             , ( "assetTo", to |> Address.encode )
             , ( "dueTo", to |> Address.encode )

@@ -227,7 +227,7 @@ encode transaction =
     case transaction of
         GivenPercent { pool, to, assetIn, percent, minBond, minInsurance, deadline } ->
             [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-            , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+            , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
             , ( "maturity", pool.maturity |> Maturity.encode )
             , ( "bondTo", to |> Address.encode )
             , ( "insuranceTo", to |> Address.encode )
@@ -241,7 +241,7 @@ encode transaction =
 
         GivenBond { pool, to, assetIn, bondOut, minInsurance, deadline } ->
             [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-            , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+            , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
             , ( "maturity", pool.maturity |> Maturity.encode )
             , ( "bondTo", to |> Address.encode )
             , ( "insuranceTo", to |> Address.encode )
@@ -254,7 +254,7 @@ encode transaction =
 
         GivenInsurance { pool, to, assetIn, insuranceOut, minBond, deadline } ->
             [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-            , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+            , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
             , ( "maturity", pool.maturity |> Maturity.encode )
             , ( "bondTo", to |> Address.encode )
             , ( "insuranceTo", to |> Address.encode )
