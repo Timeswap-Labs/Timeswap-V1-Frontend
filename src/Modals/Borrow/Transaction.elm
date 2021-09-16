@@ -126,9 +126,9 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetOut, duesOut } a
                         _ ->
                             Nothing
                     )
-                    (assetOut |> Uint.fromString)
-                    (maxDebt |> Uint.fromString)
-                    (maxCollateral |> Uint.fromString)
+                    (assetOut |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                    (maxDebt |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                    (maxCollateral |> Uint.fromAmount (pool.pair |> Pair.toCollateral))
 
             DuesOut.Slider { percent, dues } ->
                 case dues of
@@ -152,9 +152,9 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetOut, duesOut } a
                                 _ ->
                                     Nothing
                             )
-                            (assetOut |> Uint.fromString)
-                            (maxDebt |> Uint.fromString)
-                            (maxCollateral |> Uint.fromString)
+                            (assetOut |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                            (maxDebt |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                            (maxCollateral |> Uint.fromAmount (pool.pair |> Pair.toCollateral))
 
                     _ ->
                         Nothing
@@ -180,9 +180,9 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetOut, duesOut } a
                                 _ ->
                                     Nothing
                             )
-                            (assetOut |> Uint.fromString)
-                            (debt |> Uint.fromString)
-                            (maxCollateral |> Uint.fromString)
+                            (assetOut |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                            (debt |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                            (maxCollateral |> Uint.fromAmount (pool.pair |> Pair.toCollateral))
 
                     _ ->
                         Nothing
@@ -208,9 +208,9 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetOut, duesOut } a
                                 _ ->
                                     Nothing
                             )
-                            (assetOut |> Uint.fromString)
-                            (collateral |> Uint.fromString)
-                            (maxDebt |> Uint.fromString)
+                            (assetOut |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                            (collateral |> Uint.fromAmount (pool.pair |> Pair.toCollateral))
+                            (maxDebt |> Uint.fromAmount (pool.pair |> Pair.toAsset))
 
                     _ ->
                         Nothing

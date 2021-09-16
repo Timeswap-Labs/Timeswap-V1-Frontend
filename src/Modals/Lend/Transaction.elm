@@ -126,9 +126,9 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetIn, claimsOut } 
                         _ ->
                             Nothing
                     )
-                    (assetIn |> Uint.fromString)
-                    (minBond |> Uint.fromString)
-                    (minInsurance |> Uint.fromString)
+                    (assetIn |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                    (minBond |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                    (minInsurance |> Uint.fromAmount (pool.pair |> Pair.toCollateral))
 
             ClaimsOut.Slider { percent, claims } ->
                 case claims of
@@ -152,9 +152,9 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetIn, claimsOut } 
                                 _ ->
                                     Nothing
                             )
-                            (assetIn |> Uint.fromString)
-                            (minBond |> Uint.fromString)
-                            (minInsurance |> Uint.fromString)
+                            (assetIn |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                            (minBond |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                            (minInsurance |> Uint.fromAmount (pool.pair |> Pair.toCollateral))
 
                     _ ->
                         Nothing
@@ -180,9 +180,9 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetIn, claimsOut } 
                                 _ ->
                                     Nothing
                             )
-                            (assetIn |> Uint.fromString)
-                            (bond |> Uint.fromString)
-                            (minInsurance |> Uint.fromString)
+                            (assetIn |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                            (bond |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                            (minInsurance |> Uint.fromAmount (pool.pair |> Pair.toCollateral))
 
                     _ ->
                         Nothing
@@ -208,9 +208,9 @@ toTransaction ({ time, deadline, user } as model) ({ pool, assetIn, claimsOut } 
                                 _ ->
                                     Nothing
                             )
-                            (assetIn |> Uint.fromString)
-                            (insurance |> Uint.fromString)
-                            (minBond |> Uint.fromString)
+                            (assetIn |> Uint.fromAmount (pool.pair |> Pair.toAsset))
+                            (insurance |> Uint.fromAmount (pool.pair |> Pair.toCollateral))
+                            (minBond |> Uint.fromAmount (pool.pair |> Pair.toAsset))
 
                     _ ->
                         Nothing
