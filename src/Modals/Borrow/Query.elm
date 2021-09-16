@@ -100,7 +100,7 @@ decoderGivenPercent pools tokens =
         |> Pipeline.custom (Pools.decoderPool pools tokens)
         |> Pipeline.required "assetOut" Uint.decoder
         |> Pipeline.required "percent" Percent.decoder
-        |> Pipeline.required "dues"
+        |> Pipeline.required "result"
             (Decode.oneOf
                 [ decoderDuesGivenPercent |> Decode.map Just
                 , Decode.succeed Nothing
@@ -126,7 +126,7 @@ decoderGivenDebt pools tokens =
         |> Pipeline.custom (Pools.decoderPool pools tokens)
         |> Pipeline.required "assetOut" Uint.decoder
         |> Pipeline.required "debtIn" Uint.decoder
-        |> Pipeline.required "dues"
+        |> Pipeline.required "result"
             (Decode.oneOf
                 [ decoderDuesGivenDebt |> Decode.map Just
                 , Decode.succeed Nothing
@@ -151,7 +151,7 @@ decoderGivenCollateral pools tokens =
         |> Pipeline.custom (Pools.decoderPool pools tokens)
         |> Pipeline.required "assetOut" Uint.decoder
         |> Pipeline.required "collateralIn" Uint.decoder
-        |> Pipeline.required "claims"
+        |> Pipeline.required "result"
             (Decode.oneOf
                 [ decoderDuesGivenCollateral |> Decode.map Just
                 , Decode.succeed Nothing
