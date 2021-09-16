@@ -24,6 +24,10 @@ export async function balancesInit(
         );
 
         const balance = await token.balanceOf(address);
+        const allowance = await token.allowance(address, rinkeby.convenience);
+        app.ports.sdkAllowancesMsg.send([
+          { erc20: tokenAddress, allowance: allowance.value.toString() },
+        ]);
         return { token: tokenAddress, balance: balance.value.toString() };
       }
     )

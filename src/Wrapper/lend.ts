@@ -55,7 +55,7 @@ async function lendQueryCalculation(
 ) {
   const pool = whitelist.getPool(query.asset, query.collateral, query.maturity);
 
-  if (query.percent) {
+  if (query.percent != undefined) {
     const maturity = new Uint256(query.maturity);
     const currentTime = new Uint256(Date.now()).div(1000);
 
@@ -68,12 +68,12 @@ async function lendQueryCalculation(
     const insuranceOut = claims.insurance.value.toString();
 
     const minBond = new Uint256(claims.bond)
-      .mul(100000 * query.slippage)
-      .div(100000)
+      .mul(10000 * (1 - query.slippage))
+      .div(10000)
       .value.toString();
     const minInsurance = new Uint256(claims.insurance)
-      .mul(100000 * query.slippage)
-      .div(100000)
+      .mul(10000 * (1 - query.slippage))
+      .div(10000)
       .value.toString();
 
     const SECONDS = 31556926;
@@ -102,43 +102,53 @@ async function lendQueryCalculation(
       cf,
     });
   }
-  //   else if (query.bondOut) {
-  //     const claims = await pool.calculateLendGivenBond(
-  //       new Uint112(query.assetIn),
-  //       new Uint128(query.bondOut),
-  //       new Uint256(Date.now()).div(1000)
-  //     );
-  //     const bondOut = claims.bond.value.toString();
-  //     const insuranceOut = claims.insurance.value.toString();
+  // else if (query.bondOut) {
+  //   const maturity = new Uint256(query.maturity);
+  //   const currentTime = new Uint256(Date.now()).div(1000);
 
-  //     const minBond = new Uint256(claims.bond)
-  //       .mul(100000 * query.slippage)
-  //       .div(100000)
-  //       .value.toString();
-  //     const minInsurance = new Uint256(claims.insurance)
-  //       .mul(100000 * query.slippage)
-  //       .div(100000)
-  //       .value.toString();
+  //   const claims = await pool.calculateLendGivenBond(
+  //     new Uint112(query.assetIn),
+  //     new Uint128(query.bondOut),
+  //     new Uint256(Date.now()).div(1000)
+  //   );
+  //   const insuranceOut = claims.insurance.value.toString();
 
-  //     const SECONDS = 31556926;
-  //     // const apr = claims.bond.sub(query.assetIn).mul(SECONDS).div(query.assetIn * (query.maturity - now));
-  //     // const cf = assetIn * (10 ** collateral.decimals)/claims.insurance;
-  //     // const cf = assetIn * (10 ** collateral.decimals)/claims.insurance;
+  //   const minBond = new Uint256(claims.bond)
+  //     .mul(100000 * query.slippage)
+  //     .div(100000)
+  //     .value.toString();
+  //   const minInsurance = new Uint256(claims.insurance)
+  //     .mul(100000 * query.slippage)
+  //     .div(100000)
+  //     .value.toString();
 
-  //     app.ports.sdkLendMsg.send({
-  //       asset: query.asset,
-  //       collateral: query.collateral,
-  //       maturity: query.maturity,
-  //       assetIn: query.assetIn,
-  //       percent: query.percent,
-  //       bondOut,
-  //       insuranceOut,
-  //       minBond,
-  //       minInsurance,
-  //       apr: 0.35,
-  //       cf: "1234523423",
-  //     });
-  //   } else if (query.insuranceOut) {
+  //   const SECONDS = 31556926;
+  //   const apr = claims.bond
+  //     .sub(query.assetIn)
+  //     .mul(SECONDS)
+  //     .mul(10000)
+  //     .div(query.assetIn)
+  //     .div(maturity.sub(currentTime));
+  //   const cf = new Uint256(query.assetIn)
+  //     .mul(pow(10n, BigInt(whitelist.getToken(query.collateral).decimals)))
+  //     .div(claims.insurance)
+  //     .value.toString();
+
+  //   app.ports.sdkLendMsg.send({
+  //     asset: query.asset,
+  //     collateral: query.collateral,
+  //     maturity: query.maturity,
+  //     assetIn: query.assetIn,
+  //     percent: 1452345,
+  //     bondOut: query.bondOut,
+  //     insuranceOut,
+  //     minBond,
+  //     minInsurance,
+  //     apr: Number(apr.value) / 10000,
+  //     cf,
+  //   });
+  // }
+  // else if (query.insuranceOut) {
   //     const claims = await pool.calculateLendGivenInsurance(
   //       new Uint112(query.assetIn),
   //       new Uint128(query.insuranceOut),

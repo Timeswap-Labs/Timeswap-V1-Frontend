@@ -100,7 +100,7 @@ decoderGivenPercent pools tokens =
         |> Pipeline.custom (Pools.decoderPool pools tokens)
         |> Pipeline.required "assetOut" Uint.decoder
         |> Pipeline.required "percent" Percent.decoder
-        |> Pipeline.required "dues"
+        |> Pipeline.custom
             (Decode.oneOf
                 [ decoderDuesGivenPercent |> Decode.map Just
                 , Decode.succeed Nothing

@@ -1,10 +1,8 @@
 import { Elm } from "../Main.elm";
 import rinkeby from "../../whitelist/rinkeby.json";
 
-import images from "../../image/*.svg";
-import tokenImages from "../../image/tokens/*.svg";
-
-import { Web3Provider } from "@ethersproject/providers";
+import * as images from "url:../../image/*.svg";
+import * as tokenImages from "url:../../image/tokens/*.svg";
 
 import { init } from "./init";
 

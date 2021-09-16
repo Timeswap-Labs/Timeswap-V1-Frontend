@@ -6,6 +6,7 @@ elm-stuff
 
 main.js
 .cache
+.parcel-cache
 
 package-lock.json
 

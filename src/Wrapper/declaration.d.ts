@@ -24,6 +24,10 @@ declare interface Ports {
   sdkLendMsg: PortToElm<LendGivenPercentCalculate>;
 
   queryBorrow: PortFromElm<BorrowQuery>;
+  queryBorrowPerSecond: PortFromElm<BorrowQuery>;
+  approveBorrow: PortFromElm<Approve>;
+  borrow: PortFromElm<Borrow>;
+  sdkBorrowMsg: PortToElm<BorrowGivenPercentCalculate>;
 
   queryPay: PortFromElm<PayQuery>;
 }
@@ -135,6 +139,33 @@ interface BorrowQuery {
   collateralIn?: string;
   percent?: number;
   slippage: number;
+}
+
+interface Borrow {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetTo: string;
+  dueTo: string;
+  assetOut: string;
+  percent: number;
+  maxDebt: string;
+  maxCollateral: string;
+  deadline: number;
+}
+
+interface BorrowGivenPercentCalculate {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetOut: string;
+  percent: number;
+  debtIn: string;
+  collateralIn: string;
+  maxDebt?: string;
+  maxCollateral?: string;
+  apr: number;
+  cf: string;
 }
 
 interface PayQuery {

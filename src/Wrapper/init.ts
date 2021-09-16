@@ -9,6 +9,7 @@ import { pool } from "./pool";
 import { lend, lendSigner } from "./lend";
 import { GlobalParams } from "./global";
 import { balancesInit } from "./balances";
+import { borrow, borrowSigner } from "./borrow";
 
 export declare let window: any;
 
@@ -23,6 +24,9 @@ export async function init(app: ElmApp<Ports>) {
 
   lend(app, whitelist);
   lendSigner(app, whitelist, globalParams);
+
+  borrow(app, whitelist);
+  borrowSigner(app, whitelist, globalParams);
 
   portsInit(app, whitelist, globalParams);
 }
