@@ -6,8 +6,8 @@
   },
   "dependencies": {
     "@ethersproject/providers": "^5.4.5",
-    "@timeswap-labs/timeswap-v1-sdk": "^0.1.14",
-    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.11"
+    "@timeswap-labs/timeswap-v1-sdk": "^0.1.15",
+    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.12"
   },
   "devDependencies": {
     "@parcel/resolver-glob": "^2.0.0-rc.0",
