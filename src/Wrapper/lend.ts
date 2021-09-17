@@ -36,7 +36,6 @@ export async function lendSigner(
       params.maturity
     );
 
-    console.log(gp.metamaskSigner!);
     const txn = await pool.upgrade(gp.metamaskSigner!).lendGivenPercent({
       bondTo: params.bondTo,
       insuranceTo: params.insuranceTo,
@@ -121,11 +120,12 @@ async function lendQueryCalculation(
       const maturity = new Uint256(query.maturity);
       const currentTime = new Uint256(Date.now()).div(1000);
       const assetIn = new Uint112(query.assetIn);
+      const bondOut = new Uint128(query.bondOut);
 
       const { claims, yDecrease } = await pool.calculateLendGivenBond(
         assetIn,
-        new Uint128(query.bondOut),
-        new Uint256(Date.now()).div(1000)
+        bondOut,
+        currentTime
       );
       const insuranceOut = claims.insurance.value.toString();
 
@@ -150,7 +150,7 @@ async function lendQueryCalculation(
         .value.toString();
 
       const SECONDS = 31556926;
-      const apr = claims.bond
+      const apr = bondOut
         .sub(query.assetIn)
         .mul(SECONDS)
         .mul(10000)
@@ -193,7 +193,7 @@ async function lendQueryCalculation(
       const { claims, yDecrease } = await pool.calculateLendGivenInsurance(
         assetIn,
         new Uint128(query.insuranceOut),
-        new Uint256(Date.now()).div(1000)
+        currentTime
       );
       const bondOut = claims.bond.value.toString();
 
@@ -226,7 +226,7 @@ async function lendQueryCalculation(
         .div(maturity.sub(currentTime));
       const cf = new Uint256(query.assetIn)
         .mul(pow(10n, BigInt(whitelist.getToken(query.collateral).decimals)))
-        .div(claims.insurance)
+        .div(query.insuranceOut)
         .value.toString();
 
       app.ports.sdkLendMsg.send({

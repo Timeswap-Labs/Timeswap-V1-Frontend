@@ -8,6 +8,7 @@ export class WhiteList {
   convenience: string;
 
   private tokens: Map<string, ERC20Token | NativeToken>;
+  private balances: Map<string, Uint256>;
   private pairs: Map<string, string>;
   private pools: Map<
     string,
@@ -44,6 +45,8 @@ export class WhiteList {
       new NativeToken(provider, network.chainId, 18, "ETH", "Ether")
     );
 
+    this.balances = new Map();
+
     this.pairs = whitelist.pairs.reduce(
       (map, { asset, collateral, pair }) =>
         map.set(JSON.stringify({ asset, collateral }), pair),
@@ -74,6 +77,14 @@ export class WhiteList {
 
   getToken(address: string): ERC20Token | NativeToken {
     return this.tokens.get(address)!;
+  }
+
+  getBalance(address: string): Uint256 {
+    return this.balances.get(address)!;
+  }
+
+  setBalance(address: string, balance: Uint256) {
+    this.balances.set(address, balance);
   }
 
   getPairAddress(asset: string, collateral: string): string {

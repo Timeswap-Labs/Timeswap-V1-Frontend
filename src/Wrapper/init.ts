@@ -9,6 +9,7 @@ import { pool } from "./pool";
 import { lend, lendSigner } from "./lend";
 import { GlobalParams } from "./global";
 import { balancesInit } from "./balances";
+import { positionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
 
 export declare let window: any;
@@ -45,6 +46,7 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
           });
 
           balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+          positionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
 
           gp.metamaskSigner = gp.metamaskProvider!.getSigner();
 
@@ -94,11 +96,11 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
               user: accounts[0],
             });
 
+            gp.metamaskProvider = new Web3Provider(window.ethereum);
+            gp.metamaskSigner = gp.metamaskProvider.getSigner();
+
             balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
           });
-
-        gp.metamaskProvider = new Web3Provider(window.ethereum);
-        gp.metamaskSigner = gp.metamaskProvider.getSigner();
       });
 
       ethereum.on("accountsChanged", (accounts: string[]) => {

@@ -1,7 +1,7 @@
 {
   "chain": "rinkeby",
   "chainId": "0x4",
-  "convenience": "0x7d52313370569e6c82689563092da24ea8fae175",
+  "convenience": "0x1c9f056431347f3305c12d1cd18337674ef1b25b",
   "erc20s": [
     {
       "address": "0x50bddfb60613a870251e067e2cb401526db85c93",
@@ -18,58 +18,58 @@
   ],
   "pairs": [
     {
-      "pair": "0x4c4a9e0b922601f013bbe22b283f3f822a01b8e1",
+      "pair": "0x2db8b4a6d160c527477b82fc83b74103fbaa2d06",
       "asset": "0x50bddfb60613a870251e067e2cb401526db85c93",
       "collateral": "0xea3f06da2ef068e0f540051b3fd51df108aedf17",
       "pools": [
         {
-          "maturity": 1631948706,
-          "liquidity": "0xa5aba36fe070783a5ecce6fa44e251a2b548d011",
-          "bond": "0x0290ec9a4bd99ef43ba729a1a9fe30974d3c9aec",
-          "insurance": "0x5242f1fd25bad6b47ff2fb044e5fbe496eaf7042",
-          "collateralizedDebt": "0xe79eb583114bdb5447a74e7855c7fcf0cecc9796"
+          "maturity": 1632023186,
+          "liquidity": "0xbe9192ec8c62df9314ad6cd3c94659ee4ef6b9ff",
+          "bond": "0x5efa5b9ac3d3d52247f58fa76347f84a4d556234",
+          "insurance": "0x0785238b8a270591c96d451fd4ca7ca39f5769a0",
+          "collateralizedDebt": "0xa1e8d4467a61d03a4b9fa2e2f580c7b35bf56eba"
         },
         {
-          "maturity": 1632035106,
-          "liquidity": "0x71f8890441916f959a91d31cb1d7c858e5415371",
-          "bond": "0xefcee0bfcbd4b32c6f2e55f0b8e8a3f648a99aef",
-          "insurance": "0x560d551ff8c5a65e255d16c75cb0703bd540bb15",
-          "collateralizedDebt": "0x82f5687bca51e697f610dfc6b5d39ee06f594bfb"
+          "maturity": 1632109586,
+          "liquidity": "0xb900314e38beb51558273a1a88f288f1847c06d7",
+          "bond": "0x44b6eb15f0cbea9c744439c095ee66b2da879db4",
+          "insurance": "0x7b9dcd6710c0976dc00de956a9f6445fad1caaa3",
+          "collateralizedDebt": "0x5742c4a801ec441bd2c5f4da6d078683f0443213"
         },
         {
-          "maturity": 1632121506,
-          "liquidity": "0x66d1e0441836088e9ccaea6cd0658ff9e7ee361f",
-          "bond": "0x6ecb2a130cc2815d929e51bf7efa39582744c937",
-          "insurance": "0x9d6a70d2ead47595909341908188371cca881d3f",
-          "collateralizedDebt": "0xba992537aa8a594586415bb08a3a6f9a7fde39d6"
+          "maturity": 1632195986,
+          "liquidity": "0xa134190097a9ec369aacb692d041feec571dc192",
+          "bond": "0xccb5bc40d064404caf09386e7ca8e70a834e9959",
+          "insurance": "0xa5d908ea992956a30905607d0a08b0bf72c33fc1",
+          "collateralizedDebt": "0x9e6a50276cd2597e3a94dae5192d6c7ae023eddb"
         }
       ]
     },
     {
-      "pair": "0x3b9533566951a06a5716c75368e978c143aa8f11",
+      "pair": "0x5267415e38d8cb09a24165286edf2906a2ac9bca",
       "asset": "0xea3f06da2ef068e0f540051b3fd51df108aedf17",
       "collateral": "0x50bddfb60613a870251e067e2cb401526db85c93",
       "pools": [
         {
-          "maturity": 1631948706,
-          "liquidity": "0xa5aba36fe070783a5ecce6fa44e251a2b548d011",
-          "bond": "0x0290ec9a4bd99ef43ba729a1a9fe30974d3c9aec",
-          "insurance": "0x5242f1fd25bad6b47ff2fb044e5fbe496eaf7042",
-          "collateralizedDebt": "0xe79eb583114bdb5447a74e7855c7fcf0cecc9796"
+          "maturity": 1632023186,
+          "liquidity": "0xbe9192ec8c62df9314ad6cd3c94659ee4ef6b9ff",
+          "bond": "0x5efa5b9ac3d3d52247f58fa76347f84a4d556234",
+          "insurance": "0x0785238b8a270591c96d451fd4ca7ca39f5769a0",
+          "collateralizedDebt": "0xa1e8d4467a61d03a4b9fa2e2f580c7b35bf56eba"
         },
         {
-          "maturity": 1632035106,
-          "liquidity": "0x71f8890441916f959a91d31cb1d7c858e5415371",
-          "bond": "0xefcee0bfcbd4b32c6f2e55f0b8e8a3f648a99aef",
-          "insurance": "0x560d551ff8c5a65e255d16c75cb0703bd540bb15",
-          "collateralizedDebt": "0x82f5687bca51e697f610dfc6b5d39ee06f594bfb"
+          "maturity": 1632109586,
+          "liquidity": "0xb900314e38beb51558273a1a88f288f1847c06d7",
+          "bond": "0x44b6eb15f0cbea9c744439c095ee66b2da879db4",
+          "insurance": "0x7b9dcd6710c0976dc00de956a9f6445fad1caaa3",
+          "collateralizedDebt": "0x5742c4a801ec441bd2c5f4da6d078683f0443213"
         },
         {
-          "maturity": 1632121506,
-          "liquidity": "0x66d1e0441836088e9ccaea6cd0658ff9e7ee361f",
-          "bond": "0x6ecb2a130cc2815d929e51bf7efa39582744c937",
-          "insurance": "0x9d6a70d2ead47595909341908188371cca881d3f",
-          "collateralizedDebt": "0xba992537aa8a594586415bb08a3a6f9a7fde39d6"
+          "maturity": 1632195986,
+          "liquidity": "0xa134190097a9ec369aacb692d041feec571dc192",
+          "bond": "0xccb5bc40d064404caf09386e7ca8e70a834e9959",
+          "insurance": "0xa5d908ea992956a30905607d0a08b0bf72c33fc1",
+          "collateralizedDebt": "0x9e6a50276cd2597e3a94dae5192d6c7ae023eddb"
         }
       ]
     }

@@ -268,7 +268,7 @@ interface BorrowGivenDebtError {
   asset: string;
   collateral: string;
   maturity: number;
-  assetIn: string;
+  assetOut: string;
   debtIn: string;
 }
 
@@ -276,7 +276,7 @@ interface BorrowGivenDebt {
   asset: string;
   collateral: string;
   maturity: number;
-  assetIn: string;
+  assetOut: string;
   debtIn: string;
   result: {
     percent: number;
@@ -291,7 +291,7 @@ interface BorrowGivenCollateralError {
   asset: string;
   collateral: string;
   maturity: number;
-  assetIn: string;
+  assetOut: string;
   collateralIn: string;
 }
 
@@ -299,7 +299,7 @@ interface BorrowGivenCollateral {
   asset: string;
   collateral: string;
   maturity: number;
-  assetIn: string;
+  assetOut: string;
   collateralIn: string;
   result: {
     percent: number;
