@@ -233,7 +233,7 @@ insurance =
 transactionInfo : Pair -> ( String, String ) -> Slippage -> Element msg
 transactionInfo pair ( minBond, minInsurance ) slippage =
     column
-        [ width shrink
+        [ width <| px 480
         , height shrink
         , centerX
         , paddingEach
@@ -247,7 +247,7 @@ transactionInfo pair ( minBond, minInsurance ) slippage =
             [ centerX ]
             Tooltip.triangleUp
         , column
-            [ width shrink
+            [ width fill
             , height shrink
             , padding 12
             , spacing 12

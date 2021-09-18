@@ -87,9 +87,9 @@ view :
     -> { model | device : Device, time : Posix }
     -> { user | address : Address }
     -> Positions
-    -> Pool
+    -> { modal | pool : Pool }
     -> Element msg
-view msgs model user positions pool =
+view msgs model user positions { pool } =
     toTransaction model user positions pool
         |> Maybe.map (withdrawButton msgs model)
         |> Maybe.withDefault (disabledWithdraw model)

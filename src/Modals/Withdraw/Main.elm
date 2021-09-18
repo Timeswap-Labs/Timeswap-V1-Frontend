@@ -40,6 +40,7 @@ import Element
 import Element.Font as Font
 import Json.Encode exposing (Value)
 import Modals.Withdraw.ClaimsIn as ClaimsIn
+import Modals.Withdraw.Tooltip exposing (Tooltip)
 import Modals.Withdraw.Transaction as Transaction
 import Page exposing (Page)
 import Time exposing (Posix)
@@ -49,12 +50,18 @@ import Utility.Glass as Glass
 
 
 type Modal
-    = Modal Pool
+    = Modal
+        { pool : Pool
+        , tooltip : Maybe Tooltip
+        }
 
 
 init : Pool -> Modal
 init pool =
-    Modal pool
+    { pool = pool
+    , tooltip = Nothing
+    }
+        |> Modal
 
 
 fromFragment :
@@ -81,23 +88,28 @@ same (Modal pool1) (Modal pool2) =
 
 
 getPool : Modal -> Pool
-getPool (Modal pool) =
+getPool (Modal { pool }) =
     pool
 
 
 type Msg
     = Withdraw Value
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
 
 
 type alias Msgs =
-    { withdraw : Value -> Msg }
+    { withdraw : Value -> Msg
+    , onMouseEnter : Tooltip -> Msg
+    , onMouseLeave : Msg
+    }
 
 
 update : { model | key : Key, page : Page } -> Msg -> Modal -> ( Modal, Cmd Msg )
-update { key, page } msg model =
+update { key, page } msg (Modal modal) =
     case msg of
         Withdraw value ->
-            ( model
+            ( Modal modal
             , Cmd.batch
                 [ withdraw value
                 , page
@@ -106,10 +118,25 @@ update { key, page } msg model =
                 ]
             )
 
+        OnMouseEnter tooltip ->
+            ( { modal | tooltip = Just tooltip }
+                |> Modal
+            , Cmd.none
+            )
+
+        OnMouseLeave ->
+            ( { modal | tooltip = Nothing }
+                |> Modal
+            , Cmd.none
+            )
+
 
 msgs : Msgs
 msgs =
-    { withdraw = Withdraw }
+    { withdraw = Withdraw
+    , onMouseEnter = OnMouseEnter
+    , onMouseLeave = OnMouseLeave
+    }
 
 
 port withdraw : Value -> Cmd msg
@@ -127,7 +154,7 @@ view :
     -> Positions
     -> Modal
     -> Element Msg
-view ({ device, backdrop, images } as model) user positions (Modal pool) =
+view ({ device, backdrop, images } as model) user positions (Modal modal) =
     column
         ([ paddingXY 32 20
          , spacing 20
@@ -149,8 +176,8 @@ view ({ device, backdrop, images } as model) user positions (Modal pool) =
                )
         )
         [ title
-        , ClaimsIn.view model positions pool
-        , Transaction.view msgs model user positions pool
+        , ClaimsIn.view msgs model positions modal
+        , Transaction.view msgs model user positions modal
         ]
 
 

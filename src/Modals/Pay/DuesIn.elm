@@ -19,12 +19,14 @@ import Element
         ( Element
         , alignLeft
         , alignRight
+        , below
         , centerY
         , column
         , el
         , fill
         , height
         , none
+        , paddingEach
         , paddingXY
         , px
         , row
@@ -33,13 +35,17 @@ import Element
         , text
         , width
         )
+import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
+import Modals.Pay.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Set exposing (Set)
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Loading as Loading
 import Utility.TokenImage as TokenImage
+import Utility.Truncate as Truncate
 
 
 type alias DuesIn =
@@ -81,33 +87,43 @@ hasTransaction { time } { balances } positions { pool, tokenIds, duesIn } =
 
 
 view :
-    { model | tokenImages : TokenImages }
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
+    -> { model | tokenImages : TokenImages }
     ->
         { modal
             | pool : { pool | pair : Pair }
             , duesIn : DuesIn
+            , tooltip : Maybe Tooltip
         }
     -> Element msg
-view model modal =
+view msgs model modal =
     column
         [ width fill
         , height shrink
         , spacing 12
         ]
-        [ assetInSection model modal
-        , collateralOutSection model modal
+        [ assetInSection msgs model modal
+        , collateralOutSection msgs model modal
         ]
 
 
 assetInSection :
-    { model | tokenImages : TokenImages }
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
+    -> { model | tokenImages : TokenImages }
     ->
         { modal
             | pool : { pool | pair : Pair }
             , duesIn : Remote () { duesIn | assetIn : String }
+            , tooltip : Maybe Tooltip
         }
     -> Element msg
-assetInSection { tokenImages } ({ pool } as modal) =
+assetInSection msgs { tokenImages } ({ pool } as modal) =
     row
         ([ width fill
          , height <| px 77
@@ -133,17 +149,23 @@ assetInSection { tokenImages } ({ pool } as modal) =
                 , alignRight
                 , centerY
                 ]
-        , assetInAmount modal
+        , assetInAmount msgs modal
         ]
 
 
 assetInAmount :
-    { modal
-        | pool : { pool | pair : Pair }
-        , duesIn : Remote () { duesIn | assetIn : String }
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
     }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , duesIn : Remote () { duesIn | assetIn : String }
+            , tooltip : Maybe Tooltip
+        }
     -> Element msg
-assetInAmount { pool, duesIn } =
+assetInAmount msgs ({ duesIn } as modal) =
     case duesIn of
         Loading ->
             el
@@ -157,42 +179,104 @@ assetInAmount { pool, duesIn } =
             none
 
         Success { assetIn } ->
-            row
-                [ width shrink
-                , alignRight
-                , centerY
-                , Font.bold
-                , Font.size 16
-                ]
-                [ el
-                    [ width shrink
-                    , Font.bold
-                    , Font.color Color.transparent500
-                    ]
-                    (text assetIn)
-                , el [ Font.bold ] <| text " "
-                , el
-                    [ alignRight
-                    , Font.bold
-                    , Font.color Color.transparent300
-                    ]
-                    (pool.pair
-                        |> Pair.toAsset
-                        |> Token.toSymbol
-                        |> text
-                    )
-                ]
+            assetAmount msgs modal assetIn
+
+
+assetAmount :
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
+    -> { modal | pool : { pool | pair : Pair }, tooltip : Maybe Tooltip }
+    -> String
+    -> Element msg
+assetAmount msgs { pool, tooltip } assetIn =
+    assetIn
+        |> Truncate.amount
+        |> (\{ full, truncated } ->
+                truncated
+                    |> Maybe.map
+                        (\short ->
+                            pool.pair
+                                |> Pair.toAsset
+                                |> Token.toSymbol
+                                |> (\symbol ->
+                                        row
+                                            [ alignRight
+                                            , centerY
+                                            , paddingEach
+                                                { top = 3
+                                                , right = 0
+                                                , bottom = 2
+                                                , left = 0
+                                                }
+                                            , spacing 6
+                                            , Font.bold
+                                            , Font.size 16
+                                            , Border.widthEach
+                                                { top = 0
+                                                , right = 0
+                                                , bottom = 1
+                                                , left = 0
+                                                }
+                                            , Border.dashed
+                                            , Border.color Color.transparent200
+                                            , Events.onMouseEnter (msgs.onMouseEnter Tooltip.AssetIn)
+                                            , Events.onMouseLeave msgs.onMouseLeave
+                                            , (case tooltip of
+                                                Just Tooltip.AssetIn ->
+                                                    [ full
+                                                    , symbol
+                                                    ]
+                                                        |> String.join " "
+                                                        |> Tooltip.amount
+
+                                                _ ->
+                                                    none
+                                              )
+                                                |> below
+                                            ]
+                                            [ el [ Font.color Color.transparent500 ] (text short)
+                                            , el [ Font.color Color.transparent300 ] (text symbol)
+                                            ]
+                                   )
+                        )
+                    |> Maybe.withDefault
+                        (row
+                            [ alignRight
+                            , centerY
+                            , paddingXY 0 3
+                            , spacing 6
+                            , Font.bold
+                            , Font.size 16
+                            ]
+                            [ el [ Font.color Color.transparent500 ] (text full)
+                            , el
+                                [ Font.color Color.transparent300 ]
+                                (pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toSymbol
+                                    |> text
+                                )
+                            ]
+                        )
+           )
 
 
 collateralOutSection :
-    { model | tokenImages : TokenImages }
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
+    -> { model | tokenImages : TokenImages }
     ->
         { modal
             | pool : { pool | pair : Pair }
             , duesIn : Remote () { duesIn | collateralOut : String }
+            , tooltip : Maybe Tooltip
         }
     -> Element msg
-collateralOutSection { tokenImages } ({ pool } as modal) =
+collateralOutSection msgs { tokenImages } ({ pool } as modal) =
     row
         ([ width fill
          , height <| px 77
@@ -218,17 +302,23 @@ collateralOutSection { tokenImages } ({ pool } as modal) =
                 , alignRight
                 , centerY
                 ]
-        , collateralOutAmount modal
+        , collateralOutAmount msgs modal
         ]
 
 
 collateralOutAmount :
-    { modal
-        | pool : { pool | pair : Pair }
-        , duesIn : Remote () { duesIn | collateralOut : String }
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
     }
+    ->
+        { modal
+            | pool : { pool | pair : Pair }
+            , duesIn : Remote () { duesIn | collateralOut : String }
+            , tooltip : Maybe Tooltip
+        }
     -> Element msg
-collateralOutAmount { pool, duesIn } =
+collateralOutAmount msgs ({ duesIn } as modal) =
     case duesIn of
         Loading ->
             el
@@ -242,28 +332,85 @@ collateralOutAmount { pool, duesIn } =
             none
 
         Success { collateralOut } ->
-            row
-                [ width shrink
-                , alignRight
-                , centerY
-                , Font.bold
-                , Font.size 16
-                ]
-                [ el
-                    [ width shrink
-                    , Font.bold
-                    , Font.color Color.transparent500
-                    ]
-                    (text collateralOut)
-                , el [ Font.bold ] <| text " "
-                , el
-                    [ alignRight
-                    , Font.bold
-                    , Font.color Color.transparent300
-                    ]
-                    (pool.pair
-                        |> Pair.toCollateral
-                        |> Token.toSymbol
-                        |> text
-                    )
-                ]
+            collateralAmount msgs modal collateralOut
+
+
+collateralAmount :
+    { msgs
+        | onMouseEnter : Tooltip -> msg
+        , onMouseLeave : msg
+    }
+    -> { modal | pool : { pool | pair : Pair }, tooltip : Maybe Tooltip }
+    -> String
+    -> Element msg
+collateralAmount msgs { pool, tooltip } collateralOut =
+    collateralOut
+        |> Truncate.amount
+        |> (\{ full, truncated } ->
+                truncated
+                    |> Maybe.map
+                        (\short ->
+                            pool.pair
+                                |> Pair.toCollateral
+                                |> Token.toSymbol
+                                |> (\symbol ->
+                                        row
+                                            [ alignRight
+                                            , centerY
+                                            , paddingEach
+                                                { top = 3
+                                                , right = 0
+                                                , bottom = 2
+                                                , left = 0
+                                                }
+                                            , spacing 6
+                                            , Font.bold
+                                            , Font.size 16
+                                            , Border.widthEach
+                                                { top = 0
+                                                , right = 0
+                                                , bottom = 1
+                                                , left = 0
+                                                }
+                                            , Border.dashed
+                                            , Border.color Color.transparent200
+                                            , Events.onMouseEnter (msgs.onMouseEnter Tooltip.CollateralOut)
+                                            , Events.onMouseLeave msgs.onMouseLeave
+                                            , (case tooltip of
+                                                Just Tooltip.CollateralOut ->
+                                                    [ full
+                                                    , symbol
+                                                    ]
+                                                        |> String.join " "
+                                                        |> Tooltip.amount
+
+                                                _ ->
+                                                    none
+                                              )
+                                                |> below
+                                            ]
+                                            [ el [ Font.color Color.transparent500 ] (text short)
+                                            , el [ Font.color Color.transparent300 ] (text symbol)
+                                            ]
+                                   )
+                        )
+                    |> Maybe.withDefault
+                        (row
+                            [ alignRight
+                            , centerY
+                            , paddingXY 0 3
+                            , spacing 6
+                            , Font.bold
+                            , Font.size 16
+                            ]
+                            [ el [ Font.color Color.transparent500 ] (text full)
+                            , el
+                                [ Font.color Color.transparent300 ]
+                                (pool.pair
+                                    |> Pair.toCollateral
+                                    |> Token.toSymbol
+                                    |> text
+                                )
+                            ]
+                        )
+           )

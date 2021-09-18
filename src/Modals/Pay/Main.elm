@@ -54,6 +54,7 @@ import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Modals.Pay.DuesIn as DuesIn exposing (DuesIn)
 import Modals.Pay.Query as Query
+import Modals.Pay.Tooltip exposing (Tooltip)
 import Modals.Pay.Transaction as Transaction
 import Page exposing (Page)
 import Sort.Set exposing (Set)
@@ -69,6 +70,7 @@ type Modal
         { pool : Pool
         , tokenIds : Set TokenId
         , duesIn : DuesIn
+        , tooltip : Maybe Tooltip
         }
 
 
@@ -83,6 +85,7 @@ init positions { pool, tokenIds } =
     ( { pool = pool
       , tokenIds = tokenIds
       , duesIn = DuesIn.init
+      , tooltip = Nothing
       }
         |> Modal
     , Query.givenTokenIds positions pool tokenIds
@@ -147,11 +150,15 @@ type Msg
     | Pay Value
     | ReceiveTime Posix
     | SdkPayMsg Value
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
 
 
 type alias Msgs =
     { approvePay : Value -> Msg
     , pay : Value -> Msg
+    , onMouseEnter : Tooltip -> Msg
+    , onMouseLeave : Msg
     }
 
 
@@ -217,6 +224,18 @@ update { key, tokens, pools, page } positions msg (Modal modal) =
             , Cmd.none
             )
 
+        OnMouseEnter tooltip ->
+            ( { modal | tooltip = Just tooltip }
+                |> Modal
+            , Cmd.none
+            )
+
+        OnMouseLeave ->
+            ( { modal | tooltip = Nothing }
+                |> Modal
+            , Cmd.none
+            )
+
 
 updatePayDue : Positions -> Modal -> Cmd Msg
 updatePayDue positions (Modal { pool, tokenIds }) =
@@ -229,6 +248,8 @@ msgs : Msgs
 msgs =
     { approvePay = ApprovePay
     , pay = Pay
+    , onMouseEnter = OnMouseEnter
+    , onMouseLeave = OnMouseLeave
     }
 
 
@@ -294,7 +315,7 @@ view ({ device, backdrop, images } as model) user positions (Modal modal) =
         )
         [ title
         , balance user modal
-        , DuesIn.view model modal
+        , DuesIn.view msgs model modal
         , Transaction.view msgs model user positions modal
         ]
 
