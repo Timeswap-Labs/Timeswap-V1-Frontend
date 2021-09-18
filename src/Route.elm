@@ -26,22 +26,20 @@ type Route
 
 
 pushUrl :
-    (Modal.Msg -> msg)
-    ->
-        { model
-            | device : Device
-            , time : Posix
-            , key : Key
-            , tokens : Tokens
-            , pools : Pools
-            , user : Remote userError { user | chain : Chain, positions : Remote () Positions }
-            , page : Page
-            , modal : Maybe Modal
-            , service : Maybe Service
-        }
+    { model
+        | device : Device
+        , time : Posix
+        , key : Key
+        , tokens : Tokens
+        , pools : Pools
+        , user : Remote userError { user | chain : Chain, positions : Remote () Positions }
+        , page : Page
+        , modal : Maybe Modal
+        , service : Maybe Service
+    }
     -> Url
     -> Cmd msg
-pushUrl cmdMap ({ device, key } as model) url =
+pushUrl ({ device, key } as model) url =
     url
         |> Parser.parse (match model)
         |> Maybe.map
@@ -52,13 +50,10 @@ pushUrl cmdMap ({ device, key } as model) url =
                             |> Page.toUrl
                             |> Navigation.pushUrl key
 
-                    Modal ( modal, modalCmd ) ->
-                        Cmd.batch
-                            [ modal
-                                |> Modal.toUrl
-                                |> Navigation.pushUrl key
-                            , modalCmd |> Cmd.map cmdMap
-                            ]
+                    Modal ( modal, _ ) ->
+                        modal
+                            |> Modal.toUrl
+                            |> Navigation.pushUrl key
 
                     Service service ->
                         service

@@ -15,7 +15,7 @@ import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode exposing (Value)
 import Modals.Pay.DuesIn exposing (DuesIn)
 import Sort.Dict as Dict exposing (Dict)
-import Sort.Set as Set exposing (Set)
+import Sort.Set exposing (Set)
 
 
 type alias Query =

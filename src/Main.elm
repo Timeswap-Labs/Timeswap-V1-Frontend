@@ -151,7 +151,7 @@ init { width, time, hasBackdropSupport, images, tokenImages, whitelist, user } u
                     [ Time.now |> Task.perform ReceiveTime
                     , Task.map2 ZoneInfo Time.here Time.getZoneName
                         |> Task.perform ReceiveZoneInfo
-                    , Route.pushUrl ModalMsg model url
+                    , Route.pushUrl model url
                     ]
                 )
            )
@@ -199,7 +199,7 @@ update msg model =
     case msg of
         RequestUrl (Browser.Internal url) ->
             ( model
-            , Route.pushUrl ModalMsg model url
+            , Route.pushUrl model url
             )
 
         RequestUrl (Browser.External url) ->
