@@ -19,8 +19,7 @@ import Data.Whitelist as Whitelist
 import Data.ZoneInfo exposing (ZoneInfo)
 import Element
     exposing
-        ( Element
-        , Option
+        ( Option
         , behindContent
         , centerX
         , centerY
@@ -33,7 +32,6 @@ import Element
         , inFront
         , layoutWith
         , minimum
-        , none
         , paddingXY
         , paragraph
         , px
@@ -459,13 +457,33 @@ update msg model =
             )
 
         SdkPositionsMsg value ->
-            ( { model
-                | user =
-                    model.user
-                        |> Remote.map (User.updatePositions model.pools model.tokens value)
-              }
-            , Cmd.none
-            )
+            model.user
+                |> Remote.map
+                    (\user ->
+                        user
+                            |> User.updatePositions model.pools model.tokens value
+                            |> (\({ positions } as successUser) ->
+                                    ( { model | user = Success successUser }
+                                    , case positions of
+                                        Success succcessPositions ->
+                                            model.modal
+                                                |> Maybe.map (Modal.updatePayDue succcessPositions)
+                                                |> (Maybe.map << Cmd.map) ModalMsg
+                                                |> Maybe.withDefault Cmd.none
+
+                                        _ ->
+                                            Cmd.none
+                                    )
+                               )
+                    )
+                |> (\result ->
+                        case result of
+                            Success successModel ->
+                                successModel
+
+                            _ ->
+                                ( model, Cmd.none )
+                   )
 
         SdkBalancesMsg value ->
             ( { model

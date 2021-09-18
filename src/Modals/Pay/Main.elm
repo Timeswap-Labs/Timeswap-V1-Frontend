@@ -7,6 +7,7 @@ port module Modals.Pay.Main exposing
     , same
     , subscriptions
     , update
+    , updatePayDue
     , view
     )
 
@@ -215,6 +216,13 @@ update { key, tokens, pools, page } positions msg (Modal modal) =
                    )
             , Cmd.none
             )
+
+
+updatePayDue : Positions -> Modal -> Cmd Msg
+updatePayDue positions (Modal { pool, tokenIds }) =
+    Query.givenTokenIds positions pool tokenIds
+        |> Maybe.map queryPay
+        |> Maybe.withDefault Cmd.none
 
 
 msgs : Msgs

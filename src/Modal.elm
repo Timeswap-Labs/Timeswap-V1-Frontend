@@ -6,6 +6,7 @@ module Modal exposing
     , subscriptions
     , toUrl
     , update
+    , updatePayDue
     , view
     )
 
@@ -211,13 +212,13 @@ update model msg modal =
                 |> Withdraw.update model withdrawMsg
                 |> (\( updateWithdraw, cmd ) -> ( Withdraw updateWithdraw, cmd |> Cmd.map WithdrawMsg ))
 
-        ( PayMsg lendMsg, Pay pay ) ->
+        ( PayMsg payMsg, Pay pay ) ->
             case model.user of
                 Success { positions } ->
                     case positions of
                         Success successPositions ->
                             pay
-                                |> Pay.update model successPositions lendMsg
+                                |> Pay.update model successPositions payMsg
                                 |> (\( updatedPay, cmd ) -> ( Pay updatedPay, cmd |> Cmd.map PayMsg ))
 
                         _ ->
@@ -228,6 +229,18 @@ update model msg modal =
 
         _ ->
             ( modal, Cmd.none )
+
+
+updatePayDue : Positions -> Modal -> Cmd Msg
+updatePayDue positions modal =
+    case modal of
+        Pay pay ->
+            pay
+                |> Pay.updatePayDue positions
+                |> Cmd.map PayMsg
+
+        _ ->
+            Cmd.none
 
 
 subscriptions : { model | time : Posix } -> Modal -> Sub Msg
