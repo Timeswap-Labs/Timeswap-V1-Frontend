@@ -35,7 +35,7 @@ decoder : Pools -> Tokens -> Decoder Query
 decoder pools tokens =
     Decode.succeed Query
         |> Pipeline.custom (Pools.decoderPool pools tokens)
-        |> Pipeline.custom decoderDues
+        |> Pipeline.required "dues" decoderDues
         |> Pipeline.custom
             (Decode.oneOf
                 [ decoderTotalDues |> Decode.map Just
