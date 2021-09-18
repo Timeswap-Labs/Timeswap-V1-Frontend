@@ -100,11 +100,12 @@ type alias Flags =
     , images : List ( String, String )
     , tokenImages : List ( String, String )
     , whitelist : Value
+    , user : Value
     }
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
-init { width, time, hasBackdropSupport, images, tokenImages, whitelist } url key =
+init { width, time, hasBackdropSupport, images, tokenImages, whitelist, user } url key =
     Whitelist.init whitelist
         |> (\{ tokens, pools } ->
                 { device = Device.fromWidth width
@@ -119,7 +120,22 @@ init { width, time, hasBackdropSupport, images, tokenImages, whitelist } url key
                 , images = Images.init images
                 , tokenImages = TokenImages.init tokenImages
                 , pools = pools
-                , user = Loading
+                , user =
+                    user
+                        |> Decode.decodeValue (User.decoder |> Decode.nullable)
+                        |> (\result ->
+                                case result of
+                                    Ok maybeUser ->
+                                        case maybeUser of
+                                            Just (Success successUser) ->
+                                                Success successUser
+
+                                            _ ->
+                                                Loading
+
+                                    _ ->
+                                        Loading
+                           )
                 , page =
                     Page.init
                         { pools = pools
