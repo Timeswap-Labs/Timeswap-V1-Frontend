@@ -11,6 +11,7 @@ import { GlobalParams } from "./global";
 import { balancesInit } from "./balances";
 import { positionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
+import { pay, paySigner } from "./pay";
 
 export declare let window: any;
 
@@ -28,6 +29,9 @@ export async function init(app: ElmApp<Ports>) {
 
   borrow(app, whitelist);
   borrowSigner(app, whitelist, globalParams);
+
+  pay(app);
+  paySigner(app, whitelist, globalParams);
 
   portsInit(app, whitelist, globalParams);
 }
@@ -49,42 +53,6 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
           positionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
 
           gp.metamaskSigner = gp.metamaskProvider!.getSigner();
-
-          app.ports.sdkPositionsMsg.send([
-            {
-              asset: "0x50bddfb60613a870251e067e2cb401526db85c93",
-              collateral: "ETH",
-              maturity: 1650889815,
-              bond: "221413413414",
-              insurance: "324235234234325",
-            },
-            {
-              asset: "0x50bddfb60613a870251e067e2cb401526db85c93",
-              collateral: "ETH",
-              maturity: 962654400,
-              bond: "221413413414",
-              insurance: "324235234234325",
-              assetOut: "1342354235235",
-              collateralOut: "12142354235235",
-            },
-            {
-              asset: "0x50bddfb60613a870251e067e2cb401526db85c93",
-              collateral: "ETH",
-              maturity: 1650889815,
-              dues: [
-                {
-                  id: "1241341324",
-                  debt: "14324619248719",
-                  collateral: "1312413423523",
-                },
-                {
-                  id: "1241341324",
-                  debt: "14324619248719",
-                  collateral: "1312413423523",
-                },
-              ],
-            },
-          ]);
         });
 
       ethereum.on("chainChanged", (chainId: string) => {
@@ -100,6 +68,7 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
             gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
             balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+            positionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
           });
       });
 
@@ -113,6 +82,7 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
           gp.metamaskProvider = new Web3Provider(window.ethereum);
           gp.metamaskSigner = gp.metamaskProvider.getSigner();
           balancesInit(app, whitelist, gp.metamaskProvider, accounts[0]);
+          positionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
         } else {
           app.ports.metamaskMsg.send(null);
         }

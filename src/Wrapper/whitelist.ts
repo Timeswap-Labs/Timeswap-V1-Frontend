@@ -1,6 +1,8 @@
 import { Network, Provider } from "@ethersproject/providers";
 import { ERC20Token, NativeToken, Pool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import type { CollateralizedDebt } from "./typechain";
+import { CollateralizedDebt__factory } from "./typechain";
 
 export class WhiteList {
   provider: Provider;
@@ -8,7 +10,6 @@ export class WhiteList {
   convenience: string;
 
   private tokens: Map<string, ERC20Token | NativeToken>;
-  private balances: Map<string, Uint256>;
   private pairs: Map<string, string>;
   private pools: Map<
     string,
@@ -17,7 +18,12 @@ export class WhiteList {
       liquidity: ERC20Token;
       bond: ERC20Token;
       insurance: ERC20Token;
+      collateralizedDebt: CollateralizedDebt;
     }
+  >;
+  private tokenIds?: Map<
+    string,
+    Map<number, { debt: string; collateral: string }>
   >;
 
   constructor(whitelist: WhitelistInput, provider: Provider, network: Network) {
@@ -45,8 +51,6 @@ export class WhiteList {
       new NativeToken(provider, network.chainId, 18, "ETH", "Ether")
     );
 
-    this.balances = new Map();
-
     this.pairs = whitelist.pairs.reduce(
       (map, { asset, collateral, pair }) =>
         map.set(JSON.stringify({ asset, collateral }), pair),
@@ -55,7 +59,13 @@ export class WhiteList {
 
     this.pools = new Map();
     for (const { asset, collateral, pools } of whitelist.pairs) {
-      for (const { maturity, liquidity, bond, insurance } of pools) {
+      for (const {
+        maturity,
+        liquidity,
+        bond,
+        insurance,
+        collateralizedDebt,
+      } of pools) {
         const pool = new Pool(
           provider,
           this.tokens.get(asset)!,
@@ -70,6 +80,10 @@ export class WhiteList {
           liquidity: new ERC20Token(provider, network.chainId, 18, liquidity),
           bond: new ERC20Token(provider, network.chainId, 18, bond),
           insurance: new ERC20Token(provider, network.chainId, 18, insurance),
+          collateralizedDebt: CollateralizedDebt__factory.connect(
+            collateralizedDebt,
+            provider
+          ),
         });
       }
     }
@@ -77,14 +91,6 @@ export class WhiteList {
 
   getToken(address: string): ERC20Token | NativeToken {
     return this.tokens.get(address)!;
-  }
-
-  getBalance(address: string): Uint256 {
-    return this.balances.get(address)!;
-  }
-
-  setBalance(address: string, balance: Uint256) {
-    this.balances.set(address, balance);
   }
 
   getPairAddress(asset: string, collateral: string): string {

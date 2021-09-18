@@ -2,8 +2,9 @@ import "regenerator-runtime/runtime";
 import { Provider } from "@ethersproject/providers";
 import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
 import { WhiteList } from "./whitelist";
-import { NativeToken, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
-import type { Erc20 } from "./typechain";
+import { NativeToken } from "@timeswap-labs/timeswap-v1-sdk-core";
+import type { IERC20 } from "./typechain";
+import { updateErc20Balance } from "./helper";
 
 export async function balancesInit(
   app: ElmApp<Ports>,
@@ -19,7 +20,6 @@ export async function balancesInit(
       const connectedToken = token.connect(provider);
 
       const balance = await connectedToken.balanceOf(address);
-      whitelist.setBalance(tokenAddress, balance);
       balances.push({ token: tokenAddress, balance: balance.value.toString() });
 
       const allowance = await connectedToken.allowance(
@@ -31,39 +31,24 @@ export async function balancesInit(
         allowance: allowance.value.toString(),
       });
 
-      const contract = connectedToken.contract() as Erc20;
+      const contract = connectedToken.contract() as IERC20;
 
-      const balancesInFilter = contract.filters.Transfer(null, address);
-      const balancesOutFilter = contract.filters.Transfer(address);
       const allowanceFilter = contract.filters.Approval(
         address,
         whitelist.convenience
       );
 
-      contract.removeAllListeners();
+      updateErc20Balance(contract, address, async () => {
+        const balance = await connectedToken.balanceOf(address);
+        app.ports.sdkBalancesMsg.send([
+          {
+            token: tokenAddress,
+            balance: balance.value.toString(),
+          },
+        ]);
+      });
 
-      contract.on(balancesInFilter, (_from, _to, value) => {
-        const increment = new Uint256(value.toString());
-        const balance = whitelist.getBalance(tokenAddress).add(increment);
-        whitelist.setBalance(tokenAddress, balance);
-        app.ports.sdkBalancesMsg.send([
-          {
-            token: tokenAddress,
-            balance: balance.value.toString(),
-          },
-        ]);
-      });
-      contract.on(balancesOutFilter, (_from, _to, value) => {
-        const decrement = new Uint256(value.toString());
-        const balance = whitelist.getBalance(tokenAddress).sub(decrement);
-        whitelist.setBalance(tokenAddress, balance);
-        app.ports.sdkBalancesMsg.send([
-          {
-            token: tokenAddress,
-            balance: balance.value.toString(),
-          },
-        ]);
-      });
+      contract.removeAllListeners(allowanceFilter);
       contract.on(allowanceFilter, (_owner, _spender, value) => {
         app.ports.sdkAllowancesMsg.send([
           {

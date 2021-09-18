@@ -99,7 +99,7 @@ encode { pool, to, dict, deadline } =
         |> List.unzip
         |> (\( ids, maxAssetsIn ) ->
                 [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-                , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+                , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
                 , ( "maturity", pool.maturity |> Maturity.encode )
                 , ( "collateralTo", to |> Address.encode )
                 , ( "ids", ids |> Encode.list TokenId.encode )

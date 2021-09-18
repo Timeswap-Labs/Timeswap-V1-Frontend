@@ -68,7 +68,7 @@ toTransaction { time } { address } positions pool =
 encode : Transaction -> Value
 encode { pool, to, claimsIn } =
     [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
-    , ( "collateral", pool.pair |> Pair.toAsset |> Token.encode )
+    , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
     , ( "maturity", pool.maturity |> Maturity.encode )
     , ( "assetTo", to |> Address.encode )
     , ( "collateralTo", to |> Address.encode )

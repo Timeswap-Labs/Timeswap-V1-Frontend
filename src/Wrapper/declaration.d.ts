@@ -30,6 +30,9 @@ declare interface Ports {
   sdkBorrowMsg: PortToElm<BorrowCalculate>;
 
   queryPay: PortFromElm<PayQuery>;
+  approvePay: PortFromElm<Approve>;
+  pay: PortFromElm<Pay>;
+  sdkPayMsg: PortToElm<PayCalculate>;
 }
 
 interface MetamaskMsg {
@@ -57,27 +60,44 @@ interface SdkAllowancesMsg {
   allowance: string;
 }
 
-type SdkPositionsMsg = SdkPositionsMsg1 | SdkPositionsMsg2 | SdkPositionsMsg3;
+type SdkPositionsMsg =
+  | SdkPositionsMsg1
+  | SdkPositionsMsg2
+  | SdkPositionsMsg3
+  | SdkPositionsMsg4
+  | SdkPositionsMsg5;
 
 interface SdkPositionsMsg1 {
   asset: string;
   collateral: string;
   maturity: number;
   bond: string;
-  insurance: string;
 }
 
 interface SdkPositionsMsg2 {
   asset: string;
   collateral: string;
   maturity: number;
-  bond: string;
   insurance: string;
-  assetOut: string;
-  collateralOut: string;
 }
 
 interface SdkPositionsMsg3 {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  bond: string;
+  assetOut: string;
+}
+
+interface SdkPositionsMsg4 {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  insurance: string;
+  collateralOut: string;
+}
+
+interface SdkPositionsMsg5 {
   asset: string;
   collateral: string;
   maturity: number;
@@ -315,4 +335,23 @@ interface PayQuery {
   collateral: string;
   maturity: number;
   dues: { id: string; debt: string; collateral: string }[];
+}
+
+interface Pay {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  collateralTo: string;
+  ids: string[];
+  maxAssetsIn: string[];
+  deadline: number;
+}
+
+interface PayCalculate {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  dues: { id: string; debt: string; collateral: string }[];
+  assetIn: string;
+  collateralOut: string;
 }

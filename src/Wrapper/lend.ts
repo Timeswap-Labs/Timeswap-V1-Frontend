@@ -1,4 +1,4 @@
-import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
+import { ERC20Token, Pool } from "@timeswap-labs/timeswap-v1-sdk";
 import {
   Uint112,
   Uint128,
@@ -6,6 +6,7 @@ import {
   Uint40,
 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "./global";
+import { getCurrentTime } from "./helper";
 import { WhiteList } from "./whitelist";
 
 export function lend(app: ElmApp<Ports>, whitelist: WhiteList) {
@@ -18,7 +19,7 @@ export function lend(app: ElmApp<Ports>, whitelist: WhiteList) {
   );
 }
 
-export async function lendSigner(
+export function lendSigner(
   app: ElmApp<Ports>,
   whitelist: WhiteList,
   gp: GlobalParams
@@ -60,7 +61,7 @@ async function lendQueryCalculation(
   if (query.percent != undefined) {
     try {
       const maturity = new Uint256(query.maturity);
-      const currentTime = new Uint256(Date.now()).div(1000);
+      const currentTime = getCurrentTime();
 
       const { claims } = await pool.calculateLendGivenPercent(
         new Uint112(query.assetIn),
@@ -70,26 +71,29 @@ async function lendQueryCalculation(
       const bondOut = claims.bond.value.toString();
       const insuranceOut = claims.insurance.value.toString();
 
-      const minBond = new Uint256(claims.bond)
-        .mul(10000 * (1 - query.slippage))
-        .div(10000)
+      const minBond = calculateMinValue(
+        claims.bond.sub(query.assetIn),
+        query.slippage
+      )
+        .add(query.assetIn)
         .value.toString();
-      const minInsurance = new Uint256(claims.insurance)
-        .mul(10000 * (1 - query.slippage))
-        .div(10000)
-        .value.toString();
+      const minInsurance = calculateMinValue(
+        claims.insurance,
+        query.slippage
+      ).value.toString();
 
-      const SECONDS = 31556926;
-      const apr = claims.bond
-        .sub(query.assetIn)
-        .mul(SECONDS)
-        .mul(10000)
-        .div(query.assetIn)
-        .div(maturity.sub(currentTime));
-      const cf = new Uint256(query.assetIn)
-        .mul(pow(10n, BigInt(whitelist.getToken(query.collateral).decimals)))
-        .div(claims.insurance)
-        .value.toString();
+      const apr = calculateApr(
+        claims.bond,
+        query.assetIn,
+        maturity,
+        currentTime
+      );
+      const cf = calculateCf(
+        query.assetIn,
+        whitelist,
+        query.collateral,
+        claims.insurance
+      );
 
       app.ports.sdkLendMsg.send({
         asset: query.asset,
@@ -118,7 +122,7 @@ async function lendQueryCalculation(
   } else if (query.bondOut != undefined) {
     try {
       const maturity = new Uint256(query.maturity);
-      const currentTime = new Uint256(Date.now()).div(1000);
+      const currentTime = getCurrentTime();
       const assetIn = new Uint112(query.assetIn);
       const bondOut = new Uint128(query.bondOut);
 
@@ -129,37 +133,25 @@ async function lendQueryCalculation(
       );
       const insuranceOut = claims.insurance.value.toString();
 
-      const { yDecrease: yMin } = await pool.calculateLendGivenPercent(
+      const percent = await calculatePercent(
+        pool,
         assetIn,
-        new Uint40(0),
+        yDecrease,
         currentTime
       );
-      const { yDecrease: yMax } = await pool.calculateLendGivenPercent(
-        assetIn,
-        new Uint40(1n << 32n),
-        currentTime
+
+      const minInsurance = calculateMinValue(
+        claims.insurance,
+        query.slippage
+      ).value.toString();
+
+      const apr = calculateApr(bondOut, query.assetIn, maturity, currentTime);
+      const cf = calculateCf(
+        query.assetIn,
+        whitelist,
+        query.collateral,
+        claims.insurance
       );
-      const percent = new Uint256(yDecrease)
-        .sub(yMin)
-        .mul(1n << 32n)
-        .div(yMax.sub(yMin));
-
-      const minInsurance = new Uint256(claims.insurance)
-        .mul(10000 * (1 - query.slippage))
-        .div(10000)
-        .value.toString();
-
-      const SECONDS = 31556926;
-      const apr = bondOut
-        .sub(query.assetIn)
-        .mul(SECONDS)
-        .mul(10000)
-        .div(query.assetIn)
-        .div(maturity.sub(currentTime));
-      const cf = new Uint256(query.assetIn)
-        .mul(pow(10n, BigInt(whitelist.getToken(query.collateral).decimals)))
-        .div(claims.insurance)
-        .value.toString();
 
       app.ports.sdkLendMsg.send({
         asset: query.asset,
@@ -187,7 +179,7 @@ async function lendQueryCalculation(
   } else if (query.insuranceOut != undefined) {
     try {
       const maturity = new Uint256(query.maturity);
-      const currentTime = new Uint256(Date.now()).div(1000);
+      const currentTime = getCurrentTime();
       const assetIn = new Uint112(query.assetIn);
 
       const { claims, yDecrease } = await pool.calculateLendGivenInsurance(
@@ -197,37 +189,32 @@ async function lendQueryCalculation(
       );
       const bondOut = claims.bond.value.toString();
 
-      const { yDecrease: yMin } = await pool.calculateLendGivenPercent(
+      const percent = await calculatePercent(
+        pool,
         assetIn,
-        new Uint40(0),
+        yDecrease,
         currentTime
       );
-      const { yDecrease: yMax } = await pool.calculateLendGivenPercent(
-        assetIn,
-        new Uint40(1n << 32n),
+
+      const minBond = calculateMinValue(
+        claims.bond.sub(query.assetIn),
+        query.slippage
+      )
+        .add(query.assetIn)
+        .value.toString();
+
+      const apr = calculateApr(
+        claims.bond,
+        query.assetIn,
+        maturity,
         currentTime
       );
-      const percent = new Uint256(yDecrease)
-        .sub(yMin)
-        .mul(1n << 32n)
-        .div(yMax.sub(yMin));
-
-      const minBond = new Uint256(claims.bond)
-        .mul(10000 * (1 - query.slippage))
-        .div(10000)
-        .value.toString();
-
-      const SECONDS = 31556926;
-      const apr = claims.bond
-        .sub(query.assetIn)
-        .mul(SECONDS)
-        .mul(10000)
-        .div(query.assetIn)
-        .div(maturity.sub(currentTime));
-      const cf = new Uint256(query.assetIn)
-        .mul(pow(10n, BigInt(whitelist.getToken(query.collateral).decimals)))
-        .div(query.insuranceOut)
-        .value.toString();
+      const cf = calculateCf(
+        query.assetIn,
+        whitelist,
+        query.collateral,
+        query.insuranceOut
+      );
 
       app.ports.sdkLendMsg.send({
         asset: query.asset,
@@ -253,6 +240,60 @@ async function lendQueryCalculation(
       });
     }
   }
+}
+
+function calculateApr(
+  bond: Uint128,
+  assetIn: string,
+  maturity: Uint256,
+  currentTime: Uint256
+): Uint128 {
+  const SECONDS = 31556926;
+  return bond
+    .sub(assetIn)
+    .mul(SECONDS)
+    .mul(10000)
+    .div(assetIn)
+    .div(maturity.sub(currentTime));
+}
+
+function calculateCf(
+  assetIn: string,
+  whitelist: WhiteList,
+  collateral: string,
+  insuranceOut: Uint128 | string
+): string {
+  return new Uint256(assetIn)
+    .mul(pow(10n, BigInt(whitelist.getToken(collateral).decimals)))
+    .div(insuranceOut)
+    .value.toString();
+}
+
+function calculateMinValue(value: Uint128, slippage: number): Uint256 {
+  return new Uint256(value).mul(10000 * (1 - slippage)).div(10000);
+}
+
+async function calculatePercent(
+  pool: Pool,
+  assetIn: Uint112,
+  yDecrease: Uint112,
+  currentTime: Uint256
+): Promise<Uint256> {
+  const { yDecrease: yMin } = await pool.calculateLendGivenPercent(
+    assetIn,
+    new Uint40(0),
+    currentTime
+  );
+  const { yDecrease: yMax } = await pool.calculateLendGivenPercent(
+    assetIn,
+    new Uint40(1n << 32n),
+    currentTime
+  );
+
+  return new Uint256(yDecrease)
+    .sub(yMin)
+    .mul(1n << 32n)
+    .div(yMax.sub(yMin));
 }
 
 function pow(a: bigint, b: bigint) {

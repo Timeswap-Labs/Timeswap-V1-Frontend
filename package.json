@@ -10,6 +10,7 @@
     "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.12"
   },
   "devDependencies": {
+    "@ethersproject/bignumber": "^5.4.2",
     "@parcel/resolver-glob": "^2.0.0-rc.0",
     "@parcel/transformer-elm": "2.0.0-rc.0",
     "@parcel/transformer-typescript-tsc": "^2.0.0-nightly.840",
