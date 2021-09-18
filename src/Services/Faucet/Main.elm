@@ -39,7 +39,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
-import Json.Encode exposing (Value)
+import Json.Encode as Encode exposing (Value)
 import Sort.Set as Set
 import Utility.Color as Color
 import Utility.Exit as Exit
@@ -153,8 +153,8 @@ singleFaucet { images, tokenImages } erc20 =
             ++ Glass.lightWhiteModal 4
         )
         { onPress =
-            erc20
-                |> ERC20.encode
+            [ ( "erc20", erc20 |> ERC20.encode ) ]
+                |> Encode.object
                 |> FaucetMint
                 |> Just
         , label =
