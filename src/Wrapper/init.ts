@@ -12,6 +12,7 @@ import { balancesInit } from "./balances";
 import { positionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
+import { withdrawSigner } from "./withdraw";
 
 export declare let window: any;
 
@@ -26,6 +27,8 @@ export async function init(app: ElmApp<Ports>) {
 
   lend(app, whitelist);
   lendSigner(app, whitelist, globalParams);
+
+  withdrawSigner(app, whitelist, globalParams);
 
   borrow(app, whitelist);
   borrowSigner(app, whitelist, globalParams);

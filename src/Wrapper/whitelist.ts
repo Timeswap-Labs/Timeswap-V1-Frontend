@@ -10,16 +10,22 @@ export class WhiteList {
   convenience: string;
 
   private tokens: Map<string, ERC20Token | NativeToken>;
-  private pairs: Map<string, string>;
+  private pairs: Map<string, Map<string, string>>;
   private pools: Map<
     string,
-    {
-      pool: Pool;
-      liquidity: ERC20Token;
-      bond: ERC20Token;
-      insurance: ERC20Token;
-      collateralizedDebt: CollateralizedDebt;
-    }
+    Map<
+      string,
+      Map<
+        number,
+        {
+          pool: Pool;
+          liquidity: ERC20Token;
+          bond: ERC20Token;
+          insurance: ERC20Token;
+          collateralizedDebt: CollateralizedDebt;
+        }
+      >
+    >
   >;
   private tokenIds?: Map<
     string,
@@ -53,8 +59,8 @@ export class WhiteList {
 
     this.pairs = whitelist.pairs.reduce(
       (map, { asset, collateral, pair }) =>
-        map.set(JSON.stringify({ asset, collateral }), pair),
-      new Map<string, string>()
+        map.set(asset, (map.get(asset) ?? new Map()).set(collateral, pair)),
+      new Map<string, Map<string, string>>()
     );
 
     this.pools = new Map();
@@ -72,19 +78,37 @@ export class WhiteList {
           this.tokens.get(collateral)!,
           new Uint256(maturity),
           this.convenience,
-          this.pairs.get(JSON.stringify({ asset, collateral }))!
+          this.pairs.get(asset)!.get(collateral)!
         );
 
-        this.pools.set(JSON.stringify({ asset, collateral, maturity }), {
-          pool,
-          liquidity: new ERC20Token(provider, network.chainId, 18, liquidity),
-          bond: new ERC20Token(provider, network.chainId, 18, bond),
-          insurance: new ERC20Token(provider, network.chainId, 18, insurance),
-          collateralizedDebt: CollateralizedDebt__factory.connect(
-            collateralizedDebt,
-            provider
-          ),
-        });
+        this.pools.set(
+          asset,
+          (this.pools.get(asset) ?? new Map()).set(
+            collateral,
+            (
+              (this.pools.get(asset) ?? new Map()).get(collateral) ?? new Map()
+            ).set(maturity, {
+              pool,
+              liquidity: new ERC20Token(
+                provider,
+                network.chainId,
+                18,
+                liquidity
+              ),
+              bond: new ERC20Token(provider, network.chainId, 18, bond),
+              insurance: new ERC20Token(
+                provider,
+                network.chainId,
+                18,
+                insurance
+              ),
+              collateralizedDebt: CollateralizedDebt__factory.connect(
+                collateralizedDebt,
+                provider
+              ),
+            })
+          )
+        );
       }
     }
   }
@@ -94,12 +118,11 @@ export class WhiteList {
   }
 
   getPairAddress(asset: string, collateral: string): string {
-    return this.pairs.get(JSON.stringify({ asset, collateral }))!;
+    return this.pairs.get(asset)!.get(collateral)!;
   }
 
   getPool(asset: string, collateral: string, maturity: number): Pool {
-    return this.pools.get(JSON.stringify({ asset, collateral, maturity }))!
-      .pool;
+    return this.pools.get(asset)!.get(collateral)!.get(maturity)!.pool;
   }
 
   getLiquidity(
@@ -107,13 +130,11 @@ export class WhiteList {
     collateral: string,
     maturity: number
   ): ERC20Token {
-    return this.pools.get(JSON.stringify({ asset, collateral, maturity }))!
-      .liquidity;
+    return this.pools.get(asset)!.get(collateral)!.get(maturity)!.liquidity;
   }
 
   getBond(asset: string, collateral: string, maturity: number): ERC20Token {
-    return this.pools.get(JSON.stringify({ asset, collateral, maturity }))!
-      .bond;
+    return this.pools.get(asset)!.get(collateral)!.get(maturity)!.bond;
   }
 
   getInsurance(
@@ -121,16 +142,37 @@ export class WhiteList {
     collateral: string,
     maturity: number
   ): ERC20Token {
-    return this.pools.get(JSON.stringify({ asset, collateral, maturity }))!
-      .insurance;
+    return this.pools.get(asset)!.get(collateral)!.get(maturity)!.insurance;
   }
 
   tokenEntries() {
     return this.tokens.entries();
   }
 
-  poolEntries() {
-    return this.pools.entries();
+  poolEntries(): PoolEntry[] {
+    const pools: PoolEntry[] = [];
+
+    for (const [asset, assetMap] of this.pools.entries()) {
+      for (const [collateral, collateralMap] of assetMap.entries()) {
+        for (const [
+          maturity,
+          { pool, liquidity, bond, insurance, collateralizedDebt },
+        ] of collateralMap.entries()) {
+          pools.push({
+            asset,
+            collateral,
+            maturity,
+            pool,
+            liquidity,
+            bond,
+            insurance,
+            collateralizedDebt,
+          });
+        }
+      }
+    }
+
+    return pools;
   }
 }
 
@@ -156,4 +198,15 @@ interface WhitelistInput {
       collateralizedDebt: string;
     }[];
   }[];
+}
+
+interface PoolEntry {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  pool: Pool;
+  liquidity: ERC20Token;
+  bond: ERC20Token;
+  insurance: ERC20Token;
+  collateralizedDebt: CollateralizedDebt;
 }

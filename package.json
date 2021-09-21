@@ -2,12 +2,13 @@
   "scripts": {
     "start": "parcel index.html",
     "build": "parcel build index.html",
+    "check": "tsc --noEmit",
     "gentype": "typechain --target=ethers-v5 --out-dir src/Wrapper/typechain/ './src/Wrapper/abi/*.json'"
   },
   "dependencies": {
     "@ethersproject/providers": "^5.4.5",
-    "@timeswap-labs/timeswap-v1-sdk": "^0.1.15",
-    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.12"
+    "@timeswap-labs/timeswap-v1-sdk": "^0.1.16",
+    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.14"
   },
   "devDependencies": {
     "@ethersproject/bignumber": "^5.4.2",
