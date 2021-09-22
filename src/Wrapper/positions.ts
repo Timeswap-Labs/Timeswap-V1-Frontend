@@ -1,6 +1,7 @@
 import { Provider } from "@ethersproject/providers";
 import { WhiteList } from "./whitelist";
 import { updateErc20Balance } from "./helper";
+import { Uint128 } from "@timeswap-labs/timeswap-v1-sdk-core";
 
 export async function positionsInit(
   app: ElmApp<Ports>,
@@ -10,17 +11,15 @@ export async function positionsInit(
 ) {
   const positions: SdkPositionsMsg[] = [];
 
-  for (const [
-    json,
-    { bond, insurance, collateralizedDebt },
-  ] of whitelist.poolEntries()) {
-    const {
-      asset,
-      collateral,
-      maturity,
-    }: { asset: string; collateral: string; maturity: number } =
-      JSON.parse(json);
-
+  for (const {
+    asset,
+    collateral,
+    maturity,
+    pool,
+    bond,
+    insurance,
+    collateralizedDebt,
+  } of whitelist.poolEntries()) {
     const currentTime = Math.floor(Date.now() / 1000);
 
     const bondToken = bond.connect(provider);
@@ -49,7 +48,20 @@ export async function positionsInit(
 
     if (!(bondBalance.value === 0n && insuranceBalance.value === 0n)) {
       if (maturity <= currentTime) {
-        // Withdraw math get the asset and collateral and return it.
+        const { asset: assetOut, collateral: collateralOut } =
+          await pool.calculateWithdraw({
+            bond: new Uint128(bondBalance),
+            insurance: new Uint128(0),
+          });
+        positions.push({
+          asset,
+          collateral,
+          maturity,
+          bond: bondBalance.value.toString(),
+          insurance: insuranceBalance.value.toString(),
+          assetOut: assetOut.value.toString(),
+          collateralOut: collateralOut.value.toString(),
+        });
       } else {
         positions.push({
           asset,
@@ -79,6 +91,16 @@ export async function positionsInit(
     const dues = await Promise.all(
       tokenIds.map(async (id) => {
         const due = await cdToken.dueOf(id);
+
+        if (maturity > currentTime) {
+          console.log("Asset : ", whitelist.getToken(asset).symbol);
+          console.log("Collateral : ", whitelist.getToken(collateral).symbol);
+          console.log("Maturity : ", new Date(maturity * 1000));
+          console.log("ID : ", id.toString());
+          console.log("Debt : ", due.debt.toString());
+          console.log("Collateral : ", due.collateral.toString());
+        }
+
         return {
           id: id.toString(),
           debt: due.debt.toString(),

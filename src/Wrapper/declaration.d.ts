@@ -33,6 +33,8 @@ declare interface Ports {
   approvePay: PortFromElm<Approve>;
   pay: PortFromElm<Pay>;
   sdkPayMsg: PortToElm<PayCalculate>;
+
+  withdraw: PortFromElm<Withdraw>;
 }
 
 interface MetamaskMsg {
@@ -354,4 +356,13 @@ interface PayCalculate {
   dues: { id: string; debt: string; collateral: string }[];
   assetIn: string;
   collateralOut: string;
+}
+
+interface Withdraw {
+  asset: string;
+  collateral: string;
+  maturity: number;
+  assetTo: string;
+  collateralTo: string;
+  claimsIn: { bond: string; insurance: string };
 }
