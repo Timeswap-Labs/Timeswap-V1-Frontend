@@ -221,7 +221,7 @@
     "@babel/helper-validator-identifier" "^7.14.9"
     to-fast-properties "^2.0.0"
 
-"@ethersproject/abi@5.4.1", "@ethersproject/abi@^5.4.0":
+"@ethersproject/abi@5.4.1", "@ethersproject/abi@^5.0.0", "@ethersproject/abi@^5.4.0":
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/@ethersproject/abi/-/abi-5.4.1.tgz#6ac28fafc9ef6f5a7a37e30356a2eb31fa05d39b"
   integrity sha512-9mhbjUk76BiSluiiW4BaYyI58KSbDMMQpCLdsAR+RsT2GyATiNYxVv+pGWRrekmsIdY3I+hOqsYQSTkc8L/mcg==
@@ -318,7 +318,7 @@
   dependencies:
     "@ethersproject/bignumber" "^5.4.0"
 
-"@ethersproject/contracts@5.4.1":
+"@ethersproject/contracts@5.4.1", "@ethersproject/contracts@^5.0.0":
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/@ethersproject/contracts/-/contracts-5.4.1.tgz#3eb4f35b7fe60a962a75804ada2746494df3e470"
   integrity sha512-m+z2ZgPy4pyR15Je//dUaymRUZq5MtDajF6GwFbGAVmKz/RF+DNIPwF0k5qEcL3wPGVqUjFg2/krlCRVTU4T5w==
@@ -420,7 +420,7 @@
   dependencies:
     "@ethersproject/logger" "^5.4.0"
 
-"@ethersproject/providers@5.4.5", "@ethersproject/providers@^5.4.5":
+"@ethersproject/providers@5.4.5", "@ethersproject/providers@^5.0.0", "@ethersproject/providers@^5.4.5":
   version "5.4.5"
   resolved "https://registry.yarnpkg.com/@ethersproject/providers/-/providers-5.4.5.tgz#eb2ea2a743a8115f79604a8157233a3a2c832928"
   integrity sha512-1GkrvkiAw3Fj28cwi1Sqm8ED1RtERtpdXmRfwIBGmqBSN5MoeRUHuwHPppMtbPayPgpFcvD7/Gdc9doO5fGYgw==
@@ -1406,10 +1406,10 @@
     "@ethersproject/address" "^5.4.0"
     tiny-invariant "^1.1.0"
 
-"@timeswap-labs/timeswap-v1-sdk@^0.1.16":
-  version "0.1.16"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.16/cf8772401f41473f3b5271f27dee7d9dc22f5ab5dd1dfd5e13e2316859a2cbae#6f21be2ca16923e870cc4a4a0a31cf22b6163de3"
-  integrity sha512-CyZLyNW2HjsKfV4sw0RLuAQAXy9rsaqyMpjy5REnmcJB2/cXY1DhMy3MdWW2ZFX8vM11DLrdXyExw7jDlBpwiw==
+"@timeswap-labs/timeswap-v1-sdk@^0.1.19":
+  version "0.1.19"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.19/36220dff61e5aa7a3f3fe44437e62f83ce7abcb6fb7d8ed9518d80925324d6c5#f6bb852a27b55eb9c951b5fa85892a22ddf7138c"
+  integrity sha512-a2LLaC1oJcacH4ujnG9mc4/4r+pZh3zSsFd49LxOnOsZVXeII7xLuYptnovurjZyd81uEWZowRAvD+CBAT+sww==
   dependencies:
     "@ethersproject/abstract-provider" "^5.4.1"
     "@ethersproject/abstract-signer" "^5.4.1"
@@ -1445,6 +1445,11 @@
   version "16.9.1"
   resolved "https://registry.yarnpkg.com/@types/node/-/node-16.9.1.tgz#0611b37db4246c937feef529ddcc018cf8e35708"
   integrity sha512-QpLcX9ZSsq3YYUUnD3nFDY8H7wctAhQj/TFKL8Ya8v5fMm3CFXxo8zStsLAl780ltoYoo1WvKUVGBQK+1ifr7g==
+
+"@types/node@^14.11.5":
+  version "14.17.18"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-14.17.18.tgz#0198489a751005f71217744aa966cd1f29447c81"
+  integrity sha512-haYyibw4pbteEhkSg0xdDLAI3679L75EJ799ymVrPxOA922bPx3ML59SoDsQ//rHlvqpu+e36kcbR3XRQtFblA==
 
 "@types/parse-json@^4.0.0":
   version "4.0.0"
@@ -2683,6 +2688,17 @@ esutils@^2.0.2:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/esutils/-/esutils-2.0.3.tgz#74d2eb4de0b8da1293711910d50775b9b710ef64"
   integrity sha512-kVscqXk4OCp68SZ0dkgEKVi6/8ij300KBWTJq32P/dYeWTSwK41WyTxalN1eRmA5Z9UU/LX9D7FWSmV9SAYx6g==
+
+ethcall@^4.0.9:
+  version "4.0.9"
+  resolved "https://registry.yarnpkg.com/ethcall/-/ethcall-4.0.9.tgz#2bfd4af9a4028a8c8ca092ffa3b9bc10ac36950d"
+  integrity sha512-I/K004ly5oSYkmRLSmCU39m+8YTP1VRF7DEMgjIm+HhabhNvBbiHEwx6PtDOyCzUfGLZvNefmOIaeM1kVAmj+g==
+  dependencies:
+    "@ethersproject/abi" "^5.0.0"
+    "@ethersproject/contracts" "^5.0.0"
+    "@ethersproject/providers" "^5.0.0"
+    "@types/node" "^14.11.5"
+    js-sha3 "^0.8.0"
 
 ethers@^5.4.6:
   version "5.4.6"

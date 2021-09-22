@@ -71,14 +71,24 @@ async function lendQueryCalculation(
       const bondOut = claims.bond.value.toString();
       const insuranceOut = claims.insurance.value.toString();
 
+      const timeSlippage =
+        currentTime.add(3 * 60).value >= maturity.value
+          ? maturity.sub(1)
+          : currentTime.add(3 * 60);
+      const { claims: claimsSlippage } = await pool.calculateLendGivenPercent(
+        new Uint112(query.assetIn),
+        new Uint40(query.percent),
+        timeSlippage
+      );
+
       const minBond = calculateMinValue(
-        claims.bond.sub(query.assetIn),
+        claimsSlippage.bond.sub(query.assetIn),
         query.slippage
       )
         .add(query.assetIn)
         .value.toString();
       const minInsurance = calculateMinValue(
-        claims.insurance,
+        claimsSlippage.insurance,
         query.slippage
       ).value.toString();
 
@@ -140,8 +150,18 @@ async function lendQueryCalculation(
         currentTime
       );
 
+      const timeSlippage =
+        currentTime.add(3 * 60).value >= maturity.value
+          ? maturity.sub(1)
+          : currentTime.add(3 * 60);
+      const { claims: claimsSlippage } = await pool.calculateLendGivenBond(
+        assetIn,
+        bondOut,
+        timeSlippage
+      );
+
       const minInsurance = calculateMinValue(
-        claims.insurance,
+        claimsSlippage.insurance,
         query.slippage
       ).value.toString();
 
@@ -196,8 +216,18 @@ async function lendQueryCalculation(
         currentTime
       );
 
+      const timeSlippage =
+        currentTime.add(3 * 60).value >= maturity.value
+          ? maturity.sub(1)
+          : currentTime.add(3 * 60);
+      const { claims: claimsSlippage } = await pool.calculateLendGivenInsurance(
+        assetIn,
+        new Uint128(query.insuranceOut),
+        timeSlippage
+      );
+
       const minBond = calculateMinValue(
-        claims.bond.sub(query.assetIn),
+        claimsSlippage.bond.sub(query.assetIn),
         query.slippage
       )
         .add(query.assetIn)

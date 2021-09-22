@@ -1,11 +1,11 @@
-import { Network, Provider } from "@ethersproject/providers";
+import { BaseProvider, Network } from "@ethersproject/providers";
 import { ERC20Token, NativeToken, Pool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import type { CollateralizedDebt } from "./typechain";
 import { CollateralizedDebt__factory } from "./typechain";
 
 export class WhiteList {
-  provider: Provider;
+  provider: BaseProvider;
   network: Network;
   convenience: string;
 
@@ -32,7 +32,11 @@ export class WhiteList {
     Map<number, { debt: string; collateral: string }>
   >;
 
-  constructor(whitelist: WhitelistInput, provider: Provider, network: Network) {
+  constructor(
+    whitelist: WhitelistInput,
+    provider: BaseProvider,
+    network: Network
+  ) {
     this.provider = provider;
     this.network = network;
     this.convenience = whitelist.convenience;

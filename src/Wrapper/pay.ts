@@ -21,8 +21,6 @@ export function paySigner(
   });
 
   app.ports.pay.subscribe(async (params) => {
-    console.log(params);
-
     const pool = whitelist.getPool(
       params.asset,
       params.collateral,

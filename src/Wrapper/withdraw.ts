@@ -8,7 +8,6 @@ export function withdrawSigner(
   gp: GlobalParams
 ) {
   app.ports.withdraw.subscribe(async (params) => {
-    console.log(params);
     const pool = whitelist.getPool(
       params.asset,
       params.collateral,
@@ -23,10 +22,7 @@ export function withdrawSigner(
         insurance: new Uint128(params.claimsIn.insurance),
       },
     });
-    console.log(txn);
 
-    const receipt = await txn.wait();
-    console.log(receipt);
-    console.log(receipt.status);
+    await txn.wait();
   });
 }

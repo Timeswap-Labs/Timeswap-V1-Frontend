@@ -1,14 +1,16 @@
 import {
+  BaseProvider,
   FallbackProvider,
   getDefaultProvider,
   InfuraProvider,
-  Provider,
   Web3Provider,
 } from "@ethersproject/providers";
 
 export declare let window: any;
 
-export async function getProvider(provider?: Provider): Promise<Provider> {
+export async function getProvider(
+  provider?: BaseProvider
+): Promise<BaseProvider> {
   if (window.ethereum) {
     const metamaskProvider = new Web3Provider(window.ethereum, "rinkeby");
     const metamaskConfig = {
