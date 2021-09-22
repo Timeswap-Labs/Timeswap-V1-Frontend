@@ -138,7 +138,7 @@ toDuration now (Maturity maturity) =
             remainderDays
                 // 3600
                 |> String.fromInt
-                |> String.padRight 2 '0'
+                |> String.padLeft 2 '0'
 
         remainderHours : Int
         remainderHours =
@@ -149,14 +149,14 @@ toDuration now (Maturity maturity) =
             remainderHours
                 // 60
                 |> String.fromInt
-                |> String.padRight 2 '0'
+                |> String.padLeft 2 '0'
 
         seconds : String
         seconds =
             remainderHours
                 |> modBy 60
                 |> String.fromInt
-                |> String.padRight 2 '0'
+                |> String.padLeft 2 '0'
 
         string : String
         string =
