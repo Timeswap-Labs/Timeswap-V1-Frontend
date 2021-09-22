@@ -52,6 +52,15 @@ type Positions
         }
 
 
+type Position
+    = AddLiquidity ( Pool, Status LiquidityUint LiquidityReturnUint )
+    | RemoveLiquidity Pool
+    | AddClaims ( Pool, Status ClaimUint ReturnUint )
+    | RemoveClaims Pool
+    | AddDues ( Pool, Dict TokenId DueUint )
+    | RemoveDues Pool
+
+
 type alias LiquidityUint =
     Uint
 
@@ -138,8 +147,8 @@ type alias DueInfo =
     }
 
 
-decoder : Pools -> Tokens -> Decoder Positions
-decoder pools tokens =
+decoder : Pools -> Tokens -> Positions -> Decoder Positions
+decoder pools tokens positions =
     Decode.oneOf
         [ decoderLiquidities pools tokens
         , decoderClaims pools tokens
@@ -150,119 +159,174 @@ decoder pools tokens =
             (\list ->
                 list
                     |> List.foldl
-                        (\(Positions { liquidities, claims, dues }) (Positions accumulator) ->
-                            { liquidities =
-                                accumulator.liquidities
-                                    |> Dict.insertAll liquidities
-                            , claims =
-                                accumulator.claims
-                                    |> Dict.insertAll claims
-                            , dues =
-                                accumulator.dues
-                                    |> Dict.insertAll dues
-                            }
+                        (\position (Positions accumulator) ->
+                            (case position of
+                                AddLiquidity ( pool, status ) ->
+                                    { accumulator
+                                        | liquidities =
+                                            accumulator.liquidities
+                                                |> Dict.insert pool status
+                                    }
+
+                                RemoveLiquidity pool ->
+                                    { accumulator
+                                        | liquidities =
+                                            accumulator.liquidities
+                                                |> Dict.remove pool
+                                    }
+
+                                AddClaims ( pool, status ) ->
+                                    { accumulator
+                                        | claims =
+                                            accumulator.claims
+                                                |> Dict.insert pool status
+                                    }
+
+                                RemoveClaims pool ->
+                                    { accumulator
+                                        | claims =
+                                            accumulator.claims
+                                                |> Dict.remove pool
+                                    }
+
+                                AddDues ( pool, dict ) ->
+                                    { accumulator
+                                        | dues =
+                                            accumulator.dues
+                                                |> Dict.insert pool dict
+                                    }
+
+                                RemoveDues pool ->
+                                    { accumulator
+                                        | dues =
+                                            accumulator.dues
+                                                |> Dict.remove pool
+                                    }
+                            )
                                 |> Positions
                         )
-                        ({ liquidities = Dict.empty Pool.sorter
-                         , claims = Dict.empty Pool.sorter
-                         , dues = Dict.empty Pool.sorter
-                         }
-                            |> Positions
-                        )
+                        positions
             )
 
 
-decoderLiquidities : Pools -> Tokens -> Decoder Positions
+decoderLiquidities : Pools -> Tokens -> Decoder Position
 decoderLiquidities pools tokens =
     Decode.succeed
-        (\pool status ->
-            Dict.singleton Pool.sorter pool status
+        (\pool maybeStatus ->
+            maybeStatus
+                |> Maybe.map (Tuple.pair pool)
+                |> Maybe.map AddLiquidity
+                |> Maybe.withDefault (RemoveLiquidity pool)
         )
         |> Pipeline.custom (Pools.decoderPool pools tokens)
         |> Pipeline.custom
             (Decode.oneOf
-                [ decoderLiquidityUint |> Decode.map Active
-                , decoderLiquidityReturnUint |> Decode.map Matured
+                [ decoderLiquidityUint
+                    |> (Decode.map << Maybe.map) Active
+                , decoderLiquidityReturnUint
+                    |> (Decode.map << Maybe.map) Matured
                 ]
             )
+
+
+decoderLiquidityUint : Decoder (Maybe LiquidityUint)
+decoderLiquidityUint =
+    Decode.field "liquidity" Uint.decoder
         |> Decode.map
-            (\liquidities ->
-                { liquidities = liquidities
-                , claims = Dict.empty Pool.sorter
-                , dues = Dict.empty Pool.sorter
-                }
-                    |> Positions
+            (\liquidityUint ->
+                if liquidityUint |> Uint.isZero then
+                    Nothing
+
+                else
+                    Just liquidityUint
             )
 
 
-decoderLiquidityUint : Decoder LiquidityUint
-decoderLiquidityUint =
-    Decode.field "liquidity" Uint.decoder
-
-
-decoderLiquidityReturnUint : Decoder LiquidityReturnUint
+decoderLiquidityReturnUint : Decoder (Maybe LiquidityReturnUint)
 decoderLiquidityReturnUint =
     Decode.succeed LiquidityReturnUint
         |> Pipeline.required "liquidity" Uint.decoder
         |> Pipeline.required "assetOut" Uint.decoder
         |> Pipeline.required "collateralOut" Uint.decoder
+        |> Decode.map
+            (\liquidityUint ->
+                if liquidityUint.liquidity |> Uint.isZero then
+                    Nothing
+
+                else
+                    Just liquidityUint
+            )
 
 
-decoderClaims : Pools -> Tokens -> Decoder Positions
+decoderClaims : Pools -> Tokens -> Decoder Position
 decoderClaims pools tokens =
     Decode.succeed
-        (\pool status ->
-            Dict.singleton Pool.sorter pool status
+        (\pool maybeStatus ->
+            maybeStatus
+                |> Maybe.map (Tuple.pair pool)
+                |> Maybe.map AddClaims
+                |> Maybe.withDefault (RemoveClaims pool)
         )
         |> Pipeline.custom (Pools.decoderPool pools tokens)
         |> Pipeline.custom
             (Decode.oneOf
-                [ decoderReturnUint |> Decode.map Matured
-                , decoderClaimUint |> Decode.map Active
+                [ decoderReturnUint
+                    |> (Decode.map << Maybe.map) Matured
+                , decoderClaimUint
+                    |> (Decode.map << Maybe.map) Active
                 ]
             )
-        |> Decode.map
-            (\claims ->
-                { liquidities = Dict.empty Pool.sorter
-                , claims = claims
-                , dues = Dict.empty Pool.sorter
-                }
-                    |> Positions
-            )
 
 
-decoderClaimUint : Decoder ClaimUint
+decoderClaimUint : Decoder (Maybe ClaimUint)
 decoderClaimUint =
     Decode.succeed ClaimUint
         |> Pipeline.required "bond" Uint.decoder
         |> Pipeline.required "insurance" Uint.decoder
+        |> Decode.map
+            (\returnUint ->
+                if
+                    (returnUint.bond |> Uint.isZero)
+                        && (returnUint.insurance |> Uint.isZero)
+                then
+                    Nothing
+
+                else
+                    Just returnUint
+            )
 
 
-decoderReturnUint : Decoder ReturnUint
+decoderReturnUint : Decoder (Maybe ReturnUint)
 decoderReturnUint =
     Decode.succeed ReturnUint
         |> Pipeline.required "bond" Uint.decoder
         |> Pipeline.required "insurance" Uint.decoder
         |> Pipeline.required "assetOut" Uint.decoder
         |> Pipeline.required "collateralOut" Uint.decoder
+        |> Decode.map
+            (\returnUint ->
+                if
+                    (returnUint.bond |> Uint.isZero)
+                        && (returnUint.insurance |> Uint.isZero)
+                then
+                    Nothing
+
+                else
+                    Just returnUint
+            )
 
 
-decoderDues : Pools -> Tokens -> Decoder Positions
+decoderDues : Pools -> Tokens -> Decoder Position
 decoderDues pools tokens =
     Decode.succeed
-        (\pool dues ->
-            Dict.singleton Pool.sorter pool dues
+        (\pool maybeDues ->
+            maybeDues
+                |> Maybe.map (Tuple.pair pool)
+                |> Maybe.map AddDues
+                |> Maybe.withDefault (RemoveDues pool)
         )
         |> Pipeline.custom (Pools.decoderPool pools tokens)
         |> Pipeline.required "dues" decoderDuesUint
-        |> Decode.map
-            (\dues ->
-                { liquidities = Dict.empty Pool.sorter
-                , claims = Dict.empty Pool.sorter
-                , dues = dues
-                }
-                    |> Positions
-            )
 
 
 decoderDueUint : Decoder DueUint
@@ -272,31 +336,34 @@ decoderDueUint =
         |> Pipeline.required "collateral" Uint.decoder
 
 
-decoderDuesUint : Decoder (Dict TokenId DueUint)
+decoderDuesUint : Decoder (Maybe (Dict TokenId DueUint))
 decoderDuesUint =
-    Decode.succeed
-        (\tokenId due ->
-            Dict.singleton TokenId.sorter tokenId due
-        )
+    Decode.succeed Tuple.pair
         |> Pipeline.required "id" TokenId.decoder
         |> Pipeline.custom decoderDueUint
         |> Decode.list
+        |> Decode.map (Dict.fromList TokenId.sorter)
         |> Decode.map
-            (\list ->
-                list
-                    |> List.foldl
-                        (\dict accumulator ->
-                            accumulator
-                                |> Dict.insertAll dict
-                        )
-                        (Dict.empty TokenId.sorter)
+            (\dict ->
+                if dict |> Dict.isEmpty then
+                    Nothing
+
+                else
+                    Just dict
             )
 
 
 init : Pools -> Tokens -> Value -> Remote () Positions
 init pools tokens value =
     value
-        |> Decode.decodeValue (decoder pools tokens)
+        |> Decode.decodeValue
+            (Positions
+                { liquidities = Dict.empty Pool.sorter
+                , claims = Dict.empty Pool.sorter
+                , dues = Dict.empty Pool.sorter
+                }
+                |> decoder pools tokens
+            )
         |> (\result ->
                 case result of
                     Ok positions ->
@@ -308,26 +375,16 @@ init pools tokens value =
 
 
 update : Pools -> Tokens -> Value -> Positions -> Positions
-update pools tokens value (Positions positions) =
+update pools tokens value positions =
     value
-        |> Decode.decodeValue (decoder pools tokens)
+        |> Decode.decodeValue (decoder pools tokens positions)
         |> (\result ->
                 case result of
-                    Ok (Positions { liquidities, claims, dues }) ->
-                        { liquidities =
-                            positions.liquidities
-                                |> Dict.insertAll liquidities
-                        , claims =
-                            positions.claims
-                                |> Dict.insertAll claims
-                        , dues =
-                            positions.dues
-                                |> Dict.insertAll dues
-                        }
-                            |> Positions
+                    Ok newPositions ->
+                        newPositions
 
                     Err _ ->
-                        Positions positions
+                        positions
            )
 
 
