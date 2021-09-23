@@ -13,7 +13,7 @@ import { lendPositionsInit, borrowPositionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
 import { withdrawSigner } from "./withdraw";
-import { faucet } from "./faucet";
+import { faucetSigner } from "./faucet";
 
 export declare let window: any;
 
@@ -37,6 +37,8 @@ export async function init(app: ElmApp<Ports>) {
   pay(app);
   paySigner(app, whitelist, globalParams);
 
+  faucetSigner(app, globalParams);
+
   portsInit(app, whitelist, globalParams);
 }
 
@@ -52,6 +54,7 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
             chainId: ethereum.chainId,
             user: accounts[0],
           });
+          gp.metamaskSigner = gp.metamaskProvider!.getSigner();
 
           balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
           lendPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
@@ -61,9 +64,6 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
             gp.metamaskProvider!,
             accounts[0]
           );
-          faucet(app, whitelist, gp.metamaskProvider!, accounts[0]);
-
-          gp.metamaskSigner = gp.metamaskProvider!.getSigner();
         });
 
       ethereum.on("chainChanged", (chainId: string) => {
@@ -91,7 +91,6 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
               gp.metamaskProvider!,
               accounts[0]
             );
-            faucet(app, whitelist, gp.metamaskProvider!, accounts[0]);
           });
       });
 
@@ -112,7 +111,6 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
             gp.metamaskProvider!,
             accounts[0]
           );
-          faucet(app, whitelist, gp.metamaskProvider!, accounts[0]);
         } else {
           app.ports.metamaskMsg.send(null);
         }
