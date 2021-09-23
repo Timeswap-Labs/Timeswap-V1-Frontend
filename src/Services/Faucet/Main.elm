@@ -123,7 +123,7 @@ title =
         (text "Test Token Faucets")
 
 
-content : { model | tokens : Tokens, images : Images, tokenImages : TokenImages } -> Element Msg
+content : { model | tokens : Tokens, images : Images, tokenImages : TokenImages, user : Remote userError user } -> Element Msg
 content ({ tokens } as model) =
     Keyed.column
         [ width fill
@@ -142,85 +142,158 @@ content ({ tokens } as model) =
         )
 
 
-singleFaucet : { model | images : Images, tokenImages : TokenImages } -> ERC20 -> Element Msg
-singleFaucet { images, tokenImages } erc20 =
-    Input.button
-        ([ width fill
-         , height shrink
-         , mouseDown [ Background.color Color.primary300 ]
-         , mouseOver [ Background.color Color.primary100 ]
-         ]
-            ++ Glass.lightWhiteModal 4
-        )
-        { onPress =
-            [ ( "erc20", erc20 |> ERC20.encode ) ]
-                |> Encode.object
-                |> FaucetMint
-                |> Just
-        , label =
-            row
-                [ width fill
-                , height <| px 64
-                , paddingEach
-                    { top = 0
-                    , right = 24
-                    , bottom = 0
-                    , left = 16
-                    }
-                ]
-                [ row
-                    [ width shrink
-                    , height shrink
-                    , spacing 12
-                    , alignLeft
-                    , centerY
-                    ]
-                    [ TokenImage.icon tokenImages
-                        [ width <| px 32
-                        , centerY
+singleFaucet : { model | images : Images, tokenImages : TokenImages, user : Remote userError user } -> ERC20 -> Element Msg
+singleFaucet { images, tokenImages, user } erc20 =
+    case user of
+        Success _ ->
+            Input.button
+                ([ width fill
+                 , height shrink
+                 , mouseDown [ Background.color Color.primary300 ]
+                 , mouseOver [ Background.color Color.primary100 ]
+                 ]
+                    ++ Glass.lightWhiteModal 4
+                )
+                { onPress =
+                    [ ( "erc20", erc20 |> ERC20.encode ) ]
+                        |> Encode.object
+                        |> FaucetMint
+                        |> Just
+                , label =
+                    row
+                        [ width fill
+                        , height <| px 64
+                        , paddingEach
+                            { top = 0
+                            , right = 24
+                            , bottom = 0
+                            , left = 16
+                            }
                         ]
-                        (Token.ERC20 erc20)
-                    , el
+                        [ row
+                            [ width shrink
+                            , height shrink
+                            , spacing 12
+                            , alignLeft
+                            , centerY
+                            ]
+                            [ TokenImage.icon tokenImages
+                                [ width <| px 32
+                                , centerY
+                                ]
+                                (Token.ERC20 erc20)
+                            , el
+                                [ width shrink
+                                , height shrink
+                                , centerY
+                                , Font.bold
+                                , Font.size 18
+                                , Font.color Color.transparent400
+                                ]
+                                (erc20
+                                    |> ERC20.toSymbol
+                                    |> text
+                                )
+                            ]
+                        , row
+                            [ width shrink
+                            , height shrink
+                            , spacing 16
+                            , alignRight
+                            ]
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , centerY
+                                , Font.regular
+                                , Font.size 16
+                                , Font.color Color.transparent400
+                                ]
+                                ([ "Mint"
+                                 , "1000"
+                                 , erc20 |> ERC20.toSymbol
+                                 ]
+                                    |> String.join " "
+                                    |> text
+                                )
+                            , Image.arrow images
+                                [ width <| px 16
+                                , centerY
+                                ]
+                            ]
+                        ]
+                }
+
+        _ ->
+            el
+                ([ width fill
+                 , height shrink
+                 ]
+                    ++ Glass.lightWhiteModal 4
+                )
+                (row
+                    [ width fill
+                    , height <| px 64
+                    , paddingEach
+                        { top = 0
+                        , right = 24
+                        , bottom = 0
+                        , left = 16
+                        }
+                    ]
+                    [ row
                         [ width shrink
                         , height shrink
+                        , spacing 12
+                        , alignLeft
                         , centerY
-                        , Font.bold
-                        , Font.size 18
-                        , Font.color Color.transparent400
                         ]
-                        (erc20
-                            |> ERC20.toSymbol
-                            |> text
-                        )
-                    ]
-                , row
-                    [ width shrink
-                    , height shrink
-                    , spacing 16
-                    , alignRight
-                    ]
-                    [ el
+                        [ TokenImage.icon tokenImages
+                            [ width <| px 32
+                            , centerY
+                            ]
+                            (Token.ERC20 erc20)
+                        , el
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            , Font.bold
+                            , Font.size 18
+                            , Font.color Color.transparent400
+                            ]
+                            (erc20
+                                |> ERC20.toSymbol
+                                |> text
+                            )
+                        ]
+                    , row
                         [ width shrink
                         , height shrink
-                        , centerY
-                        , Font.regular
-                        , Font.size 16
-                        , Font.color Color.transparent400
+                        , spacing 16
+                        , alignRight
                         ]
-                        ([ "Mint"
-                         , "1000"
-                         , erc20 |> ERC20.toSymbol
-                         ]
-                            |> String.join " "
-                            |> text
-                        )
-                    , Image.arrow images
-                        [ width <| px 16
-                        , centerY
+                        [ el
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            , Font.regular
+                            , Font.size 16
+                            , Font.color Color.transparent400
+                            ]
+                            ([ "Mint"
+                             , "1000"
+                             , erc20 |> ERC20.toSymbol
+                             ]
+                                |> String.join " "
+                                |> text
+                            )
+                        , Image.arrow images
+                            [ width <| px 16
+                            , centerY
+                            ]
                         ]
                     ]
-                ]
-        }
+                )
 
 
 connectButton : { model | device : Device, images : Images } -> Element msg
