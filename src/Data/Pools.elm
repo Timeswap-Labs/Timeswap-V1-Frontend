@@ -13,6 +13,7 @@ module Data.Pools exposing
     , update
     )
 
+import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain(..))
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
@@ -27,7 +28,15 @@ import Time exposing (Posix)
 
 
 type Pools
-    = Pools (Dict Pair (Dict Maturity (Remote () PoolUint))) -- fix in the future
+    = Pools (Dict Pair (Dict Maturity ( Native, Remote () PoolUint ))) -- fix in the future
+
+
+type alias Native =
+    { liquidity : Address
+    , bond : Address
+    , insurance : Address
+    , collateralizedDebt : Address
+    }
 
 
 type alias PoolUint =
@@ -52,8 +61,8 @@ decoder tokens =
         recursive :
             Int
             -> Value
-            -> ( Int, List ( Pair, List Maturity ) )
-            -> Decoder (List ( Pair, List Maturity ))
+            -> ( Int, List ( Pair, List ( Maturity, Native ) ) )
+            -> Decoder (List ( Pair, List ( Maturity, Native ) ))
         recursive length value ( id, list ) =
             if id < length then
                 value
@@ -61,7 +70,15 @@ decoder tokens =
                         (Decode.succeed Tuple.pair
                             |> Pipeline.custom (Pair.decoder tokens id)
                             |> Pipeline.required "pools"
-                                (Decode.field "maturity" Maturity.decoder
+                                (Decode.succeed Tuple.pair
+                                    |> Pipeline.required "maturity" Maturity.decoder
+                                    |> Pipeline.custom
+                                        (Decode.succeed Native
+                                            |> Pipeline.required "liquidity" Address.decoder
+                                            |> Pipeline.required "bond" Address.decoder
+                                            |> Pipeline.required "insurance" Address.decoder
+                                            |> Pipeline.required "collateralizedDebt" Address.decoder
+                                        )
                                     |> Decode.list
                                 )
                             |> Decode.index id
@@ -95,7 +112,7 @@ decoder tokens =
                     |> (List.map << Tuple.mapSecond)
                         (\innerList ->
                             innerList
-                                |> List.map (\maturity -> ( maturity, Loading ))
+                                |> List.map (\( maturity, native ) -> ( maturity, ( native, Loading ) ))
                                 |> Dict.fromList Maturity.sorter
                         )
                     |> Dict.fromList Pair.sorter
@@ -141,7 +158,7 @@ decoderPoolUint =
 
 
 decoderUpdate : Pools -> Tokens -> Decoder Pools
-decoderUpdate pools tokens =
+decoderUpdate ((Pools dict) as pools) tokens =
     Decode.succeed Tuple.pair
         |> Pipeline.custom (decoderPool pools tokens)
         |> Pipeline.custom decoderPoolUint
@@ -154,21 +171,23 @@ decoderUpdate pools tokens =
                             accumulator
                                 |> Dict.get pair
                                 |> Maybe.map
-                                    (\dict ->
-                                        dict
-                                            |> Dict.insert maturity (Success poolInfo)
+                                    (\innerDict ->
+                                        innerDict
+                                            |> Dict.get maturity
+                                            |> Maybe.map
+                                                (\( native, _ ) ->
+                                                    innerDict
+                                                        |> Dict.insert maturity ( native, Success poolInfo )
+                                                )
+                                            |> Maybe.withDefault innerDict
                                             |> (\newDict ->
                                                     accumulator
                                                         |> Dict.insert pair newDict
                                                )
                                     )
-                                |> Maybe.withDefault
-                                    (accumulator
-                                        |> Dict.insert pair
-                                            (Dict.singleton Maturity.sorter maturity (Success poolInfo))
-                                    )
+                                |> Maybe.withDefault accumulator
                         )
-                        (Dict.empty Pair.sorter)
+                        dict
                     |> Pools
             )
 
@@ -304,7 +323,7 @@ toList time (Pools dict) =
                     |> Dict.keepIf
                         (\maturity _ -> maturity |> Maturity.isActive time)
                     |> Dict.map
-                        (\_ remote ->
+                        (\_ ( _, remote ) ->
                             case remote of
                                 Success { assetLiquidity, collateralLiquidity, apr, cf } ->
                                     { assetLiquidity =
@@ -338,7 +357,7 @@ toListSinglePair time pair (Pools dict) =
         |> Maybe.map
             (Dict.keepIf (\maturity _ -> maturity |> Maturity.isActive time))
         |> (Maybe.map << Dict.map)
-            (\_ remote ->
+            (\_ ( _, remote ) ->
                 case remote of
                     Success { assetLiquidity, collateralLiquidity, apr, cf } ->
                         { assetLiquidity =
