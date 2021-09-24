@@ -133,14 +133,14 @@ export async function borrowPositionsInit(
 
     const cdToken = collateralizedDebt.connect(provider);
 
-    const startBlock = (await cdToken.dueOf(0)).startBlock - 1;
+    const startBlock = (await cdToken.dueOf(0))[2] - 1;
 
     const tokenIdsIn = (
       await cdToken.queryFilter(tokenBalanceIn, startBlock)
-    ).map((event) => event.args.tokenId);
+    ).map((event) => event.args![2]);
     const tokenIdsOut = (
       await cdToken.queryFilter(tokenBalanceOut, startBlock)
-    ).map((event) => event.args.tokenId);
+    ).map((event) => event.args![2]);
 
     const tokenIds = tokenIdsIn.filter((id) => !tokenIdsOut.includes(id));
     const dues: {
@@ -152,11 +152,11 @@ export async function borrowPositionsInit(
     for (const id of tokenIds) {
       const due = await cdToken.dueOf(id);
 
-      if (!(due.debt.toBigInt() === 0n && due.collateral.toBigInt() === 0n)) {
+      if (!(due[0].toBigInt() === 0n && due[1].toBigInt() === 0n)) {
         dues.push({
           id: id.toString(),
-          debt: due.debt.toString(),
-          collateral: due.collateral.toString(),
+          debt: due[0].toString(),
+          collateral: due[1].toString(),
         });
       }
     }
@@ -232,12 +232,12 @@ function updateBalances(
 
   const bondTokenContract = new Contract(
     bondToken.address,
-    erc20Abi,
+    erc20,
     bondToken.provider()
   );
   const insuranceTokenContract = new Contract(
     insuranceToken.address,
-    erc20Abi,
+    erc20,
     insuranceToken.provider()
   );
 

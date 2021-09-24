@@ -1,8 +1,8 @@
 import { BaseProvider, Network } from "@ethersproject/providers";
 import { ERC20Token, NativeToken, Pool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
-import type { CollateralizedDebt } from "./typechain";
-import { CollateralizedDebt__factory } from "./typechain";
+import { Contract } from "@ethersproject/contracts";
+import cdTokenAbi from "./abi/cdToken";
 
 export class WhiteList {
   provider: BaseProvider;
@@ -22,7 +22,7 @@ export class WhiteList {
           liquidity: ERC20Token;
           bond: ERC20Token;
           insurance: ERC20Token;
-          collateralizedDebt: CollateralizedDebt;
+          collateralizedDebt: Contract;
         }
       >
     >
@@ -106,8 +106,9 @@ export class WhiteList {
                 18,
                 insurance
               ),
-              collateralizedDebt: CollateralizedDebt__factory.connect(
+              collateralizedDebt: new Contract(
                 collateralizedDebt,
+                cdTokenAbi,
                 provider
               ),
             })
@@ -212,5 +213,5 @@ interface PoolEntry {
   liquidity: ERC20Token;
   bond: ERC20Token;
   insurance: ERC20Token;
-  collateralizedDebt: CollateralizedDebt;
+  collateralizedDebt: Contract;
 }

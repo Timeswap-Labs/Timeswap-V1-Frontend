@@ -32,4 +32,4 @@ toName tab =
             "Dashboard"
 
         Liquidity ->
-            "Liqudiity"
+            "Liquidity"
