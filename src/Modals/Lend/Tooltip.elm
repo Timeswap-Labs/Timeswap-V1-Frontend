@@ -221,8 +221,8 @@ insurance =
             , Font.size 12
             , Font.color Color.transparent300
             ]
-            [ """For the percent of promised asset you don't receive after maturity, 
-                you will receive up to the same percent of your insurance, 
+            [ """For the percentage of promised asset you don't receive after maturity, 
+                you will receive up to the same percentage of your insurance value, 
                 which comes from the collateral forfeited by borrowers.
               """
                 |> text
