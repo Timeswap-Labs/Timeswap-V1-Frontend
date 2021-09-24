@@ -3,8 +3,14 @@ import { WhiteList } from "./whitelist";
 import { updateErc20Balance } from "./helper";
 import { Uint128 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { ERC20Token, Pool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Contract, Provider } from "ethcall";
-import { abi as ERC20Abi } from "./abi/IERC20.json";
+import { Contract as MultiCallContract, Provider } from "ethcall";
+import erc20 from "./abi/erc20";
+import { FormatTypes, Interface } from "@ethersproject/abi";
+import { Contract } from "@ethersproject/contracts";
+
+const erc20Abi = JSON.parse(
+  new Interface(erc20).format(FormatTypes.json) as string
+);
 
 export async function lendPositionsInit(
   app: ElmApp<Ports>,
@@ -33,8 +39,11 @@ export async function lendPositionsInit(
   } of whitelist.poolEntries()) {
     const bondToken = bond.connect(provider);
     const insuranceToken = insurance.connect(provider);
-    const multiCallBondToken = new Contract(bond.address, ERC20Abi);
-    const multiCallInsuranceToken = new Contract(insurance.address, ERC20Abi);
+    const multiCallBondToken = new MultiCallContract(bond.address, erc20Abi);
+    const multiCallInsuranceToken = new MultiCallContract(
+      insurance.address,
+      erc20Abi
+    );
 
     lendPositionsToken.push({
       asset,
@@ -168,8 +177,8 @@ function updateBalances(
   pool: Pool,
   bondToken: ERC20Token,
   insuranceToken: ERC20Token,
-  multiCallBondToken: Contract,
-  multiCallInsuranceToken: Contract,
+  multiCallBondToken: MultiCallContract,
+  multiCallInsuranceToken: MultiCallContract,
   multiCallProvider: Provider,
   address: string
 ) {
@@ -221,14 +230,25 @@ function updateBalances(
     ]);
   };
 
+  const bondTokenContract = new Contract(
+    bondToken.address,
+    erc20Abi,
+    bondToken.provider()
+  );
+  const insuranceTokenContract = new Contract(
+    insuranceToken.address,
+    erc20Abi,
+    insuranceToken.provider()
+  );
+
   const updateBalancesBM = () => {
-    updateErc20Balance(bondToken.contract(), address, updateErc20BM);
-    updateErc20Balance(insuranceToken.contract(), address, updateErc20BM);
+    updateErc20Balance(bondTokenContract, address, updateErc20BM);
+    updateErc20Balance(insuranceTokenContract, address, updateErc20BM);
   };
 
   const updateBalancesAM = () => {
-    updateErc20Balance(bondToken.contract(), address, updateErc20AM);
-    updateErc20Balance(insuranceToken.contract(), address, updateErc20AM);
+    updateErc20Balance(bondTokenContract, address, updateErc20AM);
+    updateErc20Balance(insuranceTokenContract, address, updateErc20AM);
   };
 
   if (now < maturity) {

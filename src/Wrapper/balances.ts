@@ -3,10 +3,15 @@ import { BaseProvider } from "@ethersproject/providers";
 import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
 import { WhiteList } from "./whitelist";
 import { NativeToken } from "@timeswap-labs/timeswap-v1-sdk-core";
-import type { IERC20 } from "./typechain";
 import { updateErc20Balance } from "./helper";
-import { Contract, Provider } from "ethcall";
-import { abi as ERC20Abi } from "./abi/IERC20.json";
+import { Contract as MultiCallContract, Provider } from "ethcall";
+import erc20 from "./abi/erc20";
+import { FormatTypes, Interface } from "@ethersproject/abi";
+import { Contract } from "@ethersproject/contracts";
+
+const erc20Abi = JSON.parse(
+  new Interface(erc20).format(FormatTypes.json) as string
+);
 
 export async function balancesInit(
   app: ElmApp<Ports>,
@@ -24,7 +29,7 @@ export async function balancesInit(
   for (const [tokenAddress, token] of whitelist.tokenEntries()) {
     if (token instanceof ERC20Token) {
       const connectedToken = token.connect(provider);
-      const multiCallToken = new Contract(token.address, ERC20Abi);
+      const multiCallToken = new MultiCallContract(token.address, erc20Abi);
 
       balancesToken.push(tokenAddress);
       balances.push(multiCallToken.balanceOf(address));
@@ -38,7 +43,7 @@ export async function balancesInit(
         allowance: allowance.value.toString(),
       });
 
-      const contract = connectedToken.contract() as IERC20;
+      const contract = new Contract(connectedToken.address, erc20, provider);
 
       const allowanceFilter = contract.filters.Approval(
         address,
@@ -46,11 +51,11 @@ export async function balancesInit(
       );
 
       updateErc20Balance(contract, address, async () => {
-        const balance = await connectedToken.balanceOf(address);
+        const balance = await contract.balanceOf(address);
         app.ports.sdkBalancesMsg.send([
           {
             token: tokenAddress,
-            balance: balance.value.toString(),
+            balance: balance.toString(),
           },
         ]);
       });

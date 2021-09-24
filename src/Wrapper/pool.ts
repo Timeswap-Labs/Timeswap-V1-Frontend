@@ -1,14 +1,15 @@
 import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Contract, Provider } from "ethcall";
+import { Contract as MultiCallContract, Provider } from "ethcall";
 import { WhiteList } from "./whitelist";
-import { abi as TimeswapPairAbi } from "./abi/IPair.json";
-import type { IPair } from "./typechain";
+import timeswapPair from "./abi/pair";
 import {
   Uint112,
   Uint128,
   Uint16,
   Uint256,
 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { FormatTypes } from "@ethersproject/abi";
+import { Contract } from "@ethersproject/contracts";
 
 export async function pool(app: ElmApp<Ports>, whitelist: WhiteList) {
   const params: {
@@ -27,7 +28,12 @@ export async function pool(app: ElmApp<Ports>, whitelist: WhiteList) {
   for (const { asset, collateral, maturity, pool } of whitelist.poolEntries()) {
     if (now < maturity) {
       params.push({ asset, collateral, maturity, pool });
-      const pairContract = new Contract(pool.pairAddress()!, TimeswapPairAbi);
+      const pairContract = new MultiCallContract(
+        pool.pairAddress()!,
+        JSON.parse(
+          pool.pairContract()!.interface.format(FormatTypes.json) as string
+        )
+      );
 
       calls.push(pairContract.constantProduct(maturity));
       calls.push(pairContract.totalReserves(maturity));
@@ -36,15 +42,19 @@ export async function pool(app: ElmApp<Ports>, whitelist: WhiteList) {
       calls.push(pairContract.fee());
       calls.push(pairContract.protocolFee());
 
-      const pair = pool.pairContract() as IPair;
+      const pair = new Contract(
+        pool.pairContract()!.address,
+        timeswapPair,
+        pool.provider()
+      );
       const filter = pair.filters.Sync(maturity);
       pair.removeAllListeners(filter);
       pair.on(filter, async (_maturity, state) => {
         const cache = getModifiedCache([
-          state,
-          state.reserves,
-          state.totalClaims,
-          state.totalLiquidity,
+          state.slice(4),
+          state[0],
+          state[2],
+          state[1],
         ]);
         pool.updateCache(cache);
 
@@ -105,17 +115,15 @@ function getCache(results: any[], base?: number) {
 }
 
 function getModifiedCache(results: any[], base?: number) {
-  const x = new Uint112(results[base ?? 0].x.toString());
-  const y = new Uint112(results[base ?? 0].y.toString());
-  const z = new Uint112(results[base ?? 0].z.toString());
+  const x = new Uint112(results[base ?? 0][0].toString());
+  const y = new Uint112(results[base ?? 0][1].toString());
+  const z = new Uint112(results[base ?? 0][2].toString());
 
-  const asset = new Uint128(results[(base ?? 0) + 1].asset.toString());
-  const collateral = new Uint128(
-    results[(base ?? 0) + 1].collateral.toString()
-  );
+  const asset = new Uint128(results[(base ?? 0) + 1][0].toString());
+  const collateral = new Uint128(results[(base ?? 0) + 1][1].toString());
 
-  const bond = new Uint128(results[(base ?? 0) + 2].bond.toString());
-  const insurance = new Uint128(results[(base ?? 0) + 2].insurance.toString());
+  const bond = new Uint128(results[(base ?? 0) + 2][0].toString());
+  const insurance = new Uint128(results[(base ?? 0) + 2][1].toString());
 
   const totalLiquidity = new Uint256(results[(base ?? 0) + 3].toString());
 

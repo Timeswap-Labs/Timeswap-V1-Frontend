@@ -1,12 +1,14 @@
+import { Contract } from "@ethersproject/contracts";
+import testTokenAbi from "./abi/testToken";
 import { GlobalParams } from "./global";
-import { TestToken__factory } from "./typechain";
 
 export function faucetSigner(app: ElmApp<Ports>, gp: GlobalParams) {
   app.ports.faucetMint.subscribe((params) => {
-    const token = TestToken__factory.connect(
+    const token = new Contract(
       params.erc20,
+      testTokenAbi,
       gp.metamaskProvider!
     );
-    token.connect(gp.metamaskSigner!)["mint()"]();
+    token.connect(gp.metamaskSigner!).mint();
   });
 }

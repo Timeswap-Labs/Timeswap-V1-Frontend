@@ -1,8 +1,8 @@
-import type { IERC20 } from "./typechain";
 import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Contract } from "@ethersproject/contracts";
 
 export function updateErc20Balance(
-  contract: IERC20,
+  contract: Contract,
   address: string,
   updateBalance: () => void
 ) {
