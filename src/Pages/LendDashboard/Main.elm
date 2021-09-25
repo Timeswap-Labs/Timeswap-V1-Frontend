@@ -1,4 +1,4 @@
-module Pages.LendDashboard.Main exposing (Msg, Page, fromFragment, getFilter, init, update, view)
+module Pages.LendDashboard.Main exposing (Msg, Page, fromFragment, getFilter, init, update, updateDashboard, view)
 
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
@@ -170,6 +170,31 @@ update { user } msg (Page page) =
         OnMouseLeave ->
             { page | tooltip = Nothing }
                 |> Page
+
+
+updateDashboard :
+    Remote () Positions
+    -> { model | time : Posix, user : Remote error { user | positions : Remote () Positions } }
+    -> Page
+    -> Page
+updateDashboard oldPositions ({ time } as model) ((Page { filter }) as page) =
+    (case oldPositions of
+        Success successPositions ->
+            successPositions
+                |> Positions.getFirstClaim time filter
+                |> Maybe.map (\_ -> True)
+                |> Maybe.withDefault False
+
+        _ ->
+            False
+    )
+        |> (\hasClaims ->
+                if hasClaims then
+                    page
+
+                else
+                    init model filter
+           )
 
 
 view :

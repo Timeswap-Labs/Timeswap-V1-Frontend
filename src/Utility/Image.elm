@@ -19,7 +19,7 @@ module Utility.Image exposing
     , logoPure
     , matured
     , metamask
-    , opensea
+    , openSea
     , option
     , plus
     , setting
@@ -72,9 +72,9 @@ background images =
         none
 
 
-opensea : Images -> List (Attribute msg) -> Element msg
-opensea =
-    view "Opensea"
+openSea : Images -> List (Attribute msg) -> Element msg
+openSea =
+    view "OpenSea"
 
 
 logo : Images -> List (Attribute msg) -> Element msg

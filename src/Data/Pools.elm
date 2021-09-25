@@ -6,6 +6,7 @@ module Data.Pools exposing
     , empty
     , fromPairFragment
     , fromPoolFragment
+    , getCollateralizedDebt
     , getFirst
     , toList
     , toListSinglePair
@@ -388,3 +389,12 @@ getFirst (Pools dict) =
     dict
         |> Dict.keys
         |> List.head
+
+
+getCollateralizedDebt : Pool -> Pools -> Maybe Address
+getCollateralizedDebt { pair, maturity } (Pools dict) =
+    dict
+        |> Dict.get pair
+        |> Maybe.andThen (Dict.get maturity)
+        |> Maybe.map Tuple.first
+        |> Maybe.map .collateralizedDebt

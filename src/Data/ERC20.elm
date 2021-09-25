@@ -4,7 +4,6 @@ module Data.ERC20 exposing
     , daiRinkeby
     , decoder
     , encode
-    , example
     , fromString
     , maticRinkeby
     , sorter
@@ -108,15 +107,6 @@ toSymbol (ERC20 { symbol }) =
 toDecimals : ERC20 -> Int
 toDecimals (ERC20 { decimals }) =
     decimals
-
-
-example : Set ERC20
-example =
-    Set.fromList sorter
-        [ daiRinkeby
-        , maticRinkeby
-        , wethRinkeby
-        ]
 
 
 compare : ERC20 -> ERC20 -> Order

@@ -3,7 +3,6 @@ module Data.Uint exposing
     , compare
     , decoder
     , encode
-    , example
     , fromAmount
     , fromString
     , isAmount
@@ -220,12 +219,3 @@ uint256 =
 isZero : Uint -> Bool
 isZero (Uint string) =
     string == "0"
-
-
-example : List Uint
-example =
-    [ Uint "78560000000000000000000"
-    , Uint "1"
-    , Uint "221300000000000000000000054600"
-    , Uint "3"
-    ]

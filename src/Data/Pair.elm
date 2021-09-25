@@ -3,7 +3,6 @@ module Data.Pair exposing
     , daiEthRinkeby
     , daiMaticRinkeby
     , decoder
-    , example
     , sorter
     , toAsset
     , toCollateral
@@ -103,15 +102,6 @@ toAsset (Pair { asset }) =
 toCollateral : Pair -> Token
 toCollateral (Pair { collateral }) =
     collateral
-
-
-example : Set Pair
-example =
-    Set.fromList sorter
-        [ daiEthRinkeby
-        , daiMaticRinkeby
-        , wethDaiRinkeby
-        ]
 
 
 compare : Pair -> Pair -> Order

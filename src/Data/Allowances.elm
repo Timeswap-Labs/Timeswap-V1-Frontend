@@ -1,6 +1,5 @@
 module Data.Allowances exposing
     ( Allowances
-    , example
     , hasEnough
     , init
     , update
@@ -80,15 +79,3 @@ hasEnough token string (Allowances dict) =
                                 True
                     )
                 |> Maybe.withDefault False
-
-
-example : Allowances
-example =
-    List.map2 Tuple.pair
-        [ ERC20.daiRinkeby
-        , ERC20.maticRinkeby
-        , ERC20.wethRinkeby
-        ]
-        Uint.example
-        |> Dict.fromList ERC20.sorter
-        |> Allowances

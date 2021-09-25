@@ -2,10 +2,10 @@ module Data.TokenId exposing
     ( TokenId
     , decoder
     , encode
-    , exampleList
     , fromFragment
     , sorter
     , toFragment
+    , toString
     )
 
 import Data.Uint as Uint exposing (Uint)
@@ -66,6 +66,12 @@ toFragment set =
         |> (++) "tokenIds="
 
 
+toString : TokenId -> String
+toString (TokenId uint) =
+    uint
+        |> Uint.toString
+
+
 encode : TokenId -> Value
 encode (TokenId uint) =
     uint
@@ -76,8 +82,3 @@ sorter : Sorter TokenId
 sorter =
     Uint.sorter
         |> Sort.by (\(TokenId uint) -> uint)
-
-
-exampleList : List TokenId
-exampleList =
-    Uint.example |> List.map TokenId

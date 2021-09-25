@@ -8,6 +8,8 @@ module Page exposing
     , toTab
     , toUrl
     , update
+    , updateBorrowDashboard
+    , updateLendDashboard
     , view
     )
 
@@ -264,6 +266,38 @@ update model msg page =
             page
 
 
+updateLendDashboard :
+    Remote () Positions
+    -> { model | time : Posix, user : Remote error { user | positions : Remote () Positions } }
+    -> Page
+    -> Page
+updateLendDashboard oldPositions model page =
+    case page of
+        LendDashboard lendDashboard ->
+            lendDashboard
+                |> LendDashboard.updateDashboard oldPositions model
+                |> LendDashboard
+
+        _ ->
+            page
+
+
+updateBorrowDashboard :
+    Remote () Positions
+    -> { model | time : Posix, user : Remote error { user | positions : Remote () Positions } }
+    -> Page
+    -> Page
+updateBorrowDashboard oldPositions model page =
+    case page of
+        BorrowDashboard borrowDashboard ->
+            borrowDashboard
+                |> BorrowDashboard.updateDashboard oldPositions model
+                |> BorrowDashboard
+
+        _ ->
+            page
+
+
 view :
     { model
         | device : Device
@@ -272,7 +306,7 @@ view :
         , images : Images
         , tokenImages : TokenImages
         , pools : Pools
-        , user : Remote userError { user | positions : Remote () Positions }
+        , user : Remote userError { user | chain : Chain, positions : Remote () Positions }
     }
     -> Page
     -> Element Msg

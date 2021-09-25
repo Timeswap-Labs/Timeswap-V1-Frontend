@@ -5,6 +5,7 @@ module Pages.BorrowDashboard.Main exposing
     , getFilter
     , init
     , update
+    , updateDashboard
     , view
     )
 
@@ -37,6 +38,7 @@ import Element
         , mouseDown
         , mouseOver
         , moveLeft
+        , newTabLink
         , none
         , onRight
         , padding
@@ -62,6 +64,7 @@ import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
+import Utility.OpenSea as OpenSea
 import Utility.PairInfo as PairInfo
 import Utility.PositionsInfo as PositionsInfo
 import Utility.Router as Router
@@ -267,13 +270,39 @@ update { user } msg (Page page) =
                 |> Page
 
 
+updateDashboard :
+    Remote () Positions
+    -> { model | time : Posix, user : Remote error { user | positions : Remote () Positions } }
+    -> Page
+    -> Page
+updateDashboard oldPositions ({ time } as model) ((Page { filter }) as page) =
+    (case oldPositions of
+        Success successPositions ->
+            successPositions
+                |> Positions.getFirstDue time filter
+                |> Maybe.map (\_ -> True)
+                |> Maybe.withDefault False
+
+        _ ->
+            False
+    )
+        |> (\hasClaims ->
+                if hasClaims then
+                    page
+
+                else
+                    init model filter
+           )
+
+
 view :
     { model
         | device : Device
         , time : Posix
         , images : Images
         , tokenImages : TokenImages
-        , user : Remote error { user | positions : Remote () Positions }
+        , pools : Pools
+        , user : Remote userError { user | chain : Chain, positions : Remote () Positions }
     }
     -> Page
     -> Element Msg
@@ -297,7 +326,7 @@ view ({ device, time, user } as model) page =
         [ switch
         , title
         , case user of
-            Success { positions } ->
+            Success { chain, positions } ->
                 case positions of
                     Loading ->
                         PositionsInfo.loading
@@ -312,7 +341,7 @@ view ({ device, time, user } as model) page =
                         else
                             successPositions
                                 |> Positions.toDueList time
-                                |> allPositions model page
+                                |> allPositions model page chain
 
             _ ->
                 PositionsInfo.noUser model
@@ -377,11 +406,17 @@ title =
 
 
 allPositions :
-    { model | time : Posix, images : Images, tokenImages : TokenImages }
+    { model
+        | time : Posix
+        , images : Images
+        , tokenImages : TokenImages
+        , pools : Pools
+    }
     -> Page
+    -> Chain
     -> ( List DuesInfo, List DuesInfo )
     -> Element Msg
-allPositions model page ( activeList, maturedList ) =
+allPositions model page chain ( activeList, maturedList ) =
     Keyed.column
         [ width fill
         , height shrink
@@ -391,14 +426,14 @@ allPositions model page ( activeList, maturedList ) =
             |> List.map
                 (\({ pool } as duesInfo) ->
                     ( pool |> Pool.toKey
-                    , singleActivePosition model page duesInfo
+                    , singleActivePosition model page chain duesInfo
                     )
                 )
          , maturedList
             |> List.map
                 (\({ pool } as duesInfo) ->
                     ( pool |> Pool.toKey
-                    , singleMaturedPosition model page duesInfo
+                    , singleMaturedPosition model page chain duesInfo
                     )
                 )
          ]
@@ -407,11 +442,17 @@ allPositions model page ( activeList, maturedList ) =
 
 
 singleActivePosition :
-    { model | time : Posix, images : Images, tokenImages : TokenImages }
+    { model
+        | time : Posix
+        , images : Images
+        , tokenImages : TokenImages
+        , pools : Pools
+    }
     -> Page
+    -> Chain
     -> DuesInfo
     -> Element Msg
-singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page)) ({ pool, listDue } as duesInfo) =
+singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page)) chain ({ pool, listDue } as duesInfo) =
     column
         [ width fill
         , height shrink
@@ -463,7 +504,7 @@ singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page))
                 , Border.color Color.transparent100
                 ]
                 (listDue
-                    |> List.map (activeBalances model page duesInfo)
+                    |> List.map (activeBalances model page chain duesInfo)
                 )
 
           else
@@ -472,11 +513,17 @@ singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page))
 
 
 singleMaturedPosition :
-    { model | time : Posix, images : Images, tokenImages : TokenImages }
+    { model
+        | time : Posix
+        , images : Images
+        , tokenImages : TokenImages
+        , pools : Pools
+    }
     -> Page
+    -> Chain
     -> DuesInfo
     -> Element Msg
-singleMaturedPosition ({ tokenImages } as model) (Page ({ expandedSet } as page)) ({ pool, listDue } as duesInfo) =
+singleMaturedPosition ({ tokenImages } as model) (Page ({ expandedSet } as page)) chain ({ pool, listDue } as duesInfo) =
     column
         [ width fill
         , height shrink
@@ -516,7 +563,7 @@ singleMaturedPosition ({ tokenImages } as model) (Page ({ expandedSet } as page)
                 , Border.color Color.transparent100
                 ]
                 (listDue
-                    |> List.map (maturedBalances duesInfo page)
+                    |> List.map (maturedBalances model page chain duesInfo)
                 )
 
           else
@@ -639,17 +686,18 @@ discloser { images } { expandedSet } { pool } =
 
 
 activeBalances :
-    { model | images : Images }
+    { model | images : Images, pools : Pools }
     ->
         { page
             | chosenPool : Maybe Pool
             , chosenTokenIds : Set TokenId
             , tooltip : Maybe Tooltip
         }
+    -> Chain
     -> { duesInfo | pool : Pool }
     -> DueInfo
     -> Element Msg
-activeBalances { images } ({ chosenPool, chosenTokenIds } as page) { pool } { tokenId, debt, collateral } =
+activeBalances { images, pools } ({ chosenPool, chosenTokenIds } as page) chain { pool } { tokenId, debt, collateral } =
     row
         ([ width fill
          , height <| px 56
@@ -710,15 +758,35 @@ activeBalances { images } ({ chosenPool, chosenTokenIds } as page) { pool } { to
             ]
             (text "Collateral locked")
         , collateralBalance page pool tokenId collateral
+        , pools
+            |> Pools.getCollateralizedDebt pool
+            |> Maybe.map
+                (\collateralizedDebt ->
+                    newTabLink
+                        [ width shrink
+                        , height shrink
+                        , alignRight
+                        , centerY
+                        ]
+                        { url =
+                            OpenSea.url chain collateralizedDebt tokenId
+                        , label =
+                            Image.openSea images
+                                [ width <| px 20 ]
+                        }
+                )
+            |> Maybe.withDefault none
         ]
 
 
 maturedBalances :
-    { duesInfo | pool : Pool }
+    { model | images : Images, pools : Pools }
     -> { page | tooltip : Maybe Tooltip }
+    -> Chain
+    -> { duesInfo | pool : Pool }
     -> DueInfo
     -> Element Msg
-maturedBalances { pool } page { tokenId, debt, collateral } =
+maturedBalances { images, pools } page chain { pool } { tokenId, debt, collateral } =
     row
         ([ width fill
          , height <| px 56
@@ -750,6 +818,24 @@ maturedBalances { pool } page { tokenId, debt, collateral } =
             ]
             (text "Collateral forfeited")
         , collateralBalance page pool tokenId collateral
+        , pools
+            |> Pools.getCollateralizedDebt pool
+            |> Maybe.map
+                (\collateralizedDebt ->
+                    newTabLink
+                        [ width shrink
+                        , height shrink
+                        , alignRight
+                        , centerY
+                        ]
+                        { url =
+                            OpenSea.url chain collateralizedDebt tokenId
+                        , label =
+                            Image.openSea images
+                                [ width <| px 20 ]
+                        }
+                )
+            |> Maybe.withDefault none
         ]
 
 

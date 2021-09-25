@@ -342,6 +342,18 @@ decoderDuesUint =
         |> Pipeline.required "id" TokenId.decoder
         |> Pipeline.custom decoderDueUint
         |> Decode.list
+        |> Decode.map
+            (\list ->
+                list
+                    |> List.filterMap
+                        (\(( _, { collateral } ) as tuple) ->
+                            if collateral |> Uint.isZero then
+                                Nothing
+
+                            else
+                                Just tuple
+                        )
+            )
         |> Decode.map (Dict.fromList TokenId.sorter)
         |> Decode.map
             (\dict ->

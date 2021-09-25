@@ -11,6 +11,7 @@ import Data.Device as Device exposing (Device)
 import Data.Images as Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Pools as Pools exposing (Pools)
+import Data.Positions as Positions
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.TokenImages as TokenImages exposing (TokenImages)
@@ -464,6 +465,14 @@ update msg model =
                             |> User.updatePositions model.pools model.tokens value
                             |> (\({ positions } as successUser) ->
                                     ( { model | user = Success successUser }
+                                        |> (\newModel ->
+                                                { newModel
+                                                    | page =
+                                                        newModel.page
+                                                            |> Page.updateLendDashboard user.positions newModel
+                                                            |> Page.updateBorrowDashboard user.positions newModel
+                                                }
+                                           )
                                     , case positions of
                                         Success succcessPositions ->
                                             model.modal
