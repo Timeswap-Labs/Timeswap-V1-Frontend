@@ -336,7 +336,7 @@ hasTransaction ({ user } as model) ({ pool, duesOut } as modal) =
                                                 (\collateralOut ->
                                                     successBalances
                                                         |> Balances.hasEnough
-                                                            (pool.pair |> Pair.toAsset)
+                                                            (pool.pair |> Pair.toCollateral)
                                                             collateralOut
                                                 )
                                             |> Maybe.withDefault False
