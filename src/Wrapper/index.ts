@@ -19,6 +19,7 @@ const app = Elm.Main.init({
     images: Object.entries(images),
     tokenImages: Object.entries(tokenImages),
     whitelist: rinkeby,
+    user: null
   },
 });
 
