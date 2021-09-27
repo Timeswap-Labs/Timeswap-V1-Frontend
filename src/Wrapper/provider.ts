@@ -1,7 +1,6 @@
 import {
   BaseProvider,
   FallbackProvider,
-  getDefaultProvider,
   InfuraProvider,
   Web3Provider,
 } from "@ethersproject/providers";
@@ -20,23 +19,24 @@ export async function getProvider(
       weight: 1,
     };
 
-    // const infuraProvider = new InfuraProvider(
-    //   // await metamaskProvider.getNetwork(),
-    //   "rinkeby",
-    //   "099fc58e0de9451d80b18d7c74caa7c1"
-    // );
-    // const infuraConfig = {
-    //   provider: infuraProvider,
-    //   priority: 1,
-    //   stallTimeout: 8,
-    //   weight: 1,
-    // };
+    const infuraProvider = new InfuraProvider(
+      // await metamaskProvider.getNetwork(),
+      "rinkeby",
+      "ccbd29f5d62547e1ac0cde02f1366cb5"
+    );
+    const infuraConfig = {
+      provider: infuraProvider,
+      priority: 1,
+      stallTimeout: 8,
+      weight: 1,
+    };
 
-    return new FallbackProvider([metamaskConfig]);
+    return new FallbackProvider([metamaskConfig, infuraConfig]);
   } else if (provider) {
     const infuraProvider = new InfuraProvider(
-      await provider.getNetwork(),
-      "099fc58e0de9451d80b18d7c74caa7c1"
+      // await provider.getNetwork(),
+      "rinkeby",
+      "ccbd29f5d62547e1ac0cde02f1366cb5"
     );
     const infuraConfig = {
       provider: infuraProvider,
@@ -47,6 +47,20 @@ export async function getProvider(
 
     return new FallbackProvider([infuraConfig]);
   } else {
-    return getDefaultProvider("rinkeby");
+    // return getDefaultProvider("rinkeby");
+
+    const infuraProvider = new InfuraProvider(
+      // await provider.getNetwork(),
+      "rinkeby",
+      "ccbd29f5d62547e1ac0cde02f1366cb5"
+    );
+    const infuraConfig = {
+      provider: infuraProvider,
+      priority: 1,
+      stallTimeout: 8,
+      weight: 1,
+    };
+
+    return new FallbackProvider([infuraConfig]);
   }
 }

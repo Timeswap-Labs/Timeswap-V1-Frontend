@@ -2,7 +2,6 @@ import rinkeby from "../../whitelist/rinkeby.json";
 
 import { Web3Provider } from "@ethersproject/providers";
 
-import "regenerator-runtime/runtime";
 import { WhiteList } from "./whitelist";
 import { getProvider } from "./provider";
 import { pool } from "./pool";
@@ -17,110 +16,154 @@ import { faucetSigner } from "./faucet";
 
 export declare let window: any;
 
-export async function init(app: ElmApp<Ports>) {
+export async function elmUser(): Promise<{
+  gp: GlobalParams;
+  user?: { chainId: string; user: string };
+}> {
+  const gp = new GlobalParams();
+
+  if (window.ethereum && ethereum) {
+    gp.metamaskProvider = new Web3Provider(window.ethereum);
+    const accounts: string[] = await gp.metamaskProvider.send(
+      "eth_accounts",
+      []
+    );
+
+    if (accounts[0]) {
+      const chainId = ethereum.chainId;
+      return { gp, user: { chainId, user: accounts[0] } };
+    }
+  }
+
+  return { gp };
+}
+
+export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
   const provider = await getProvider();
   const network = await provider.getNetwork();
-  const globalParams = new GlobalParams(provider);
+  gp.provider = provider;
 
   const whitelist = new WhiteList(rinkeby, provider, network);
 
   pool(app, whitelist);
 
   lend(app, whitelist);
-  lendSigner(app, whitelist, globalParams);
+  lendSigner(app, whitelist, gp);
 
-  withdrawSigner(app, whitelist, globalParams);
+  withdrawSigner(app, whitelist, gp);
 
   borrow(app, whitelist);
-  borrowSigner(app, whitelist, globalParams);
+  borrowSigner(app, whitelist, gp);
 
   pay(app);
-  paySigner(app, whitelist, globalParams);
+  paySigner(app, whitelist, gp);
 
-  faucetSigner(app, globalParams);
+  faucetSigner(app, gp);
 
-  portsInit(app, whitelist, globalParams);
+  portsInit(app, whitelist, gp);
+  metamaskConnected(app, whitelist, gp);
+  metamaskChainChange(app, whitelist, gp);
+  metamaskAccountsChange(app, whitelist, gp);
 }
 
 function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
   app.ports.connectMetamask.subscribe(() => {
     if (window.ethereum && ethereum) {
       gp.metamaskProvider = new Web3Provider(window.ethereum);
-
-      gp.metamaskProvider
-        .send("eth_requestAccounts", [])
-        .then((accounts: string[]) => {
-          app.ports.metamaskMsg.send({
-            chainId: ethereum.chainId,
-            user: accounts[0],
-          });
-          gp.metamaskSigner = gp.metamaskProvider!.getSigner();
-
-          balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
-          lendPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
-          borrowPositionsInit(
-            app,
-            whitelist,
-            gp.metamaskProvider!,
-            accounts[0]
-          );
-        });
-
-      ethereum.on("chainChanged", (chainId: string) => {
-        ethereum
-          .request({ method: "eth_requestAccounts" })
-          .then((accounts: string[]) => {
-            app.ports.metamaskMsg.send({
-              chainId,
-              user: accounts[0],
-            });
-
-            gp.metamaskProvider = new Web3Provider(window.ethereum);
-            gp.metamaskSigner = gp.metamaskProvider.getSigner();
-
-            balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
-            lendPositionsInit(
-              app,
-              whitelist,
-              gp.metamaskProvider!,
-              accounts[0]
-            );
-            borrowPositionsInit(
-              app,
-              whitelist,
-              gp.metamaskProvider!,
-              accounts[0]
-            );
-          });
-      });
-
-      ethereum.on("accountsChanged", (accounts: string[]) => {
-        if (accounts[0]) {
-          app.ports.metamaskMsg.send({
-            chainId: ethereum.chainId,
-            user: accounts[0],
-          });
-
-          gp.metamaskProvider = new Web3Provider(window.ethereum);
-          gp.metamaskSigner = gp.metamaskProvider.getSigner();
-          balancesInit(app, whitelist, gp.metamaskProvider, accounts[0]);
-          lendPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
-          borrowPositionsInit(
-            app,
-            whitelist,
-            gp.metamaskProvider!,
-            accounts[0]
-          );
-        } else {
-          app.ports.metamaskMsg.send(null);
-        }
-      });
-
-      app.ports.disconnect.subscribe(() => {
-        app.ports.metamaskMsg.send(null);
-      });
+      metamaskConnect(app, whitelist, gp);
     } else {
       app.ports.noMetamask.send();
+    }
+  });
+
+  app.ports.disconnect.subscribe(() => {
+    app.ports.metamaskMsg.send(null);
+  });
+}
+
+function metamaskConnect(
+  app: ElmApp<Ports>,
+  whitelist: WhiteList,
+  gp: GlobalParams
+) {
+  gp.metamaskProvider!.send("eth_requestAccounts", []).then(
+    (accounts: string[]) => {
+      app.ports.metamaskMsg.send({
+        chainId: ethereum.chainId,
+        user: accounts[0],
+      });
+      gp.metamaskSigner = gp.metamaskProvider!.getSigner();
+
+      balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+      lendPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+      borrowPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+    }
+  );
+}
+
+function metamaskConnected(
+  app: ElmApp<Ports>,
+  whitelist: WhiteList,
+  gp: GlobalParams
+) {
+  gp.metamaskProvider!.send("eth_accounts", []).then((accounts: string[]) => {
+    if (accounts[0]) {
+      app.ports.metamaskMsg.send({
+        chainId: ethereum.chainId,
+        user: accounts[0],
+      });
+      gp.metamaskSigner = gp.metamaskProvider!.getSigner();
+
+      balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+      lendPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+      borrowPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+    }
+  });
+}
+
+function metamaskChainChange(
+  app: ElmApp<Ports>,
+  whitelist: WhiteList,
+  gp: GlobalParams
+) {
+  ethereum.on("chainChanged", (chainId: string) => {
+    gp.metamaskProvider!.send("eth_accounts", []).then((accounts: string[]) => {
+      if (accounts[0]) {
+        app.ports.metamaskMsg.send({
+          chainId,
+          user: accounts[0],
+        });
+
+        gp.metamaskProvider = new Web3Provider(window.ethereum);
+        gp.metamaskSigner = gp.metamaskProvider.getSigner();
+
+        balancesInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+        lendPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+        borrowPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+      }
+    });
+  });
+}
+
+function metamaskAccountsChange(
+  app: ElmApp<Ports>,
+  whitelist: WhiteList,
+  gp: GlobalParams
+) {
+  ethereum.on("accountsChanged", (accounts: string[]) => {
+    if (accounts[0]) {
+      app.ports.metamaskMsg.send({
+        chainId: ethereum.chainId,
+        user: accounts[0],
+      });
+
+      gp.metamaskProvider = new Web3Provider(window.ethereum);
+      gp.metamaskSigner = gp.metamaskProvider.getSigner();
+      balancesInit(app, whitelist, gp.metamaskProvider, accounts[0]);
+      lendPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+      borrowPositionsInit(app, whitelist, gp.metamaskProvider!, accounts[0]);
+    } else {
+      app.ports.metamaskMsg.send(null);
     }
   });
 }

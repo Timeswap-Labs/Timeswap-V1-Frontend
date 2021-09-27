@@ -1,4 +1,3 @@
-import "regenerator-runtime/runtime";
 import { BaseProvider } from "@ethersproject/providers";
 import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
 import { WhiteList } from "./whitelist";
