@@ -3,14 +3,8 @@ import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
 import { WhiteList } from "./whitelist";
 import { NativeToken } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { updateErc20Balance } from "./helper";
-import { Contract as MultiCallContract, Provider } from "ethcall";
 import erc20 from "./abi/erc20";
-import { FormatTypes, Interface } from "@ethersproject/abi";
 import { Contract } from "@ethersproject/contracts";
-
-const erc20Abi = JSON.parse(
-  new Interface(erc20).format(FormatTypes.json) as string
-);
 
 export async function balancesInit(
   app: ElmApp<Ports>,
@@ -18,29 +12,20 @@ export async function balancesInit(
   provider: BaseProvider,
   address: string
 ) {
-  const multiCallProvider = new Provider();
-  multiCallProvider.init(provider);
-
   const balancesToken: string[] = [];
   const balances: any[] = [];
-  const allowances: SdkAllowancesMsg[] = [];
+  const allowancesToken: string[] = [];
+  const allowances: any[] = [];
 
   for (const [tokenAddress, token] of whitelist.tokenEntries()) {
     if (token instanceof ERC20Token) {
       const connectedToken = token.connect(provider);
-      const multiCallToken = new MultiCallContract(token.address, erc20Abi);
 
       balancesToken.push(tokenAddress);
-      balances.push(multiCallToken.balanceOf(address));
+      balances.push(connectedToken.balanceOf(address));
 
-      const allowance = await connectedToken.allowance(
-        address,
-        whitelist.convenience
-      );
-      allowances.push({
-        erc20: tokenAddress,
-        allowance: allowance.value.toString(),
-      });
+      allowancesToken.push(tokenAddress);
+      allowances.push(connectedToken.allowance(address, whitelist.convenience));
 
       const contract = new Contract(connectedToken.address, erc20, provider);
 
@@ -70,7 +55,7 @@ export async function balancesInit(
       });
     } else if (token instanceof NativeToken) {
       balancesToken.push(tokenAddress);
-      balances.push(multiCallProvider.getEthBalance(address));
+      balances.push(token.connect(provider).getBalance(address));
 
       provider.removeAllListeners("block");
       provider.on("block", async () => {
@@ -82,15 +67,23 @@ export async function balancesInit(
     }
   }
 
-  const balancesResult = await multiCallProvider.tryAll(balances);
+  const balancesResult = await Promise.all(balances);
+  const allowancesResult = await Promise.all(allowances);
 
   app.ports.sdkBalancesMsg.send(
     balancesToken.map((tokenAddress, index) => {
       return {
         token: tokenAddress,
-        balance: balancesResult[index].toString(),
+        balance: balancesResult[index].value.toString(),
       };
     })
   );
-  app.ports.sdkAllowancesMsg.send(allowances);
+  app.ports.sdkAllowancesMsg.send(
+    allowancesToken.map((tokenAddress, index) => {
+      return {
+        erc20: tokenAddress,
+        allowance: allowancesResult[index].value.toString(),
+      };
+    })
+  );
 }

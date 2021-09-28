@@ -3,14 +3,8 @@ import { WhiteList } from "./whitelist";
 import { updateErc20Balance } from "./helper";
 import { Uint128 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { ERC20Token, Pool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Contract as MultiCallContract, Provider } from "ethcall";
 import erc20 from "./abi/erc20";
-import { FormatTypes, Interface } from "@ethersproject/abi";
 import { Contract } from "@ethersproject/contracts";
-
-const erc20Abi = JSON.parse(
-  new Interface(erc20).format(FormatTypes.json) as string
-);
 
 export async function lendPositionsInit(
   app: ElmApp<Ports>,
@@ -18,9 +12,6 @@ export async function lendPositionsInit(
   provider: BaseProvider,
   address: string
 ) {
-  const multiCallProvider = new Provider();
-  multiCallProvider.init(provider);
-
   const lendPositionsToken: {
     asset: string;
     collateral: string;
@@ -39,11 +30,6 @@ export async function lendPositionsInit(
   } of whitelist.poolEntries()) {
     const bondToken = bond.connect(provider);
     const insuranceToken = insurance.connect(provider);
-    const multiCallBondToken = new MultiCallContract(bond.address, erc20Abi);
-    const multiCallInsuranceToken = new MultiCallContract(
-      insurance.address,
-      erc20Abi
-    );
 
     lendPositionsToken.push({
       asset,
@@ -51,8 +37,8 @@ export async function lendPositionsInit(
       maturity,
       pool,
     });
-    lendPositions.push(multiCallBondToken.balanceOf(address));
-    lendPositions.push(multiCallInsuranceToken.balanceOf(address));
+    lendPositions.push(bondToken.balanceOf(address));
+    lendPositions.push(insuranceToken.balanceOf(address));
 
     updateBalances(
       app,
@@ -62,14 +48,11 @@ export async function lendPositionsInit(
       pool,
       bondToken,
       insuranceToken,
-      multiCallBondToken,
-      multiCallInsuranceToken,
-      multiCallProvider,
       address
     );
   }
 
-  const result = await multiCallProvider.tryAll(lendPositions);
+  const result = await Promise.all(lendPositions);
 
   for (const [
     index,
@@ -78,8 +61,8 @@ export async function lendPositionsInit(
     const base = index * 2;
     const now = Math.floor(Date.now() / 1000);
 
-    const bond = result[base].toString();
-    const insurance = result[base + 1].toString();
+    const bond = result[base];
+    const insurance = result[base + 1];
 
     if (!(bond === "0" && insurance === "0")) {
       if (maturity <= now) {
@@ -120,53 +103,108 @@ export async function borrowPositionsInit(
   provider: BaseProvider,
   address: string
 ) {
-  const borrowPositions: SdkPositionsMsg[] = [];
+  app.ports.sdkPositionsMsg.send(
+    await Promise.all(
+      whitelist
+        .poolEntries()
+        .map(async ({ asset, collateral, maturity, collateralizedDebt }) => {
+          const cdToken = collateralizedDebt.connect(provider);
+          const startBlock = (await cdToken.dueOf(0))[2] - 1;
 
-  for (const {
-    asset,
-    collateral,
-    maturity,
-    collateralizedDebt,
-  } of whitelist.poolEntries()) {
-    const tokenBalanceIn = collateralizedDebt.filters.Transfer(null, address);
-    const tokenBalanceOut = collateralizedDebt.filters.Transfer(address);
+          return { asset, collateral, maturity, cdToken, startBlock };
+        })
+        .map(async (params) => {
+          const { asset, collateral, maturity, cdToken, startBlock } =
+            await params;
 
-    const cdToken = collateralizedDebt.connect(provider);
+          const tokenBalanceIn = cdToken.filters.Transfer(null, address);
+          const tokenBalanceOut = cdToken.filters.Transfer(address);
 
-    const startBlock = (await cdToken.dueOf(0))[2] - 1;
+          const tokenIdsIn = cdToken.queryFilter(tokenBalanceIn, startBlock);
+          const tokenIdsOut = cdToken.queryFilter(tokenBalanceOut, startBlock);
 
-    const tokenIdsIn = (
-      await cdToken.queryFilter(tokenBalanceIn, startBlock)
-    ).map((event) => event.args![2]);
-    const tokenIdsOut = (
-      await cdToken.queryFilter(tokenBalanceOut, startBlock)
-    ).map((event) => event.args![2]);
+          return {
+            asset,
+            collateral,
+            maturity,
+            cdToken,
+            tokenIdsIn,
+            tokenIdsOut,
+          };
+        })
+        .map(async (params) => {
+          const {
+            asset,
+            collateral,
+            maturity,
+            cdToken,
+            tokenIdsIn,
+            tokenIdsOut,
+          } = await params;
 
-    const tokenIds = tokenIdsIn.filter((id) => !tokenIdsOut.includes(id));
-    const dues: {
-      id: string;
-      debt: string;
-      collateral: string;
-    }[] = [];
+          const tokenIds = new Map<string, number>();
 
-    for (const id of tokenIds) {
-      const due = await cdToken.dueOf(id);
+          (await tokenIdsIn)
+            .map((event) => {
+              return {
+                blockNumber: event.blockNumber,
+                id: event.args![2].toString(),
+              };
+            })
+            .forEach(({ blockNumber, id }) => {
+              tokenIds.set(id, blockNumber);
+            });
+          (await tokenIdsOut)
+            .map((event) => {
+              return {
+                blockNumber: event.blockNumber,
+                id: event.args![2].toString(),
+              };
+            })
+            .forEach(({ blockNumber, id }) => {
+              if (tokenIds.get(id)! < blockNumber) {
+                tokenIds.delete(id);
+              }
+            });
 
-      if (!(due[0].toBigInt() === 0n && due[1].toBigInt() === 0n)) {
-        dues.push({
-          id: id.toString(),
-          debt: due[0].toString(),
-          collateral: due[1].toString(),
-        });
-      }
-    }
+          return {
+            asset,
+            collateral,
+            maturity,
+            cdToken,
+            tokenIds: Array.from(tokenIds.keys()),
+          };
+        })
+        .map(async (params) => {
+          const { asset, collateral, maturity, cdToken, tokenIds } =
+            await params;
 
-    if (dues.length !== 0) {
-      borrowPositions.push({ asset, collateral, maturity, dues });
-    }
-  }
+          const dues = tokenIds.map((id) => cdToken.dueOf(id));
 
-  app.ports.sdkPositionsMsg.send(borrowPositions);
+          return { asset, collateral, maturity, dues, tokenIds };
+        })
+        .map(async (params) => {
+          const { asset, collateral, maturity, dues, tokenIds } = await params;
+
+          return {
+            asset,
+            collateral,
+            maturity,
+            dues: (await Promise.all(dues))
+              .map(([debt, collateral], index) => {
+                return {
+                  id: tokenIds[index],
+                  debt: debt.toString(),
+                  collateral: collateral.toString(),
+                };
+              })
+              .filter(
+                ({ debt, collateral }) => !(debt === "0" && collateral === "0")
+              ),
+          };
+        })
+    )
+  );
 }
 
 function updateBalances(
@@ -177,44 +215,35 @@ function updateBalances(
   pool: Pool,
   bondToken: ERC20Token,
   insuranceToken: ERC20Token,
-  multiCallBondToken: MultiCallContract,
-  multiCallInsuranceToken: MultiCallContract,
-  multiCallProvider: Provider,
   address: string
 ) {
   const now = Math.floor(Date.now() / 1000);
 
   const updateErc20BM = async () => {
-    const bondBalance = multiCallBondToken.balanceOf(address);
-    const insuranceBalance = multiCallInsuranceToken.balanceOf(address);
-    const result = await multiCallProvider.tryAll([
-      bondBalance,
-      insuranceBalance,
-    ]);
+    const bondBalance = bondToken.balanceOf(address);
+    const insuranceBalance = insuranceToken.balanceOf(address);
+    const result = await Promise.all([bondBalance, insuranceBalance]);
 
     app.ports.sdkPositionsMsg.send([
       {
         asset,
         collateral,
         maturity,
-        bond: result[0].toString(),
-        insurance: result[1].toString(),
+        bond: result[0].value.toString(),
+        insurance: result[1].value.toString(),
       },
     ]);
   };
 
   const updateErc20AM = async () => {
-    const bondBalance = multiCallBondToken.balanceOf(address);
-    const insuranceBalance = multiCallInsuranceToken.balanceOf(address);
-    const result = await multiCallProvider.tryAll([
-      bondBalance,
-      insuranceBalance,
-    ]);
+    const bondBalance = bondToken.balanceOf(address);
+    const insuranceBalance = insuranceToken.balanceOf(address);
+    const result = await Promise.all([bondBalance, insuranceBalance]);
 
     const { asset: assetOut, collateral: collateralOut } =
       await pool.calculateWithdraw({
-        bond: new Uint128(result[0].toBigInt()),
-        insurance: new Uint128(result[1].toBigInt()),
+        bond: new Uint128(result[0].value),
+        insurance: new Uint128(result[1].value),
       });
 
     app.ports.sdkPositionsMsg.send([

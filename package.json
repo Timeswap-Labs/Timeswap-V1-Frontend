@@ -5,11 +5,11 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
+    "@0xsequence/multicall": "^0.28.0",
     "@ethersproject/contracts": "^5.4.1",
     "@ethersproject/providers": "^5.4.5",
     "@timeswap-labs/timeswap-v1-sdk": "^0.1.31",
-    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.14",
-    "ethcall": "^4.0.9"
+    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.14"
   },
   "devDependencies": {
     "@parcel/resolver-glob": "^2.0.0-rc.0",

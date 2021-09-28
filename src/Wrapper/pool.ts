@@ -1,5 +1,4 @@
 import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Contract as MultiCallContract, Provider } from "ethcall";
 import { WhiteList } from "./whitelist";
 import timeswapPair from "./abi/pair";
 import {
@@ -8,10 +7,14 @@ import {
   Uint16,
   Uint256,
 } from "@timeswap-labs/timeswap-v1-sdk-core";
-import { FormatTypes } from "@ethersproject/abi";
 import { Contract } from "@ethersproject/contracts";
+import { GlobalParams } from "./global";
 
-export async function pool(app: ElmApp<Ports>, whitelist: WhiteList) {
+export async function pool(
+  app: ElmApp<Ports>,
+  whitelist: WhiteList,
+  gp: GlobalParams
+) {
   const params: {
     asset: string;
     collateral: string;
@@ -22,18 +25,10 @@ export async function pool(app: ElmApp<Ports>, whitelist: WhiteList) {
 
   const now = Math.floor(Date.now() / 1000);
 
-  const multiCallProvider = new Provider();
-  await multiCallProvider.init(whitelist.provider);
-
   for (const { asset, collateral, maturity, pool } of whitelist.poolEntries()) {
     if (now < maturity) {
       params.push({ asset, collateral, maturity, pool });
-      const pairContract = new MultiCallContract(
-        pool.pairAddress()!,
-        JSON.parse(
-          pool.pairContract()!.interface.format(FormatTypes.json) as string
-        )
-      );
+      const pairContract = pool.pairContract()!.connect(gp.provider);
 
       calls.push(pairContract.constantProduct(maturity));
       calls.push(pairContract.totalReserves(maturity));
@@ -43,9 +38,9 @@ export async function pool(app: ElmApp<Ports>, whitelist: WhiteList) {
       calls.push(pairContract.protocolFee());
 
       const pair = new Contract(
-        pool.pairContract()!.address,
+        pairContract.address,
         timeswapPair,
-        pool.provider()
+        gp.provider
       );
       const filter = pair.filters.Sync(maturity);
       pair.removeAllListeners(filter);
@@ -76,7 +71,7 @@ export async function pool(app: ElmApp<Ports>, whitelist: WhiteList) {
     }
   }
 
-  const results = await multiCallProvider.tryAll(calls);
+  const results = await Promise.all(calls);
 
   for (const [
     index,
