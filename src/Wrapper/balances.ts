@@ -1,15 +1,15 @@
-import { BaseProvider } from "@ethersproject/providers";
 import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
 import { WhiteList } from "./whitelist";
 import { NativeToken } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { updateErc20Balance } from "./helper";
 import erc20 from "./abi/erc20";
 import { Contract } from "@ethersproject/contracts";
+import { GlobalParams } from "./global";
 
 export async function balancesInit(
   app: ElmApp<Ports>,
   whitelist: WhiteList,
-  provider: BaseProvider,
+  gp: GlobalParams,
   address: string
 ) {
   const balancesToken: string[] = [];
@@ -19,7 +19,7 @@ export async function balancesInit(
 
   for (const [tokenAddress, token] of whitelist.tokenEntries()) {
     if (token instanceof ERC20Token) {
-      const connectedToken = token.connect(provider);
+      const connectedToken = token.connect(gp.metamaskProviderMulti);
 
       balancesToken.push(tokenAddress);
       balances.push(connectedToken.balanceOf(address));
@@ -27,7 +27,11 @@ export async function balancesInit(
       allowancesToken.push(tokenAddress);
       allowances.push(connectedToken.allowance(address, whitelist.convenience));
 
-      const contract = new Contract(connectedToken.address, erc20, provider);
+      const contract = new Contract(
+        connectedToken.address,
+        erc20,
+        gp.metamaskProvider
+      );
 
       const allowanceFilter = contract.filters.Approval(
         address,
@@ -55,11 +59,15 @@ export async function balancesInit(
       });
     } else if (token instanceof NativeToken) {
       balancesToken.push(tokenAddress);
-      balances.push(token.connect(provider).getBalance(address));
+      balances.push(
+        token.connect(gp.metamaskProviderMulti).getBalance(address)
+      );
 
-      provider.removeAllListeners("block");
-      provider.on("block", async () => {
-        const balance = await token.connect(provider).getBalance(address);
+      gp.metamaskProvider.removeAllListeners("block");
+      gp.metamaskProvider.on("block", async () => {
+        const balance = await token
+          .connect(gp.metamaskProviderMulti)
+          .getBalance(address);
         app.ports.sdkBalancesMsg.send([
           { token: tokenAddress, balance: balance.value.toString() },
         ]);

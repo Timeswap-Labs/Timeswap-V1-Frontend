@@ -11,49 +11,49 @@ const { MulticallProvider } = providers;
 
 export class GlobalParams {
   private _provider?: BaseProvider;
+  private _providerMulti?: BaseProvider;
 
-  private _metamask?: Web3Provider;
-  private _metamaskProvider?: BaseProvider;
+  private _metamaskProvider?: Web3Provider;
+  private _metamaskProviderMulti?: BaseProvider;
+
   private _metamaskSigner?: Signer;
 
   public get provider(): BaseProvider {
     return this._provider!;
   }
+
   public set provider(value: BaseProvider) {
-    this._provider = new MulticallProvider(value);
+    this._provider = value;
+    this._providerMulti = new MulticallProvider(this._provider);
   }
 
-  public get metamask(): Web3Provider {
-    return this._metamask!;
+  public get providerMulti(): BaseProvider {
+    return this._providerMulti!;
   }
-  public set metamask(
+
+  public get metamaskProvider(): Web3Provider {
+    return this._metamaskProvider!;
+  }
+
+  public set metamaskProvider(
     value: ExternalProvider | JsonRpcFetchFunc | Web3Provider
   ) {
     if (value instanceof Web3Provider) {
-      this._metamask = value;
+      this._metamaskProvider = value;
     } else {
-      this._metamask = new Web3Provider(value);
-      this._metamaskProvider = new MulticallProvider(this._metamask);
+      this._metamaskProvider = new Web3Provider(value);
     }
+    this._metamaskProviderMulti = new MulticallProvider(this._metamaskProvider);
   }
 
-  public get metamaskProvider(): BaseProvider {
-    return this._metamaskProvider!;
-  }
-  public set metamaskProvider(
-    value: ExternalProvider | JsonRpcFetchFunc | BaseProvider
-  ) {
-    if (value instanceof BaseProvider) {
-      this._metamaskProvider = new MulticallProvider(value);
-    } else {
-      this._metamask = new Web3Provider(value);
-      this._metamaskProvider = new MulticallProvider(this._metamask);
-    }
+  public get metamaskProviderMulti(): BaseProvider {
+    return this._metamaskProviderMulti!;
   }
 
   public get metamaskSigner(): Signer {
     return this._metamaskSigner!;
   }
+
   public set metamaskSigner(value: Signer) {
     this._metamaskSigner = value;
   }

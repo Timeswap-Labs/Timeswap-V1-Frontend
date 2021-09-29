@@ -16,10 +16,10 @@ export class WhiteList {
       [collateral: string]: { [maturity: number]: PoolValue };
     };
   } = {};
-  private tokenIds?: Map<
+  private tokenIds: Map<
     string,
-    Map<number, { debt: string; collateral: string }>
-  >;
+    Map<string, { debt: string; collateral: string }>
+  > = new Map();
 
   constructor(
     whitelist: WhitelistInput,
@@ -48,11 +48,10 @@ export class WhiteList {
       "Ether"
     );
 
-    whitelist.pairs.forEach(
-      ({ asset, collateral, pair }) =>
-        ((this.pairs[asset] ?? defaultValue(this.pairs, asset))[collateral] =
-          pair)
-    );
+    whitelist.pairs.forEach(({ asset, collateral, pair }) => {
+      this.pairs[asset] = this.pairs[asset] ?? {};
+      this.pairs[asset][collateral] = pair;
+    });
 
     whitelist.pairs.forEach(({ asset, collateral, pools }) => {
       pools.forEach(
@@ -66,8 +65,9 @@ export class WhiteList {
             this.pairs[asset][collateral]
           );
 
-          ((this.pools[asset] ?? defaultValue(this.pools, asset))[collateral] ??
-            defaultValue(this.pools[asset], collateral))[maturity] = {
+          this.pools[asset] = this.pools[asset] ?? {};
+          this.pools[asset][collateral] = this.pools[asset][collateral] ?? {};
+          this.pools[asset][collateral][maturity] = {
             pool,
             liquidity: new ERC20Token(provider, network.chainId, 18, liquidity),
             bond: new ERC20Token(provider, network.chainId, 18, bond),
@@ -113,6 +113,19 @@ export class WhiteList {
     maturity: number
   ): ERC20Token {
     return this.pools[asset][collateral][maturity].insurance;
+  }
+
+  getTokenIds(cdAddress: string) {
+    return this.tokenIds.get(cdAddress)!.entries();
+  }
+
+  pushTokenId(cdAddress: string, id: string, debt: string, collateral: string) {
+    this.tokenIds.set(cdAddress, this.tokenIds.get(cdAddress) ?? new Map());
+    this.tokenIds.get(cdAddress)!.set(id, { debt, collateral });
+  }
+
+  popTokenId(cdAddress: string, id: string) {
+    this.tokenIds.get(cdAddress)!.delete(id);
   }
 
   tokenEntries() {
@@ -174,23 +187,4 @@ interface PoolValue {
   bond: ERC20Token;
   insurance: ERC20Token;
   collateralizedDebt: Contract;
-}
-
-interface PoolEntry {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  pool: Pool;
-  liquidity: ERC20Token;
-  bond: ERC20Token;
-  insurance: ERC20Token;
-  collateralizedDebt: Contract;
-}
-
-function defaultValue<V>(
-  map: { [key1: string]: { [key2: string]: V } },
-  key: string
-): { [key: string]: V } {
-  map[key] = {};
-  return map[key];
 }
