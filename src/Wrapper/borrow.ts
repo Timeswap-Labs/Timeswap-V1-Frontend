@@ -63,19 +63,19 @@ async function borrowQueryCalculation(
         new Uint40(query.percent),
         currentTime
       );
-      const debtIn = due.debt.value.toString();
-      const collateralIn = due.collateral.value.toString();
+      const debtIn = due.debt.toString();
+      const collateralIn = due.collateral.toString();
 
       const maxDebt = calculateMaxValue(
         due.debt.sub(query.assetOut),
         query.slippage
       )
         .add(query.assetOut)
-        .value.toString();
+        .toString();
       const maxCollateral = calculateMaxValue(
         due.collateral,
         query.slippage
-      ).value.toString();
+      ).toString();
 
       const apr = calculateApr(due.debt, query.assetOut, maturity, currentTime);
       const cf = calculateCf(
@@ -96,7 +96,7 @@ async function borrowQueryCalculation(
           collateralIn,
           maxDebt,
           maxCollateral,
-          apr: Number(apr.value) / 10000,
+          apr: Number(apr.toBigInt()) / 10000,
           cf,
         },
       });
@@ -121,7 +121,7 @@ async function borrowQueryCalculation(
         debtIn,
         currentTime
       );
-      const collateralIn = due.collateral.value.toString();
+      const collateralIn = due.collateral.toString();
 
       const percent = await calculatePercent(
         pool,
@@ -133,7 +133,7 @@ async function borrowQueryCalculation(
       const maxCollateral = calculateMaxValue(
         due.collateral,
         query.slippage
-      ).value.toString();
+      ).toString();
 
       const apr = calculateApr(debtIn, query.assetOut, maturity, currentTime);
       const cf = calculateCf(
@@ -150,10 +150,10 @@ async function borrowQueryCalculation(
         assetOut: query.assetOut,
         debtIn: query.debtIn,
         result: {
-          percent: Number(percent.value),
+          percent: Number(percent.toBigInt()),
           collateralIn,
           maxCollateral,
-          apr: Number(apr.value) / 10000,
+          apr: Number(apr.toBigInt()) / 10000,
           cf,
         },
       });
@@ -177,7 +177,7 @@ async function borrowQueryCalculation(
         new Uint112(query.collateralIn),
         currentTime
       );
-      const debtIn = due.debt.value.toString();
+      const debtIn = due.debt.toString();
 
       const percent = await calculatePercent(
         pool,
@@ -191,7 +191,7 @@ async function borrowQueryCalculation(
         query.slippage
       )
         .add(query.assetOut)
-        .value.toString();
+        .toString();
 
       const apr = calculateApr(due.debt, query.assetOut, maturity, currentTime);
       const cf = calculateCf(
@@ -208,10 +208,10 @@ async function borrowQueryCalculation(
         assetOut: query.assetOut,
         collateralIn: query.collateralIn,
         result: {
-          percent: Number(percent.value),
+          percent: Number(percent.toBigInt()),
           debtIn,
           maxDebt,
-          apr: Number(apr.value) / 10000,
+          apr: Number(apr.toBigInt()) / 10000,
           cf,
         },
       });
@@ -251,7 +251,7 @@ function calculateCf(
   return new Uint256(assetOut)
     .mul(pow(10n, BigInt(whitelist.getToken(collateral).decimals)))
     .div(collateralIn)
-    .value.toString();
+    .toString();
 }
 
 function calculateMaxValue(value: Uint112, slippage: number): Uint256 {

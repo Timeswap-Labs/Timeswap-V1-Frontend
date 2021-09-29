@@ -68,11 +68,11 @@ async function lendQueryCalculation(
         new Uint40(query.percent),
         currentTime
       );
-      const bondOut = claims.bond.value.toString();
-      const insuranceOut = claims.insurance.value.toString();
+      const bondOut = claims.bond.toString();
+      const insuranceOut = claims.insurance.toString();
 
       const timeSlippage =
-        currentTime.add(3 * 60).value >= maturity.value
+        currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
           ? maturity.sub(1)
           : currentTime.add(3 * 60);
       const { claims: claimsSlippage } = await pool.calculateLendGivenPercent(
@@ -86,11 +86,11 @@ async function lendQueryCalculation(
         query.slippage
       )
         .add(query.assetIn)
-        .value.toString();
+        .toString();
       const minInsurance = calculateMinValue(
         claimsSlippage.insurance,
         query.slippage
-      ).value.toString();
+      ).toString();
 
       const apr = calculateApr(
         claims.bond,
@@ -116,7 +116,7 @@ async function lendQueryCalculation(
           insuranceOut,
           minBond,
           minInsurance,
-          apr: Number(apr.value) / 10000,
+          apr: Number(apr.toBigInt()) / 10000,
           cf,
         },
       });
@@ -141,7 +141,7 @@ async function lendQueryCalculation(
         bondOut,
         currentTime
       );
-      const insuranceOut = claims.insurance.value.toString();
+      const insuranceOut = claims.insurance.toString();
 
       const percent = await calculatePercent(
         pool,
@@ -151,7 +151,7 @@ async function lendQueryCalculation(
       );
 
       const timeSlippage =
-        currentTime.add(3 * 60).value >= maturity.value
+        currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
           ? maturity.sub(1)
           : currentTime.add(3 * 60);
       const { claims: claimsSlippage } = await pool.calculateLendGivenBond(
@@ -163,7 +163,7 @@ async function lendQueryCalculation(
       const minInsurance = calculateMinValue(
         claimsSlippage.insurance,
         query.slippage
-      ).value.toString();
+      ).toString();
 
       const apr = calculateApr(bondOut, query.assetIn, maturity, currentTime);
       const cf = calculateCf(
@@ -180,10 +180,10 @@ async function lendQueryCalculation(
         assetIn: query.assetIn,
         bondOut: query.bondOut,
         result: {
-          percent: Number(percent.value),
+          percent: Number(percent.toBigInt()),
           insuranceOut,
           minInsurance,
-          apr: Number(apr.value) / 10000,
+          apr: Number(apr.toBigInt()) / 10000,
           cf,
         },
       });
@@ -207,7 +207,7 @@ async function lendQueryCalculation(
         new Uint128(query.insuranceOut),
         currentTime
       );
-      const bondOut = claims.bond.value.toString();
+      const bondOut = claims.bond.toString();
 
       const percent = await calculatePercent(
         pool,
@@ -217,7 +217,7 @@ async function lendQueryCalculation(
       );
 
       const timeSlippage =
-        currentTime.add(3 * 60).value >= maturity.value
+        currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
           ? maturity.sub(1)
           : currentTime.add(3 * 60);
       const { claims: claimsSlippage } = await pool.calculateLendGivenInsurance(
@@ -231,7 +231,7 @@ async function lendQueryCalculation(
         query.slippage
       )
         .add(query.assetIn)
-        .value.toString();
+        .toString();
 
       const apr = calculateApr(
         claims.bond,
@@ -253,10 +253,10 @@ async function lendQueryCalculation(
         assetIn: query.assetIn,
         insuranceOut: query.insuranceOut,
         result: {
-          percent: Number(percent.value),
+          percent: Number(percent.toBigInt()),
           bondOut,
           minBond,
-          apr: Number(apr.value) / 10000,
+          apr: Number(apr.toBigInt()) / 10000,
           cf,
         },
       });
@@ -296,7 +296,7 @@ function calculateCf(
   return new Uint256(assetIn)
     .mul(pow(10n, BigInt(whitelist.getToken(collateral).decimals)))
     .div(insuranceOut)
-    .value.toString();
+    .toString();
 }
 
 function calculateMinValue(value: Uint128, slippage: number): Uint256 {

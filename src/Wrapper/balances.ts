@@ -1,6 +1,6 @@
-import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
+import { ERC20Token, NativeToken } from "@timeswap-labs/timeswap-v1-sdk";
 import { WhiteList } from "./whitelist";
-import { NativeToken } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { updateErc20Balance } from "./helper";
 import erc20 from "./abi/erc20";
 import { Contract } from "@ethersproject/contracts";
@@ -13,9 +13,9 @@ export async function balancesInit(
   address: string
 ) {
   const balancesToken: string[] = [];
-  const balances: any[] = [];
+  const balances: Promise<Uint256>[] = [];
   const allowancesToken: string[] = [];
-  const allowances: any[] = [];
+  const allowances: Promise<Uint256>[] = [];
 
   for (const [tokenAddress, token] of whitelist.tokenEntries()) {
     if (token instanceof ERC20Token) {
@@ -69,7 +69,7 @@ export async function balancesInit(
           .connect(gp.metamaskProviderMulti)
           .getBalance(address);
         app.ports.sdkBalancesMsg.send([
-          { token: tokenAddress, balance: balance.value.toString() },
+          { token: tokenAddress, balance: balance.toString() },
         ]);
       });
     }
@@ -82,7 +82,7 @@ export async function balancesInit(
     balancesToken.map((tokenAddress, index) => {
       return {
         token: tokenAddress,
-        balance: balancesResult[index].value.toString(),
+        balance: balancesResult[index].toString(),
       };
     })
   );
@@ -90,7 +90,7 @@ export async function balancesInit(
     allowancesToken.map((tokenAddress, index) => {
       return {
         erc20: tokenAddress,
-        allowance: allowancesResult[index].value.toString(),
+        allowance: allowancesResult[index].toString(),
       };
     })
   );

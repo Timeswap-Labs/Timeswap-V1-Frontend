@@ -54,15 +54,15 @@ export async function pool(
         pool.updateCache(cache);
 
         const apr = await pool.calculateApr();
-        const cf = (await pool.calculateCf()).value.toString();
+        const cf = (await pool.calculateCf()).toString();
 
         app.ports.sdkPoolsMsg.send([
           {
             asset,
             collateral,
             maturity,
-            assetLiquidity: cache.reserves.asset.value.toString(),
-            collateralLiquidity: cache.reserves.collateral.value.toString(),
+            assetLiquidity: cache.reserves.asset.toString(),
+            collateralLiquidity: cache.reserves.collateral.toString(),
             apr,
             cf,
           },
@@ -82,15 +82,15 @@ export async function pool(
     pool.setCache(cache);
 
     const apr = await pool.calculateApr();
-    const cf = (await pool.calculateCf()).value.toString();
+    const cf = (await pool.calculateCf()).toString();
 
     app.ports.sdkPoolsMsg.send([
       {
         asset,
         collateral,
         maturity,
-        assetLiquidity: cache.reserves.asset.value.toString(),
-        collateralLiquidity: cache.reserves.collateral.value.toString(),
+        assetLiquidity: cache.reserves.asset.toString(),
+        collateralLiquidity: cache.reserves.collateral.toString(),
         apr,
         cf,
       },

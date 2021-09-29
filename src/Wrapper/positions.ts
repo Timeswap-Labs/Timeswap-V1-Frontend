@@ -67,7 +67,7 @@ export async function lendPositionsInit(
     const bond = result[base];
     const insurance = result[base + 1];
 
-    if (!(bond.value === 0n && insurance.value === 0n)) {
+    if (!(bond.toBigInt() === 0n && insurance.toBigInt() === 0n)) {
       if (maturity <= now) {
         const { asset: assetOut, collateral: collateralOut } =
           await pool.calculateWithdraw({
@@ -79,10 +79,10 @@ export async function lendPositionsInit(
             asset,
             collateral,
             maturity,
-            bond: bond.value.toString(),
-            insurance: insurance.value.toString(),
-            assetOut: assetOut.value.toString(),
-            collateralOut: collateralOut.value.toString(),
+            bond: bond.toString(),
+            insurance: insurance.toString(),
+            assetOut: assetOut.toString(),
+            collateralOut: collateralOut.toString(),
           },
         ]);
       } else {
@@ -91,8 +91,8 @@ export async function lendPositionsInit(
             asset,
             collateral,
             maturity,
-            bond: bond.value.toString(),
-            insurance: insurance.value.toString(),
+            bond: bond.toString(),
+            insurance: insurance.toString(),
           },
         ]);
       }
@@ -173,7 +173,6 @@ export async function borrowPositionsInit(
 
           const pair = whitelist.getPairAddress(asset, collateral);
           const pairContract = new Contract(pair, pairAbi, gp.metamaskProvider);
-          console.log(pairContract.filters);
           const payFilter = pairContract.filters.Pay(); // TODO: Fix this
 
           pairContract.on(payFilter, async (pairMaturity) => {
@@ -289,8 +288,8 @@ function updateBalances(
         asset,
         collateral,
         maturity,
-        bond: result[0].value.toString(),
-        insurance: result[1].value.toString(),
+        bond: result[0].toString(),
+        insurance: result[1].toString(),
       },
     ]);
   };
@@ -311,10 +310,10 @@ function updateBalances(
         asset,
         collateral,
         maturity,
-        bond: result[0].value.toString(),
-        insurance: result[1].value.toString(),
-        assetOut: assetOut.value.toString(),
-        collateralOut: collateralOut.value.toString(),
+        bond: result[0].toString(),
+        insurance: result[1].toString(),
+        assetOut: assetOut.toString(),
+        collateralOut: collateralOut.toString(),
       },
     ]);
   };
