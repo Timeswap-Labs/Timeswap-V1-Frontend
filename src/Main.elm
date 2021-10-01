@@ -696,8 +696,8 @@ html model =
                         , Font.size 24
                         , Font.color Color.transparent500
                         ]
-                        (text """Tablet and Mobile view coming soon. 
-                        Use our dapp in desktop view. 
+                        (text """Tablet and Mobile view coming soon.
+                        Use our dapp in desktop view.
                         """)
                     ]
                 ]
@@ -708,19 +708,20 @@ html model =
         --      , Background.color Color.dark400
         --      ]
         --         ++ (if Device.checkAsideStatus model.device then
-        --                 [ lazy Aside.view model |> inFront ]
+        --                 [ Lazy.lazy Aside.view model |> inFront ]
         --             else
         --                 model.service
         --                     |> Maybe.map
         --                         (\service ->
         --                             [ Service.view msgs model service
-        --                                 |> (\or ->
+        --                                 |> Element.map
+        --                                     (\or ->
         --                                         case or of
-        --                                             Either element ->
-        --                                                 element |> Element.map ServiceMsg
-        --                                             Or element ->
-        --                                                 element
-        --                                    )
+        --                                             Either serviceMsg ->
+        --                                                 serviceMsg |> ServiceMsg
+        --                                             Or msg ->
+        --                                                 msg
+        --                                     )
         --                                 |> inFront
         --                             ]
         --                         )
@@ -729,7 +730,7 @@ html model =
         --                         (model.modal
         --                             |> Maybe.map
         --                                 (\modal ->
-        --                                     [ lazy2 Modal.view model modal |> Element.map ModalMsg |> inFront ]
+        --                                     [ Lazy.lazy2 Modal.view model modal |> Element.map ModalMsg |> inFront ]
         --                                 )
         --                         )
         --                     |> Maybe.withDefault []
@@ -740,8 +741,8 @@ html model =
         --         , height fill
         --         , clip
         --         ]
-        --         [ lazy Header.view model
-        --         , lazy2 Page.view model model.page |> Element.map PageMsg
+        --         [ Lazy.lazy Header.view model
+        --         , Lazy.lazy2 Page.view model model.page |> Element.map PageMsg
         --         ]
         --     )
 

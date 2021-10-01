@@ -26,6 +26,7 @@ import Element
         , mouseOver
         , none
         , onRight
+        , padding
         , paddingEach
         , paddingXY
         , px
@@ -65,210 +66,354 @@ view :
     -> List ( Maturity, Remote () PoolInfo )
     -> Element msg
 view msgs model page list =
-    table
-        [ width fill
-        , height shrink
-        ]
-        { data =
-            list
-                |> List.map
-                    (\( maturity, poolInfo ) ->
-                        { maturity = maturity
-                        , poolInfo = poolInfo
-                        }
-                    )
-        , columns =
-            [ { header =
-                    el
-                        [ width fill
-                        , height shrink
-                        , paddingXY 24 20
-                        , Background.color Color.list
-                        , Border.solid
-                        , Border.widthEach
-                            { top = 1
-                            , right = 0
-                            , bottom = 1
-                            , left = 1
-                            }
-                        , Border.color Color.transparent100
-                        , Font.bold
-                        , Font.size 12
-                        , Font.color Color.transparent300
-                        ]
-                        (text "MATURITY TIME")
-              , width = fill
-              , view =
-                    \{ maturity } ->
-                        el
-                            [ height <| px 72
-                            , paddingEach
-                                { top = 0
-                                , right = 0
-                                , bottom = 0
-                                , left = 24
+    if Device.isPhoneOrTablet model.device then
+        column
+            [ width fill
+            , height shrink
+            ]
+            (el
+                [ width fill
+                , height shrink
+                , Border.solid
+                , Border.widthEach
+                    { top = 1
+                    , right = 0
+                    , bottom = 0
+                    , left = 0
+                    }
+                , Border.color Color.transparent100
+                ]
+                none
+                :: (list
+                        |> List.map
+                            (\( maturity, poolInfo ) ->
+                                { maturity = maturity
+                                , poolInfo = poolInfo
                                 }
-                            , spacing 20
-                            , clipX
+                            )
+                        |> List.map
+                            (\({ maturity, poolInfo } as info) ->
+                                column
+                                    [ width fill
+                                    , height shrink
+                                    , padding 16
+                                    , spacing 16
+                                    , Border.solid
+                                    , Border.widthEach
+                                        { top = 0
+                                        , right = 1
+                                        , bottom = 1
+                                        , left = 1
+                                        }
+                                    , Border.color Color.transparent100
+                                    ]
+                                    [ column
+                                        [ width shrink
+                                        , height shrink
+                                        , spacing 12
+                                        ]
+                                        [ el
+                                            [ width shrink
+                                            , height shrink
+                                            , paddingXY 0 3
+                                            , Font.bold
+                                            , Font.size 12
+                                            , Font.color Color.transparent300
+                                            ]
+                                            (text "MATURITY TIME")
+                                        , el
+                                            [ width shrink
+                                            , height shrink
+                                            , clipX
+                                            ]
+                                            (maturityInfo model maturity)
+                                        ]
+                                    , column
+                                        [ width shrink
+                                        , height shrink
+                                        , spacing 6
+                                        , alignLeft
+                                        ]
+                                        [ el
+                                            [ width shrink
+                                            , height shrink
+                                            , paddingXY 0 3
+                                            , Font.bold
+                                            , Font.size 12
+                                            , Font.color Color.transparent300
+                                            ]
+                                            (text "LIQUIDITY")
+                                        , el
+                                            [ width shrink
+                                            , height shrink
+                                            , clipX
+                                            ]
+                                            (liquidities msgs model page info)
+                                        ]
+                                    , row
+                                        [ width fill
+                                        , height shrink
+                                        ]
+                                        [ column
+                                            [ width shrink
+                                            , height shrink
+                                            , spacing 6
+                                            ]
+                                            [ el
+                                                [ width shrink
+                                                , height shrink
+                                                , paddingXY 0 3
+                                                , Font.bold
+                                                , Font.size 12
+                                                , Font.color Color.transparent300
+                                                ]
+                                                (text "APR")
+                                            , el
+                                                [ width shrink
+                                                , height shrink
+                                                , clipX
+                                                ]
+                                                (estimatedAPR model poolInfo)
+                                            ]
+                                        , column
+                                            [ width shrink
+                                            , height shrink
+                                            , spacing 6
+                                            , alignRight
+                                            ]
+                                            [ el
+                                                [ width shrink
+                                                , height shrink
+                                                , paddingXY 0 3
+                                                , alignRight
+                                                , Font.bold
+                                                , Font.size 12
+                                                , Font.color Color.transparent300
+                                                ]
+                                                (text "COLLATERAL FACTOR")
+                                            , el
+                                                [ width shrink
+                                                , height shrink
+                                                , alignRight
+                                                , clipX
+                                                ]
+                                                (collateralFactor msgs model page info)
+                                            ]
+                                        ]
+                                    , el
+                                        [ width fill
+                                        , height shrink
+                                        ]
+                                        (buttons model page maturity)
+                                    ]
+                            )
+                   )
+            )
+
+    else
+        table
+            [ width fill
+            , height shrink
+            ]
+            { data =
+                list
+                    |> List.map
+                        (\( maturity, poolInfo ) ->
+                            { maturity = maturity
+                            , poolInfo = poolInfo
+                            }
+                        )
+            , columns =
+                [ { header =
+                        el
+                            [ width fill
+                            , height shrink
+                            , paddingXY 24 20
+                            , Background.color Color.list
                             , Border.solid
                             , Border.widthEach
-                                { top = 0
+                                { top = 1
                                 , right = 0
                                 , bottom = 1
                                 , left = 1
                                 }
                             , Border.color Color.transparent100
+                            , Font.bold
+                            , Font.size 12
+                            , Font.color Color.transparent300
                             ]
-                            (maturityInfo model maturity)
-              }
-            , { header =
-                    el
-                        [ width fill
-                        , height shrink
-                        , paddingXY 0 20
-                        , Background.color Color.list
-                        , Border.solid
-                        , Border.widthEach
-                            { top = 1
-                            , right = 0
-                            , bottom = 1
-                            , left = 0
-                            }
-                        , Border.color Color.transparent100
-                        , Font.bold
-                        , Font.size 12
-                        , Font.color Color.transparent300
-                        , Font.center
-                        ]
-                        (text "LIQUIDITY")
-              , width = px 170
-              , view =
-                    \info ->
+                            (text "MATURITY TIME")
+                  , width = fill
+                  , view =
+                        \{ maturity } ->
+                            el
+                                [ height <| px 72
+                                , paddingEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 0
+                                    , left = 24
+                                    }
+                                , clipX
+                                , Border.solid
+                                , Border.widthEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 1
+                                    , left = 1
+                                    }
+                                , Border.color Color.transparent100
+                                ]
+                                (maturityInfo model maturity)
+                  }
+                , { header =
                         el
                             [ width fill
-                            , height <| px 72
+                            , height shrink
+                            , paddingXY 0 20
+                            , Background.color Color.list
                             , Border.solid
                             , Border.widthEach
-                                { top = 0
+                                { top = 1
                                 , right = 0
                                 , bottom = 1
                                 , left = 0
                                 }
                             , Border.color Color.transparent100
+                            , Font.bold
+                            , Font.size 12
+                            , Font.color Color.transparent300
+                            , Font.center
                             ]
-                            (liquidities msgs page info)
-              }
-            , { header =
-                    el
-                        [ width fill
-                        , height shrink
-                        , paddingXY 0 20
-                        , Background.color Color.list
-                        , Border.solid
-                        , Border.widthEach
-                            { top = 1
-                            , right = 0
-                            , bottom = 1
-                            , left = 0
-                            }
-                        , Border.color Color.transparent100
-                        , Font.bold
-                        , Font.size 12
-                        , Font.color Color.transparent300
-                        , Font.center
-                        ]
-                        (text "ESTIMATED APR")
-              , width = px 130
-              , view =
-                    \{ poolInfo } ->
+                            (text "LIQUIDITY")
+                  , width = px 170
+                  , view =
+                        \info ->
+                            el
+                                [ width fill
+                                , height <| px 72
+                                , Border.solid
+                                , Border.widthEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 1
+                                    , left = 0
+                                    }
+                                , Border.color Color.transparent100
+                                ]
+                                (liquidities msgs model page info)
+                  }
+                , { header =
                         el
-                            [ height <| px 72
+                            [ width fill
+                            , height shrink
+                            , paddingXY 0 20
+                            , Background.color Color.list
                             , Border.solid
                             , Border.widthEach
-                                { top = 0
+                                { top = 1
                                 , right = 0
                                 , bottom = 1
                                 , left = 0
                                 }
                             , Border.color Color.transparent100
+                            , Font.bold
+                            , Font.size 12
+                            , Font.color Color.transparent300
+                            , Font.center
                             ]
-                            (estimatedAPR model poolInfo)
-              }
-            , { header =
-                    el
-                        [ width fill
-                        , height shrink
-                        , paddingXY 0 20
-                        , Background.color Color.list
-                        , Border.solid
-                        , Border.widthEach
-                            { top = 1
-                            , right = 0
-                            , bottom = 1
-                            , left = 0
-                            }
-                        , Border.color Color.transparent100
-                        , Font.bold
-                        , Font.size 12
-                        , Font.color Color.transparent300
-                        , Font.center
-                        ]
-                        (text "COLLATERAL FACTOR")
-              , width = px 190
-              , view =
-                    \info ->
+                            (text "ESTIMATED APR")
+                  , width = px 130
+                  , view =
+                        \{ poolInfo } ->
+                            el
+                                [ height <| px 72
+                                , Border.solid
+                                , Border.widthEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 1
+                                    , left = 0
+                                    }
+                                , Border.color Color.transparent100
+                                ]
+                                (estimatedAPR model poolInfo)
+                  }
+                , { header =
                         el
-                            [ height <| px 72
+                            [ width fill
+                            , height shrink
+                            , paddingXY 0 20
+                            , Background.color Color.list
                             , Border.solid
                             , Border.widthEach
-                                { top = 0
+                                { top = 1
                                 , right = 0
                                 , bottom = 1
                                 , left = 0
                                 }
                             , Border.color Color.transparent100
+                            , Font.bold
+                            , Font.size 12
+                            , Font.color Color.transparent300
+                            , Font.center
                             ]
-                            (collateralFactor msgs model page info)
-              }
-            , { header =
-                    el
-                        [ width fill
-                        , height fill
-                        , Background.color Color.list
-                        , Border.solid
-                        , Border.widthEach
-                            { top = 1
-                            , right = 1
-                            , bottom = 1
-                            , left = 0
-                            }
-                        , Border.color Color.transparent100
-                        ]
-                        none
-              , width = px 211
-              , view =
-                    \{ maturity } ->
+                            (text "COLLATERAL FACTOR")
+                  , width = px 190
+                  , view =
+                        \info ->
+                            el
+                                [ height <| px 72
+                                , Border.solid
+                                , Border.widthEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 1
+                                    , left = 0
+                                    }
+                                , Border.color Color.transparent100
+                                ]
+                                (collateralFactor msgs model page info)
+                  }
+                , { header =
                         el
-                            [ height <| px 72
-                            , paddingEach
-                                { top = 0
-                                , right = 24
-                                , bottom = 0
-                                , left = 0
-                                }
+                            [ width fill
+                            , height fill
+                            , Background.color Color.list
                             , Border.solid
                             , Border.widthEach
-                                { top = 0
+                                { top = 1
                                 , right = 1
                                 , bottom = 1
                                 , left = 0
                                 }
                             , Border.color Color.transparent100
                             ]
-                            (buttons model page maturity)
-              }
-            ]
-        }
+                            none
+                  , width = px 211
+                  , view =
+                        \{ maturity } ->
+                            el
+                                [ height <| px 72
+                                , paddingEach
+                                    { top = 0
+                                    , right = 24
+                                    , bottom = 0
+                                    , left = 0
+                                    }
+                                , Border.solid
+                                , Border.widthEach
+                                    { top = 0
+                                    , right = 1
+                                    , bottom = 1
+                                    , left = 0
+                                    }
+                                , Border.color Color.transparent100
+                                ]
+                                (buttons model page maturity)
+                  }
+                ]
+            }
 
 
 maturityInfo :
@@ -279,6 +424,7 @@ maturityInfo { time, zoneInfo, images } maturity =
     row
         [ width shrink
         , height shrink
+        , paddingXY 0 3
         , alignLeft
         , centerY
         , spacing 12
@@ -331,46 +477,53 @@ liquidities :
         | onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
+    -> { model | device : Device }
     -> { page | pair : Pair, tooltip : Maybe Tooltip }
     ->
         { maturity : Maturity
         , poolInfo : Remote () { poolInfo | assetLiquidity : String, collateralLiquidity : String }
         }
     -> Element msg
-liquidities msgs page { maturity, poolInfo } =
-    row
-        [ width fill
-        , height shrink
+liquidities msgs ({ device } as model) page { maturity, poolInfo } =
+    (if device |> Device.isPhoneOrTablet then
+        row
+
+     else
+        column
+    )
+        [ width shrink
+        , if device |> Device.isPhoneOrTablet then
+            alignLeft
+
+          else
+            centerX
+        , centerY
+        , spacing 4
         , Font.bold
         , Font.size 14
-        , centerX
-        , centerY
         ]
-        [ column
-            [ width shrink
-            , centerX
-            , spacing 4
-            ]
-            (case poolInfo of
-                Loading ->
-                    [ Loading.view ]
+        (case poolInfo of
+            Loading ->
+                [ Loading.view ]
 
-                Failure _ ->
-                    []
+            Failure _ ->
+                []
 
-                Success { assetLiquidity, collateralLiquidity } ->
-                    [ assetBalance msgs page maturity assetLiquidity
+            Success { assetLiquidity, collateralLiquidity } ->
+                [ assetBalance msgs model page maturity assetLiquidity
+                , if device |> Device.isPhoneOrTablet then
+                    el
+                        [ alignLeft
+                        , Font.bold
+                        , Font.color Color.transparent500
+                        ]
+                        (text "+")
 
-                    -- , el
-                    --     [ centerX
-                    --     , Font.bold
-                    --     , Font.color Color.transparent500
-                    --     ]
-                    --     (text "+")
-                    , collateralBalance msgs page maturity collateralLiquidity
-                    ]
-            )
-        ]
+                  else
+                    none
+                , collateralBalance msgs model page maturity collateralLiquidity
+                ]
+        )
 
 
 estimatedAPR :
@@ -387,6 +540,7 @@ estimatedAPR { device } poolInfo =
           )
             |> width
         , height shrink
+        , paddingXY 0 3
         , centerX
         , centerY
         ]
@@ -400,18 +554,30 @@ estimatedAPR { device } poolInfo =
                 none
 
             Success { apr } ->
-                el
-                    [ width shrink
-                    , height shrink
-                    , paddingXY 10 8
-                    , centerX
-                    , Background.color Color.positive100
-                    , Border.rounded 28
-                    , Font.bold
-                    , Font.size 14
-                    , Font.color Color.positive500
-                    , Font.center
-                    ]
+                (if device |> Device.isPhoneOrTablet then
+                    el
+                        [ width shrink
+                        , height shrink
+                        , paddingXY 0 3
+                        , Font.bold
+                        , Font.size 14
+                        , Font.color Color.positive500
+                        ]
+
+                 else
+                    el
+                        [ width shrink
+                        , height shrink
+                        , paddingXY 10 8
+                        , centerX
+                        , Background.color Color.positive100
+                        , Border.rounded 28
+                        , Font.bold
+                        , Font.size 14
+                        , Font.color Color.positive500
+                        , Font.center
+                        ]
+                )
                     ([ apr
                      , "%"
                      ]
@@ -443,6 +609,7 @@ collateralFactor msgs { device } page { maturity, poolInfo } =
           )
             |> width
         , height shrink
+        , paddingXY 0 3
         , centerX
         , centerY
         ]
@@ -539,11 +706,12 @@ assetBalance :
         | onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
+    -> { model | device : Device }
     -> { page | pair : Pair, tooltip : Maybe Tooltip }
     -> Maturity
     -> String
     -> Element msg
-assetBalance msgs { pair, tooltip } maturity assetLiquidity =
+assetBalance msgs { device } { pair, tooltip } maturity assetLiquidity =
     assetLiquidity
         |> Truncate.amount
         |> (\{ full, truncated } ->
@@ -553,7 +721,11 @@ assetBalance msgs { pair, tooltip } maturity assetLiquidity =
                             row
                                 [ width shrink
                                 , height shrink
-                                , centerX
+                                , if device |> Device.isPhoneOrTablet then
+                                    alignLeft
+
+                                  else
+                                    centerX
                                 , centerY
                                 , paddingEach
                                     { top = 3
@@ -613,7 +785,11 @@ assetBalance msgs { pair, tooltip } maturity assetLiquidity =
                         (row
                             [ width shrink
                             , height shrink
-                            , centerX
+                            , if device |> Device.isPhoneOrTablet then
+                                alignLeft
+
+                              else
+                                centerX
                             , centerY
                             , spacing 4
                             , Font.size 14
@@ -643,11 +819,12 @@ collateralBalance :
         | onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
+    -> { model | device : Device }
     -> { page | pair : Pair, tooltip : Maybe Tooltip }
     -> Maturity
     -> String
     -> Element msg
-collateralBalance msgs { pair, tooltip } maturity collateralLiquidity =
+collateralBalance msgs { device } { pair, tooltip } maturity collateralLiquidity =
     collateralLiquidity
         |> Truncate.amount
         |> (\{ full, truncated } ->
@@ -655,7 +832,11 @@ collateralBalance msgs { pair, tooltip } maturity collateralLiquidity =
                     |> Maybe.map
                         (\short ->
                             row
-                                [ centerX
+                                [ if device |> Device.isPhoneOrTablet then
+                                    alignLeft
+
+                                  else
+                                    centerX
                                 , centerY
                                 , paddingEach
                                     { top = 3
@@ -715,7 +896,11 @@ collateralBalance msgs { pair, tooltip } maturity collateralLiquidity =
                         (row
                             [ width shrink
                             , height shrink
-                            , centerX
+                            , if device |> Device.isPhoneOrTablet then
+                                alignLeft
+
+                              else
+                                centerX
                             , centerY
                             , spacing 4
                             , Font.size 14

@@ -1,4 +1,13 @@
-module Pages.LendDashboard.Main exposing (Msg, Page, fromFragment, getFilter, init, update, updateDashboard, view)
+module Pages.LendDashboard.Main exposing
+    ( Msg
+    , Page
+    , fromFragment
+    , getFilter
+    , init
+    , update
+    , updateDashboard
+    , view
+    )
 
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
@@ -307,7 +316,12 @@ title =
 
 
 allPositions :
-    { model | time : Posix, images : Images, tokenImages : TokenImages }
+    { model
+        | device : Device
+        , time : Posix
+        , images : Images
+        , tokenImages : TokenImages
+    }
     -> Page
     -> ( List ActiveClaimInfo, List MaturedClaimInfo )
     -> Element Msg
@@ -349,11 +363,11 @@ allPositions model ((Page { filter }) as page) ( activeList, maturedList ) =
 
 
 singleMaturedPosition :
-    { model | time : Posix, images : Images, tokenImages : TokenImages }
+    { model | device : Device, time : Posix, images : Images, tokenImages : TokenImages }
     -> Page
     -> MaturedClaimInfo
     -> Element Msg
-singleMaturedPosition ({ tokenImages } as model) (Page ({ expandedSet } as page)) ({ pool, return } as maturedClaimInfo) =
+singleMaturedPosition ({ device, tokenImages } as model) (Page ({ expandedSet } as page)) ({ pool, return } as maturedClaimInfo) =
     column
         [ width fill
         , height shrink
@@ -378,24 +392,51 @@ singleMaturedPosition ({ tokenImages } as model) (Page ({ expandedSet } as page)
                     else
                         Just (Expand pool)
                 , label =
-                    row
-                        ([ width fill
-                         , height <| px 72
-                         , paddingXY 24 0
-                         , spacing 18
-                         ]
-                            ++ Glass.lightPrimary 1
-                        )
-                        [ PairInfo.icons tokenImages pool.pair
-                        , PairInfo.symbols pool.pair
-                        , PositionsInfo.duration model pool.maturity
-                        , el
-                            [ width <| px 110
-                            , alignRight
+                    if Device.isPhoneOrTablet device then
+                        column
+                            ([ width fill
+                             , height <| px 130
+                             ]
+                                ++ Glass.lightPrimary 1
+                            )
+                            [ row
+                                [ width fill
+                                , height fill
+                                , paddingXY 24 0
+                                , spacing 18
+                                ]
+                                [ PairInfo.icons tokenImages pool.pair
+                                , PairInfo.symbols pool.pair
+                                , PositionsInfo.duration model pool.maturity
+                                ]
+                            , el
+                                [ width fill
+                                , height fill
+                                , paddingXY 24 0
+                                , spacing 18
+                                ]
+                                (discloser model page maturedClaimInfo)
                             ]
-                            none
-                        , discloser model page maturedClaimInfo
-                        ]
+
+                    else
+                        row
+                            ([ width fill
+                             , height <| px 72
+                             , paddingXY 24 0
+                             , spacing 18
+                             ]
+                                ++ Glass.lightPrimary 1
+                            )
+                            [ PairInfo.icons tokenImages pool.pair
+                            , PairInfo.symbols pool.pair
+                            , PositionsInfo.duration model pool.maturity
+                            , el
+                                [ width <| px 110
+                                , alignRight
+                                ]
+                                none
+                            , discloser model page maturedClaimInfo
+                            ]
                 }
             )
         , if pool |> Set.memberOf expandedSet then
@@ -670,7 +711,7 @@ activeBalances page { pool, claim } =
             , Font.size 14
             , Font.color Color.transparent300
             ]
-            (text "Insurance in case of default")
+            (text "Insurance in case of 100% default")
         , collateralBalance page pool claim.insurance
         ]
 

@@ -817,7 +817,7 @@ title msgs { images } ({ tooltip } as modal) =
             , Font.regular
             , Font.color Color.transparent300
             ]
-            (text "Customize CDP")
+            (text "Customize Risk")
         , switch msgs modal
         ]
 
