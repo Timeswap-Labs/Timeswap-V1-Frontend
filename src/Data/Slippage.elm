@@ -85,11 +85,13 @@ toPercent (Slippage int) =
         |> String.fromInt
         |> String.padLeft 3 '0'
         |> (\string ->
-                [ string |> String.dropRight 2
-                , string |> String.right 2
+                [ [ string |> String.dropRight 2
+                  , string |> String.right 2
+                  ]
+                    |> String.join "."
                 , "%"
                 ]
-                    |> String.join "."
+                    |> String.concat
            )
 
 
