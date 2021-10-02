@@ -416,13 +416,19 @@ allPositions :
     -> Chain
     -> ( List DuesInfo, List DuesInfo )
     -> Element Msg
-allPositions model page chain ( activeList, maturedList ) =
+allPositions model ((Page { filter }) as page) chain ( activeList, maturedList ) =
     Keyed.column
         [ width fill
         , height shrink
         , spacing 18
         ]
         ([ activeList
+            |> List.filter
+                (\{ pool } ->
+                    filter
+                        |> Maybe.map ((==) pool.pair)
+                        |> Maybe.withDefault True
+                )
             |> List.map
                 (\({ pool } as duesInfo) ->
                     ( pool |> Pool.toKey
@@ -430,6 +436,12 @@ allPositions model page chain ( activeList, maturedList ) =
                     )
                 )
          , maturedList
+            |> List.filter
+                (\{ pool } ->
+                    filter
+                        |> Maybe.map ((==) pool.pair)
+                        |> Maybe.withDefault True
+                )
             |> List.map
                 (\({ pool } as duesInfo) ->
                     ( pool |> Pool.toKey
