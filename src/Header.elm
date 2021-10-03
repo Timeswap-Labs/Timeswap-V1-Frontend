@@ -61,7 +61,7 @@ view ({ device } as model) =
         column
             [ Region.navigation
             , width fill
-            , height shrink
+            , height <| px 131
             , clipY
             , Font.family Typography.supreme
             ]
