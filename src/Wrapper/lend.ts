@@ -127,6 +127,7 @@ async function lendQueryCalculation(
         maturity: query.maturity,
         assetIn: query.assetIn,
         percent: query.percent,
+        result: null,
       });
     }
   } else if (query.bondOut != undefined) {
@@ -194,6 +195,7 @@ async function lendQueryCalculation(
         maturity: query.maturity,
         assetIn: query.assetIn,
         bondOut: query.bondOut,
+        result: null,
       });
     }
   } else if (query.insuranceOut != undefined) {
@@ -267,6 +269,7 @@ async function lendQueryCalculation(
         maturity: query.maturity,
         assetIn: query.assetIn,
         insuranceOut: query.insuranceOut,
+        result: null,
       });
     }
   }

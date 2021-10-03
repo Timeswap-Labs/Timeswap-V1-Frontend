@@ -107,6 +107,7 @@ async function borrowQueryCalculation(
         maturity: query.maturity,
         assetOut: query.assetOut,
         percent: query.percent,
+        result: null,
       });
     }
   } else if (query.debtIn != undefined) {
@@ -164,6 +165,7 @@ async function borrowQueryCalculation(
         maturity: query.maturity,
         assetOut: query.assetOut,
         debtIn: query.debtIn,
+        result: null,
       });
     }
   } else if (query.collateralIn != undefined) {
@@ -222,6 +224,7 @@ async function borrowQueryCalculation(
         maturity: query.maturity,
         assetOut: query.assetOut,
         collateralIn: query.collateralIn,
+        result: null,
       });
     }
   }
