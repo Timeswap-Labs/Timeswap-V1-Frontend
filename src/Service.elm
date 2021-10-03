@@ -36,6 +36,7 @@ import Element
         , height
         , none
         , padding
+        , paddingEach
         , scrollbarY
         , width
         )
@@ -277,7 +278,12 @@ view msgs ({ device, user } as model) service =
                 [ width fill
                 , height fill
                 , if Device.isPhone device then
-                    padding 0
+                    paddingEach
+                        { top = 160
+                        , right = 0
+                        , bottom = 0
+                        , left = 0
+                        }
 
                   else
                     padding 80
@@ -294,7 +300,12 @@ view msgs ({ device, user } as model) service =
                 [ width fill
                 , height fill
                 , if Device.isPhone device then
-                    padding 0
+                    paddingEach
+                        { top = 160
+                        , right = 0
+                        , bottom = 0
+                        , left = 0
+                        }
 
                   else
                     padding 80
@@ -311,7 +322,12 @@ view msgs ({ device, user } as model) service =
                 [ width fill
                 , height fill
                 , if Device.isPhone device then
-                    padding 0
+                    paddingEach
+                        { top = 160
+                        , right = 0
+                        , bottom = 0
+                        , left = 0
+                        }
 
                   else
                     padding 80
@@ -327,7 +343,12 @@ view msgs ({ device, user } as model) service =
                 [ width fill
                 , height fill
                 , if Device.isPhone device then
-                    padding 0
+                    paddingEach
+                        { top = 160
+                        , right = 0
+                        , bottom = 0
+                        , left = 0
+                        }
 
                   else
                     padding 80
@@ -343,7 +364,12 @@ view msgs ({ device, user } as model) service =
                 [ width fill
                 , height fill
                 , if Device.isPhone device then
-                    padding 0
+                    paddingEach
+                        { top = 160
+                        , right = 0
+                        , bottom = 0
+                        , left = 0
+                        }
 
                   else
                     padding 80
@@ -360,7 +386,12 @@ view msgs ({ device, user } as model) service =
                 [ width fill
                 , height fill
                 , if Device.isPhone device then
-                    padding 0
+                    paddingEach
+                        { top = 160
+                        , right = 0
+                        , bottom = 0
+                        , left = 0
+                        }
 
                   else
                     padding 80
@@ -376,7 +407,12 @@ view msgs ({ device, user } as model) service =
                 [ width fill
                 , height fill
                 , if Device.isPhone device then
-                    padding 0
+                    paddingEach
+                        { top = 160
+                        , right = 0
+                        , bottom = 0
+                        , left = 0
+                        }
 
                   else
                     padding 80

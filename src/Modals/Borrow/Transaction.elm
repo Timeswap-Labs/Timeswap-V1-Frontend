@@ -399,29 +399,23 @@ view msgs ({ user } as model) ({ pool } as modal) =
 connectButton : { model | device : Device, images : Images } -> Element msg
 connectButton { device, images } =
     link
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary400 ]
+        , mouseOver [ Background.color Color.primary300 ]
+        ]
         { url = Router.toConnect
         , label =
             row
@@ -480,8 +474,7 @@ approveSection :
     { msgs | approveBorrow : Value -> msg }
     ->
         { model
-            | device : Device
-            , time : Posix
+            | time : Posix
             , user : Remote userError { user | balances : Remote () Balances, allowances : Remote () Allowances }
         }
     -> { modal | pool : Pool, assetOut : String, duesOut : DuesOut }
@@ -492,42 +485,35 @@ approveSection msgs model modal erc20 =
         DuesOut.hasTransaction model modal
             && (hasAllowance model modal |> not)
     then
-        approveButton msgs model erc20
+        approveButton msgs erc20
 
     else
-        disabledApprove model
+        disabledApprove
 
 
 approveButton :
     { msgs | approveBorrow : Value -> msg }
-    -> { model | device : Device }
     -> ERC20
     -> Element msg
-approveButton msgs { device } erc20 =
+approveButton msgs erc20 =
     Input.button
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary400 ]
+        , mouseOver [ Background.color Color.primary300 ]
+        ]
         { onPress =
             erc20
                 |> encodeApprove
@@ -547,30 +533,24 @@ approveButton msgs { device } erc20 =
         }
 
 
-disabledApprove : { model | device : Device } -> Element msg
-disabledApprove { device } =
+disabledApprove : Element msg
+disabledApprove =
     el
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary100
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary100
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        ]
         (el
             [ width shrink
             , height shrink
@@ -588,8 +568,7 @@ borrowSection :
     { msgs | borrow : Value -> msg }
     ->
         { model
-            | device : Device
-            , time : Posix
+            | time : Posix
             , deadline : Deadline
             , user : Remote userError { user | address : Address, balances : Remote () Balances, allowances : Remote () Allowances }
         }
@@ -597,40 +576,33 @@ borrowSection :
     -> Element msg
 borrowSection msgs model modal =
     toTransaction model modal
-        |> Maybe.map (borrowButton msgs model)
-        |> Maybe.withDefault (disabledBorrow model)
+        |> Maybe.map (borrowButton msgs)
+        |> Maybe.withDefault disabledBorrow
 
 
 borrowButton :
     { msgs | borrow : Value -> msg }
-    -> { model | device : Device }
     -> Transaction
     -> Element msg
-borrowButton msgs { device } transaction =
+borrowButton msgs transaction =
     Input.button
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary400 ]
+        , mouseOver [ Background.color Color.primary300 ]
+        ]
         { onPress =
             transaction
                 |> encode
@@ -650,30 +622,24 @@ borrowButton msgs { device } transaction =
         }
 
 
-disabledBorrow : { model | device : Device } -> Element msg
-disabledBorrow { device } =
+disabledBorrow : Element msg
+disabledBorrow =
     el
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary100
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary100
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        ]
         (el
             [ width shrink
             , height shrink

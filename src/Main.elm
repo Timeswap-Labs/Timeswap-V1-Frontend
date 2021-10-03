@@ -668,83 +668,85 @@ msgs =
 html : Model -> Html Msg
 html model =
     if Device.isPhoneOrTablet model.device then
-        layoutWith
-            { options = options }
-            [ width <| minimum 340 fill
-            , Background.color Color.dark400
-            ]
-            (column
-                [ width fill
-                , spacing 36
-                , centerY
-                ]
-                [ Image.logo model.images
-                    [ width <| px 300
-                    , centerX
-                    ]
-                , paragraph
-                    [ width fill
-                    , paddingXY 20 0
-                    , spacing 6
-                    , centerY
-                    , Font.center
-                    ]
-                    [ el
-                        [ width fill
-                        , paddingXY 0 6
-                        , Font.bold
-                        , Font.size 24
-                        , Font.color Color.transparent500
-                        ]
-                        (text """Tablet and Mobile view coming soon.
-                        Use our dapp in desktop view.
-                        """)
-                    ]
-                ]
-            )
         -- layoutWith
         --     { options = options }
-        --     ([ width <| minimum 340 fill
-        --      , Background.color Color.dark400
-        --      ]
-        --         ++ (if Device.checkAsideStatus model.device then
-        --                 [ Lazy.lazy Aside.view model |> inFront ]
-        --             else
-        --                 model.service
-        --                     |> Maybe.map
-        --                         (\service ->
-        --                             [ Service.view msgs model service
-        --                                 |> Element.map
-        --                                     (\or ->
-        --                                         case or of
-        --                                             Either serviceMsg ->
-        --                                                 serviceMsg |> ServiceMsg
-        --                                             Or msg ->
-        --                                                 msg
-        --                                     )
-        --                                 |> inFront
-        --                             ]
-        --                         )
-        --                     |> Maybe.map Just
-        --                     |> Maybe.withDefault
-        --                         (model.modal
-        --                             |> Maybe.map
-        --                                 (\modal ->
-        --                                     [ Lazy.lazy2 Modal.view model modal |> Element.map ModalMsg |> inFront ]
-        --                                 )
-        --                         )
-        --                     |> Maybe.withDefault []
-        --            )
-        --     )
+        --     [ width <| minimum 340 fill
+        --     , Background.color Color.dark400
+        --     ]
         --     (column
         --         [ width fill
-        --         , height fill
-        --         , clip
+        --         , spacing 36
+        --         , centerY
         --         ]
-        --         [ Lazy.lazy Header.view model
-        --         , Lazy.lazy2 Page.view model model.page |> Element.map PageMsg
+        --         [ Image.logo model.images
+        --             [ width <| px 300
+        --             , centerX
+        --             ]
+        --         , paragraph
+        --             [ width fill
+        --             , paddingXY 20 0
+        --             , spacing 6
+        --             , centerY
+        --             , Font.center
+        --             ]
+        --             [ el
+        --                 [ width fill
+        --                 , paddingXY 0 6
+        --                 , Font.bold
+        --                 , Font.size 24
+        --                 , Font.color Color.transparent500
+        --                 ]
+        --                 (text """Tablet and Mobile view coming soon.
+        --                 Use our dapp in desktop view.
+        --                 """)
+        --             ]
         --         ]
         --     )
+        layoutWith
+            { options = options }
+            ([ width <| minimum 340 fill
+             , Background.color Color.dark400
+             ]
+                ++ (if Device.checkAsideStatus model.device then
+                        [ Lazy.lazy Aside.view model |> inFront ]
+
+                    else
+                        model.service
+                            |> Maybe.map
+                                (\service ->
+                                    [ Service.view msgs model service
+                                        |> Element.map
+                                            (\or ->
+                                                case or of
+                                                    Either serviceMsg ->
+                                                        serviceMsg |> ServiceMsg
+
+                                                    Or msg ->
+                                                        msg
+                                            )
+                                        |> inFront
+                                    ]
+                                )
+                            |> Maybe.map Just
+                            |> Maybe.withDefault
+                                (model.modal
+                                    |> Maybe.map
+                                        (\modal ->
+                                            [ Lazy.lazy2 Modal.view model modal |> Element.map ModalMsg |> inFront ]
+                                        )
+                                )
+                            |> Maybe.withDefault []
+                   )
+            )
+            (column
+                [ width fill
+                , height fill
+                , clip
+                ]
+                [ Lazy.lazy Header.view model
+                , Lazy.lazy2 Page.view model model.page |> Element.map PageMsg
+                ]
+            )
 
     else
         layoutWith

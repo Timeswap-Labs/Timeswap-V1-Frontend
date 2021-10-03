@@ -84,47 +84,40 @@ encode { pool, to, claimsIn } =
 
 view :
     { msgs | withdraw : Value -> msg }
-    -> { model | device : Device, time : Posix }
+    -> { model | time : Posix }
     -> { user | address : Address }
     -> Positions
     -> { modal | pool : Pool }
     -> Element msg
 view msgs model user positions { pool } =
     toTransaction model user positions pool
-        |> Maybe.map (withdrawButton msgs model)
-        |> Maybe.withDefault (disabledWithdraw model)
+        |> Maybe.map (withdrawButton msgs)
+        |> Maybe.withDefault disabledWithdraw
 
 
 withdrawButton :
     { msgs | withdraw : Value -> msg }
-    -> { model | device : Device }
     -> Transaction
     -> Element msg
-withdrawButton msgs { device } transaction =
+withdrawButton msgs transaction =
     Input.button
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary400 ]
+        , mouseOver [ Background.color Color.primary300 ]
+        ]
         { onPress =
             transaction
                 |> encode
@@ -144,30 +137,24 @@ withdrawButton msgs { device } transaction =
         }
 
 
-disabledWithdraw : { model | device : Device } -> Element msg
-disabledWithdraw { device } =
+disabledWithdraw : Element msg
+disabledWithdraw =
     el
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary100
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary100
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        ]
         (el
             [ width shrink
             , height shrink

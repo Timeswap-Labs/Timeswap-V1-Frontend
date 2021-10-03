@@ -356,29 +356,23 @@ view msgs ({ user } as model) ({ pool } as modal) =
 connectButton : { model | device : Device, images : Images } -> Element msg
 connectButton { device, images } =
     link
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary400 ]
+        , mouseOver [ Background.color Color.primary300 ]
+        ]
         { url = Router.toConnect
         , label =
             row
@@ -437,8 +431,7 @@ approveSection :
     { msgs | approveLend : Value -> msg }
     ->
         { model
-            | device : Device
-            , time : Posix
+            | time : Posix
             , user : Remote userError { user | balances : Remote () Balances, allowances : Remote () Allowances }
         }
     -> { modal | pool : Pool, assetIn : String, claimsOut : ClaimsOut }
@@ -449,42 +442,35 @@ approveSection msgs model modal erc20 =
         ClaimsOut.hasTransaction model modal
             && (hasAllowance model modal |> not)
     then
-        approveButton msgs model erc20
+        approveButton msgs erc20
 
     else
-        disabledApprove model
+        disabledApprove
 
 
 approveButton :
     { msgs | approveLend : Value -> msg }
-    -> { model | device : Device }
     -> ERC20
     -> Element msg
-approveButton msgs { device } erc20 =
+approveButton msgs erc20 =
     Input.button
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary400 ]
+        , mouseOver [ Background.color Color.primary300 ]
+        ]
         { onPress =
             erc20
                 |> encodeApprove
@@ -504,30 +490,24 @@ approveButton msgs { device } erc20 =
         }
 
 
-disabledApprove : { model | device : Device } -> Element msg
-disabledApprove { device } =
+disabledApprove : Element msg
+disabledApprove =
     el
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary100
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary100
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        ]
         (el
             [ width shrink
             , height shrink
@@ -545,8 +525,7 @@ lendSection :
     { msgs | lend : Value -> msg }
     ->
         { model
-            | device : Device
-            , time : Posix
+            | time : Posix
             , deadline : Deadline
             , user : Remote userError { user | address : Address, balances : Remote () Balances, allowances : Remote () Allowances }
         }
@@ -554,40 +533,33 @@ lendSection :
     -> Element msg
 lendSection msgs model modal =
     toTransaction model modal
-        |> Maybe.map (lendButton msgs model)
-        |> Maybe.withDefault (disabledLend model)
+        |> Maybe.map (lendButton msgs)
+        |> Maybe.withDefault disabledLend
 
 
 lendButton :
     { msgs | lend : Value -> msg }
-    -> { model | device : Device }
     -> Transaction
     -> Element msg
-lendButton msgs { device } transaction =
+lendButton msgs transaction =
     Input.button
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary400 ]
+        , mouseOver [ Background.color Color.primary300 ]
+        ]
         { onPress =
             transaction
                 |> encode
@@ -607,30 +579,24 @@ lendButton msgs { device } transaction =
         }
 
 
-disabledLend : { model | device : Device } -> Element msg
-disabledLend { device } =
+disabledLend : Element msg
+disabledLend =
     el
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary100
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary100
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        ]
         (el
             [ width shrink
             , height shrink

@@ -138,8 +138,7 @@ view :
     { msgs | approvePay : Value -> msg, pay : Value -> msg }
     ->
         { model
-            | device : Device
-            , time : Posix
+            | time : Posix
             , deadline : Deadline
             , images : Images
         }
@@ -182,7 +181,7 @@ view msgs model user positions ({ pool } as modal) =
 
 approveSection :
     { msgs | approvePay : Value -> msg }
-    -> { model | device : Device, time : Posix }
+    -> { model | time : Posix }
     ->
         { user
             | address : Address
@@ -198,42 +197,35 @@ approveSection msgs model user positions modal erc20 =
         DuesIn.hasTransaction model user positions modal
             && (hasAllowance user modal |> not)
     then
-        approveButton msgs model erc20
+        approveButton msgs erc20
 
     else
-        disabledApprove model
+        disabledApprove
 
 
 approveButton :
     { msgs | approvePay : Value -> msg }
-    -> { model | device : Device }
     -> ERC20
     -> Element msg
-approveButton msgs { device } erc20 =
+approveButton msgs erc20 =
     Input.button
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary400 ]
+        , mouseOver [ Background.color Color.primary300 ]
+        ]
         { onPress =
             erc20
                 |> encodeApprove
@@ -253,30 +245,24 @@ approveButton msgs { device } erc20 =
         }
 
 
-disabledApprove : { model | device : Device } -> Element msg
-disabledApprove { device } =
+disabledApprove : Element msg
+disabledApprove =
     el
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary100
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary100
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        ]
         (el
             [ width shrink
             , height shrink
@@ -294,8 +280,7 @@ paySection :
     { msgs | pay : Value -> msg }
     ->
         { model
-            | device : Device
-            , time : Posix
+            | time : Posix
             , deadline : Deadline
         }
     ->
@@ -309,40 +294,33 @@ paySection :
     -> Element msg
 paySection msgs model user positions modal =
     toTransaction model user positions modal
-        |> Maybe.map (payButton msgs model)
-        |> Maybe.withDefault (disabledPay model)
+        |> Maybe.map (payButton msgs)
+        |> Maybe.withDefault disabledPay
 
 
 payButton :
     { msgs | pay : Value -> msg }
-    -> { model | device : Device }
     -> Transaction
     -> Element msg
-payButton msgs { device } transaction =
+payButton msgs transaction =
     Input.button
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary400 ]
+        , mouseOver [ Background.color Color.primary300 ]
+        ]
         { onPress =
             transaction
                 |> encode
@@ -362,30 +340,24 @@ payButton msgs { device } transaction =
         }
 
 
-disabledPay : { model | device : Device } -> Element msg
-disabledPay { device } =
+disabledPay : Element msg
+disabledPay =
     el
-        ([ width fill
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary100
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary100
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        ]
         (el
             [ width shrink
             , height shrink

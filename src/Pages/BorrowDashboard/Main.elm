@@ -24,6 +24,7 @@ import Data.Tokens exposing (Tokens)
 import Element
     exposing
         ( Element
+        , alignBottom
         , alignLeft
         , alignRight
         , alignTop
@@ -38,6 +39,7 @@ import Element
         , mouseDown
         , mouseOver
         , moveLeft
+        , moveUp
         , newTabLink
         , none
         , onRight
@@ -407,7 +409,8 @@ title =
 
 allPositions :
     { model
-        | time : Posix
+        | device : Device
+        , time : Posix
         , images : Images
         , tokenImages : TokenImages
         , pools : Pools
@@ -455,7 +458,8 @@ allPositions model ((Page { filter }) as page) chain ( activeList, maturedList )
 
 singleActivePosition :
     { model
-        | time : Posix
+        | device : Device
+        , time : Posix
         , images : Images
         , tokenImages : TokenImages
         , pools : Pools
@@ -464,7 +468,7 @@ singleActivePosition :
     -> Chain
     -> DuesInfo
     -> Element Msg
-singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page)) chain ({ pool, listDue } as duesInfo) =
+singleActivePosition ({ device, tokenImages } as model) (Page ({ expandedSet } as page)) chain ({ pool, listDue } as duesInfo) =
     column
         [ width fill
         , height shrink
@@ -472,8 +476,8 @@ singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page))
         [ el
             [ width fill
             , height shrink
-            , borrowMoreButton duesInfo |> inFront
-            , repayButton page duesInfo |> inFront
+            , borrowMoreButton model duesInfo |> inFront
+            , repayButton model page duesInfo |> inFront
             ]
             (Input.button
                 [ width fill
@@ -486,24 +490,74 @@ singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page))
                     else
                         Just (Expand pool)
                 , label =
-                    row
-                        ([ width fill
-                         , height <| px 72
-                         , paddingXY 24 0
-                         , spacing 18
-                         ]
-                            ++ Glass.lightPrimary 1
-                        )
-                        [ PairInfo.icons tokenImages pool.pair
-                        , PairInfo.symbols pool.pair
-                        , PositionsInfo.duration model pool.maturity
-                        , el
-                            [ width <| px 298
-                            , alignRight
+                    if Device.isPhoneOrTablet device then
+                        column
+                            ([ width fill
+                             , (if device |> Device.isPhone then
+                                    240
+
+                                else
+                                    184
+                               )
+                                |> px
+                                |> height
+                             , spacing 12
+                             ]
+                                ++ Glass.lightPrimary 1
+                            )
+                            [ row
+                                [ width fill
+                                , height shrink
+                                , paddingXY 20 0
+                                , spacing 18
+                                , centerY
+                                ]
+                                [ PairInfo.icons tokenImages pool.pair
+                                , PairInfo.symbols pool.pair
+                                , discloser model page duesInfo
+                                ]
+                            , el
+                                [ width fill
+                                , height shrink
+                                , paddingXY 20 0
+                                , centerY
+                                ]
+                                (PositionsInfo.duration model pool.maturity)
+                            , el
+                                [ width fill
+                                , (if device |> Device.isPhone then
+                                    100
+
+                                   else
+                                    44
+                                  )
+                                    |> px
+                                    |> height
+                                , paddingXY 20 0
+                                , centerY
+                                ]
+                                none
                             ]
-                            none
-                        , discloser model page duesInfo
-                        ]
+
+                    else
+                        row
+                            ([ width fill
+                             , height <| px 72
+                             , paddingXY 24 0
+                             , spacing 18
+                             ]
+                                ++ Glass.lightPrimary 1
+                            )
+                            [ PairInfo.icons tokenImages pool.pair
+                            , PairInfo.symbols pool.pair
+                            , PositionsInfo.duration model pool.maturity
+                            , el
+                                [ width <| px 298
+                                , alignRight
+                                ]
+                                none
+                            , discloser model page duesInfo
+                            ]
                 }
             )
         , if pool |> Set.memberOf expandedSet then
@@ -526,7 +580,8 @@ singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page))
 
 singleMaturedPosition :
     { model
-        | time : Posix
+        | device : Device
+        , time : Posix
         , images : Images
         , tokenImages : TokenImages
         , pools : Pools
@@ -535,7 +590,7 @@ singleMaturedPosition :
     -> Chain
     -> DuesInfo
     -> Element Msg
-singleMaturedPosition ({ tokenImages } as model) (Page ({ expandedSet } as page)) chain ({ pool, listDue } as duesInfo) =
+singleMaturedPosition ({ device, tokenImages } as model) (Page ({ expandedSet } as page)) chain ({ pool, listDue } as duesInfo) =
     column
         [ width fill
         , height shrink
@@ -551,19 +606,48 @@ singleMaturedPosition ({ tokenImages } as model) (Page ({ expandedSet } as page)
                 else
                     Just (Expand pool)
             , label =
-                row
-                    ([ width fill
-                     , height <| px 72
-                     , paddingXY 24 0
-                     , spacing 18
-                     ]
-                        ++ Glass.lightPrimary 1
-                    )
-                    [ PairInfo.icons tokenImages pool.pair
-                    , PairInfo.symbols pool.pair
-                    , PositionsInfo.duration model pool.maturity
-                    , discloser model page duesInfo
-                    ]
+                if Device.isPhoneOrTablet device then
+                    column
+                        ([ width fill
+                         , height <| px 128
+                         , spacing 12
+                         ]
+                            ++ Glass.lightPrimary 1
+                        )
+                        [ row
+                            [ width fill
+                            , height shrink
+                            , paddingXY 20 0
+                            , spacing 18
+                            , centerY
+                            ]
+                            [ PairInfo.icons tokenImages pool.pair
+                            , PairInfo.symbols pool.pair
+                            , discloser model page duesInfo
+                            ]
+                        , el
+                            [ width fill
+                            , height shrink
+                            , paddingXY 20 0
+                            , centerY
+                            ]
+                            (PositionsInfo.duration model pool.maturity)
+                        ]
+
+                else
+                    row
+                        ([ width fill
+                         , height <| px 72
+                         , paddingXY 24 0
+                         , spacing 18
+                         ]
+                            ++ Glass.lightPrimary 1
+                        )
+                        [ PairInfo.icons tokenImages pool.pair
+                        , PairInfo.symbols pool.pair
+                        , PositionsInfo.duration model pool.maturity
+                        , discloser model page duesInfo
+                        ]
             }
         , if pool |> Set.memberOf expandedSet then
             column
@@ -583,23 +667,42 @@ singleMaturedPosition ({ tokenImages } as model) (Page ({ expandedSet } as page)
         ]
 
 
-borrowMoreButton : { duesInfo | pool : Pool } -> Element msg
-borrowMoreButton { pool } =
+borrowMoreButton : { model | device : Device } -> { duesInfo | pool : Pool } -> Element msg
+borrowMoreButton { device } { pool } =
     link
-        [ width <| px 140
-        , height <| px 44
-        , alignRight
-        , centerY
-        , moveLeft 212
-        , Border.width 1
-        , Border.color Color.primary100
-        , Border.rounded 4
-        , mouseDown
+        ([ height <| px 44
+         , Border.width 1
+         , Border.color Color.primary100
+         , Border.rounded 4
+         , mouseDown
             [ Background.color Color.primary300
             , Border.color Color.primary300
             ]
-        , mouseOver [ Background.color Color.primary100 ]
-        ]
+         , mouseOver [ Background.color Color.primary100 ]
+         ]
+            ++ (if device |> Device.isPhone then
+                    [ width <| px 295
+                    , centerX
+                    , alignBottom
+                    , moveUp 76
+                    ]
+
+                else if device |> Device.isTablet then
+                    [ width <| px 247
+                    , alignRight
+                    , alignBottom
+                    , moveLeft 285
+                    , moveUp 20
+                    ]
+
+                else
+                    [ width <| px 140
+                    , alignRight
+                    , centerY
+                    , moveLeft 212
+                    ]
+               )
+        )
         { url = Router.toBorrow pool
         , label =
             el
@@ -616,24 +719,45 @@ borrowMoreButton { pool } =
 
 
 repayButton :
-    { page
-        | chosenPool : Maybe Pool
-        , chosenTokenIds : Set TokenId
-    }
+    { model | device : Device }
+    ->
+        { page
+            | chosenPool : Maybe Pool
+            , chosenTokenIds : Set TokenId
+        }
     -> DuesInfo
     -> Element msg
-repayButton { chosenPool, chosenTokenIds } { pool, listDue } =
+repayButton { device } { chosenPool, chosenTokenIds } { pool, listDue } =
     link
-        [ width <| px 140
-        , height <| px 44
-        , alignRight
-        , centerY
-        , moveLeft 54
-        , Background.color Color.primary100
-        , Border.rounded 4
-        , mouseDown [ Background.color Color.primary400 ]
-        , mouseOver [ Background.color Color.primary300 ]
-        ]
+        ([ height <| px 44
+         , Background.color Color.primary100
+         , Border.rounded 4
+         , mouseDown [ Background.color Color.primary400 ]
+         , mouseOver [ Background.color Color.primary300 ]
+         ]
+            ++ (if device |> Device.isPhone then
+                    [ width <| px 295
+                    , centerX
+                    , alignBottom
+                    , moveUp 20
+                    ]
+
+                else if device |> Device.isTablet then
+                    [ width <| px 247
+                    , alignRight
+                    , alignBottom
+                    , moveLeft 20
+                    , moveUp 20
+                    ]
+
+                else
+                    [ width <| px 140
+                    , alignRight
+                    , centerY
+                    , moveLeft 54
+                    ]
+               )
+        )
         { url =
             chosenPool
                 |> Maybe.map
@@ -698,7 +822,7 @@ discloser { images } { expandedSet } { pool } =
 
 
 activeBalances :
-    { model | images : Images, pools : Pools }
+    { model | device : Device, images : Images, pools : Pools }
     ->
         { page
             | chosenPool : Maybe Pool
@@ -709,16 +833,66 @@ activeBalances :
     -> { duesInfo | pool : Pool }
     -> DueInfo
     -> Element Msg
-activeBalances { images, pools } ({ chosenPool, chosenTokenIds } as page) chain { pool } { tokenId, debt, collateral } =
-    row
-        ([ width fill
-         , height <| px 56
-         , paddingXY 20 0
-         , spacing 30
-         ]
-            ++ Glass.lightWhite 12
-        )
-        [ Input.checkbox
+activeBalances { device, images, pools } ({ chosenPool, chosenTokenIds } as page) chain { pool } { tokenId, debt, collateral } =
+    (\checkbox assetElement collateralElement openSeaLink ->
+        if device |> Device.isPhoneOrTablet then
+            column
+                ([ width fill
+                 , (if device |> Device.isPhone then
+                        144
+
+                    else
+                        96
+                   )
+                    |> px
+                    |> height
+                 , paddingXY 20 0
+                 , spacing 16
+                 ]
+                    ++ Glass.lightWhite 12
+                )
+                [ row
+                    [ width fill
+                    , height shrink
+                    , spacing 30
+                    , centerY
+                    ]
+                    [ checkbox
+                    , assetElement
+                    , openSeaLink
+                    ]
+                , row
+                    [ width fill
+                    , height shrink
+                    , spacing 30
+                    , centerY
+                    ]
+                    [ el
+                        [ width <| px 24
+                        , centerY
+                        ]
+                        none
+                    , collateralElement
+                    ]
+                ]
+
+        else
+            row
+                ([ width fill
+                 , height <| px 56
+                 , paddingXY 20 0
+                 , spacing 30
+                 ]
+                    ++ Glass.lightWhite 12
+                )
+                [ checkbox
+                , assetElement
+                , line
+                , collateralElement
+                , openSeaLink
+                ]
+    )
+        (Input.checkbox
             [ width shrink
             , height shrink
             , alignLeft
@@ -747,30 +921,68 @@ activeBalances { images, pools } ({ chosenPool, chosenTokenIds } as page) chain 
                     |> Maybe.withDefault False
             , label = Input.labelHidden "Checkbox"
             }
-        , el
+        )
+        ((if device |> Device.isPhone then
+            column
+
+          else
+            row
+         )
             [ width shrink
-            , height shrink
             , alignLeft
             , centerY
-            , Font.regular
-            , Font.size 14
-            , Font.color Color.transparent300
+            , (if device |> Device.isPhone then
+                8
+
+               else
+                30
+              )
+                |> spacing
             ]
-            (text "Amount to repay")
-        , assetBalance page pool tokenId debt
-        , line
-        , el
+            [ el
+                [ width shrink
+                , height shrink
+                , alignLeft
+                , centerY
+                , Font.regular
+                , Font.size 14
+                , Font.color Color.transparent300
+                ]
+                (text "Amount to repay")
+            , assetBalance page pool tokenId debt
+            ]
+        )
+        ((if device |> Device.isPhone then
+            column
+
+          else
+            row
+         )
             [ width shrink
-            , height shrink
             , alignLeft
             , centerY
-            , Font.regular
-            , Font.size 14
-            , Font.color Color.transparent300
+            , (if device |> Device.isPhone then
+                8
+
+               else
+                30
+              )
+                |> spacing
             ]
-            (text "Collateral locked")
-        , collateralBalance page pool tokenId collateral
-        , pools
+            [ el
+                [ width shrink
+                , height shrink
+                , alignLeft
+                , centerY
+                , Font.regular
+                , Font.size 14
+                , Font.color Color.transparent300
+                ]
+                (text "Collateral locked")
+            , collateralBalance page pool tokenId collateral
+            ]
+        )
+        (pools
             |> Pools.getCollateralizedDebt pool
             |> Maybe.map
                 (\collateralizedDebt ->
@@ -788,67 +1000,152 @@ activeBalances { images, pools } ({ chosenPool, chosenTokenIds } as page) chain 
                         }
                 )
             |> Maybe.withDefault none
-        ]
+        )
 
 
 maturedBalances :
-    { model | images : Images, pools : Pools }
+    { model | device : Device, images : Images, pools : Pools }
     -> { page | tooltip : Maybe Tooltip }
     -> Chain
     -> { duesInfo | pool : Pool }
     -> DueInfo
     -> Element Msg
-maturedBalances { images, pools } page chain { pool } { tokenId, debt, collateral } =
-    row
-        ([ width fill
-         , height <| px 56
-         , paddingXY 20 0
-         , spacing 30
-         ]
-            ++ Glass.lightWhite 12
-        )
-        [ el
-            [ width shrink
-            , height shrink
-            , alignLeft
-            , centerY
-            , Font.regular
-            , Font.size 14
-            , Font.color Color.transparent300
-            ]
-            (text "Amount defaulted")
-        , assetBalance page pool tokenId debt
-        , line
-        , el
-            [ width shrink
-            , height shrink
-            , alignLeft
-            , centerY
-            , Font.regular
-            , Font.size 14
-            , Font.color Color.transparent300
-            ]
-            (text "Collateral forfeited")
-        , collateralBalance page pool tokenId collateral
-        , pools
-            |> Pools.getCollateralizedDebt pool
-            |> Maybe.map
-                (\collateralizedDebt ->
-                    newTabLink
-                        [ width shrink
-                        , height shrink
-                        , alignRight
-                        , centerY
-                        ]
-                        { url =
-                            OpenSea.url chain collateralizedDebt tokenId
-                        , label =
-                            Image.openSea images
-                                [ width <| px 20 ]
-                        }
+maturedBalances { device, images, pools } page chain { pool } { tokenId, debt, collateral } =
+    (\assetElement collateralElement ->
+        if device |> Device.isPhoneOrTablet then
+            column
+                ([ width fill
+                 , (if device |> Device.isPhone then
+                        144
+
+                    else
+                        96
+                   )
+                    |> px
+                    |> height
+                 , paddingXY 20 0
+                 , spacing 16
+                 ]
+                    ++ Glass.lightWhite 12
                 )
-            |> Maybe.withDefault none
-        ]
+                [ row
+                    [ width fill
+                    , height shrink
+                    , centerY
+                    ]
+                    [ assetElement
+                    , pools
+                        |> Pools.getCollateralizedDebt pool
+                        |> Maybe.map
+                            (\collateralizedDebt ->
+                                newTabLink
+                                    [ width shrink
+                                    , height shrink
+                                    , alignRight
+                                    , centerY
+                                    ]
+                                    { url =
+                                        OpenSea.url chain collateralizedDebt tokenId
+                                    , label =
+                                        Image.openSea images
+                                            [ width <| px 20 ]
+                                    }
+                            )
+                        |> Maybe.withDefault none
+                    ]
+                , collateralElement
+                ]
+
+        else
+            row
+                ([ width fill
+                 , height <| px 56
+                 , paddingXY 20 0
+                 , spacing 30
+                 ]
+                    ++ Glass.lightWhite 12
+                )
+                [ assetElement
+                , line
+                , collateralElement
+                , pools
+                    |> Pools.getCollateralizedDebt pool
+                    |> Maybe.map
+                        (\collateralizedDebt ->
+                            newTabLink
+                                [ width shrink
+                                , height shrink
+                                , alignRight
+                                , centerY
+                                ]
+                                { url =
+                                    OpenSea.url chain collateralizedDebt tokenId
+                                , label =
+                                    Image.openSea images
+                                        [ width <| px 20 ]
+                                }
+                        )
+                    |> Maybe.withDefault none
+                ]
+    )
+        ((if device |> Device.isPhone then
+            column
+
+          else
+            row
+         )
+            [ width fill
+            , centerY
+            , (if device |> Device.isPhone then
+                8
+
+               else
+                30
+              )
+                |> spacing
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , alignLeft
+                , centerY
+                , Font.regular
+                , Font.size 14
+                , Font.color Color.transparent300
+                ]
+                (text "Amount defaulted")
+            , assetBalance page pool tokenId debt
+            ]
+        )
+        ((if device |> Device.isPhone then
+            column
+
+          else
+            row
+         )
+            [ width fill
+            , centerY
+            , (if device |> Device.isPhone then
+                8
+
+               else
+                30
+              )
+                |> spacing
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , alignLeft
+                , centerY
+                , Font.regular
+                , Font.size 14
+                , Font.color Color.transparent300
+                ]
+                (text "Collateral forfeited")
+            , collateralBalance page pool tokenId collateral
+            ]
+        )
 
 
 line : Element msg

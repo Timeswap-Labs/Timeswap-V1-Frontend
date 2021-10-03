@@ -41,6 +41,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Utility.Color as Color
 import Utility.Tooltip as Tooltip
+import Utility.Truncate as Truncate
 
 
 type Tooltip
@@ -275,11 +276,22 @@ transactionInfo pair ( minBond, minInsurance ) slippage =
                     [ alignRight
                     , spacing 4
                     ]
-                    [ el
-                        [ Font.regular
-                        , Font.color Color.transparent500
+                    [ row
+                        [ width shrink
+                        , Font.regular
                         ]
-                        (text minBond)
+                        (minBond
+                            |> Truncate.fade
+                            |> (\( nonFaded, faded ) ->
+                                    [ el
+                                        [ Font.color Color.transparent500 ]
+                                        (text nonFaded)
+                                    , el
+                                        [ Font.color Color.transparent200 ]
+                                        (text faded)
+                                    ]
+                               )
+                        )
                     , el
                         [ Font.regular
                         , Font.color Color.transparent300
@@ -310,11 +322,22 @@ transactionInfo pair ( minBond, minInsurance ) slippage =
                     [ alignRight
                     , spacing 4
                     ]
-                    [ el
-                        [ Font.regular
-                        , Font.color Color.transparent500
+                    [ row
+                        [ width shrink
+                        , Font.regular
                         ]
-                        (text minInsurance)
+                        (minInsurance
+                            |> Truncate.fade
+                            |> (\( nonFaded, faded ) ->
+                                    [ el
+                                        [ Font.color Color.transparent500 ]
+                                        (text nonFaded)
+                                    , el
+                                        [ Font.color Color.transparent200 ]
+                                        (text faded)
+                                    ]
+                               )
+                        )
                     , el
                         [ Font.regular
                         , Font.color Color.transparent300

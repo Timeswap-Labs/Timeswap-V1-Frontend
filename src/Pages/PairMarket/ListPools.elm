@@ -504,7 +504,10 @@ liquidities msgs ({ device } as model) page { maturity, poolInfo } =
         ]
         (case poolInfo of
             Loading ->
-                [ Loading.view ]
+                [ el
+                    [ width <| px 50 ]
+                    Loading.view
+                ]
 
             Failure _ ->
                 []
@@ -547,7 +550,9 @@ estimatedAPR { device } poolInfo =
         (case poolInfo of
             Loading ->
                 el
-                    [ centerX ]
+                    [ width <| px 50
+                    , centerX
+                    ]
                     Loading.view
 
             Failure _ ->
@@ -616,7 +621,9 @@ collateralFactor msgs { device } page { maturity, poolInfo } =
         (case poolInfo of
             Loading ->
                 el
-                    [ centerX ]
+                    [ width <| px 50
+                    , centerX
+                    ]
                     Loading.view
 
             Failure _ ->

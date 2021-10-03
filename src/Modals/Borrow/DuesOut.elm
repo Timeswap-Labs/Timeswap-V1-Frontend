@@ -46,6 +46,7 @@ import Element
         , el
         , fill
         , height
+        , moveDown
         , newTabLink
         , none
         , onRight
@@ -1106,7 +1107,7 @@ estimatedAPR { duesOut } =
                                     [ width <| px 50
                                     , height shrink
                                     ]
-                                    Loading.view
+                                    Loading.viewSmall
 
                             Failure _ ->
                                 none
@@ -1184,7 +1185,7 @@ collateralFactor msgs ({ pool, duesOut } as modal) =
                                     [ width <| px 50
                                     , height shrink
                                     ]
-                                    Loading.view
+                                    Loading.viewSmall
                                 , el
                                     [ paddingXY 4 0
                                     , centerY
@@ -1441,7 +1442,7 @@ debtInSection msgs ({ images } as model) ({ duesOut, tooltip } as modal) =
                                 , height shrink
                                 , centerY
                                 ]
-                                Loading.view
+                                Loading.viewSmall
 
                         else
                             none
@@ -1610,17 +1611,63 @@ debtInInput msgs model ({ duesOut } as modal) =
              , paddingXY 12 4
              , alignLeft
              , centerY
+             , moveDown 1
              , Background.color Color.none
              , Border.color Color.none
+             , Border.width 0
              , Font.regular
              , Font.size 16
-             , (if isCorrect model modal then
-                    Color.transparent500
+             , (case duesOut of
+                    Debt _ ->
+                        if isCorrect model modal then
+                            Color.transparent500
 
-                else
-                    Color.negative500
+                        else
+                            Color.negative500
+
+                    _ ->
+                        Color.none
                )
                 |> Font.color
+             , (case duesOut of
+                    Debt _ ->
+                        none
+
+                    _ ->
+                        debtIn
+                            |> Truncate.fade
+                            |> (\( nonFaded, faded ) ->
+                                    row
+                                        [ width fill
+                                        , height shrink
+                                        , paddingXY 12 4
+                                        , alignLeft
+                                        , centerY
+                                        ]
+                                        [ el
+                                            [ (if isCorrect model modal then
+                                                Color.transparent500
+
+                                               else
+                                                Color.negative500
+                                              )
+                                                |> Font.color
+                                            ]
+                                            (text nonFaded)
+                                        , el
+                                            [ (if isCorrect model modal then
+                                                Color.transparent200
+
+                                               else
+                                                Color.negative400
+                                              )
+                                                |> Font.color
+                                            ]
+                                            (text faded)
+                                        ]
+                               )
+               )
+                |> behindContent
              ]
                 ++ (if isDebt then
                         []
@@ -1653,19 +1700,36 @@ debtInInput msgs model ({ duesOut } as modal) =
                             ]
                             (case dues of
                                 Success { debt } ->
-                                    el
-                                        [ paddingXY 12 4
-                                        , centerY
-                                        , clip
-                                        , (if isCorrect model modal then
-                                            Color.transparent500
+                                    debt
+                                        |> Truncate.fade
+                                        |> (\( nonFaded, faded ) ->
+                                                row
+                                                    [ paddingXY 12 4
+                                                    , centerY
+                                                    , clip
+                                                    ]
+                                                    [ el
+                                                        [ (if isCorrect model modal then
+                                                            Color.transparent500
 
-                                           else
-                                            Color.negative500
-                                          )
-                                            |> Font.color
-                                        ]
-                                        (text debt)
+                                                           else
+                                                            Color.negative500
+                                                          )
+                                                            |> Font.color
+                                                        ]
+                                                        (text nonFaded)
+                                                    , el
+                                                        [ (if isCorrect model modal then
+                                                            Color.transparent200
+
+                                                           else
+                                                            Color.negative400
+                                                          )
+                                                            |> Font.color
+                                                        ]
+                                                        (text faded)
+                                                    ]
+                                           )
 
                                 _ ->
                                     el
@@ -1785,7 +1849,7 @@ collateralInSection msgs ({ images, user } as model) ({ duesOut, tooltip } as mo
                                 , height shrink
                                 , centerY
                                 ]
-                                Loading.view
+                                Loading.viewSmall
 
                         else
                             none
@@ -1799,7 +1863,7 @@ collateralInSection msgs ({ images, user } as model) ({ duesOut, tooltip } as mo
                                 , alignRight
                                 , centerY
                                 ]
-                                Loading.view
+                                Loading.viewSmall
 
                         Failure _ ->
                             none
@@ -2093,17 +2157,63 @@ collateralInInput msgs model ({ duesOut } as modal) =
              , paddingXY 12 4
              , alignLeft
              , centerY
+             , moveDown 1
              , Background.color Color.none
              , Border.color Color.none
+             , Border.width 0
              , Font.regular
              , Font.size 16
-             , (if isCorrect model modal then
-                    Color.transparent500
+             , (case duesOut of
+                    Collateral _ ->
+                        if isCorrect model modal then
+                            Color.transparent500
 
-                else
-                    Color.negative500
+                        else
+                            Color.negative500
+
+                    _ ->
+                        Color.none
                )
                 |> Font.color
+             , (case duesOut of
+                    Collateral _ ->
+                        none
+
+                    _ ->
+                        collateralIn
+                            |> Truncate.fade
+                            |> (\( nonFaded, faded ) ->
+                                    row
+                                        [ width fill
+                                        , height shrink
+                                        , paddingXY 12 4
+                                        , alignLeft
+                                        , centerY
+                                        ]
+                                        [ el
+                                            [ (if isCorrect model modal then
+                                                Color.transparent500
+
+                                               else
+                                                Color.negative500
+                                              )
+                                                |> Font.color
+                                            ]
+                                            (text nonFaded)
+                                        , el
+                                            [ (if isCorrect model modal then
+                                                Color.transparent200
+
+                                               else
+                                                Color.negative400
+                                              )
+                                                |> Font.color
+                                            ]
+                                            (text faded)
+                                        ]
+                               )
+               )
+                |> behindContent
              ]
                 ++ (if isCollateral then
                         []
@@ -2136,19 +2246,36 @@ collateralInInput msgs model ({ duesOut } as modal) =
                             ]
                             (case dues of
                                 Success { collateral } ->
-                                    el
-                                        [ paddingXY 12 4
-                                        , centerY
-                                        , clip
-                                        , (if isCorrect model modal then
-                                            Color.transparent500
+                                    collateral
+                                        |> Truncate.fade
+                                        |> (\( nonFaded, faded ) ->
+                                                row
+                                                    [ paddingXY 12 4
+                                                    , centerY
+                                                    , clip
+                                                    ]
+                                                    [ el
+                                                        [ (if isCorrect model modal then
+                                                            Color.transparent500
 
-                                           else
-                                            Color.negative500
-                                          )
-                                            |> Font.color
-                                        ]
-                                        (text collateral)
+                                                           else
+                                                            Color.negative500
+                                                          )
+                                                            |> Font.color
+                                                        ]
+                                                        (text nonFaded)
+                                                    , el
+                                                        [ (if isCorrect model modal then
+                                                            Color.transparent200
+
+                                                           else
+                                                            Color.negative400
+                                                          )
+                                                            |> Font.color
+                                                        ]
+                                                        (text faded)
+                                                    ]
+                                           )
 
                                 _ ->
                                     el

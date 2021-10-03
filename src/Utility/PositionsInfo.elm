@@ -13,6 +13,7 @@ import Data.Status exposing (Status(..))
 import Element
     exposing
         ( Element
+        , alignLeft
         , alignRight
         , centerX
         , centerY
@@ -70,7 +71,7 @@ loading =
         ]
 
 
-noLendPosition : { model | device : Device, images : Images } -> Element msg
+noLendPosition : { model | images : Images } -> Element msg
 noLendPosition model =
     column
         [ width fill
@@ -92,7 +93,7 @@ noLendPosition model =
         ]
 
 
-noBorrowPosition : { model | device : Device, images : Images } -> Element msg
+noBorrowPosition : { model | images : Images } -> Element msg
 noBorrowPosition model =
     column
         [ width fill
@@ -114,32 +115,26 @@ noBorrowPosition model =
         ]
 
 
-goToMarketButton : { model | device : Device, images : Images } -> Element msg
-goToMarketButton { device, images } =
+goToMarketButton : { model | images : Images } -> Element msg
+goToMarketButton { images } =
     link
-        ([ width shrink
-         , paddingEach
+        [ width shrink
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary300 ]
-         , mouseOver [ Background.color Color.primary400 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary300 ]
+        , mouseOver [ Background.color Color.primary400 ]
+        ]
         { url = Router.toAllMarket
         , label =
             row
@@ -187,29 +182,23 @@ noUser model =
 connectButton : { model | device : Device, images : Images } -> Element msg
 connectButton { device, images } =
     link
-        ([ width shrink
-         , paddingEach
+        [ width shrink
+        , height <| px 44
+        , paddingEach
             { top = 0
             , right = 16
             , bottom = 0
             , left = 10
             }
-         , centerX
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        , centerX
+        , centerY
+        , Background.color Color.primary500
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        , mouseDown [ Background.color Color.primary400 ]
+        , mouseOver [ Background.color Color.primary300 ]
+        ]
         { url = Router.toConnect
         , label =
             row
@@ -264,14 +253,18 @@ rinkebyLabel =
 
 
 duration :
-    { model | time : Posix, images : Images }
+    { model | device : Device, time : Posix, images : Images }
     -> Maturity
     -> Element msg
-duration { time, images } maturity =
+duration { device, time, images } maturity =
     row
         [ width shrink
-        , height shrink
-        , alignRight
+        , height <| px 44
+        , if device |> Device.isPhoneOrTablet then
+            alignLeft
+
+          else
+            alignRight
         , centerY
         , spacing 12
         , Font.size 14

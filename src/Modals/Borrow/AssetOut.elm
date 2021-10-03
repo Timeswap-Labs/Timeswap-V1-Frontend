@@ -14,6 +14,7 @@ import Element
         , el
         , fill
         , height
+        , moveDown
         , paddingEach
         , paddingXY
         , px
@@ -228,8 +229,10 @@ assetOutInput msgs model ({ assetOut } as modal) =
         , paddingXY 12 4
         , alignLeft
         , centerY
+        , moveDown 1
         , Background.color Color.none
         , Border.color Color.none
+        , Border.width 0
         , Font.regular
         , Font.size 16
         , (if DuesOut.isCorrect model modal then

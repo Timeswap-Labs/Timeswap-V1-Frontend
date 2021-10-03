@@ -23,6 +23,7 @@ import Data.Tokens exposing (Tokens)
 import Element
     exposing
         ( Element
+        , alignBottom
         , alignLeft
         , alignRight
         , alignTop
@@ -37,6 +38,7 @@ import Element
         , mouseDown
         , mouseOver
         , moveLeft
+        , moveUp
         , none
         , onRight
         , padding
@@ -376,8 +378,8 @@ singleMaturedPosition ({ device, tokenImages } as model) (Page ({ expandedSet } 
             [ width fill
             , height shrink
             , (return
-                |> Maybe.map (\_ -> claimButton maturedClaimInfo)
-                |> Maybe.withDefault claimButtonOff
+                |> Maybe.map (\_ -> claimButton model maturedClaimInfo)
+                |> Maybe.withDefault (claimButtonOff model)
               )
                 |> inFront
             ]
@@ -395,27 +397,36 @@ singleMaturedPosition ({ device, tokenImages } as model) (Page ({ expandedSet } 
                     if Device.isPhoneOrTablet device then
                         column
                             ([ width fill
-                             , height <| px 130
+                             , height <| px 184
+                             , spacing 12
                              ]
                                 ++ Glass.lightPrimary 1
                             )
                             [ row
                                 [ width fill
-                                , height fill
-                                , paddingXY 24 0
+                                , height shrink
+                                , paddingXY 20 0
                                 , spacing 18
+                                , centerY
                                 ]
                                 [ PairInfo.icons tokenImages pool.pair
                                 , PairInfo.symbols pool.pair
-                                , PositionsInfo.duration model pool.maturity
+                                , discloser model page maturedClaimInfo
                                 ]
                             , el
                                 [ width fill
-                                , height fill
-                                , paddingXY 24 0
-                                , spacing 18
+                                , height shrink
+                                , paddingXY 20 0
+                                , centerY
                                 ]
-                                (discloser model page maturedClaimInfo)
+                                (PositionsInfo.duration model pool.maturity)
+                            , el
+                                [ width fill
+                                , height <| px 44
+                                , paddingXY 20 0
+                                , centerY
+                                ]
+                                none
                             ]
 
                     else
@@ -447,7 +458,7 @@ singleMaturedPosition ({ device, tokenImages } as model) (Page ({ expandedSet } 
                 , Border.width 1
                 , Border.color Color.transparent100
                 ]
-                (maturedBalances page maturedClaimInfo)
+                (maturedBalances model page maturedClaimInfo)
 
           else
             none
@@ -455,11 +466,11 @@ singleMaturedPosition ({ device, tokenImages } as model) (Page ({ expandedSet } 
 
 
 singleActivePosition :
-    { model | time : Posix, images : Images, tokenImages : TokenImages }
+    { model | device : Device, time : Posix, images : Images, tokenImages : TokenImages }
     -> Page
     -> ActiveClaimInfo
     -> Element Msg
-singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page)) ({ pool } as activeClaimInfo) =
+singleActivePosition ({ device, tokenImages } as model) (Page ({ expandedSet } as page)) ({ pool } as activeClaimInfo) =
     column
         [ width fill
         , height shrink
@@ -467,8 +478,8 @@ singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page))
         [ el
             [ width fill
             , height shrink
-            , lendMoreButton activeClaimInfo |> inFront
-            , claimButtonOff |> inFront
+            , lendMoreButton model activeClaimInfo |> inFront
+            , claimButtonOff model |> inFront
             ]
             (Input.button
                 [ width fill
@@ -481,24 +492,74 @@ singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page))
                     else
                         Just (Expand pool)
                 , label =
-                    row
-                        ([ width fill
-                         , height <| px 72
-                         , paddingXY 24 0
-                         , spacing 18
-                         ]
-                            ++ Glass.lightPrimary 1
-                        )
-                        [ PairInfo.icons tokenImages pool.pair
-                        , PairInfo.symbols pool.pair
-                        , PositionsInfo.duration model pool.maturity
-                        , el
-                            [ width <| px 238
-                            , alignRight
+                    if Device.isPhoneOrTablet device then
+                        column
+                            ([ width fill
+                             , (if device |> Device.isPhone then
+                                    248
+
+                                else
+                                    192
+                               )
+                                |> px
+                                |> height
+                             , spacing 12
+                             ]
+                                ++ Glass.lightPrimary 1
+                            )
+                            [ row
+                                [ width fill
+                                , height shrink
+                                , paddingXY 20 0
+                                , spacing 18
+                                , centerY
+                                ]
+                                [ PairInfo.icons tokenImages pool.pair
+                                , PairInfo.symbols pool.pair
+                                , discloser model page activeClaimInfo
+                                ]
+                            , el
+                                [ width fill
+                                , height shrink
+                                , paddingXY 20 0
+                                , centerY
+                                ]
+                                (PositionsInfo.duration model pool.maturity)
+                            , el
+                                [ width fill
+                                , (if device |> Device.isPhone then
+                                    100
+
+                                   else
+                                    44
+                                  )
+                                    |> px
+                                    |> height
+                                , paddingXY 20 0
+                                , centerY
+                                ]
+                                none
                             ]
-                            none
-                        , discloser model page activeClaimInfo
-                        ]
+
+                    else
+                        row
+                            ([ width fill
+                             , height <| px 72
+                             , paddingXY 24 0
+                             , spacing 18
+                             ]
+                                ++ Glass.lightPrimary 1
+                            )
+                            [ PairInfo.icons tokenImages pool.pair
+                            , PairInfo.symbols pool.pair
+                            , PositionsInfo.duration model pool.maturity
+                            , el
+                                [ width <| px 238
+                                , alignRight
+                                ]
+                                none
+                            , discloser model page activeClaimInfo
+                            ]
                 }
             )
         , if pool |> Set.memberOf expandedSet then
@@ -509,26 +570,45 @@ singleActivePosition ({ tokenImages } as model) (Page ({ expandedSet } as page))
                 , Border.width 1
                 , Border.color Color.transparent100
                 ]
-                (activeBalances page activeClaimInfo)
+                (activeBalances model page activeClaimInfo)
 
           else
             none
         ]
 
 
-claimButton : { maturedClaimInfo | pool : Pool } -> Element msg
-claimButton { pool } =
+claimButton : { model | device : Device } -> { maturedClaimInfo | pool : Pool } -> Element msg
+claimButton { device } { pool } =
     link
-        [ width <| px 110
-        , height <| px 44
-        , alignRight
-        , centerY
-        , moveLeft 54
-        , Background.color Color.primary100
-        , Border.rounded 4
-        , mouseDown [ Background.color Color.primary400 ]
-        , mouseOver [ Background.color Color.primary300 ]
-        ]
+        ([ height <| px 44
+         , Background.color Color.primary100
+         , Border.rounded 4
+         , mouseDown [ Background.color Color.primary400 ]
+         , mouseOver [ Background.color Color.primary300 ]
+         ]
+            ++ (if device |> Device.isPhone then
+                    [ width <| px 295
+                    , centerX
+                    , alignBottom
+                    , moveUp 20
+                    ]
+
+                else if device |> Device.isTablet then
+                    [ width <| px 247
+                    , alignRight
+                    , alignBottom
+                    , moveLeft 20
+                    , moveUp 20
+                    ]
+
+                else
+                    [ width <| px 110
+                    , alignRight
+                    , centerY
+                    , moveLeft 54
+                    ]
+               )
+        )
         { url = Router.toWithdraw pool
         , label =
             el
@@ -544,23 +624,42 @@ claimButton { pool } =
         }
 
 
-lendMoreButton : { activeClaimInfo | pool : Pool } -> Element msg
-lendMoreButton { pool } =
+lendMoreButton : { model | device : Device } -> { activeClaimInfo | pool : Pool } -> Element msg
+lendMoreButton { device } { pool } =
     link
-        [ width <| px 110
-        , height <| px 44
-        , alignRight
-        , centerY
-        , moveLeft 182
-        , Border.width 1
-        , Border.color Color.primary100
-        , Border.rounded 4
-        , mouseDown
+        ([ height <| px 44
+         , Border.width 1
+         , Border.color Color.primary100
+         , Border.rounded 4
+         , mouseDown
             [ Background.color Color.primary300
             , Border.color Color.primary300
             ]
-        , mouseOver [ Background.color Color.primary100 ]
-        ]
+         , mouseOver [ Background.color Color.primary100 ]
+         ]
+            ++ (if device |> Device.isPhone then
+                    [ width <| px 295
+                    , centerX
+                    , alignBottom
+                    , moveUp 76
+                    ]
+
+                else if device |> Device.isTablet then
+                    [ width <| px 247
+                    , alignRight
+                    , alignBottom
+                    , moveLeft 285
+                    , moveUp 20
+                    ]
+
+                else
+                    [ width <| px 110
+                    , alignRight
+                    , centerY
+                    , moveLeft 182
+                    ]
+               )
+        )
         { url = Router.toLend pool
         , label =
             el
@@ -576,17 +675,37 @@ lendMoreButton { pool } =
         }
 
 
-claimButtonOff : Element msg
-claimButtonOff =
+claimButtonOff : { model | device : Device } -> Element msg
+claimButtonOff { device } =
     el
-        [ width <| px 110
-        , height <| px 44
-        , alignRight
-        , centerY
-        , moveLeft 54
-        , Background.color Color.transparent100
-        , Border.rounded 4
-        ]
+        ([ height <| px 44
+         , alignRight
+         , Background.color Color.transparent100
+         , Border.rounded 4
+         ]
+            ++ (if device |> Device.isPhone then
+                    [ width <| px 295
+                    , centerX
+                    , alignBottom
+                    , moveUp 20
+                    ]
+
+                else if device |> Device.isTablet then
+                    [ width <| px 247
+                    , alignRight
+                    , alignBottom
+                    , moveLeft 20
+                    , moveUp 20
+                    ]
+
+                else
+                    [ width <| px 110
+                    , alignRight
+                    , centerY
+                    , moveLeft 54
+                    ]
+               )
+        )
         (el
             [ width shrink
             , height shrink
@@ -619,19 +738,38 @@ discloser { images } { expandedSet } { pool } =
 
 
 maturedBalances :
-    { page | tooltip : Maybe Tooltip }
+    { model | device : Device }
+    -> { page | tooltip : Maybe Tooltip }
     ->
         { maturedClaimInfo
             | pool : Pool
             , return : Maybe Return
         }
     -> Element Msg
-maturedBalances page { pool, return } =
-    row
+maturedBalances { device } page { pool, return } =
+    (if device |> Device.isPhone then
+        column
+
+     else
+        row
+    )
         ([ width fill
-         , height <| px 56
+         , (if device |> Device.isPhone then
+                80
+
+            else
+                56
+           )
+            |> px
+            |> height
          , paddingXY 20 0
-         , spacing 30
+         , (if device |> Device.isPhone then
+                8
+
+            else
+                30
+           )
+            |> spacing
          ]
             ++ Glass.lightWhite 12
         )
@@ -678,42 +816,106 @@ maturedBalances page { pool, return } =
 
 
 activeBalances :
-    { page | tooltip : Maybe Tooltip }
+    { model | device : Device }
+    -> { page | tooltip : Maybe Tooltip }
     -> { activeClaimInfo | pool : Pool, claim : Claim }
     -> Element Msg
-activeBalances page { pool, claim } =
-    row
-        ([ width fill
-         , height <| px 56
-         , paddingXY 20 0
-         , spacing 30
-         ]
-            ++ Glass.lightWhite 12
+activeBalances { device } page { pool, claim } =
+    (\assetElement collateralElement ->
+        if device |> Device.isPhoneOrTablet then
+            column
+                ([ width fill
+                 , (if device |> Device.isPhone then
+                        136
+
+                    else
+                        88
+                   )
+                    |> px
+                    |> height
+                 , paddingXY 20 0
+                 , spacing 16
+                 ]
+                    ++ Glass.lightWhite 12
+                )
+                [ assetElement
+                , collateralElement
+                ]
+
+        else
+            row
+                ([ width fill
+                 , height <| px 56
+                 , paddingXY 20 0
+                 , spacing 30
+                 ]
+                    ++ Glass.lightWhite 12
+                )
+                [ assetElement
+                , line
+                , collateralElement
+                ]
+    )
+        ((if device |> Device.isPhone then
+            column
+
+          else
+            row
+         )
+            [ width shrink
+            , alignLeft
+            , centerY
+            , (if device |> Device.isPhone then
+                8
+
+               else
+                30
+              )
+                |> spacing
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , alignLeft
+                , centerY
+                , Font.regular
+                , Font.size 14
+                , Font.color Color.transparent300
+                ]
+                (text "Amount at maturity")
+            , assetBalance page pool claim.bond
+            ]
         )
-        [ el
+        ((if device |> Device.isPhone then
+            column
+
+          else
+            row
+         )
             [ width shrink
-            , height shrink
             , alignLeft
             , centerY
-            , Font.regular
-            , Font.size 14
-            , Font.color Color.transparent300
+            , (if device |> Device.isPhone then
+                8
+
+               else
+                30
+              )
+                |> spacing
             ]
-            (text "Amount at maturity")
-        , assetBalance page pool claim.bond
-        , line
-        , el
-            [ width shrink
-            , height shrink
-            , alignLeft
-            , centerY
-            , Font.regular
-            , Font.size 14
-            , Font.color Color.transparent300
+            [ el
+                [ width shrink
+                , height shrink
+                , alignLeft
+                , centerY
+                , Font.regular
+                , Font.size 14
+                , Font.color Color.transparent300
+                ]
+                (text "Insurance in case of 100% default")
+            , collateralBalance page pool claim.insurance
             ]
-            (text "Insurance in case of 100% default")
-        , collateralBalance page pool claim.insurance
-        ]
+        )
 
 
 line : Element msg

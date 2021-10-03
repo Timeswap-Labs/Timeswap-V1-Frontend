@@ -16,6 +16,7 @@ import Element
         , el
         , fill
         , height
+        , moveDown
         , none
         , paddingEach
         , paddingXY
@@ -106,7 +107,7 @@ title msgs { user } modal =
                             , alignRight
                             , centerY
                             ]
-                            Loading.view
+                            Loading.viewSmall
 
                     Failure _ ->
                         none
@@ -374,8 +375,10 @@ assetInInput msgs model ({ assetIn } as modal) =
         , paddingXY 12 4
         , alignLeft
         , centerY
+        , moveDown 1
         , Background.color Color.none
         , Border.color Color.none
+        , Border.width 0
         , Font.regular
         , Font.size 16
         , (if ClaimsOut.isCorrect model modal then

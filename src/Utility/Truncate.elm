@@ -1,4 +1,4 @@
-module Utility.Truncate exposing (amount)
+module Utility.Truncate exposing (amount, fade)
 
 
 type alias Truncated =
@@ -150,4 +150,30 @@ amount full =
 
                     _ ->
                         Truncated full Nothing
+           )
+
+
+fade : String -> ( String, String )
+fade full =
+    full
+        |> String.split "."
+        |> (\list ->
+                case list of
+                    whole :: fraction :: _ ->
+                        ( [ whole
+                          , fraction |> String.left 2
+                          ]
+                            |> String.join "."
+                        , fraction |> String.dropLeft 2
+                        )
+
+                    whole :: _ ->
+                        ( whole
+                        , ""
+                        )
+
+                    _ ->
+                        ( full
+                        , ""
+                        )
            )
