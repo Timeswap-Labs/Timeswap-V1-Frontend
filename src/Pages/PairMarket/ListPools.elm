@@ -124,7 +124,6 @@ view msgs model page list =
                                         , el
                                             [ width shrink
                                             , height shrink
-                                            , clipX
                                             ]
                                             (maturityInfo model maturity)
                                         ]
@@ -146,7 +145,6 @@ view msgs model page list =
                                         , el
                                             [ width shrink
                                             , height shrink
-                                            , clipX
                                             ]
                                             (liquidities msgs model page info)
                                         ]
@@ -171,7 +169,6 @@ view msgs model page list =
                                             , el
                                                 [ width shrink
                                                 , height shrink
-                                                , clipX
                                                 ]
                                                 (estimatedAPR model poolInfo)
                                             ]
@@ -195,7 +192,6 @@ view msgs model page list =
                                                 [ width shrink
                                                 , height shrink
                                                 , alignRight
-                                                , clipX
                                                 ]
                                                 (collateralFactor msgs model page info)
                                             ]
@@ -424,7 +420,6 @@ maturityInfo { time, zoneInfo, images } maturity =
     row
         [ width shrink
         , height shrink
-        , paddingXY 0 3
         , alignLeft
         , centerY
         , spacing 12
