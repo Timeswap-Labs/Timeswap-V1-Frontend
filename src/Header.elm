@@ -627,7 +627,14 @@ settingsButton { device, images } =
         { url = Router.toSettings
         , label =
             Image.option images
-                [ width <| px 24
+                [ (if device |> Device.isPhone then
+                    19
+
+                   else
+                    24
+                  )
+                    |> px
+                    |> width
                 , centerX
                 , centerY
                 ]

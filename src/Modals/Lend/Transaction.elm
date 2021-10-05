@@ -18,6 +18,7 @@ import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , above
         , below
         , centerX
         , centerY
@@ -612,7 +613,7 @@ disabledLend =
 
 transactionInfo :
     { msgs | onMouseEnter : Tooltip -> msg, onMouseLeave : msg }
-    -> { model | time : Posix, slippage : Slippage, images : Images }
+    -> { model | device : Device, time : Posix, slippage : Slippage, images : Images }
     ->
         { modal
             | pool : Pool
@@ -621,7 +622,7 @@ transactionInfo :
             , tooltip : Maybe Tooltip
         }
     -> Element msg
-transactionInfo msgs ({ slippage, images } as model) ({ pool, claimsOut, tooltip } as modal) =
+transactionInfo msgs ({ device, slippage, images } as model) ({ pool, claimsOut, tooltip } as modal) =
     row
         [ width shrink
         , height <| px 20
@@ -668,7 +669,7 @@ transactionInfo msgs ({ slippage, images } as model) ({ pool, claimsOut, tooltip
                     )
                         |> Maybe.map
                             (\min ->
-                                Tooltip.transactionInfo pool.pair min slippage
+                                Tooltip.transactionInfo device pool.pair min slippage
                             )
                         |> Maybe.withDefault none
 
@@ -678,7 +679,12 @@ transactionInfo msgs ({ slippage, images } as model) ({ pool, claimsOut, tooltip
            else
             none
           )
-            |> below
+            |> (if device |> Device.isPhone then
+                    above
+
+                else
+                    below
+               )
         ]
         (if ClaimsOut.hasTransactionInfo model modal then
             [ el

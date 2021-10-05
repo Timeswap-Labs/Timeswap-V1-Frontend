@@ -1,6 +1,7 @@
 module Modals.Lend.AssetIn exposing (view)
 
 import Data.Balances as Balances exposing (Balances)
+import Data.Device as Device exposing (Device)
 import Data.Pair as Pair exposing (Pair)
 import Data.Remote exposing (Remote(..))
 import Data.Token as Token
@@ -49,7 +50,8 @@ view :
     }
     ->
         { model
-            | tokenImages : TokenImages
+            | device : Device
+            , tokenImages : TokenImages
             , user : Remote userError { user | balances : Remote () Balances }
         }
     ->
@@ -81,10 +83,14 @@ title :
         | onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
-    -> { model | user : Remote userError { user | balances : Remote () Balances } }
+    ->
+        { model
+            | device : Device
+            , user : Remote userError { user | balances : Remote () Balances }
+        }
     -> { modal | pool : { pool | pair : Pair }, tooltip : Maybe Tooltip }
     -> Element msg
-title msgs { user } modal =
+title msgs { device, user } modal =
     row
         [ width fill
         , height shrink
@@ -98,25 +104,29 @@ title msgs { user } modal =
             , Font.color Color.transparent500
             ]
             (text "Amount to lend")
-        , case user of
-            Success { balances } ->
-                case balances of
-                    Loading ->
-                        el
-                            [ height <| px 50
-                            , alignRight
-                            , centerY
-                            ]
-                            Loading.viewSmall
+        , if device |> Device.isPhone then
+            none
 
-                    Failure _ ->
-                        none
+          else
+            case user of
+                Success { balances } ->
+                    case balances of
+                        Loading ->
+                            el
+                                [ width <| px 50
+                                , alignRight
+                                , centerY
+                                ]
+                                Loading.viewSmall
 
-                    Success successBalances ->
-                        assetBalance msgs successBalances modal
+                        Failure _ ->
+                            none
 
-            _ ->
-                none
+                        Success successBalances ->
+                            assetBalance msgs successBalances modal
+
+                _ ->
+                    none
         ]
 
 

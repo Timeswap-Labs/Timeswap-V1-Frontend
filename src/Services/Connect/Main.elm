@@ -20,6 +20,7 @@ import Element
         , mouseDown
         , mouseOver
         , newTabLink
+        , none
         , padding
         , paddingEach
         , paddingXY
@@ -137,7 +138,7 @@ title =
         ]
 
 
-content : { model | images : Images } -> Element Msg
+content : { model | device : Device, images : Images } -> Element Msg
 content model =
     column
         [ width fill
@@ -149,8 +150,8 @@ content model =
         ]
 
 
-metamaskButton : { model | images : Images } -> Element Msg
-metamaskButton { images } =
+metamaskButton : { model | device : Device, images : Images } -> Element Msg
+metamaskButton { device, images } =
     Input.button
         ([ width fill
          , height <| px 64
@@ -186,18 +187,22 @@ metamaskButton { images } =
                     , Font.color Color.transparent500
                     ]
                     (text "Metamask")
-                , el
-                    [ alignLeft
-                    , paddingXY 8 6
-                    , centerY
-                    , Background.color Color.positive100
-                    , Border.rounded 4
-                    , Font.bold
-                    , Font.size 12
-                    , Font.color Color.positive500
-                    , Font.letterSpacing 1.28
-                    ]
-                    (text "RECOMMENDED")
+                , if device |> Device.isPhone then
+                    none
+
+                  else
+                    el
+                        [ alignLeft
+                        , paddingXY 8 6
+                        , centerY
+                        , Background.color Color.positive100
+                        , Border.rounded 4
+                        , Font.bold
+                        , Font.size 12
+                        , Font.color Color.positive500
+                        , Font.letterSpacing 1.28
+                        ]
+                        (text "RECOMMENDED")
                 , Image.arrow images
                     [ width <| px 24
                     , alignRight

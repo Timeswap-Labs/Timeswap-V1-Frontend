@@ -21,6 +21,7 @@ module Modals.Borrow.DuesOut exposing
     )
 
 import Data.Balances as Balances exposing (Balances)
+import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
@@ -737,7 +738,8 @@ view :
     }
     ->
         { model
-            | time : Posix
+            | device : Device
+            , time : Posix
             , images : Images
             , tokenImages : TokenImages
             , user : Remote userError { user | balances : Remote () Balances }
@@ -767,10 +769,10 @@ title :
         , onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
-    -> { model | images : Images }
+    -> { model | device : Device, images : Images }
     -> { modal | duesOut : DuesOut, tooltip : Maybe Tooltip }
     -> Element msg
-title msgs { images } ({ tooltip } as modal) =
+title msgs { device, images } ({ tooltip } as modal) =
     row
         [ width fill
         , height shrink
@@ -794,7 +796,7 @@ title msgs { images } ({ tooltip } as modal) =
             , Font.bold
             , Font.color Color.transparent500
             ]
-            (text "Your Collateralized Debt")
+            (text "Your Position")
         , Image.info images
             [ width <| px 16
             , alignLeft
@@ -803,12 +805,17 @@ title msgs { images } ({ tooltip } as modal) =
             , Events.onMouseLeave msgs.onMouseLeave
             , (case tooltip of
                 Just Tooltip.Dues ->
-                    Tooltip.dues
+                    Tooltip.dues device
 
                 _ ->
                     none
               )
-                |> onRight
+                |> (if device |> Device.isPhone then
+                        below
+
+                    else
+                        onRight
+                   )
             ]
         , el
             [ alignRight
@@ -818,7 +825,14 @@ title msgs { images } ({ tooltip } as modal) =
             , Font.regular
             , Font.color Color.transparent300
             ]
-            (text "Customize Risk")
+            ((if device |> Device.isPhone then
+                "Custom"
+
+              else
+                "Customize Risk"
+             )
+                |> text
+            )
         , switch msgs modal
         ]
 
@@ -897,7 +911,8 @@ position :
     }
     ->
         { model
-            | images : Images
+            | device : Device
+            , images : Images
             , tokenImages : TokenImages
             , user : Remote userError { user | balances : Remote () Balances }
         }
@@ -945,7 +960,7 @@ position msgs model ({ duesOut } as modal) =
             , spacing 12
             ]
             [ estimatedAPR modal
-            , collateralFactor msgs modal
+            , collateralFactor msgs model modal
             ]
         , debtInSection msgs model modal
         , collateralInSection msgs model modal
@@ -975,7 +990,7 @@ sliderSection msgs model modal percent =
                 , Font.regular
                 , Font.color Color.transparent500
                 ]
-                (text "Adjust your collateral factor")
+                (text "Adjust your collateral")
             , newTabLink
                 [ alignRight
                 , Font.regular
@@ -998,8 +1013,8 @@ sliderSection msgs model modal percent =
                 , Font.size 12
                 , Font.color Color.transparent300
                 ]
-                [ el [ alignLeft, Font.regular ] (text "Low")
-                , el [ alignRight, Font.regular ] (text "High")
+                [ el [ alignLeft, Font.regular ] (text "High")
+                , el [ alignRight, Font.regular ] (text "Low")
                 ]
             ]
         ]
@@ -1132,6 +1147,7 @@ collateralFactor :
         | onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
+    -> { model | device : Device }
     ->
         { modal
             | pool : { pool | pair : Pair }
@@ -1139,7 +1155,7 @@ collateralFactor :
             , tooltip : Maybe Tooltip
         }
     -> Element msg
-collateralFactor msgs ({ pool, duesOut } as modal) =
+collateralFactor msgs model ({ pool, duesOut } as modal) =
     row
         ([ width shrink
          , height <| px 32
@@ -1227,7 +1243,7 @@ collateralFactor msgs ({ pool, duesOut } as modal) =
                                 )
 
                         Success cf ->
-                            collateralFactorAmount msgs modal cf
+                            collateralFactorAmount msgs model modal cf
                )
         ]
 
@@ -1237,10 +1253,11 @@ collateralFactorAmount :
         | onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
+    -> { model | device : Device }
     -> { modal | pool : { pool | pair : Pair }, tooltip : Maybe Tooltip }
     -> String
     -> Element msg
-collateralFactorAmount msgs { pool, tooltip } factorAmount =
+collateralFactorAmount msgs { device } { pool, tooltip } factorAmount =
     factorAmount
         |> Truncate.amount
         |> (\{ full, truncated } ->
@@ -1275,12 +1292,17 @@ collateralFactorAmount msgs { pool, tooltip } factorAmount =
                                             |> Token.toSymbol
                                         ]
                                             |> String.join " "
-                                            |> Tooltip.amount
+                                            |> Tooltip.amount device
 
                                     _ ->
                                         none
                                   )
-                                    |> onRight
+                                    |> (if device |> Device.isPhoneOrTablet then
+                                            below
+
+                                        else
+                                            onRight
+                                       )
                                 ]
                                 [ el
                                     [ paddingEach
@@ -1364,7 +1386,8 @@ debtInSection :
     }
     ->
         { model
-            | images : Images
+            | device : Device
+            , images : Images
             , tokenImages : TokenImages
             , user : Remote userError { user | balances : Remote () Balances }
         }
@@ -1376,7 +1399,7 @@ debtInSection :
             , tooltip : Maybe Tooltip
         }
     -> Element msg
-debtInSection msgs ({ images } as model) ({ duesOut, tooltip } as modal) =
+debtInSection msgs ({ device, images } as model) ({ duesOut, tooltip } as modal) =
     column
         [ width fill
         , height shrink
@@ -1405,12 +1428,17 @@ debtInSection msgs ({ images } as model) ({ duesOut, tooltip } as modal) =
                 , Events.onMouseLeave msgs.onMouseLeave
                 , (case tooltip of
                     Just Tooltip.Debt ->
-                        Tooltip.debt
+                        Tooltip.debt device
 
                     _ ->
                         none
                   )
-                    |> onRight
+                    |> (if device |> Device.isPhone then
+                            below
+
+                        else
+                            onRight
+                       )
                 ]
             , (case duesOut of
                 Default Loading ->
@@ -1552,12 +1580,7 @@ debtInAmount msgs model ({ duesOut } as modal) =
     el
         ([ width fill
          , height fill
-         , paddingEach
-            { top = 0
-            , right = 12
-            , bottom = 0
-            , left = 0
-            }
+         , padding 12
          , spacing 8
          , Border.widthEach
             { top = 1
@@ -1607,10 +1630,9 @@ debtInInput msgs model ({ duesOut } as modal) =
     (\debtIn isDebt ->
         Input.text
             ([ width fill
-             , height shrink
-             , paddingXY 12 4
-             , alignLeft
-             , centerY
+             , height fill
+             , padding 0
+             , clip
              , moveDown 1
              , Background.color Color.none
              , Border.color Color.none
@@ -1639,10 +1661,8 @@ debtInInput msgs model ({ duesOut } as modal) =
                             |> (\( nonFaded, faded ) ->
                                     row
                                         [ width fill
-                                        , height shrink
-                                        , paddingXY 12 4
-                                        , alignLeft
-                                        , centerY
+                                        , height fill
+                                        , clip
                                         ]
                                         [ el
                                             [ (if isCorrect model modal then
@@ -1688,57 +1708,55 @@ debtInInput msgs model ({ duesOut } as modal) =
     )
         |> (\element ->
                 case duesOut of
-                    Default dues ->
+                    Default (Success { debt }) ->
+                        debt
+                            |> Truncate.fade
+                            |> (\( nonFaded, faded ) ->
+                                    el
+                                        [ width fill
+                                        , height fill
+                                        , row
+                                            [ width fill
+                                            , height fill
+                                            , clip
+                                            , Font.regular
+                                            , Font.size 16
+                                            ]
+                                            [ el
+                                                [ (if isCorrect model modal then
+                                                    Color.transparent500
+
+                                                   else
+                                                    Color.negative500
+                                                  )
+                                                    |> Font.color
+                                                ]
+                                                (text nonFaded)
+                                            , el
+                                                [ (if isCorrect model modal then
+                                                    Color.transparent200
+
+                                                   else
+                                                    Color.negative400
+                                                  )
+                                                    |> Font.color
+                                                ]
+                                                (text faded)
+                                            ]
+                                            |> behindContent
+                                        ]
+                                        none
+                               )
+
+                    Default _ ->
                         el
                             [ width fill
-                            , height shrink
-                            , spacing 12
-                            , alignLeft
-                            , centerY
+                            , height fill
                             , Font.regular
                             , Font.size 16
+                            , Font.color Color.transparent100
                             ]
-                            (case dues of
-                                Success { debt } ->
-                                    debt
-                                        |> Truncate.fade
-                                        |> (\( nonFaded, faded ) ->
-                                                row
-                                                    [ paddingXY 12 4
-                                                    , centerY
-                                                    , clip
-                                                    ]
-                                                    [ el
-                                                        [ (if isCorrect model modal then
-                                                            Color.transparent500
-
-                                                           else
-                                                            Color.negative500
-                                                          )
-                                                            |> Font.color
-                                                        ]
-                                                        (text nonFaded)
-                                                    , el
-                                                        [ (if isCorrect model modal then
-                                                            Color.transparent200
-
-                                                           else
-                                                            Color.negative400
-                                                          )
-                                                            |> Font.color
-                                                        ]
-                                                        (text faded)
-                                                    ]
-                                           )
-
-                                _ ->
-                                    el
-                                        [ paddingXY 12 4
-                                        , centerY
-                                        , Font.color Color.transparent100
-                                        ]
-                                        (text "0.0")
-                            )
+                            (text "0.0")
 
                     Slider { dues } ->
                         case dues of
@@ -1771,7 +1789,8 @@ collateralInSection :
     }
     ->
         { model
-            | images : Images
+            | device : Device
+            , images : Images
             , tokenImages : TokenImages
             , user : Remote userError { user | balances : Remote () Balances }
         }
@@ -1783,7 +1802,7 @@ collateralInSection :
             , tooltip : Maybe Tooltip
         }
     -> Element msg
-collateralInSection msgs ({ images, user } as model) ({ duesOut, tooltip } as modal) =
+collateralInSection msgs ({ device, images, user } as model) ({ duesOut, tooltip } as modal) =
     column
         [ width fill
         , height shrink
@@ -1812,12 +1831,17 @@ collateralInSection msgs ({ images, user } as model) ({ duesOut, tooltip } as mo
                 , Events.onMouseLeave msgs.onMouseLeave
                 , (case tooltip of
                     Just Tooltip.Collateral ->
-                        Tooltip.collateral
+                        Tooltip.collateral device
 
                     _ ->
                         none
                   )
-                    |> onRight
+                    |> (if device |> Device.isPhone then
+                            below
+
+                        else
+                            onRight
+                       )
                 ]
             , (case duesOut of
                 Default Loading ->
@@ -1859,7 +1883,7 @@ collateralInSection msgs ({ images, user } as model) ({ duesOut, tooltip } as mo
                     case balances of
                         Loading ->
                             el
-                                [ height <| px 20
+                                [ width <| px 50
                                 , alignRight
                                 , centerY
                                 ]
@@ -1869,7 +1893,11 @@ collateralInSection msgs ({ images, user } as model) ({ duesOut, tooltip } as mo
                             none
 
                         Success successBalances ->
-                            collateralBalance msgs successBalances modal
+                            if device |> Device.isPhone then
+                                none
+
+                            else
+                                collateralBalance msgs successBalances modal
 
                 _ ->
                     none
@@ -2081,12 +2109,7 @@ collateralInAmount msgs ({ user } as model) ({ duesOut } as modal) =
     row
         ([ width fill
          , height fill
-         , paddingEach
-            { top = 0
-            , right = 12
-            , bottom = 0
-            , left = 0
-            }
+         , padding 12
          , spacing 8
          , Border.widthEach
             { top = 1
@@ -2153,10 +2176,9 @@ collateralInInput msgs model ({ duesOut } as modal) =
     (\collateralIn isCollateral ->
         Input.text
             ([ width fill
-             , height shrink
-             , paddingXY 12 4
-             , alignLeft
-             , centerY
+             , height fill
+             , padding 0
+             , clip
              , moveDown 1
              , Background.color Color.none
              , Border.color Color.none
@@ -2185,10 +2207,8 @@ collateralInInput msgs model ({ duesOut } as modal) =
                             |> (\( nonFaded, faded ) ->
                                     row
                                         [ width fill
-                                        , height shrink
-                                        , paddingXY 12 4
-                                        , alignLeft
-                                        , centerY
+                                        , height fill
+                                        , clip
                                         ]
                                         [ el
                                             [ (if isCorrect model modal then
@@ -2234,57 +2254,55 @@ collateralInInput msgs model ({ duesOut } as modal) =
     )
         |> (\element ->
                 case duesOut of
-                    Default dues ->
+                    Default (Success { collateral }) ->
+                        collateral
+                            |> Truncate.fade
+                            |> (\( nonFaded, faded ) ->
+                                    el
+                                        [ width fill
+                                        , height fill
+                                        , row
+                                            [ width fill
+                                            , height fill
+                                            , clip
+                                            , Font.regular
+                                            , Font.size 16
+                                            ]
+                                            [ el
+                                                [ (if isCorrect model modal then
+                                                    Color.transparent500
+
+                                                   else
+                                                    Color.negative500
+                                                  )
+                                                    |> Font.color
+                                                ]
+                                                (text nonFaded)
+                                            , el
+                                                [ (if isCorrect model modal then
+                                                    Color.transparent200
+
+                                                   else
+                                                    Color.negative400
+                                                  )
+                                                    |> Font.color
+                                                ]
+                                                (text faded)
+                                            ]
+                                            |> behindContent
+                                        ]
+                                        none
+                               )
+
+                    Default _ ->
                         el
                             [ width fill
-                            , height shrink
-                            , spacing 12
-                            , alignLeft
-                            , centerY
+                            , height fill
                             , Font.regular
                             , Font.size 16
+                            , Font.color Color.transparent100
                             ]
-                            (case dues of
-                                Success { collateral } ->
-                                    collateral
-                                        |> Truncate.fade
-                                        |> (\( nonFaded, faded ) ->
-                                                row
-                                                    [ paddingXY 12 4
-                                                    , centerY
-                                                    , clip
-                                                    ]
-                                                    [ el
-                                                        [ (if isCorrect model modal then
-                                                            Color.transparent500
-
-                                                           else
-                                                            Color.negative500
-                                                          )
-                                                            |> Font.color
-                                                        ]
-                                                        (text nonFaded)
-                                                    , el
-                                                        [ (if isCorrect model modal then
-                                                            Color.transparent200
-
-                                                           else
-                                                            Color.negative400
-                                                          )
-                                                            |> Font.color
-                                                        ]
-                                                        (text faded)
-                                                    ]
-                                           )
-
-                                _ ->
-                                    el
-                                        [ paddingXY 12 4
-                                        , centerY
-                                        , Font.color Color.transparent100
-                                        ]
-                                        (text "0.0")
-                            )
+                            (text "0.0")
 
                     Slider { dues } ->
                         case dues of

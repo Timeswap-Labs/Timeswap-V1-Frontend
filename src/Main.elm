@@ -11,7 +11,6 @@ import Data.Device as Device exposing (Device)
 import Data.Images as Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Pools as Pools exposing (Pools)
-import Data.Positions as Positions
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.TokenImages as TokenImages exposing (TokenImages)
@@ -22,27 +21,18 @@ import Element
     exposing
         ( Option
         , behindContent
-        , centerX
-        , centerY
         , clip
         , column
-        , el
         , fill
         , focusStyle
         , height
         , inFront
         , layoutWith
         , minimum
-        , paddingXY
-        , paragraph
-        , px
         , row
-        , spacing
-        , text
         , width
         )
 import Element.Background as Background
-import Element.Font as Font
 import Element.Lazy as Lazy
 import Error
 import Header
@@ -668,43 +658,9 @@ msgs =
 html : Model -> Html Msg
 html model =
     if Device.isPhoneOrTablet model.device then
-        -- layoutWith
-        --     { options = options }
-        --     [ width <| minimum 340 fill
-        --     , Background.color Color.dark400
-        --     ]
-        --     (column
-        --         [ width fill
-        --         , spacing 36
-        --         , centerY
-        --         ]
-        --         [ Image.logo model.images
-        --             [ width <| px 300
-        --             , centerX
-        --             ]
-        --         , paragraph
-        --             [ width fill
-        --             , paddingXY 20 0
-        --             , spacing 6
-        --             , centerY
-        --             , Font.center
-        --             ]
-        --             [ el
-        --                 [ width fill
-        --                 , paddingXY 0 6
-        --                 , Font.bold
-        --                 , Font.size 24
-        --                 , Font.color Color.transparent500
-        --                 ]
-        --                 (text """Tablet and Mobile view coming soon.
-        --                 Use our dapp in desktop view.
-        --                 """)
-        --             ]
-        --         ]
-        --     )
         layoutWith
             { options = options }
-            ([ width <| minimum 340 fill
+            ([ width <| minimum 360 fill
              , Background.color Color.dark400
              ]
                 ++ (if Device.checkAsideStatus model.device then
@@ -751,7 +707,7 @@ html model =
     else
         layoutWith
             { options = options }
-            ([ width <| minimum 340 fill
+            ([ width fill
              , Background.color Color.dark400
              , behindContent <| Image.background model.images
              ]
