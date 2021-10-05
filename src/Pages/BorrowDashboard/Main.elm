@@ -1094,7 +1094,7 @@ maturedBalances { device, images, pools } page chain { pool } { tokenId, debt, c
           else
             row
          )
-            [ width fill
+            [ width shrink
             , centerY
             , (if device |> Device.isPhone then
                 8
@@ -1123,7 +1123,7 @@ maturedBalances { device, images, pools } page chain { pool } { tokenId, debt, c
           else
             row
          )
-            [ width fill
+            [ width shrink
             , centerY
             , (if device |> Device.isPhone then
                 8
