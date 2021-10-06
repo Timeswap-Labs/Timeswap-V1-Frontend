@@ -3,14 +3,19 @@ module Pages.BorrowDashboard.Tooltip exposing
     , amount
     )
 
+import Data.Device as Device exposing (Device)
 import Data.Pool exposing (Pool)
 import Data.TokenId exposing (TokenId)
 import Element
     exposing
         ( Element
+        , alignLeft
         , alignTop
+        , centerX
         , centerY
+        , column
         , el
+        , fill
         , height
         , moveUp
         , padding
@@ -33,34 +38,63 @@ type Tooltip
     | Collateral Pool TokenId
 
 
-amount : String -> Element msg
-amount string =
-    row
-        [ width shrink
-        , height shrink
-        , paddingEach
-            { top = 0
-            , right = 0
-            , bottom = 0
-            , left = 4
-            }
-        ]
-        [ el
-            [ alignTop
-            , height <| px 24
+amount : Device -> String -> Element msg
+amount device string =
+    if device |> Device.isPhoneOrTablet then
+        column
+            [ width fill
+            , height shrink
+            , paddingEach
+                { top = 4
+                , right = 0
+                , bottom = 0
+                , left = 0
+                }
             ]
-            (el [ centerY ] Tooltip.triangleLeft)
-        , el
+            [ el
+                [ centerX ]
+                Tooltip.triangleUp
+            , el
+                [ width shrink
+                , height shrink
+                , padding 12
+                , alignLeft
+                , Background.color Color.dark500
+                , Border.rounded 4
+                , Tooltip.shadow
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text string)
+            ]
+
+    else
+        row
             [ width shrink
             , height shrink
-            , padding 12
-            , alignTop
-            , moveUp 6
-            , Background.color Color.dark500
-            , Border.rounded 4
-            , Tooltip.shadow
-            , Font.size 12
-            , Font.color Color.transparent300
+            , paddingEach
+                { top = 0
+                , right = 0
+                , bottom = 0
+                , left = 4
+                }
             ]
-            (text string)
-        ]
+            [ el
+                [ alignTop
+                , height <| px 24
+                ]
+                (el [ centerY ] Tooltip.triangleLeft)
+            , el
+                [ width shrink
+                , height shrink
+                , padding 12
+                , alignTop
+                , moveUp 6
+                , Background.color Color.dark500
+                , Border.rounded 4
+                , Tooltip.shadow
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text string)
+            ]

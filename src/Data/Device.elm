@@ -109,26 +109,6 @@ isPhoneOrTablet device =
     isPhone device || isTablet device
 
 
-isDesktop : Device -> Bool
-isDesktop device =
-    case device of
-        Desktop ->
-            True
-
-        _ ->
-            False
-
-
-isBigDesktop : Device -> Bool
-isBigDesktop device =
-    case device of
-        BigDesktop ->
-            True
-
-        _ ->
-            False
-
-
 checkAsideStatus : Device -> Bool
 checkAsideStatus device =
     case device of

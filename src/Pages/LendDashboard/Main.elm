@@ -27,6 +27,7 @@ import Element
         , alignLeft
         , alignRight
         , alignTop
+        , below
         , centerX
         , centerY
         , column
@@ -746,7 +747,7 @@ maturedBalances :
             , return : Maybe Return
         }
     -> Element Msg
-maturedBalances { device } page { pool, return } =
+maturedBalances ({ device } as model) page { pool, return } =
     (if device |> Device.isPhone then
         column
 
@@ -794,13 +795,13 @@ maturedBalances { device } page { pool, return } =
                         , spacing 4
                         , Font.size 18
                         ]
-                        [ assetBalance page pool asset
+                        [ assetBalance model page pool asset
                         , el
                             [ Font.bold
                             , Font.color Color.transparent500
                             ]
                             (text "+")
-                        , collateralBalance page pool collateral
+                        , collateralBalance model page pool collateral
                         ]
                 )
             |> Maybe.withDefault
@@ -820,7 +821,7 @@ activeBalances :
     -> { page | tooltip : Maybe Tooltip }
     -> { activeClaimInfo | pool : Pool, claim : Claim }
     -> Element Msg
-activeBalances { device } page { pool, claim } =
+activeBalances ({ device } as model) page { pool, claim } =
     (\assetElement collateralElement ->
         if device |> Device.isPhoneOrTablet then
             column
@@ -883,7 +884,7 @@ activeBalances { device } page { pool, claim } =
                 , Font.color Color.transparent300
                 ]
                 (text "Amount at maturity")
-            , assetBalance page pool claim.bond
+            , assetBalance model page pool claim.bond
             ]
         )
         ((if device |> Device.isPhone then
@@ -913,7 +914,7 @@ activeBalances { device } page { pool, claim } =
                 , Font.color Color.transparent300
                 ]
                 (text "Insurance in case of 100% default")
-            , collateralBalance page pool claim.insurance
+            , collateralBalance model page pool claim.insurance
             ]
         )
 
@@ -937,8 +938,13 @@ line =
         none
 
 
-assetBalance : { page | tooltip : Maybe Tooltip } -> Pool -> String -> Element Msg
-assetBalance { tooltip } pool asset =
+assetBalance :
+    { model | device : Device }
+    -> { page | tooltip : Maybe Tooltip }
+    -> Pool
+    -> String
+    -> Element Msg
+assetBalance { device } { tooltip } pool asset =
     asset
         |> Truncate.amount
         |> (\{ full, truncated } ->
@@ -976,7 +982,7 @@ assetBalance { tooltip } pool asset =
                                                 |> Token.toSymbol
                                             ]
                                                 |> String.join " "
-                                                |> Tooltip.amount
+                                                |> Tooltip.amount device
 
                                         else
                                             none
@@ -984,7 +990,12 @@ assetBalance { tooltip } pool asset =
                                     _ ->
                                         none
                                   )
-                                    |> onRight
+                                    |> (if device |> Device.isPhoneOrTablet then
+                                            below
+
+                                        else
+                                            onRight
+                                       )
                                 ]
                                 [ el
                                     [ Font.bold
@@ -1031,8 +1042,13 @@ assetBalance { tooltip } pool asset =
            )
 
 
-collateralBalance : { page | tooltip : Maybe Tooltip } -> Pool -> String -> Element Msg
-collateralBalance { tooltip } pool collateral =
+collateralBalance :
+    { model | device : Device }
+    -> { page | tooltip : Maybe Tooltip }
+    -> Pool
+    -> String
+    -> Element Msg
+collateralBalance { device } { tooltip } pool collateral =
     collateral
         |> Truncate.amount
         |> (\{ full, truncated } ->
@@ -1070,7 +1086,7 @@ collateralBalance { tooltip } pool collateral =
                                                 |> Token.toSymbol
                                             ]
                                                 |> String.join " "
-                                                |> Tooltip.amount
+                                                |> Tooltip.amount device
 
                                         else
                                             none
@@ -1078,7 +1094,12 @@ collateralBalance { tooltip } pool collateral =
                                     _ ->
                                         none
                                   )
-                                    |> onRight
+                                    |> (if device |> Device.isPhoneOrTablet then
+                                            below
+
+                                        else
+                                            onRight
+                                       )
                                 ]
                                 [ el
                                     [ Font.bold

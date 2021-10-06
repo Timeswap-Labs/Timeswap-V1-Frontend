@@ -28,6 +28,7 @@ import Element
         , alignLeft
         , alignRight
         , alignTop
+        , below
         , centerX
         , centerY
         , column
@@ -833,7 +834,7 @@ activeBalances :
     -> { duesInfo | pool : Pool }
     -> DueInfo
     -> Element Msg
-activeBalances { device, images, pools } ({ chosenPool, chosenTokenIds } as page) chain { pool } { tokenId, debt, collateral } =
+activeBalances ({ device, images, pools } as model) ({ chosenPool, chosenTokenIds } as page) chain { pool } { tokenId, debt, collateral } =
     (\checkbox assetElement collateralElement openSeaLink ->
         if device |> Device.isPhoneOrTablet then
             column
@@ -949,7 +950,7 @@ activeBalances { device, images, pools } ({ chosenPool, chosenTokenIds } as page
                 , Font.color Color.transparent300
                 ]
                 (text "Amount to repay")
-            , assetBalance page pool tokenId debt
+            , assetBalance model page pool tokenId debt
             ]
         )
         ((if device |> Device.isPhone then
@@ -979,7 +980,7 @@ activeBalances { device, images, pools } ({ chosenPool, chosenTokenIds } as page
                 , Font.color Color.transparent300
                 ]
                 (text "Collateral locked")
-            , collateralBalance page pool tokenId collateral
+            , collateralBalance model page pool tokenId collateral
             ]
         )
         (pools
@@ -1010,7 +1011,7 @@ maturedBalances :
     -> { duesInfo | pool : Pool }
     -> DueInfo
     -> Element Msg
-maturedBalances { device, images, pools } page chain { pool } { tokenId, debt, collateral } =
+maturedBalances ({ device, images, pools } as model) page chain { pool } { tokenId, debt, collateral } =
     (\assetElement collateralElement ->
         if device |> Device.isPhoneOrTablet then
             column
@@ -1114,7 +1115,7 @@ maturedBalances { device, images, pools } page chain { pool } { tokenId, debt, c
                 , Font.color Color.transparent300
                 ]
                 (text "Amount defaulted")
-            , assetBalance page pool tokenId debt
+            , assetBalance model page pool tokenId debt
             ]
         )
         ((if device |> Device.isPhone then
@@ -1143,7 +1144,7 @@ maturedBalances { device, images, pools } page chain { pool } { tokenId, debt, c
                 , Font.color Color.transparent300
                 ]
                 (text "Collateral forfeited")
-            , collateralBalance page pool tokenId collateral
+            , collateralBalance model page pool tokenId collateral
             ]
         )
 
@@ -1167,8 +1168,14 @@ line =
         none
 
 
-assetBalance : { page | tooltip : Maybe Tooltip } -> Pool -> TokenId -> String -> Element Msg
-assetBalance { tooltip } pool tokenId asset =
+assetBalance :
+    { model | device : Device }
+    -> { page | tooltip : Maybe Tooltip }
+    -> Pool
+    -> TokenId
+    -> String
+    -> Element Msg
+assetBalance { device } { tooltip } pool tokenId asset =
     asset
         |> Truncate.amount
         |> (\{ full, truncated } ->
@@ -1205,7 +1212,7 @@ assetBalance { tooltip } pool tokenId asset =
                                                 |> Token.toSymbol
                                             ]
                                                 |> String.join " "
-                                                |> Tooltip.amount
+                                                |> Tooltip.amount device
 
                                         else
                                             none
@@ -1213,7 +1220,12 @@ assetBalance { tooltip } pool tokenId asset =
                                     _ ->
                                         none
                                   )
-                                    |> onRight
+                                    |> (if device |> Device.isPhoneOrTablet then
+                                            below
+
+                                        else
+                                            onRight
+                                       )
                                 ]
                                 [ el
                                     [ Font.bold
@@ -1260,8 +1272,14 @@ assetBalance { tooltip } pool tokenId asset =
            )
 
 
-collateralBalance : { page | tooltip : Maybe Tooltip } -> Pool -> TokenId -> String -> Element Msg
-collateralBalance { tooltip } pool tokenId collateral =
+collateralBalance :
+    { model | device : Device }
+    -> { page | tooltip : Maybe Tooltip }
+    -> Pool
+    -> TokenId
+    -> String
+    -> Element Msg
+collateralBalance { device } { tooltip } pool tokenId collateral =
     collateral
         |> Truncate.amount
         |> (\{ full, truncated } ->
@@ -1299,7 +1317,7 @@ collateralBalance { tooltip } pool tokenId collateral =
                                                 |> Token.toSymbol
                                             ]
                                                 |> String.join " "
-                                                |> Tooltip.amount
+                                                |> Tooltip.amount device
 
                                         else
                                             none
@@ -1307,7 +1325,12 @@ collateralBalance { tooltip } pool tokenId collateral =
                                     _ ->
                                         none
                                   )
-                                    |> onRight
+                                    |> (if device |> Device.isPhoneOrTablet then
+                                            below
+
+                                        else
+                                            onRight
+                                       )
                                 ]
                                 [ el
                                     [ Font.bold

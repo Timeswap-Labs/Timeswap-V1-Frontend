@@ -14,6 +14,7 @@ import Element
         ( Element
         , alignLeft
         , alignRight
+        , below
         , centerX
         , centerY
         , clipX
@@ -599,7 +600,7 @@ collateralFactor :
         , poolInfo : Remote () { poolInfo | cf : String }
         }
     -> Element msg
-collateralFactor msgs { device } page { maturity, poolInfo } =
+collateralFactor msgs ({ device } as model) page { maturity, poolInfo } =
     el
         [ (if Device.isPhoneOrTablet device then
             shrink
@@ -627,7 +628,7 @@ collateralFactor msgs { device } page { maturity, poolInfo } =
             Success { cf } ->
                 el
                     [ centerX ]
-                    (collateralFactorAmount msgs page maturity cf)
+                    (collateralFactorAmount msgs model page maturity cf)
         )
 
 
@@ -757,7 +758,7 @@ assetBalance msgs { device } { pair, tooltip } maturity assetLiquidity =
                                                 |> Token.toSymbol
                                             ]
                                                 |> String.join " "
-                                                |> Tooltip.amount
+                                                |> Tooltip.amount device
 
                                         else
                                             none
@@ -765,7 +766,12 @@ assetBalance msgs { device } { pair, tooltip } maturity assetLiquidity =
                                     _ ->
                                         none
                                   )
-                                    |> onRight
+                                    |> (if device |> Device.isPhoneOrTablet then
+                                            below
+
+                                        else
+                                            onRight
+                                       )
                                 ]
                                 [ el
                                     [ Font.bold
@@ -868,7 +874,7 @@ collateralBalance msgs { device } { pair, tooltip } maturity collateralLiquidity
                                                 |> Token.toSymbol
                                             ]
                                                 |> String.join " "
-                                                |> Tooltip.amount
+                                                |> Tooltip.amount device
 
                                         else
                                             none
@@ -876,7 +882,12 @@ collateralBalance msgs { device } { pair, tooltip } maturity collateralLiquidity
                                     _ ->
                                         none
                                   )
-                                    |> onRight
+                                    |> (if device |> Device.isPhoneOrTablet then
+                                            below
+
+                                        else
+                                            onRight
+                                       )
                                 ]
                                 [ el
                                     [ Font.bold
@@ -932,11 +943,12 @@ collateralFactorAmount :
         | onMouseEnter : Tooltip -> msg
         , onMouseLeave : msg
     }
+    -> { model | device : Device }
     -> { page | pair : Pair, tooltip : Maybe Tooltip }
     -> Maturity
     -> String
     -> Element msg
-collateralFactorAmount msgs { pair, tooltip } maturity factorAmount =
+collateralFactorAmount msgs { device } { pair, tooltip } maturity factorAmount =
     factorAmount
         |> Truncate.amount
         |> (\{ full, truncated } ->
@@ -972,7 +984,7 @@ collateralFactorAmount msgs { pair, tooltip } maturity factorAmount =
                                                 |> Token.toSymbol
                                             ]
                                                 |> String.join " "
-                                                |> Tooltip.amount
+                                                |> Tooltip.amountRight device
 
                                         else
                                             none
@@ -980,7 +992,12 @@ collateralFactorAmount msgs { pair, tooltip } maturity factorAmount =
                                     _ ->
                                         none
                                   )
-                                    |> onRight
+                                    |> (if device |> Device.isPhoneOrTablet then
+                                            below
+
+                                        else
+                                            onRight
+                                       )
                                 ]
                                 [ el
                                     [ paddingEach
