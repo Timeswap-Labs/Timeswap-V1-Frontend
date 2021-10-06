@@ -22,6 +22,12 @@ export async function elmUser(): Promise<{
 
   if (window.ethereum && ethereum) {
     gp.metamaskProvider = window.ethereum;
+    gp.network = await gp.metamaskProvider.send("eth_chainId", []);
+
+    if (gp.network !== "0x4") {
+      return { gp };
+    }
+
     const accounts: string[] = await gp.metamaskProvider.send(
       "eth_accounts",
       []
@@ -93,9 +99,7 @@ function metamaskConnect(
       });
       gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
-      balancesInit(app, whitelist, gp, accounts[0]);
-      lendPositionsInit(app, whitelist, gp, accounts[0]);
-      borrowPositionsInit(app, whitelist, gp, accounts[0]);
+      userInit(app, whitelist, gp, accounts[0]);
     });
 }
 
@@ -112,9 +116,7 @@ function metamaskConnected(
       });
       gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
-      balancesInit(app, whitelist, gp, accounts[0]);
-      lendPositionsInit(app, whitelist, gp, accounts[0]);
-      borrowPositionsInit(app, whitelist, gp, accounts[0]);
+      userInit(app, whitelist, gp, accounts[0]);
     }
   });
 }
@@ -135,9 +137,7 @@ function metamaskChainChange(
         gp.metamaskProvider = window.ethereum;
         gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
-        balancesInit(app, whitelist, gp, accounts[0]);
-        lendPositionsInit(app, whitelist, gp, accounts[0]);
-        borrowPositionsInit(app, whitelist, gp, accounts[0]);
+        userInit(app, whitelist, gp, accounts[0]);
       }
     });
   });
@@ -157,11 +157,23 @@ function metamaskAccountsChange(
 
       gp.metamaskProvider = window.ethereum;
       gp.metamaskSigner = gp.metamaskProvider.getSigner();
-      balancesInit(app, whitelist, gp, accounts[0]);
-      lendPositionsInit(app, whitelist, gp, accounts[0]);
-      borrowPositionsInit(app, whitelist, gp, accounts[0]);
+
+      userInit(app, whitelist, gp, accounts[0]);
     } else {
       app.ports.metamaskMsg.send(null);
     }
   });
+}
+
+function userInit(
+  app: ElmApp<Ports>,
+  whitelist: WhiteList,
+  gp: GlobalParams,
+  account: string
+) {
+  if (gp.network === "0x4") {
+    balancesInit(app, whitelist, gp, account);
+    lendPositionsInit(app, whitelist, gp, account);
+    borrowPositionsInit(app, whitelist, gp, account);
+  }
 }

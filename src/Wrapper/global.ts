@@ -18,6 +18,8 @@ export class GlobalParams {
 
   private _metamaskSigner?: Signer;
 
+  network?: string;
+
   public get provider(): BaseProvider {
     return this._provider!;
   }

@@ -11,13 +11,13 @@ export async function getProvider(
   provider?: BaseProvider
 ): Promise<BaseProvider> {
   if (window.ethereum) {
-    const metamaskProvider = new Web3Provider(window.ethereum, "rinkeby");
-    const metamaskConfig = {
-      provider: metamaskProvider,
-      priority: 1,
-      stallTimeout: 0,
-      weight: 1,
-    };
+    // const metamaskProvider = new Web3Provider(window.ethereum, "rinkeby");
+    // const metamaskConfig = {
+    //   provider: metamaskProvider,
+    //   priority: 1,
+    //   stallTimeout: 0,
+    //   weight: 1,
+    // };
 
     const infuraProvider = new InfuraProvider(
       // await metamaskProvider.getNetwork(),
@@ -31,7 +31,7 @@ export async function getProvider(
       weight: 1,
     };
 
-    return new FallbackProvider([metamaskConfig, infuraConfig]);
+    return new FallbackProvider([infuraConfig]);
   } else if (provider) {
     const infuraProvider = new InfuraProvider(
       // await provider.getNetwork(),
