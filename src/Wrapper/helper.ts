@@ -9,10 +9,6 @@ export function updateErc20Balance(
   const balancesInFilter = contract.filters.Transfer(null, address);
   const balancesOutFilter = contract.filters.Transfer(address);
 
-  // chain change
-  contract.removeAllListeners(balancesInFilter);
-  contract.removeAllListeners(balancesOutFilter);
-
   contract.on(balancesInFilter, updateBalance);
   contract.on(balancesOutFilter, updateBalance);
 }

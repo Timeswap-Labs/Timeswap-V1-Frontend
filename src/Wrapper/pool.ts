@@ -43,7 +43,7 @@ export async function pool(
         gp.provider
       );
       const filter = pair.filters.Sync(maturity);
-      pair.removeAllListeners(filter);
+
       pair.on(filter, async (_maturity, state) => {
         const cache = getModifiedCache([
           state.slice(4),

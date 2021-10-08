@@ -47,7 +47,7 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
   const network = await provider.getNetwork();
   gp.provider = provider;
 
-  const whitelist = new WhiteList(rinkeby, provider, network);
+  const whitelist = new WhiteList(rinkeby, gp.provider, network);
 
   pool(app, whitelist, gp);
 
@@ -134,6 +134,9 @@ function metamaskChainChange(
           user: accounts[0],
         });
 
+        gp.provider.removeAllListeners();
+        gp.metamaskProvider.removeAllListeners();
+
         gp.metamaskProvider = window.ethereum;
         gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
@@ -154,6 +157,8 @@ function metamaskAccountsChange(
         chainId: ethereum.chainId,
         user: accounts[0],
       });
+
+      gp.metamaskProvider.removeAllListeners();
 
       gp.metamaskProvider = window.ethereum;
       gp.metamaskSigner = gp.metamaskProvider.getSigner();

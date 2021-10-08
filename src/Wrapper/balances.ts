@@ -48,7 +48,6 @@ export async function balancesInit(
         ]);
       });
 
-      contract.removeAllListeners(allowanceFilter);
       contract.on(allowanceFilter, (_owner, _spender, value) => {
         app.ports.sdkAllowancesMsg.send([
           {
@@ -63,7 +62,6 @@ export async function balancesInit(
         token.connect(gp.metamaskProviderMulti).getBalance(address)
       );
 
-      gp.metamaskProvider.removeAllListeners("block");
       gp.metamaskProvider.on("block", async () => {
         const balance = await token
           .connect(gp.metamaskProviderMulti)
