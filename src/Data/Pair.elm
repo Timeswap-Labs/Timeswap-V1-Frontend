@@ -19,7 +19,6 @@ import Data.Tokens as Tokens exposing (Tokens)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Sort exposing (Sorter)
-import Sort.Set as Set exposing (Set)
 
 
 type Pair

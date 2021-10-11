@@ -8,8 +8,11 @@ module Utility.Image exposing
     , checkboxSelected
     , close
     , discloser
+    , discord
     , energy
     , faucet
+    , gitbook
+    , github
     , hourglass
     , hourglassPrimary
     , hourglassPrimarySmall
@@ -18,12 +21,16 @@ module Utility.Image exposing
     , logo
     , logoPure
     , matured
+    , medium
     , metamask
     , openSea
     , option
     , plus
     , setting
+    , telegram
     , token
+    , tripleDots
+    , twitter
     , wallet
     , warning
     )
@@ -200,3 +207,38 @@ checkboxSelected =
 warning : Images -> List (Attribute msg) -> Element msg
 warning =
     view "Warning"
+
+
+tripleDots : Images -> List (Attribute msg) -> Element msg
+tripleDots =
+    view "TripleDots"
+
+
+gitbook : Images -> List (Attribute msg) -> Element msg
+gitbook =
+    view "Gitbook"
+
+
+github : Images -> List (Attribute msg) -> Element msg
+github =
+    view "Github"
+
+
+discord : Images -> List (Attribute msg) -> Element msg
+discord =
+    view "Discord"
+
+
+twitter : Images -> List (Attribute msg) -> Element msg
+twitter =
+    view "Twitter"
+
+
+telegram : Images -> List (Attribute msg) -> Element msg
+telegram =
+    view "Telegram"
+
+
+medium : Images -> List (Attribute msg) -> Element msg
+medium =
+    view "Medium"

@@ -565,6 +565,44 @@ update { key, slippage, tokens, pools, user, page } msg (Modal modal) =
                                             _ ->
                                                 Modal modal
 
+                            -- Query.GivenMax { pool, assetOut, balance, dues } ->
+                            --     case modal.duesOut of
+                            --         DuesOut.Collateral _ ->
+                            --             if
+                            --                 (modal.pool == pool)
+                            --                     && (modal.assetOut
+                            --                             |> Uint.fromAmount (modal.pool.pair |> Pair.toAsset)
+                            --                             |> Maybe.map ((==) assetOut)
+                            --                             |> Maybe.withDefault False
+                            --                        )
+                            --                     && (case user of
+                            --                             Success { balances } ->
+                            --                                 case balances of
+                            --                                     Loading ->
+                            --                                         False
+                            --                                     Failure _ ->
+                            --                                         False
+                            --                                     Success successBalances ->
+                            --                                         successBalances
+                            --                                             |> Balances.get (modal.pool.pair |> Pair.toCollateral)
+                            --                                             |> (\string ->
+                            --                                                     balance
+                            --                                                         |> Uint.toAmount (modal.pool.pair |> Pair.toCollateral)
+                            --                                                         |> (==) string
+                            --                                                )
+                            --                             _ ->
+                            --                                 False
+                            --                        )
+                            --             then
+                            --                 { modal
+                            --                     | duesOut =
+                            --                         modal.duesOut |> Query.updateMaxQuery modal dues
+                            --                 }
+                            --                     |> Modal
+                            --             else
+                            --                 Modal modal
+                            --         _ ->
+                            --             Modal modal
                             Err _ ->
                                 Modal modal
                    )

@@ -4,7 +4,6 @@ import Data.Address as Address exposing (Address)
 import Data.Allowances as Allowances exposing (Allowances)
 import Data.Balances as Balances exposing (Balances)
 import Data.Deadline as Deadline exposing (Deadline)
-import Data.Device as Device exposing (Device)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity

@@ -81,6 +81,7 @@ type alias Model =
     , page : Page
     , modal : Maybe Modal
     , service : Maybe Service
+    , dropdown : Maybe ()
     }
 
 
@@ -132,6 +133,7 @@ init { width, time, hasBackdropSupport, images, tokenImages, whitelist, user } u
                         }
                 , modal = Nothing
                 , service = Nothing
+                , dropdown = Nothing
                 }
            )
         |> (\model ->
@@ -154,6 +156,8 @@ type Msg
     | VisibilityChange Visibility
     | ReceiveTime Posix
     | ReceiveZoneInfo ZoneInfo
+    | OpenDropdown
+    | CloseDropdown
     | ExitSettings
     | ChooseSlippageOption Slippage.Option
     | ChooseDeadlineOption Deadline.Option
@@ -174,7 +178,8 @@ type Msg
 
 
 type alias Msgs =
-    { exitSettings : Msg
+    { openDropdown : Msg
+    , exitSettings : Msg
     , chooseSlippageOption : Slippage.Option -> Msg
     , chooseDeadlineOption : Deadline.Option -> Msg
     , inputSlippage : String -> Msg
@@ -305,6 +310,16 @@ update msg model =
 
         ReceiveZoneInfo zoneInfo ->
             ( { model | zoneInfo = Just zoneInfo }
+            , Cmd.none
+            )
+
+        OpenDropdown ->
+            ( { model | dropdown = Just () }
+            , Cmd.none
+            )
+
+        CloseDropdown ->
+            ( { model | dropdown = Nothing }
             , Cmd.none
             )
 
@@ -541,6 +556,7 @@ subscriptions ({ modal, service } as model) =
         [ Browser.Events.onResize ResizeWindow
         , Browser.Events.onVisibilityChange VisibilityChange
         , Time.every 1000 ReceiveTime
+        , onClickOutsideDropdown model
         , onClickOutsideAside model
         , onClickOutsideSlippage model
         , onClickOutsideDeadline model
@@ -559,6 +575,29 @@ subscriptions ({ modal, service } as model) =
                     |> Maybe.withDefault Sub.none
                 )
         ]
+
+
+onClickOutsideDropdown : { model | dropdown : Maybe () } -> Sub Msg
+onClickOutsideDropdown { dropdown } =
+    dropdown
+        |> Maybe.map
+            (\_ ->
+                Browser.Events.onClick (Decode.at [ "target", "id" ] decoderOutsideDropdown)
+            )
+        |> Maybe.withDefault Sub.none
+
+
+decoderOutsideDropdown : Decoder Msg
+decoderOutsideDropdown =
+    Decode.string
+        |> Decode.andThen
+            (\string ->
+                if string /= "dropdown" then
+                    Decode.succeed CloseDropdown
+
+                else
+                    Decode.fail "Its the dropdown"
+            )
 
 
 onClickOutsideAside : { model | device : Device } -> Sub Msg
@@ -646,7 +685,8 @@ view model =
 
 msgs : Msgs
 msgs =
-    { exitSettings = ExitSettings
+    { openDropdown = OpenDropdown
+    , exitSettings = ExitSettings
     , chooseSlippageOption = ChooseSlippageOption
     , chooseDeadlineOption = ChooseDeadlineOption
     , inputSlippage = InputSlippage
@@ -699,7 +739,7 @@ html model =
                 , height fill
                 , clip
                 ]
-                [ Lazy.lazy Header.view model
+                [ Lazy.lazy2 Header.view msgs model
                 , Lazy.lazy2 Page.view model model.page |> Element.map PageMsg
                 ]
             )
@@ -745,7 +785,7 @@ html model =
                 , clip
                 ]
                 [ Lazy.lazy2 Error.view msgs model
-                , Lazy.lazy Header.view model
+                , Lazy.lazy2 Header.view msgs model
                 , row
                     [ width fill
                     , height fill

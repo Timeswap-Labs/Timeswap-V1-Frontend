@@ -2,6 +2,7 @@ module Header exposing (view)
 
 import Aside
 import Data.Address as Address exposing (Address)
+import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain(..))
 import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
@@ -14,16 +15,19 @@ import Element
         , alignBottom
         , alignLeft
         , alignRight
+        , below
         , centerX
         , centerY
-        , clipY
         , column
         , el
         , fill
         , height
+        , htmlAttribute
         , link
         , mouseDown
         , mouseOver
+        , moveDown
+        , newTabLink
         , none
         , padding
         , paddingEach
@@ -38,31 +42,37 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Element.Region as Region
+import Html.Attributes
 import Page as Page exposing (Page)
 import User
 import Utility.Color as Color
+import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.Router as Router
 import Utility.Typography as Typography
 
 
 view :
-    { model
-        | device : Device
-        , images : Images
-        , pools : Pools
-        , user : Remote userError { user | chain : Chain, address : Address }
-        , page : Page
-    }
+    { msgs | openDropdown : msg }
+    ->
+        { model
+            | device : Device
+            , backdrop : Backdrop
+            , images : Images
+            , pools : Pools
+            , user : Remote userError { user | chain : Chain, address : Address }
+            , page : Page
+            , dropdown : Maybe ()
+        }
     -> Element msg
-view ({ device } as model) =
+view msgs ({ device } as model) =
     if Device.isPhoneOrTablet device then
         column
             [ Region.navigation
             , width fill
             , height <| px 131
-            , clipY
             , Font.family Typography.supreme
             ]
             [ row
@@ -80,7 +90,7 @@ view ({ device } as model) =
                 , Border.color Color.transparent100
                 ]
                 [ logoContainer model
-                , buttons model
+                , buttons msgs model
                 ]
             , row
                 [ width fill
@@ -126,12 +136,11 @@ view ({ device } as model) =
                 , left = 0
                 }
             , Border.color Color.transparent100
-            , clipY
             , Font.family Typography.supreme
             ]
             [ logoContainer model
             , tabs model
-            , buttons model
+            , buttons msgs model
             ]
 
 
@@ -366,13 +375,17 @@ pageLink tab =
 
 
 buttons :
-    { model
-        | device : Device
-        , images : Images
-        , user : Remote userError { user | chain : Chain, address : Address }
-    }
+    { msgs | openDropdown : msg }
+    ->
+        { model
+            | device : Device
+            , images : Images
+            , backdrop : Backdrop
+            , user : Remote userError { user | chain : Chain, address : Address }
+            , dropdown : Maybe ()
+        }
     -> Element msg
-buttons ({ user } as model) =
+buttons msgs ({ user } as model) =
     row
         [ alignRight
         , centerY
@@ -396,6 +409,7 @@ buttons ({ user } as model) =
                     _ ->
                         connectButton model
                , settingsButton model
+               , linksButton msgs model
                ]
         )
 
@@ -639,6 +653,188 @@ settingsButton { device, images } =
                 , centerY
                 ]
         }
+
+
+linksButton :
+    { msgs | openDropdown : msg }
+    -> { model | device : Device, backdrop : Backdrop, images : Images, dropdown : Maybe () }
+    -> Element msg
+linksButton msgs ({ device, images, dropdown } as model) =
+    Input.button
+        ([ Background.color Color.primary100
+         , Border.rounded 4
+         , mouseDown [ Background.color Color.primary400 ]
+         , mouseOver [ Background.color Color.primary300 ]
+         , dropdown
+            |> Maybe.map (\_ -> linksDropdown model)
+            |> Maybe.withDefault none
+            |> below
+         , htmlAttribute <| Html.Attributes.id "dropdown"
+         ]
+            ++ (if Device.isPhoneOrTablet device then
+                    [ width <| px 35
+                    , height <| px 35
+                    ]
+
+                else
+                    [ width <| px 44
+                    , height <| px 44
+                    ]
+               )
+        )
+        { onPress = Just msgs.openDropdown
+        , label =
+            Image.tripleDots images
+                [ (if device |> Device.isPhone then
+                    19
+
+                   else
+                    24
+                  )
+                    |> px
+                    |> width
+                , centerX
+                , centerY
+                ]
+        }
+
+
+linksDropdown : { model | backdrop : Backdrop, images : Images } -> Element msg
+linksDropdown { backdrop, images } =
+    column
+        ([ width <| px 150
+         , height shrink
+         , padding 16
+         , spacing 16
+         , alignRight
+         , moveDown 8
+         , Font.regular
+         , Font.size 14
+         , Font.color Color.transparent400
+         ]
+            ++ Glass.lightPrimaryModal backdrop 0
+        )
+        [ newTabLink
+            [ width fill
+            , height shrink
+            ]
+            { url = "https://app.gitbook.com/o/-MIPYaWtcli1K3j7TRV7/s/-MIPZkDBEvwedF77USHq/"
+            , label =
+                row
+                    [ width fill
+                    , height shrink
+                    , spacing 8
+                    ]
+                    [ Image.gitbook images
+                        [ width <| px 20
+                        , centerY
+                        ]
+                    , el
+                        [ centerY ]
+                        (text "Gitbook")
+                    ]
+            }
+        , newTabLink
+            [ width fill
+            , height shrink
+            ]
+            { url = "https://github.com/Timeswap-Labs"
+            , label =
+                row
+                    [ width fill
+                    , height shrink
+                    , spacing 8
+                    ]
+                    [ Image.github images
+                        [ width <| px 20
+                        , centerY
+                        ]
+                    , el
+                        [ centerY ]
+                        (text "Github")
+                    ]
+            }
+        , newTabLink
+            [ width fill
+            , height shrink
+            ]
+            { url = "https://discord.com/channels/756135419359395930/824922502228738079"
+            , label =
+                row
+                    [ width fill
+                    , height shrink
+                    , spacing 8
+                    ]
+                    [ Image.discord images
+                        [ width <| px 20
+                        , centerY
+                        ]
+                    , el
+                        [ centerY ]
+                        (text "Discord")
+                    ]
+            }
+        , newTabLink
+            [ width fill
+            , height shrink
+            ]
+            { url = "https://twitter.com/TimeswapLabs"
+            , label =
+                row
+                    [ width fill
+                    , height shrink
+                    , spacing 8
+                    ]
+                    [ Image.twitter images
+                        [ width <| px 20
+                        , centerY
+                        ]
+                    , el
+                        [ centerY ]
+                        (text "Twitter")
+                    ]
+            }
+        , newTabLink
+            [ width fill
+            , height shrink
+            ]
+            { url = "http://t.me/timeswap"
+            , label =
+                row
+                    [ width fill
+                    , height shrink
+                    , spacing 8
+                    ]
+                    [ Image.telegram images
+                        [ width <| px 20
+                        , centerY
+                        ]
+                    , el
+                        [ centerY ]
+                        (text "Telegram")
+                    ]
+            }
+        , newTabLink
+            [ width fill
+            , height shrink
+            ]
+            { url = "https://timeswap.medium.com"
+            , label =
+                row
+                    [ width fill
+                    , height shrink
+                    , spacing 8
+                    ]
+                    [ Image.medium images
+                        [ width <| px 20
+                        , centerY
+                        ]
+                    , el
+                        [ centerY ]
+                        (text "Medium")
+                    ]
+            }
+        ]
 
 
 openAside : { model | images : Images } -> Element msg

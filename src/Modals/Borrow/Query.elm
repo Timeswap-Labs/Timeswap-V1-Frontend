@@ -7,6 +7,7 @@ module Modals.Borrow.Query exposing
     , updateCollateralQuery
     , updateDebtQuery
     , updateDefaultQuery
+    , updateMaxQuery
     , updateSliderQuery
     )
 
@@ -31,6 +32,10 @@ type Query
     = GivenPercent QueryPercent
     | GivenDebt QueryDebt
     | GivenCollateral QueryCollateral
+
+
+
+-- | GivenMax QueryMax
 
 
 type alias QueryPercent =
@@ -79,6 +84,24 @@ type alias QueryCollateral =
 type alias DuesGivenCollateral =
     { percent : Percent
     , debt : Uint
+    , maxDebt : Uint
+    , apr : Float
+    , cf : Uint
+    }
+
+
+type alias QueryMax =
+    { pool : Pool
+    , assetOut : Uint
+    , balance : Uint
+    , dues : Maybe DuesGivenMax
+    }
+
+
+type alias DuesGivenMax =
+    { percent : Percent
+    , debt : Uint
+    , collateral : Uint
     , maxDebt : Uint
     , apr : Float
     , cf : Uint
@@ -364,6 +387,41 @@ updateCollateralQuery { pool } maybeDues duesOut =
                             )
                         |> Maybe.withDefault (Failure ())
             }
+                |> DuesOut.Collateral
+
+        _ ->
+            duesOut
+
+
+updateMaxQuery :
+    { modal | pool : { pool | pair : Pair } }
+    -> Maybe DuesGivenMax
+    -> DuesOut
+    -> DuesOut
+updateMaxQuery { pool } maybeDues duesOut =
+    case duesOut of
+        DuesOut.Collateral collateralInput ->
+            maybeDues
+                |> Maybe.map
+                    (\{ percent, debt, collateral, maxDebt, apr, cf } ->
+                        { collateralInput
+                            | percent = percent
+                            , dues =
+                                { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                                , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                                , apr = apr |> toAPR
+                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                                }
+                                    |> Success
+                            , collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                        }
+                    )
+                |> Maybe.withDefault
+                    { collateralInput
+                        | percent = collateralInput.percent
+                        , dues = Failure ()
+                        , collateral = collateralInput.collateral
+                    }
                 |> DuesOut.Collateral
 
         _ ->

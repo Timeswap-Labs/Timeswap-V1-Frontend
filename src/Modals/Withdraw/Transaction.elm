@@ -1,7 +1,6 @@
 module Modals.Withdraw.Transaction exposing (view)
 
 import Data.Address as Address exposing (Address)
-import Data.Device as Device exposing (Device)
 import Data.Maturity as Maturity
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
