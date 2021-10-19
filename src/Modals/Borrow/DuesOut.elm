@@ -1,5 +1,7 @@
 module Modals.Borrow.DuesOut exposing
     ( DuesOut(..)
+    , getFailure
+    , hasBalance
     , hasFailure
     , hasTransaction
     , hasTransactionInfo
@@ -66,6 +68,7 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
+import Modals.Borrow.Error exposing (Error)
 import Modals.Borrow.Tooltip as Tooltip exposing (Tooltip)
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -78,7 +81,7 @@ import Utility.Truncate as Truncate
 
 
 type DuesOut
-    = Default (Remote () DuesGivenPercent)
+    = Default (Remote Error DuesGivenPercent)
     | Slider SliderInput
     | Debt DebtInput
     | Collateral CollateralInput
@@ -112,20 +115,20 @@ type alias DuesGivenCollateral =
 
 type alias SliderInput =
     { percent : Percent
-    , dues : Remote () DuesGivenPercent
+    , dues : Remote Error DuesGivenPercent
     }
 
 
 type alias DebtInput =
     { percent : Percent
     , debt : String
-    , dues : Remote () DuesGivenDebt
+    , dues : Remote Error DuesGivenDebt
     }
 
 
 type alias CollateralInput =
     { percent : Percent
-    , dues : Remote () DuesGivenCollateral
+    , dues : Remote Error DuesGivenCollateral
     , collateral : String
     }
 
@@ -177,6 +180,40 @@ hasFailure { duesOut } =
             False
 
 
+getFailure : { modal | duesOut : DuesOut } -> Maybe Error
+getFailure { duesOut } =
+    case duesOut of
+        Default (Failure error) ->
+            Just error
+
+        Slider { dues } ->
+            case dues of
+                Failure error ->
+                    Just error
+
+                _ ->
+                    Nothing
+
+        Debt { dues } ->
+            case dues of
+                Failure error ->
+                    Just error
+
+                _ ->
+                    Nothing
+
+        Collateral { dues } ->
+            case dues of
+                Failure error ->
+                    Just error
+
+                _ ->
+                    Nothing
+
+        _ ->
+            Nothing
+
+
 isAmount : { modal | pool : { pool | pair : Pair }, assetOut : String, duesOut : DuesOut } -> Bool
 isAmount { pool, assetOut, duesOut } =
     (assetOut |> Uint.isAmount (pool.pair |> Pair.toAsset))
@@ -195,58 +232,66 @@ isAmount { pool, assetOut, duesOut } =
            )
 
 
+hasBalance :
+    Remote () Balances
+    -> { modal | pool : { pool | pair : Pair }, duesOut : DuesOut }
+    -> Bool
+hasBalance balances { pool, duesOut } =
+    case balances of
+        Loading ->
+            True
+
+        Failure _ ->
+            False
+
+        Success successBalances ->
+            (case duesOut of
+                Default (Success { maxCollateral }) ->
+                    Just maxCollateral
+
+                Slider { dues } ->
+                    case dues of
+                        Success { maxCollateral } ->
+                            Just maxCollateral
+
+                        _ ->
+                            Nothing
+
+                Debt { dues } ->
+                    case dues of
+                        Success { maxCollateral } ->
+                            Just maxCollateral
+
+                        _ ->
+                            Nothing
+
+                Collateral { collateral } ->
+                    Just collateral
+
+                _ ->
+                    Nothing
+            )
+                |> (\maybeCollateral ->
+                        maybeCollateral
+                            |> Maybe.map
+                                (\collateralIn ->
+                                    successBalances
+                                        |> Balances.hasEnough
+                                            (pool.pair |> Pair.toCollateral)
+                                            collateralIn
+                                )
+                            |> Maybe.withDefault True
+                   )
+
+
 hasBalanceIfUser :
     { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, duesOut : DuesOut }
     -> Bool
-hasBalanceIfUser { user } { pool, duesOut } =
+hasBalanceIfUser { user } modal =
     case user of
         Success { balances } ->
-            case balances of
-                Loading ->
-                    True
-
-                Failure _ ->
-                    False
-
-                Success successBalances ->
-                    (case duesOut of
-                        Default (Success { maxCollateral }) ->
-                            Just maxCollateral
-
-                        Slider { dues } ->
-                            case dues of
-                                Success { maxCollateral } ->
-                                    Just maxCollateral
-
-                                _ ->
-                                    Nothing
-
-                        Debt { dues } ->
-                            case dues of
-                                Success { maxCollateral } ->
-                                    Just maxCollateral
-
-                                _ ->
-                                    Nothing
-
-                        Collateral { collateral } ->
-                            Just collateral
-
-                        _ ->
-                            Nothing
-                    )
-                        |> (\maybeCollateral ->
-                                maybeCollateral
-                                    |> Maybe.map
-                                        (\collateralIn ->
-                                            successBalances
-                                                |> Balances.hasEnough
-                                                    (pool.pair |> Pair.toCollateral)
-                                                    collateralIn
-                                        )
-                                    |> Maybe.withDefault True
-                           )
+            hasBalance balances modal
 
         _ ->
             True

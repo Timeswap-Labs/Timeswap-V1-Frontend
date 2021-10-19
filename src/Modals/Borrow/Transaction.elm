@@ -46,6 +46,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Json.Encode as Encode exposing (Value)
 import Modals.Borrow.DuesOut as DuesOut exposing (DuesOut)
+import Modals.Borrow.Error as Error
 import Modals.Borrow.Tooltip as Tooltip exposing (Tooltip)
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -364,32 +365,41 @@ view msgs ({ user } as model) ({ pool } as modal) =
         , spacing 12
         ]
         [ case user of
-            Success _ ->
-                pool.pair
-                    |> Pair.toCollateral
-                    |> (\token ->
-                            case token of
-                                Token.ETH ->
-                                    borrowSection msgs model modal
+            Success { balances } ->
+                if DuesOut.hasBalance balances modal then
+                    modal
+                        |> DuesOut.getFailure
+                        |> Maybe.map Error.view
+                        |> Maybe.withDefault
+                            (pool.pair
+                                |> Pair.toCollateral
+                                |> (\token ->
+                                        case token of
+                                            Token.ETH ->
+                                                borrowSection msgs model modal
 
-                                Token.ERC20 erc20 ->
-                                    row
-                                        [ width fill
-                                        , height shrink
-                                        , spacing 20
-                                        ]
-                                        [ el
-                                            [ width fill
-                                            , height shrink
-                                            ]
-                                            (approveSection msgs model modal erc20)
-                                        , el
-                                            [ width fill
-                                            , height shrink
-                                            ]
-                                            (borrowSection msgs model modal)
-                                        ]
-                       )
+                                            Token.ERC20 erc20 ->
+                                                row
+                                                    [ width fill
+                                                    , height shrink
+                                                    , spacing 20
+                                                    ]
+                                                    [ el
+                                                        [ width fill
+                                                        , height shrink
+                                                        ]
+                                                        (approveSection msgs model modal erc20)
+                                                    , el
+                                                        [ width fill
+                                                        , height shrink
+                                                        ]
+                                                        (borrowSection msgs model modal)
+                                                    ]
+                                   )
+                            )
+
+                else
+                    Error.insufficientCollateral
 
             _ ->
                 connectButton model

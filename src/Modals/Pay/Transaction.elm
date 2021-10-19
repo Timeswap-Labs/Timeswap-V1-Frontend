@@ -38,6 +38,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Json.Encode as Encode exposing (Value)
 import Modals.Pay.DuesIn as DuesIn exposing (DuesIn)
+import Modals.Pay.Error as Error
 import Sort.Dict as Dict exposing (Dict)
 import Sort.Set exposing (Set)
 import Time exposing (Posix)
@@ -151,31 +152,35 @@ view :
     -> { modal | pool : Pool, tokenIds : Set TokenId, duesIn : DuesIn }
     -> Element msg
 view msgs model user positions ({ pool } as modal) =
-    pool.pair
-        |> Pair.toAsset
-        |> (\token ->
-                case token of
-                    Token.ETH ->
-                        paySection msgs model user positions modal
+    if modal |> DuesIn.hasTransaction model user positions then
+        pool.pair
+            |> Pair.toAsset
+            |> (\token ->
+                    case token of
+                        Token.ETH ->
+                            paySection msgs model user positions modal
 
-                    Token.ERC20 erc20 ->
-                        row
-                            [ width fill
-                            , height shrink
-                            , spacing 20
-                            ]
-                            [ el
+                        Token.ERC20 erc20 ->
+                            row
                                 [ width fill
                                 , height shrink
+                                , spacing 20
                                 ]
-                                (approveSection msgs model user positions modal erc20)
-                            , el
-                                [ width fill
-                                , height shrink
+                                [ el
+                                    [ width fill
+                                    , height shrink
+                                    ]
+                                    (approveSection msgs model user positions modal erc20)
+                                , el
+                                    [ width fill
+                                    , height shrink
+                                    ]
+                                    (paySection msgs model user positions modal)
                                 ]
-                                (paySection msgs model user positions modal)
-                            ]
-           )
+               )
+
+    else
+        Error.insufficientAsset
 
 
 approveSection :

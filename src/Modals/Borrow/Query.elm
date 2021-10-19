@@ -25,6 +25,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode exposing (Value)
 import Modals.Borrow.DuesOut as DuesOut exposing (DuesOut)
+import Modals.Borrow.Error as Error exposing (Error)
 import Utility.Input as Input
 
 
@@ -42,7 +43,7 @@ type alias QueryPercent =
     { pool : Pool
     , assetOut : Uint
     , percent : Percent
-    , dues : Maybe DuesGivenPercent
+    , dues : Result Error DuesGivenPercent
     }
 
 
@@ -60,7 +61,7 @@ type alias QueryDebt =
     { pool : Pool
     , assetOut : Uint
     , debt : Uint
-    , dues : Maybe DuesGivenDebt
+    , dues : Result Error DuesGivenDebt
     }
 
 
@@ -77,7 +78,7 @@ type alias QueryCollateral =
     { pool : Pool
     , assetOut : Uint
     , collateral : Uint
-    , dues : Maybe DuesGivenCollateral
+    , dues : Result Error DuesGivenCollateral
     }
 
 
@@ -117,8 +118,8 @@ decoderGivenPercent pools tokens =
         |> Pipeline.required "percent" Percent.decoder
         |> Pipeline.required "result"
             (Decode.oneOf
-                [ decoderDuesGivenPercent |> Decode.map Just
-                , Decode.succeed Nothing
+                [ decoderDuesGivenPercent |> Decode.map Ok
+                , Error.decoder |> Decode.map Err
                 ]
             )
         |> Decode.map GivenPercent
@@ -143,8 +144,8 @@ decoderGivenDebt pools tokens =
         |> Pipeline.required "debtIn" Uint.decoder
         |> Pipeline.required "result"
             (Decode.oneOf
-                [ decoderDuesGivenDebt |> Decode.map Just
-                , Decode.succeed Nothing
+                [ decoderDuesGivenDebt |> Decode.map Ok
+                , Error.decoder |> Decode.map Err
                 ]
             )
         |> Decode.map GivenDebt
@@ -168,8 +169,8 @@ decoderGivenCollateral pools tokens =
         |> Pipeline.required "collateralIn" Uint.decoder
         |> Pipeline.required "result"
             (Decode.oneOf
-                [ decoderDuesGivenCollateral |> Decode.map Just
-                , Decode.succeed Nothing
+                [ decoderDuesGivenCollateral |> Decode.map Ok
+                , Error.decoder |> Decode.map Err
                 ]
             )
         |> Decode.map GivenCollateral
@@ -265,25 +266,25 @@ toAPR float =
 
 updateDefaultQuery :
     { modal | pool : { pool | pair : Pair } }
-    -> Maybe DuesGivenPercent
+    -> Result Error DuesGivenPercent
     -> DuesOut
     -> DuesOut
-updateDefaultQuery { pool } maybeDues duesOut =
+updateDefaultQuery { pool } resultDues duesOut =
     case duesOut of
         DuesOut.Default _ ->
-            (maybeDues
-                |> Maybe.map
-                    (\{ debt, collateral, maxDebt, maxCollateral, apr, cf } ->
-                        { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                        , collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                        , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                        , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                        , apr = apr |> toAPR
-                        , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                        }
-                            |> Success
-                    )
-                |> Maybe.withDefault (Failure ())
+            (case resultDues of
+                Ok { debt, collateral, maxDebt, maxCollateral, apr, cf } ->
+                    { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                    , collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                    , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                    , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                    , apr = apr |> toAPR
+                    , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                    }
+                        |> Success
+
+                Err error ->
+                    Failure error
             )
                 |> DuesOut.Default
 
@@ -293,27 +294,27 @@ updateDefaultQuery { pool } maybeDues duesOut =
 
 updateSliderQuery :
     { modal | pool : { pool | pair : Pair } }
-    -> Maybe DuesGivenPercent
+    -> Result Error DuesGivenPercent
     -> DuesOut
     -> DuesOut
-updateSliderQuery { pool } maybeDues duesOut =
+updateSliderQuery { pool } resultDues duesOut =
     case duesOut of
         DuesOut.Slider sliderInput ->
             { sliderInput
                 | dues =
-                    maybeDues
-                        |> Maybe.map
-                            (\{ debt, collateral, maxDebt, maxCollateral, apr, cf } ->
-                                { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                , collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                , apr = apr |> toAPR
-                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                }
-                                    |> Success
-                            )
-                        |> Maybe.withDefault (Failure ())
+                    case resultDues of
+                        Ok { debt, collateral, maxDebt, maxCollateral, apr, cf } ->
+                            { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                            , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                            , apr = apr |> toAPR
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            }
+                                |> Success
+
+                        Err error ->
+                            Failure error
             }
                 |> DuesOut.Slider
 
@@ -323,29 +324,29 @@ updateSliderQuery { pool } maybeDues duesOut =
 
 updateDebtQuery :
     { modal | pool : { pool | pair : Pair } }
-    -> Maybe DuesGivenDebt
+    -> Result Error DuesGivenDebt
     -> DuesOut
     -> DuesOut
-updateDebtQuery { pool } maybeDues duesOut =
+updateDebtQuery { pool } resultDues duesOut =
     case duesOut of
         DuesOut.Debt debtInput ->
             { debtInput
                 | percent =
-                    maybeDues
-                        |> Maybe.map .percent
-                        |> Maybe.withDefault debtInput.percent
+                    resultDues
+                        |> Result.map .percent
+                        |> Result.withDefault debtInput.percent
                 , dues =
-                    maybeDues
-                        |> Maybe.map
-                            (\{ collateral, maxCollateral, apr, cf } ->
-                                { collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                , apr = apr |> toAPR
-                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                }
-                                    |> Success
-                            )
-                        |> Maybe.withDefault (Failure ())
+                    case resultDues of
+                        Ok { collateral, maxCollateral, apr, cf } ->
+                            { collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                            , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                            , apr = apr |> toAPR
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            }
+                                |> Success
+
+                        Err error ->
+                            Failure error
             }
                 |> DuesOut.Debt
 
@@ -355,29 +356,29 @@ updateDebtQuery { pool } maybeDues duesOut =
 
 updateCollateralQuery :
     { modal | pool : { pool | pair : Pair } }
-    -> Maybe DuesGivenCollateral
+    -> Result Error DuesGivenCollateral
     -> DuesOut
     -> DuesOut
-updateCollateralQuery { pool } maybeDues duesOut =
+updateCollateralQuery { pool } resultDues duesOut =
     case duesOut of
         DuesOut.Collateral collateralInput ->
             { collateralInput
                 | percent =
-                    maybeDues
-                        |> Maybe.map .percent
-                        |> Maybe.withDefault collateralInput.percent
+                    resultDues
+                        |> Result.map .percent
+                        |> Result.withDefault collateralInput.percent
                 , dues =
-                    maybeDues
-                        |> Maybe.map
-                            (\{ debt, maxDebt, apr, cf } ->
-                                { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                , apr = apr |> toAPR
-                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                }
-                                    |> Success
-                            )
-                        |> Maybe.withDefault (Failure ())
+                    case resultDues of
+                        Ok { debt, maxDebt, apr, cf } ->
+                            { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , apr = apr |> toAPR
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            }
+                                |> Success
+
+                        Err error ->
+                            Failure error
             }
                 |> DuesOut.Collateral
 
@@ -387,33 +388,33 @@ updateCollateralQuery { pool } maybeDues duesOut =
 
 updateMaxQuery :
     { modal | pool : { pool | pair : Pair } }
-    -> Maybe DuesGivenMax
+    -> Result Error DuesGivenMax
     -> DuesOut
     -> DuesOut
-updateMaxQuery { pool } maybeDues duesOut =
+updateMaxQuery { pool } resultDues duesOut =
     case duesOut of
         DuesOut.Collateral collateralInput ->
-            maybeDues
-                |> Maybe.map
-                    (\{ percent, debt, collateral, maxDebt, apr, cf } ->
-                        { collateralInput
-                            | percent = percent
-                            , dues =
-                                { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                , apr = apr |> toAPR
-                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                }
-                                    |> Success
-                            , collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                        }
-                    )
-                |> Maybe.withDefault
+            (case resultDues of
+                Ok { percent, debt, collateral, maxDebt, apr, cf } ->
+                    { collateralInput
+                        | percent = percent
+                        , dues =
+                            { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , apr = apr |> toAPR
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            }
+                                |> Success
+                        , collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                    }
+
+                Err error ->
                     { collateralInput
                         | percent = collateralInput.percent
-                        , dues = Failure ()
+                        , dues = Failure error
                         , collateral = collateralInput.collateral
                     }
+            )
                 |> DuesOut.Collateral
 
         _ ->
