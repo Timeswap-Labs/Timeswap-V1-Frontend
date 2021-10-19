@@ -24,6 +24,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode exposing (Value)
 import Modals.Lend.ClaimsOut as ClaimsOut exposing (ClaimsOut)
+import Modals.Lend.Error as Error exposing (Error)
 import Utility.Input as Input
 
 
@@ -37,7 +38,7 @@ type alias QueryPercent =
     { pool : Pool
     , assetIn : Uint
     , percent : Percent
-    , claims : Maybe ClaimsGivenPercent
+    , claims : Result Error ClaimsGivenPercent
     }
 
 
@@ -55,7 +56,7 @@ type alias QueryBond =
     { pool : Pool
     , assetIn : Uint
     , bond : Uint
-    , claims : Maybe ClaimsGivenBond
+    , claims : Result Error ClaimsGivenBond
     }
 
 
@@ -72,7 +73,7 @@ type alias QueryInsurance =
     { pool : Pool
     , assetIn : Uint
     , insurance : Uint
-    , claims : Maybe ClaimsGivenInsurance
+    , claims : Result Error ClaimsGivenInsurance
     }
 
 
@@ -102,8 +103,8 @@ decoderGivenPercent pools tokens =
         |> Pipeline.required "percent" Percent.decoder
         |> Pipeline.required "result"
             (Decode.oneOf
-                [ decoderClaimsGivenPercent |> Decode.map Just
-                , Decode.succeed Nothing
+                [ decoderClaimsGivenPercent |> Decode.map Ok
+                , Error.decoder |> Decode.map Err
                 ]
             )
         |> Decode.map GivenPercent
@@ -128,8 +129,8 @@ decoderGivenBond pools tokens =
         |> Pipeline.required "bondOut" Uint.decoder
         |> Pipeline.required "result"
             (Decode.oneOf
-                [ decoderClaimsGivenBond |> Decode.map Just
-                , Decode.succeed Nothing
+                [ decoderClaimsGivenBond |> Decode.map Ok
+                , Error.decoder |> Decode.map Err
                 ]
             )
         |> Decode.map GivenBond
@@ -153,8 +154,8 @@ decoderGivenInsurance pools tokens =
         |> Pipeline.required "insuranceOut" Uint.decoder
         |> Pipeline.required "result"
             (Decode.oneOf
-                [ decoderClaimsGivenInsurance |> Decode.map Just
-                , Decode.succeed Nothing
+                [ decoderClaimsGivenInsurance |> Decode.map Ok
+                , Error.decoder |> Decode.map Err
                 ]
             )
         |> Decode.map GivenInsurance
@@ -250,25 +251,25 @@ toAPR float =
 
 updateDefaultQuery :
     { modal | pool : { pool | pair : Pair } }
-    -> Maybe ClaimsGivenPercent
+    -> Result Error ClaimsGivenPercent
     -> ClaimsOut
     -> ClaimsOut
-updateDefaultQuery { pool } maybeClaims claimsOut =
+updateDefaultQuery { pool } resultClaims claimsOut =
     case claimsOut of
         ClaimsOut.Default _ ->
-            (maybeClaims
-                |> Maybe.map
-                    (\{ bond, insurance, minBond, minInsurance, apr, cf } ->
-                        { bond = bond |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                        , insurance = insurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                        , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                        , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                        , apr = apr |> toAPR
-                        , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                        }
-                            |> Success
-                    )
-                |> Maybe.withDefault (Failure ())
+            (case resultClaims of
+                Ok { bond, insurance, minBond, minInsurance, apr, cf } ->
+                    { bond = bond |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                    , insurance = insurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                    , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                    , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                    , apr = apr |> toAPR
+                    , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                    }
+                        |> Success
+
+                Err error ->
+                    Failure error
             )
                 |> ClaimsOut.Default
 
@@ -278,27 +279,27 @@ updateDefaultQuery { pool } maybeClaims claimsOut =
 
 updateSliderQuery :
     { modal | pool : { pool | pair : Pair } }
-    -> Maybe ClaimsGivenPercent
+    -> Result Error ClaimsGivenPercent
     -> ClaimsOut
     -> ClaimsOut
-updateSliderQuery { pool } maybeClaims claimsOut =
+updateSliderQuery { pool } resultClaims claimsOut =
     case claimsOut of
         ClaimsOut.Slider sliderInput ->
             { sliderInput
                 | claims =
-                    maybeClaims
-                        |> Maybe.map
-                            (\{ bond, insurance, minBond, minInsurance, apr, cf } ->
-                                { bond = bond |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                , insurance = insurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                , apr = apr |> toAPR
-                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                }
-                                    |> Success
-                            )
-                        |> Maybe.withDefault (Failure ())
+                    case resultClaims of
+                        Ok { bond, insurance, minBond, minInsurance, apr, cf } ->
+                            { bond = bond |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , insurance = insurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                            , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                            , apr = apr |> toAPR
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            }
+                                |> Success
+
+                        Err error ->
+                            Failure error
             }
                 |> ClaimsOut.Slider
 
@@ -308,29 +309,29 @@ updateSliderQuery { pool } maybeClaims claimsOut =
 
 updateBondQuery :
     { modal | pool : { pool | pair : Pair } }
-    -> Maybe ClaimsGivenBond
+    -> Result Error ClaimsGivenBond
     -> ClaimsOut
     -> ClaimsOut
-updateBondQuery { pool } maybeClaims claimsOut =
+updateBondQuery { pool } resultClaims claimsOut =
     case claimsOut of
         ClaimsOut.Bond bondInput ->
             { bondInput
                 | percent =
-                    maybeClaims
-                        |> Maybe.map .percent
-                        |> Maybe.withDefault bondInput.percent
+                    resultClaims
+                        |> Result.map .percent
+                        |> Result.withDefault bondInput.percent
                 , claims =
-                    maybeClaims
-                        |> Maybe.map
-                            (\{ insurance, minInsurance, apr, cf } ->
-                                { insurance = insurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                , apr = apr |> toAPR
-                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                }
-                                    |> Success
-                            )
-                        |> Maybe.withDefault (Failure ())
+                    case resultClaims of
+                        Ok { insurance, minInsurance, apr, cf } ->
+                            { insurance = insurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                            , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+                            , apr = apr |> toAPR
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            }
+                                |> Success
+
+                        Err error ->
+                            Failure error
             }
                 |> ClaimsOut.Bond
 
@@ -340,29 +341,29 @@ updateBondQuery { pool } maybeClaims claimsOut =
 
 updateInsuranceQuery :
     { modal | pool : { pool | pair : Pair } }
-    -> Maybe ClaimsGivenInsurance
+    -> Result Error ClaimsGivenInsurance
     -> ClaimsOut
     -> ClaimsOut
-updateInsuranceQuery { pool } maybeClaims claimsOut =
+updateInsuranceQuery { pool } resultClaims claimsOut =
     case claimsOut of
         ClaimsOut.Insurance insuranceInput ->
             { insuranceInput
                 | percent =
-                    maybeClaims
-                        |> Maybe.map .percent
-                        |> Maybe.withDefault insuranceInput.percent
+                    resultClaims
+                        |> Result.map .percent
+                        |> Result.withDefault insuranceInput.percent
                 , claims =
-                    maybeClaims
-                        |> Maybe.map
-                            (\{ bond, minBond, apr, cf } ->
-                                { bond = bond |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                , apr = apr |> toAPR
-                                , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                }
-                                    |> Success
-                            )
-                        |> Maybe.withDefault (Failure ())
+                    case resultClaims of
+                        Ok { bond, minBond, apr, cf } ->
+                            { bond = bond |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , apr = apr |> toAPR
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            }
+                                |> Success
+
+                        Err error ->
+                            Failure error
             }
                 |> ClaimsOut.Insurance
 

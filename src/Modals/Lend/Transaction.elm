@@ -46,6 +46,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Json.Encode as Encode exposing (Value)
 import Modals.Lend.ClaimsOut as ClaimsOut exposing (ClaimsOut)
+import Modals.Lend.Error as Error
 import Modals.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -321,32 +322,41 @@ view msgs ({ user } as model) ({ pool } as modal) =
         , spacing 12
         ]
         [ case user of
-            Success _ ->
-                pool.pair
-                    |> Pair.toAsset
-                    |> (\token ->
-                            case token of
-                                Token.ETH ->
-                                    lendSection msgs model modal
+            Success { balances } ->
+                if ClaimsOut.hasBalance balances modal then
+                    modal
+                        |> ClaimsOut.getFailure
+                        |> Maybe.map Error.view
+                        |> Maybe.withDefault
+                            (pool.pair
+                                |> Pair.toAsset
+                                |> (\token ->
+                                        case token of
+                                            Token.ETH ->
+                                                lendSection msgs model modal
 
-                                Token.ERC20 erc20 ->
-                                    row
-                                        [ width fill
-                                        , height shrink
-                                        , spacing 20
-                                        ]
-                                        [ el
-                                            [ width fill
-                                            , height shrink
-                                            ]
-                                            (approveSection msgs model modal erc20)
-                                        , el
-                                            [ width fill
-                                            , height shrink
-                                            ]
-                                            (lendSection msgs model modal)
-                                        ]
-                       )
+                                            Token.ERC20 erc20 ->
+                                                row
+                                                    [ width fill
+                                                    , height shrink
+                                                    , spacing 20
+                                                    ]
+                                                    [ el
+                                                        [ width fill
+                                                        , height shrink
+                                                        ]
+                                                        (approveSection msgs model modal erc20)
+                                                    , el
+                                                        [ width fill
+                                                        , height shrink
+                                                        ]
+                                                        (lendSection msgs model modal)
+                                                    ]
+                                   )
+                            )
+
+                else
+                    Error.insufficientAsset
 
             _ ->
                 connectButton model

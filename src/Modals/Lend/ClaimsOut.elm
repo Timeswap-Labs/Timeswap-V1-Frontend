@@ -3,6 +3,8 @@ module Modals.Lend.ClaimsOut exposing
     , ClaimsOut(..)
     , InsuranceInput
     , SliderInput
+    , getFailure
+    , hasBalance
     , hasFailure
     , hasTransaction
     , hasTransactionInfo
@@ -69,6 +71,7 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
+import Modals.Lend.Error exposing (Error)
 import Modals.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -81,7 +84,7 @@ import Utility.Truncate as Truncate
 
 
 type ClaimsOut
-    = Default (Remote () ClaimsGivenPercent)
+    = Default (Remote Error ClaimsGivenPercent)
     | Slider SliderInput
     | Bond BondInput
     | Insurance InsuranceInput
@@ -115,20 +118,20 @@ type alias ClaimsGivenInsurance =
 
 type alias SliderInput =
     { percent : Percent
-    , claims : Remote () ClaimsGivenPercent
+    , claims : Remote Error ClaimsGivenPercent
     }
 
 
 type alias BondInput =
     { percent : Percent
     , bond : String
-    , claims : Remote () ClaimsGivenBond
+    , claims : Remote Error ClaimsGivenBond
     }
 
 
 type alias InsuranceInput =
     { percent : Percent
-    , claims : Remote () ClaimsGivenInsurance
+    , claims : Remote Error ClaimsGivenInsurance
     , insurance : String
     }
 
@@ -180,6 +183,40 @@ hasFailure { claimsOut } =
             False
 
 
+getFailure : { modal | claimsOut : ClaimsOut } -> Maybe Error
+getFailure { claimsOut } =
+    case claimsOut of
+        Default (Failure error) ->
+            Just error
+
+        Slider { claims } ->
+            case claims of
+                Failure error ->
+                    Just error
+
+                _ ->
+                    Nothing
+
+        Bond { claims } ->
+            case claims of
+                Failure error ->
+                    Just error
+
+                _ ->
+                    Nothing
+
+        Insurance { claims } ->
+            case claims of
+                Failure error ->
+                    Just error
+
+                _ ->
+                    Nothing
+
+        _ ->
+            Nothing
+
+
 isAmount : { modal | pool : { pool | pair : Pair }, assetIn : String, claimsOut : ClaimsOut } -> Bool
 isAmount { pool, assetIn, claimsOut } =
     (assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset))
@@ -198,23 +235,31 @@ isAmount { pool, assetIn, claimsOut } =
            )
 
 
+hasBalance :
+    Remote () Balances
+    -> { modal | pool : { pool | pair : Pair }, assetIn : String }
+    -> Bool
+hasBalance balances { pool, assetIn } =
+    case balances of
+        Loading ->
+            True
+
+        Failure _ ->
+            False
+
+        Success successBalances ->
+            successBalances
+                |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+
+
 hasBalanceIfUser :
     { model | user : Remote userError { user | balances : Remote () Balances } }
     -> { modal | pool : { pool | pair : Pair }, assetIn : String }
     -> Bool
-hasBalanceIfUser { user } { pool, assetIn } =
+hasBalanceIfUser { user } modal =
     case user of
         Success { balances } ->
-            case balances of
-                Loading ->
-                    True
-
-                Failure _ ->
-                    False
-
-                Success successBalances ->
-                    successBalances
-                        |> Balances.hasEnough (pool.pair |> Pair.toAsset) assetIn
+            hasBalance balances modal
 
         _ ->
             True

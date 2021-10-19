@@ -90,14 +90,6 @@ type alias DuesGivenCollateral =
     }
 
 
-type alias QueryMax =
-    { pool : Pool
-    , assetOut : Uint
-    , balance : Uint
-    , dues : Maybe DuesGivenMax
-    }
-
-
 type alias DuesGivenMax =
     { percent : Percent
     , debt : Uint
