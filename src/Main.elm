@@ -6,6 +6,7 @@ import Browser.Events exposing (Visibility)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Backdrop as Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain(..))
+import Data.Connectivity as Connectivity exposing (Connectivity)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device)
 import Data.Images as Images exposing (Images)
@@ -67,6 +68,7 @@ main =
 type alias Model =
     { device : Device
     , visibility : Visibility
+    , connectivity : Connectivity
     , time : Posix
     , zoneInfo : Maybe ZoneInfo
     , backdrop : Backdrop
@@ -102,6 +104,7 @@ init { width, time, hasBackdropSupport, images, tokenImages, whitelist, user } u
         |> (\{ tokens, pools } ->
                 { device = Device.fromWidth width
                 , visibility = Browser.Events.Visible
+                , connectivity = Connectivity.Connected
                 , time = Time.millisToPosix time
                 , zoneInfo = Nothing
                 , backdrop = hasBackdropSupport |> Backdrop.setBackdrop
@@ -154,6 +157,7 @@ type Msg
     | ResizeWindow Int Int
     | ClickOutsideAside
     | VisibilityChange Visibility
+    | ConnectivityMsg Value
     | ReceiveTime Posix
     | ReceiveZoneInfo ZoneInfo
     | OpenDropdown
@@ -165,7 +169,6 @@ type Msg
     | InputDeadline String
     | ClickOutsideSlippage
     | ClickOutsideDeadline
-    | CloseError
     | PageMsg Page.Msg
     | ModalMsg Modal.Msg
     | ServiceMsg Service.Msg
@@ -184,7 +187,6 @@ type alias Msgs =
     , chooseDeadlineOption : Deadline.Option -> Msg
     , inputSlippage : String -> Msg
     , inputDeadline : String -> Msg
-    , closeError : Msg
     }
 
 
@@ -303,6 +305,15 @@ update msg model =
             , Cmd.none
             )
 
+        ConnectivityMsg value ->
+            ( value
+                |> Decode.decodeValue Connectivity.decoder
+                |> Result.map
+                    (\connectivity -> { model | connectivity = connectivity })
+                |> Result.withDefault model
+            , Cmd.none
+            )
+
         ReceiveTime posix ->
             ( { model | time = posix }
             , Cmd.none
@@ -393,19 +404,6 @@ update msg model =
                         |> Maybe.andThen Service.getDeadline
                         |> Maybe.withDefault model.deadline
                 , service = Just Service.refreshSettings
-              }
-            , Cmd.none
-            )
-
-        CloseError ->
-            ( { model
-                | user =
-                    case model.user of
-                        Failure _ ->
-                            Loading
-
-                        _ ->
-                            model.user
               }
             , Cmd.none
             )
@@ -532,6 +530,9 @@ update msg model =
             )
 
 
+port connectivityMsg : (Value -> msg) -> Sub msg
+
+
 port metamaskMsg : (Value -> msg) -> Sub msg
 
 
@@ -555,6 +556,7 @@ subscriptions ({ modal, service } as model) =
     Sub.batch
         [ Browser.Events.onResize ResizeWindow
         , Browser.Events.onVisibilityChange VisibilityChange
+        , connectivityMsg ConnectivityMsg
         , Time.every 1000 ReceiveTime
         , onClickOutsideDropdown model
         , onClickOutsideAside model
@@ -691,7 +693,6 @@ msgs =
     , chooseDeadlineOption = ChooseDeadlineOption
     , inputSlippage = InputSlippage
     , inputDeadline = InputDeadline
-    , closeError = CloseError
     }
 
 
@@ -784,7 +785,7 @@ html model =
                 , height fill
                 , clip
                 ]
-                [ Lazy.lazy2 Error.view msgs model
+                [ Lazy.lazy Error.view model
                 , Lazy.lazy2 Header.view msgs model
                 , row
                     [ width fill
