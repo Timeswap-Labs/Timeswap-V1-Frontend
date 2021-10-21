@@ -19,19 +19,49 @@ export async function getProvider(
     //   weight: 1,
     // };
 
-    const infuraProvider = new InfuraProvider(
-      // await metamaskProvider.getNetwork(),
-      "rinkeby",
-      "ccbd29f5d62547e1ac0cde02f1366cb5"
-    );
-    const infuraConfig = {
-      provider: infuraProvider,
-      priority: 1,
-      stallTimeout: 8,
-      weight: 1,
-    };
+    // const infuraProvider = new InfuraProvider(
+    //   // await metamaskProvider.getNetwork(),
+    //   "rinkeby",
+    //   "ccbd29f5d62547e1ac0cde02f1366cb5"
+    // );
+    // const infuraConfig = {
+    //   provider: infuraProvider,
+    //   priority: 1,
+    //   stallTimeout: 8,
+    //   weight: 1,
+    // };
 
-    return new FallbackProvider([infuraConfig]);
+    // return new FallbackProvider([infuraConfig]);
+    try {
+      const metamaskProvider = new Web3Provider(window.ethereum, "rinkeby");
+      const metamaskConfig = {
+        provider: metamaskProvider,
+        priority: 1,
+        stallTimeout: 0,
+        weight: 1,
+      };
+
+      const infuraProvider = new InfuraProvider(
+        "rinkeby",
+        "ccbd29f5d62547e1ac0cde02f1366cb5"
+      );
+      const infuraConfig = {
+        provider: infuraProvider,
+        priority: 2,
+        stallTimeout: 500,
+        weight: 1,
+      };
+
+      return new FallbackProvider([metamaskConfig, infuraConfig]);
+    } catch {
+      const infuraProvider = new InfuraProvider(
+        // await metamaskProvider.getNetwork(),
+        "rinkeby",
+        "ccbd29f5d62547e1ac0cde02f1366cb5"
+      );
+
+      return infuraProvider;
+    }
   } else if (provider) {
     const infuraProvider = new InfuraProvider(
       // await provider.getNetwork(),
