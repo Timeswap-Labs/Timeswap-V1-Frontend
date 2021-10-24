@@ -1,96 +1,42 @@
 import {
+  AlchemyProvider,
   BaseProvider,
   FallbackProvider,
   InfuraProvider,
   Web3Provider,
 } from "@ethersproject/providers";
+import { GlobalParams } from "./global";
 
 export declare let window: any;
 
-export async function getProvider(
-  provider?: BaseProvider
-): Promise<BaseProvider> {
-  if (window.ethereum) {
-    // const metamaskProvider = new Web3Provider(window.ethereum, "rinkeby");
-    // const metamaskConfig = {
-    //   provider: metamaskProvider,
-    //   priority: 1,
-    //   stallTimeout: 0,
-    //   weight: 1,
-    // };
-
-    // const infuraProvider = new InfuraProvider(
-    //   // await metamaskProvider.getNetwork(),
-    //   "rinkeby",
-    //   "ccbd29f5d62547e1ac0cde02f1366cb5"
-    // );
-    // const infuraConfig = {
-    //   provider: infuraProvider,
-    //   priority: 1,
-    //   stallTimeout: 8,
-    //   weight: 1,
-    // };
-
-    // return new FallbackProvider([infuraConfig]);
-    try {
-      const metamaskProvider = new Web3Provider(window.ethereum, "rinkeby");
-      const metamaskConfig = {
-        provider: metamaskProvider,
-        priority: 1,
-        stallTimeout: 0,
-        weight: 1,
-      };
-
-      const infuraProvider = new InfuraProvider(
-        "rinkeby",
-        "ccbd29f5d62547e1ac0cde02f1366cb5"
-      );
-      const infuraConfig = {
-        provider: infuraProvider,
-        priority: 2,
-        stallTimeout: 500,
-        weight: 1,
-      };
-
-      return new FallbackProvider([metamaskConfig, infuraConfig]);
-    } catch {
-      const infuraProvider = new InfuraProvider(
-        // await metamaskProvider.getNetwork(),
-        "rinkeby",
-        "ccbd29f5d62547e1ac0cde02f1366cb5"
-      );
-
-      return infuraProvider;
-    }
-  } else if (provider) {
-    const infuraProvider = new InfuraProvider(
-      // await provider.getNetwork(),
-      "rinkeby",
-      "ccbd29f5d62547e1ac0cde02f1366cb5"
-    );
-    const infuraConfig = {
-      provider: infuraProvider,
-      priority: 1,
-      stallTimeout: 8,
-      weight: 1,
-    };
-
-    return new FallbackProvider([infuraConfig]);
+export async function getProvider(gp: GlobalParams): Promise<BaseProvider> {
+  if (gp.metamaskProvider && gp.network === "0x4") {
+    return new Web3Provider(window.ethereum, "rinkeby");
   } else {
-    // return getDefaultProvider("rinkeby");
+    const alchemyProvider = new AlchemyProvider(
+      // await metamaskProvider.getNetwork(),
+      "rinkeby",
+      "FtqSyYbn24pFMUERB6wwZAqiPer7Q83Q"
+    );
+    const alchemyConfig = {
+      provider: alchemyProvider,
+      priority: 2,
+      stallTimeout: 500,
+      weight: 1,
+    };
 
     const infuraProvider = new InfuraProvider(
-      // await provider.getNetwork(),
+      // await metamaskProvider.getNetwork(),
       "rinkeby",
       "ccbd29f5d62547e1ac0cde02f1366cb5"
     );
     const infuraConfig = {
       provider: infuraProvider,
-      priority: 1,
-      stallTimeout: 8,
+      priority: 3,
+      stallTimeout: 1000,
       weight: 1,
     };
 
-    return new FallbackProvider([infuraConfig]);
+    return new FallbackProvider([alchemyConfig, infuraConfig]);
   }
 }

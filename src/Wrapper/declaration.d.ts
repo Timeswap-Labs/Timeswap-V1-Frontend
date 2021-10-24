@@ -148,14 +148,16 @@ interface LendGivenPercent {
   maturity: number;
   assetIn: string;
   percent: number;
-  result: {
-    bondOut: string;
-    insuranceOut: string;
-    minBond: string;
-    minInsurance: string;
-    apr: number;
-    cf: string;
-  } | null;
+  result:
+    | {
+        bondOut: string;
+        insuranceOut: string;
+        minBond: string;
+        minInsurance: string;
+        apr: number;
+        cf: string;
+      }
+    | number;
 }
 
 interface LendGivenBond {
@@ -164,13 +166,15 @@ interface LendGivenBond {
   maturity: number;
   assetIn: string;
   bondOut: string;
-  result: {
-    percent: number;
-    insuranceOut: string;
-    minInsurance: string;
-    apr: number;
-    cf: string;
-  } | null;
+  result:
+    | {
+        percent: number;
+        insuranceOut: string;
+        minInsurance: string;
+        apr: number;
+        cf: string;
+      }
+    | number;
 }
 
 interface LendGivenInsurance {
@@ -179,13 +183,15 @@ interface LendGivenInsurance {
   maturity: number;
   assetIn: string;
   insuranceOut: string;
-  result: {
-    percent: number;
-    bondOut: string;
-    minBond: string;
-    apr: number;
-    cf: string;
-  } | null;
+  result:
+    | {
+        percent: number;
+        bondOut: string;
+        minBond: string;
+        apr: number;
+        cf: string;
+      }
+    | number;
 }
 
 interface BorrowQuery {
@@ -237,14 +243,16 @@ interface BorrowGivenPercent {
   maturity: number;
   assetOut: string;
   percent: number;
-  result: {
-    debtIn: string;
-    collateralIn: string;
-    maxDebt: string;
-    maxCollateral: string;
-    apr: number;
-    cf: string;
-  } | null;
+  result:
+    | {
+        debtIn: string;
+        collateralIn: string;
+        maxDebt: string;
+        maxCollateral: string;
+        apr: number;
+        cf: string;
+      }
+    | number;
 }
 
 interface BorrowGivenDebt {
@@ -253,13 +261,15 @@ interface BorrowGivenDebt {
   maturity: number;
   assetOut: string;
   debtIn: string;
-  result: {
-    percent: number;
-    collateralIn: string;
-    maxCollateral: string;
-    apr: number;
-    cf: string;
-  } | null;
+  result:
+    | {
+        percent: number;
+        collateralIn: string;
+        maxCollateral: string;
+        apr: number;
+        cf: string;
+      }
+    | number;
 }
 
 interface BorrowGivenCollateral {
@@ -268,13 +278,15 @@ interface BorrowGivenCollateral {
   maturity: number;
   assetOut: string;
   collateralIn: string;
-  result: {
-    percent: number;
-    debtIn: string;
-    maxDebt: string;
-    apr: number;
-    cf: string;
-  } | null;
+  result:
+    | {
+        percent: number;
+        debtIn: string;
+        maxDebt: string;
+        apr: number;
+        cf: string;
+      }
+    | number;
 }
 
 interface PayQuery {

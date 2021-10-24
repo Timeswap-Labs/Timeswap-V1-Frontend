@@ -43,7 +43,7 @@ export async function elmUser(): Promise<{
 }
 
 export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
-  const provider = await getProvider();
+  const provider = await getProvider(gp);
   const network = await provider.getNetwork();
   gp.provider = provider;
 

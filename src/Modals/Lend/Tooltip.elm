@@ -529,7 +529,6 @@ transactionInfo device pair ( minBond, minInsurance ) slippage =
                     [ width fill
                     , height shrink
                     , paddingXY 0 3
-                    , spacing 72
                     ]
                     [ el
                         [ width shrink
@@ -574,7 +573,6 @@ transactionInfo device pair ( minBond, minInsurance ) slippage =
                     [ width fill
                     , height shrink
                     , paddingXY 0 3
-                    , spacing 72
                     ]
                     [ el
                         [ width shrink
@@ -620,7 +618,6 @@ transactionInfo device pair ( minBond, minInsurance ) slippage =
                     [ width fill
                     , height shrink
                     , paddingXY 0 3
-                    , spacing 72
                     ]
                     [ el
                         [ width shrink

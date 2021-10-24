@@ -5,21 +5,23 @@
     "check": "tsc --noEmit"
   },
   "dependencies": {
-    "@0xsequence/multicall": "^0.28.0",
-    "@ethersproject/contracts": "^5.4.1",
-    "@ethersproject/providers": "^5.4.5",
+    "@0xsequence/multicall": "^0.29.0",
+    "@ethersproject/abstract-signer": "^5.5.0",
+    "@ethersproject/contracts": "^5.5.0",
+    "@ethersproject/providers": "^5.5.0",
+    "@lottiefiles/lottie-player": "^1.4.2",
     "@timeswap-labs/timeswap-v1-sdk": "^0.1.32",
     "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.15"
   },
   "devDependencies": {
-    "@parcel/resolver-glob": "^2.0.0-rc.0",
-    "@parcel/transformer-elm": "2.0.0-rc.0",
-    "@parcel/transformer-typescript-tsc": "^2.0.0-nightly.840",
+    "@parcel/resolver-glob": "^2.0.0",
+    "@parcel/transformer-elm": "2.0.0",
+    "@parcel/transformer-typescript-tsc": "^2.0.0",
     "@types/elm": "^0.19.1",
     "elm": "^0.19.1-5",
     "elm-hot": "^1.1.6",
     "node-elm-compiler": "^5.0.6",
-    "parcel": "^2.0.0-rc.0",
-    "typescript": "^4.4.3"
+    "parcel": "^2.0.0",
+    "typescript": "^4.4.4"
   }
 }
