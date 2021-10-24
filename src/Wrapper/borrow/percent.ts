@@ -1,5 +1,6 @@
 import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Uint112, Uint256, Uint40 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
 import { WhiteList } from "../whitelist";
 import { calculateApr, calculateCf, calculateMaxValue } from "./common";
@@ -68,6 +69,24 @@ export async function percentCalculate(
   }
 }
 
+export async function percentTransaction(
+  pool: Pool,
+  gp: GlobalParams,
+  borrow: Borrow
+) {
+  const txn = await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
+    assetTo: borrow.assetTo,
+    dueTo: borrow.dueTo,
+    assetOut: new Uint112(borrow.assetOut),
+    percent: new Uint40(borrow.percent),
+    maxDebt: new Uint112(borrow.maxDebt),
+    maxCollateral: new Uint112(borrow.maxCollateral),
+    deadline: new Uint256(borrow.deadline),
+  });
+
+  await txn.wait();
+}
+
 interface Query {
   asset: string;
   collateral: string;
@@ -75,4 +94,14 @@ interface Query {
   assetOut: string;
   percent: number;
   slippage: number;
+}
+
+interface Borrow {
+  assetTo: string;
+  dueTo: string;
+  assetOut: string;
+  percent: number;
+  maxDebt: string;
+  maxCollateral: string;
+  deadline: number;
 }

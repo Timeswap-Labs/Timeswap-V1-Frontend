@@ -1,10 +1,10 @@
 import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
-import { Uint112, Uint256, Uint40 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
 import { WhiteList } from "../whitelist";
-import { collateralCalculate } from "./collateral";
-import { debtCalculate } from "./debt";
-import { percentCalculate } from "./percent";
+import { collateralCalculate, collateralTransaction } from "./collateral";
+import { debtCalculate, debtTransaction } from "./debt";
+import { percentCalculate, percentTransaction } from "./percent";
 
 export function borrow(app: ElmApp<Ports>, whitelist: WhiteList) {
   app.ports.queryBorrow.subscribe((query) =>
@@ -33,18 +33,32 @@ export function borrowSigner(
       params.collateral,
       params.maturity
     );
+    const { percent, debtIn, collateralIn, maxDebt, maxCollateral } = params;
 
-    const txn = await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
-      assetTo: params.assetTo,
-      dueTo: params.dueTo,
-      assetOut: new Uint112(params.assetOut),
-      percent: new Uint40(params.percent),
-      maxDebt: new Uint112(params.maxDebt),
-      maxCollateral: new Uint112(params.maxCollateral),
-      deadline: new Uint256(params.deadline),
-    });
-
-    await txn.wait();
+    if (
+      percent !== undefined &&
+      maxDebt !== undefined &&
+      maxCollateral !== undefined
+    ) {
+      await percentTransaction(pool, gp, {
+        ...params,
+        percent,
+        maxDebt,
+        maxCollateral,
+      });
+    } else if (debtIn !== undefined && maxCollateral !== undefined) {
+      await debtTransaction(pool, gp, {
+        ...params,
+        debtIn,
+        maxCollateral,
+      });
+    } else if (collateralIn !== undefined && maxDebt !== undefined) {
+      await collateralTransaction(pool, gp, {
+        ...params,
+        collateralIn,
+        maxDebt,
+      });
+    }
   });
 }
 

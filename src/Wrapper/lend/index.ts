@@ -1,15 +1,10 @@
 import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
-import {
-  Uint112,
-  Uint128,
-  Uint256,
-  Uint40,
-} from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
 import { WhiteList } from "../whitelist";
-import { bondCalculate } from "./bond";
-import { insuranceCalculate } from "./insurance";
-import { percentCalculate } from "./percent";
+import { bondCalculate, bondTransaction } from "./bond";
+import { insuranceCalculate, insuranceTransaction } from "./insurance";
+import { percentCalculate, percentTransaction } from "./percent";
 
 export function lend(app: ElmApp<Ports>, whitelist: WhiteList) {
   app.ports.queryLend.subscribe((query) =>
@@ -38,18 +33,32 @@ export function lendSigner(
       params.collateral,
       params.maturity
     );
+    const { percent, bondOut, insuranceOut, minBond, minInsurance } = params;
 
-    const txn = await pool.upgrade(gp.metamaskSigner!).lendGivenPercent({
-      bondTo: params.bondTo,
-      insuranceTo: params.insuranceTo,
-      assetIn: new Uint112(params.assetIn),
-      percent: new Uint40(params.percent),
-      minBond: new Uint128(params.minBond),
-      minInsurance: new Uint128(params.minInsurance),
-      deadline: new Uint256(params.deadline),
-    });
-
-    await txn.wait();
+    if (
+      percent !== undefined &&
+      minBond !== undefined &&
+      minInsurance !== undefined
+    ) {
+      await percentTransaction(pool, gp, {
+        ...params,
+        percent,
+        minBond,
+        minInsurance,
+      });
+    } else if (bondOut !== undefined && minInsurance !== undefined) {
+      await bondTransaction(pool, gp, {
+        ...params,
+        bondOut,
+        minInsurance,
+      });
+    } else if (insuranceOut !== undefined && minBond !== undefined) {
+      await insuranceTransaction(pool, gp, {
+        ...params,
+        insuranceOut,
+        minBond,
+      });
+    }
   });
 }
 

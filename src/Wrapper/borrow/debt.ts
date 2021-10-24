@@ -1,5 +1,6 @@
 import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
 import { WhiteList } from "../whitelist";
 import {
@@ -74,6 +75,23 @@ export async function debtCalculate(
   }
 }
 
+export async function debtTransaction(
+  pool: Pool,
+  gp: GlobalParams,
+  borrow: Borrow
+) {
+  const txn = await pool.upgrade(gp.metamaskSigner!).borrowGivenDebt({
+    assetTo: borrow.assetTo,
+    dueTo: borrow.dueTo,
+    assetOut: new Uint112(borrow.assetOut),
+    debtIn: new Uint112(borrow.debtIn),
+    maxCollateral: new Uint112(borrow.maxCollateral),
+    deadline: new Uint256(borrow.deadline),
+  });
+
+  await txn.wait();
+}
+
 interface Query {
   asset: string;
   collateral: string;
@@ -81,4 +99,13 @@ interface Query {
   assetOut: string;
   debtIn: string;
   slippage: number;
+}
+
+interface Borrow {
+  assetTo: string;
+  dueTo: string;
+  assetOut: string;
+  debtIn: string;
+  maxCollateral: string;
+  deadline: number;
 }

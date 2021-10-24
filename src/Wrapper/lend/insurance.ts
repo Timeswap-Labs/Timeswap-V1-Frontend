@@ -1,5 +1,6 @@
 import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Uint112, Uint128, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
 import { WhiteList } from "../whitelist";
 import {
@@ -77,6 +78,23 @@ export async function insuranceCalculate(
   }
 }
 
+export async function insuranceTransaction(
+  pool: Pool,
+  gp: GlobalParams,
+  lend: Lend
+) {
+  const txn = await pool.upgrade(gp.metamaskSigner!).lendGivenInsurance({
+    bondTo: lend.bondTo,
+    insuranceTo: lend.insuranceTo,
+    assetIn: new Uint112(lend.assetIn),
+    insuranceOut: new Uint128(lend.insuranceOut),
+    minBond: new Uint128(lend.minBond),
+    deadline: new Uint256(lend.deadline),
+  });
+
+  await txn.wait();
+}
+
 interface Query {
   asset: string;
   collateral: string;
@@ -84,4 +102,13 @@ interface Query {
   assetIn: string;
   insuranceOut: string;
   slippage: number;
+}
+
+interface Lend {
+  bondTo: string;
+  insuranceTo: string;
+  assetIn: string;
+  insuranceOut: string;
+  minBond: string;
+  deadline: number;
 }

@@ -134,9 +134,11 @@ interface Lend {
   bondTo: string;
   insuranceTo: string;
   assetIn: string;
-  percent: number;
-  minBond: string;
-  minInsurance: string;
+  bondOut?: string;
+  insuranceOut?: string;
+  percent?: number;
+  minBond?: string;
+  minInsurance?: string;
   deadline: number;
 }
 
@@ -212,9 +214,11 @@ interface Borrow {
   assetTo: string;
   dueTo: string;
   assetOut: string;
-  percent: number;
-  maxDebt: string;
-  maxCollateral: string;
+  debtIn?: string;
+  collateralIn?: string;
+  percent?: number;
+  maxDebt?: string;
+  maxCollateral?: string;
   deadline: number;
 }
 

@@ -286,7 +286,7 @@
     "@ethersproject/properties" "^5.5.0"
     "@ethersproject/strings" "^5.5.0"
 
-"@ethersproject/abstract-provider@5.4.1", "@ethersproject/abstract-provider@^5.0.8", "@ethersproject/abstract-provider@^5.4.0", "@ethersproject/abstract-provider@^5.4.1":
+"@ethersproject/abstract-provider@5.4.1", "@ethersproject/abstract-provider@^5.0.8", "@ethersproject/abstract-provider@^5.4.0":
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/@ethersproject/abstract-provider/-/abstract-provider-5.4.1.tgz#e404309a29f771bd4d28dbafadcaa184668c2a6e"
   integrity sha512-3EedfKI3LVpjSKgAxoUaI+gB27frKsxzm+r21w9G60Ugk+3wVLQwhi1LsEJAKNV7WoZc8CIpNrATlL1QFABjtQ==
@@ -299,7 +299,7 @@
     "@ethersproject/transactions" "^5.4.0"
     "@ethersproject/web" "^5.4.0"
 
-"@ethersproject/abstract-provider@^5.5.0":
+"@ethersproject/abstract-provider@^5.5.0", "@ethersproject/abstract-provider@^5.5.1":
   version "5.5.1"
   resolved "https://registry.yarnpkg.com/@ethersproject/abstract-provider/-/abstract-provider-5.5.1.tgz#2f1f6e8a3ab7d378d8ad0b5718460f85649710c5"
   integrity sha512-m+MA/ful6eKbxpr99xUYeRvLkfnlqzrF8SZ46d/xFB1A7ZVknYc/sXJG0RcufF52Qn2jeFj1hhcoQ7IXjNKUqg==
@@ -323,7 +323,7 @@
     "@ethersproject/logger" "^5.0.8"
     "@ethersproject/properties" "^5.0.7"
 
-"@ethersproject/abstract-signer@5.4.1", "@ethersproject/abstract-signer@^5.4.0", "@ethersproject/abstract-signer@^5.4.1":
+"@ethersproject/abstract-signer@5.4.1", "@ethersproject/abstract-signer@^5.4.0":
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/@ethersproject/abstract-signer/-/abstract-signer-5.4.1.tgz#e4e9abcf4dd4f1ba0db7dff9746a5f78f355ea81"
   integrity sha512-SkkFL5HVq1k4/25dM+NWP9MILgohJCgGv5xT5AcRruGz4ILpfHeBtO/y6j+Z3UN/PAjDeb4P7E51Yh8wcGNLGA==
@@ -452,7 +452,7 @@
   dependencies:
     "@ethersproject/bignumber" "^5.5.0"
 
-"@ethersproject/contracts@5.4.1", "@ethersproject/contracts@^5.4.1":
+"@ethersproject/contracts@5.4.1":
   version "5.4.1"
   resolved "https://registry.yarnpkg.com/@ethersproject/contracts/-/contracts-5.4.1.tgz#3eb4f35b7fe60a962a75804ada2746494df3e470"
   integrity sha512-m+z2ZgPy4pyR15Je//dUaymRUZq5MtDajF6GwFbGAVmKz/RF+DNIPwF0k5qEcL3wPGVqUjFg2/krlCRVTU4T5w==
@@ -1596,23 +1596,23 @@
   resolved "https://registry.yarnpkg.com/@swc/helpers/-/helpers-0.2.13.tgz#95d69aaed0998040d455832efbe1342ed79d0809"
   integrity sha512-HxfZHtTgDlME7fH+KIwBrm1B1+2iB3UpbcSbPCZzDAHxZ3z+qfjflHverm33sXrdyQYx4s3J7r6ot76433mwEg==
 
-"@timeswap-labs/timeswap-v1-sdk-core@0.1.15", "@timeswap-labs/timeswap-v1-sdk-core@^0.1.15":
-  version "0.1.15"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk-core/0.1.15/91c44fbe590135f017bb3afbfea33d49d5811d40a0eaa281027d5131a598f9e9#c086ef4f0daad07e9aabbc03c9579abfff2c57ab"
-  integrity sha512-L8H6TWGHRC3xv4pq10GOII92Aj7yRhSN6UMuNSt+3+cUwVRPCMadeX4jIlCeztSr49qu8dDErsiQw3NialNSYA==
+"@timeswap-labs/timeswap-v1-sdk-core@0.1.17", "@timeswap-labs/timeswap-v1-sdk-core@^0.1.17":
+  version "0.1.17"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk-core/0.1.17/0add21f7c06e3c3f5dc1a4a7794cedf38de3536dce6599a804ca3b52c8f6fbd2#e6f3d5d6e0a0081303bf3894856b5907ad97f16c"
+  integrity sha512-Y+k3VxUGgnlKP5fEjh9hgIoeA9pisURs8MM/ASPsObzZ2iaawiH5qO8tsckQY0PQFEIfrsYlDHv+Ov50Xmh6PA==
   dependencies:
-    "@ethersproject/address" "^5.4.0"
+    "@ethersproject/address" "^5.5.0"
     tiny-invariant "^1.1.0"
 
-"@timeswap-labs/timeswap-v1-sdk@^0.1.32":
-  version "0.1.32"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.32/f82f59d1f4e1045436007857bf139c2acbdefc6a614ea1325917b787a8359795#7878ce941c7347abe0a81b2eaddebea2bbb9c857"
-  integrity sha512-3X1F9Y5iSAsFb+sVKJyVIfIn24tKLbcMjRpfdHmLUDBTHkoA4MHeEdS4IRT5WIAqHbdjNuwDVX5aC+re2shTzg==
+"@timeswap-labs/timeswap-v1-sdk@^0.1.35":
+  version "0.1.35"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.35/f147e610e70c2d3d6491903329b4ff875f3a59f379fec3a73d760342bb44dc72#d3536c9c7dc531fcef17d53e2e82e82e0dd0aaf9"
+  integrity sha512-cGCROve8c8rRH+ccC3AXXopU1YixeP3IYD8TfGOSz2zY1z6HLRUs0+mUFhpcV0teajPAhzSa3LHipmxx2UMrOQ==
   dependencies:
-    "@ethersproject/abstract-provider" "^5.4.1"
-    "@ethersproject/abstract-signer" "^5.4.1"
-    "@ethersproject/contracts" "^5.4.1"
-    "@timeswap-labs/timeswap-v1-sdk-core" "0.1.15"
+    "@ethersproject/abstract-provider" "^5.5.1"
+    "@ethersproject/abstract-signer" "^5.5.0"
+    "@ethersproject/contracts" "^5.5.0"
+    "@timeswap-labs/timeswap-v1-sdk-core" "0.1.17"
     tiny-invariant "^1.1.0"
 
 "@trysound/sax@0.2.0":
