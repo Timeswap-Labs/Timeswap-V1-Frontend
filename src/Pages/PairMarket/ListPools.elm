@@ -319,7 +319,7 @@ view msgs model page list =
                             , Font.color Color.transparent300
                             , Font.center
                             ]
-                            (text "ESTIMATED APR")
+                            (text "MAX APR")
                   , width = px 130
                   , view =
                         \{ poolInfo } ->
@@ -355,7 +355,7 @@ view msgs model page list =
                             , Font.color Color.transparent300
                             , Font.center
                             ]
-                            (text "COLLATERAL FACTOR")
+                            (text "MAX COLLATERAL FACTOR")
                   , width = px 190
                   , view =
                         \info ->
