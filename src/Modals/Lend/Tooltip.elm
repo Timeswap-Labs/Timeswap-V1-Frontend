@@ -150,10 +150,10 @@ amount device string =
 
 claims : Device -> Element msg
 claims device =
-    """You will receive bond ERC20 tokens and insurance ERC20 tokens. 
-        There is a default setting where the interest rate and collateral 
-        factor is chosen for you. Switch to advance setting to 
-        customize your risk parameter. 
+    """You will receive bond ERC20 tokens and insurance ERC20 tokens.
+        There is a default setting where the interest rate and collateral
+        factor is chosen for you. Switch to advance setting to
+        customize your risk parameter.
     """
         |> text
         |> (\element ->
@@ -220,8 +220,8 @@ claims device =
 
 bond : Device -> Element msg
 bond device =
-    """This is the amount of asset you should receive after maturity. 
-        At near maturity, if the price of collateral crash, and enough 
+    """This is the amount of asset you should receive after maturity.
+        At near maturity, if the price of collateral crashes, and enough
         borrowers default, you may not receive the full amount.
     """
         |> text
@@ -289,8 +289,8 @@ bond device =
 
 insurance : Device -> Element msg
 insurance device =
-    """For the percentage of promised asset you don't receive after maturity, 
-        you will receive up to the same percentage of your insurance value, 
+    """For the percentage of promised asset you don't receive after maturity,
+        you will receive up to the same percentage of your insurance value,
         which comes from the collateral forfeited by borrowers.
     """
         |> text

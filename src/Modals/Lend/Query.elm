@@ -238,15 +238,18 @@ toAPR : Float -> String
 toAPR float =
     float
         |> (*) 10000
-        |> truncate
-        |> String.fromInt
+        |> String.fromFloat
         |> String.padLeft 3 '0'
-        |> (\string ->
+        |> String.split "."
+        |> List.head
+        |> Maybe.map
+            (\string ->
                 [ string |> String.dropRight 2
                 , string |> String.right 2
                 ]
                     |> String.join "."
-           )
+            )
+        |> Maybe.withDefault ""
 
 
 updateDefaultQuery :
