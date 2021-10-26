@@ -25,6 +25,9 @@ export async function elmUser(): Promise<{
     gp.network = await gp.metamaskProvider.send("eth_chainId", []);
 
     if (gp.network !== "0x4") {
+      gp.metamaskProvider.send("wallet_switchEthereumChain", [
+        { chainId: "0x4" },
+      ]);
       return { gp };
     }
 
@@ -140,7 +143,7 @@ function metamaskChainChange(
         gp.metamaskProvider = window.ethereum;
         gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
-        userInit(app, whitelist, gp, accounts[0]);
+        chainInit(app, whitelist, gp, accounts[0]);
       }
     });
   });
@@ -168,6 +171,16 @@ function metamaskAccountsChange(
       app.ports.metamaskMsg.send(null);
     }
   });
+}
+
+async function chainInit(
+  app: ElmApp<Ports>,
+  whitelist: WhiteList,
+  gp: GlobalParams,
+  account: string
+) {
+  gp.network = await gp.metamaskProvider.send("eth_chainId", []);
+  userInit(app, whitelist, gp, account);
 }
 
 function userInit(

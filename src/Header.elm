@@ -55,7 +55,7 @@ import Utility.Typography as Typography
 
 
 view :
-    { msgs | openDropdown : msg }
+    { msgs | openDropdown : msg, closeDropdown : msg }
     ->
         { model
             | device : Device
@@ -375,7 +375,7 @@ pageLink tab =
 
 
 buttons :
-    { msgs | openDropdown : msg }
+    { msgs | openDropdown : msg, closeDropdown : msg }
     ->
         { model
             | device : Device
@@ -656,7 +656,7 @@ settingsButton { device, images } =
 
 
 linksButton :
-    { msgs | openDropdown : msg }
+    { msgs | openDropdown : msg, closeDropdown : msg }
     -> { model | device : Device, backdrop : Backdrop, images : Images, dropdown : Maybe () }
     -> Element msg
 linksButton msgs ({ device, images, dropdown } as model) =
@@ -682,7 +682,7 @@ linksButton msgs ({ device, images, dropdown } as model) =
                     ]
                )
         )
-        { onPress = Just msgs.openDropdown
+        { onPress = dropdown |> Maybe.map (always msgs.closeDropdown) |> Maybe.withDefault msgs.openDropdown |> Just
         , label =
             Image.tripleDots images
                 [ (if device |> Device.isPhone then

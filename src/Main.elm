@@ -182,6 +182,7 @@ type Msg
 
 type alias Msgs =
     { openDropdown : Msg
+    , closeDropdown : Msg
     , exitSettings : Msg
     , chooseSlippageOption : Slippage.Option -> Msg
     , chooseDeadlineOption : Deadline.Option -> Msg
@@ -688,6 +689,7 @@ view model =
 msgs : Msgs
 msgs =
     { openDropdown = OpenDropdown
+    , closeDropdown = CloseDropdown
     , exitSettings = ExitSettings
     , chooseSlippageOption = ChooseSlippageOption
     , chooseDeadlineOption = ChooseDeadlineOption
