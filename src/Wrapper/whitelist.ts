@@ -115,6 +115,10 @@ export class WhiteList {
     return this.pools[asset][collateral][maturity].insurance;
   }
 
+  getCDToken(asset: string, collateral: string, maturity: number): Contract {
+    return this.pools[asset][collateral][maturity].collateralizedDebt;
+  }
+
   getTokenIds(cdAddress: string) {
     return this.tokenIds.get(cdAddress)!.entries();
   }

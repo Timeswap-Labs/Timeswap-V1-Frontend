@@ -60,7 +60,7 @@ export async function collateralCalculate(
         percent: Number(percent.toBigInt()),
         debtIn,
         maxDebt,
-        apr: Number(apr.toBigInt()) / 10000,
+        apr,
         cf,
       },
     });

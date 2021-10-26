@@ -7,14 +7,16 @@ export function calculateApr(
   assetOut: string,
   maturity: Uint256,
   currentTime: Uint256
-): Uint112 {
+): number {
   const SECONDS = 31556926;
-  return debt
+  const apr = debt
     .sub(assetOut)
     .mul(SECONDS)
     .mul(10000)
     .div(assetOut)
     .div(maturity.sub(currentTime));
+
+  return Number(apr.toBigInt()) / 10_000;
 }
 
 export function calculateCf(

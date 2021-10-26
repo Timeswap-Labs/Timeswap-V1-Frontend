@@ -11,8 +11,14 @@ export declare let window: any;
 
 export async function getProvider(gp: GlobalParams): Promise<BaseProvider> {
   if (gp.metamaskProvider && gp.network === "0x4") {
-    return new Web3Provider(window.ethereum, "rinkeby");
-  } else {
+    const metamaskProvider = new Web3Provider(window.ethereum, "rinkeby");
+    const metamaskConfig = {
+      provider: metamaskProvider,
+      priority: 1,
+      stallTimeout: 100,
+      weight: 1,
+    };
+
     const alchemyProvider = new AlchemyProvider(
       // await metamaskProvider.getNetwork(),
       "rinkeby",
@@ -25,18 +31,14 @@ export async function getProvider(gp: GlobalParams): Promise<BaseProvider> {
       weight: 1,
     };
 
-    const infuraProvider = new InfuraProvider(
+    return new FallbackProvider([metamaskConfig, alchemyConfig]);
+  } else {
+    const alchemyProvider = new AlchemyProvider(
       // await metamaskProvider.getNetwork(),
       "rinkeby",
-      "ccbd29f5d62547e1ac0cde02f1366cb5"
+      "FtqSyYbn24pFMUERB6wwZAqiPer7Q83Q"
     );
-    const infuraConfig = {
-      provider: infuraProvider,
-      priority: 3,
-      stallTimeout: 1000,
-      weight: 1,
-    };
 
-    return new FallbackProvider([alchemyConfig, infuraConfig]);
+    return alchemyProvider;
   }
 }
