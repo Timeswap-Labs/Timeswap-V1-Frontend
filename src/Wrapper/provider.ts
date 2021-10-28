@@ -2,7 +2,6 @@ import {
   AlchemyProvider,
   BaseProvider,
   FallbackProvider,
-  InfuraProvider,
   Web3Provider,
 } from "@ethersproject/providers";
 import { GlobalParams } from "./global";
@@ -19,7 +18,7 @@ export async function getProvider(gp: GlobalParams): Promise<BaseProvider> {
       weight: 1,
     };
 
-    const alchemyProvider = new AlchemyProvider(
+    const alchemyProvider = AlchemyProvider.getWebSocketProvider(
       // await metamaskProvider.getNetwork(),
       "rinkeby",
       "FtqSyYbn24pFMUERB6wwZAqiPer7Q83Q"
@@ -33,7 +32,7 @@ export async function getProvider(gp: GlobalParams): Promise<BaseProvider> {
 
     return new FallbackProvider([metamaskConfig, alchemyConfig]);
   } else {
-    const alchemyProvider = new AlchemyProvider(
+    const alchemyProvider = AlchemyProvider.getWebSocketProvider(
       // await metamaskProvider.getNetwork(),
       "rinkeby",
       "FtqSyYbn24pFMUERB6wwZAqiPer7Q83Q"
