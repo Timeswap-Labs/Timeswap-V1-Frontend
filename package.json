@@ -9,9 +9,8 @@
     "@ethersproject/abstract-signer": "^5.5.0",
     "@ethersproject/contracts": "^5.5.0",
     "@ethersproject/providers": "^5.5.0",
-    "@lottiefiles/lottie-player": "^1.4.2",
-    "@timeswap-labs/timeswap-v1-sdk": "^0.1.36",
-    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.18"
+    "@timeswap-labs/timeswap-v1-sdk": "^0.1.41",
+    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.21"
   },
   "devDependencies": {
     "@parcel/resolver-glob": "^2.0.0",

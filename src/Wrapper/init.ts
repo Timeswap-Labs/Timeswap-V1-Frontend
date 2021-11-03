@@ -179,6 +179,7 @@ async function chainInit(
   gp: GlobalParams,
   account: string
 ) {
+  gp.provider = await getProvider(gp);
   gp.network = await gp.metamaskProvider.send("eth_chainId", []);
   userInit(app, whitelist, gp, account);
 }
