@@ -13,17 +13,9 @@ import {
 import { Contract } from "@ethersproject/contracts";
 import { GlobalParams } from "./global";
 import { ethers, EventFilter } from "ethers";
+import pairEventsAbi from "./abi/pair";
 
-const eventsABI = [
-  "event Mint(uint256,address indexed,address indexed,address indexed,uint112,uint256,uint256,tuple(uint112,uint112,uint32))",
-  "event Burn(uint256,address indexed,address indexed,address indexed,uint256,tuple(uint128,uint128))",
-  "event Lend(uint256,address indexed,address indexed,address indexed,uint112,tuple(uint128,uint128))",
-  "event Withdraw(uint256,address indexed,address indexed,address indexed,tuple(uint128,uint128),tuple(uint128,uint128))",
-  "event Borrow(uint256,address indexed,address indexed,address indexed,uint112,uint256,tuple(uint112,uint112,uint32))",
-  "event Pay(uint256,address indexed,address indexed,address indexed,uint256[],uint112[],uint112[],uint128,uint128)",
-];
-
-const abiInterface = new ethers.utils.Interface(eventsABI);
+const abiInterface = new ethers.utils.Interface(pairEventsAbi);
 
 export async function pool(
   app: ElmApp<Ports>,
@@ -125,9 +117,10 @@ function filters(
     pair.filters.Pay()
   ];
 
-  const combinedTopics = eventFiltersList.reduce((accumulator: string[], eventFilter) => {
-    return accumulator.concat(eventFilter.topics! as string[])
-  }, []);
+  const combinedTopics = eventFiltersList.reduce(
+    (accumulator: string[], eventFilter) => accumulator.concat(eventFilter.topics! as string[]),
+    []
+  );
 
   const combinedFilter: EventFilter = {
     address: pair.address,
@@ -331,5 +324,3 @@ async function updateCache(
     },
   ]);
 }
-
-
