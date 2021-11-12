@@ -30,9 +30,9 @@ export function calculateCf(
   collateral: string,
   insuranceOut: Uint128 | string
 ): string {
-  return new Uint256(assetIn)
-    .mul(pow(10n, BigInt(whitelist.getToken(collateral).decimals)))
-    .div(insuranceOut)
+  return new Uint256(insuranceOut)
+    .div(assetIn)
+    .div(pow(10n, BigInt(whitelist.getToken(collateral).decimals)))
     .toString();
 }
 
