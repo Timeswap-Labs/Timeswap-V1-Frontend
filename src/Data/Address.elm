@@ -1,4 +1,4 @@
-module Data.Address exposing (Address, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, encode, fromString, maticRinkeby, sorter, toString, toStringShort, wethDaiRinkeby, wethRinkeby)
+module Data.Address exposing (Address, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, encode, fromString, maticRinkeby, participantAddresses, sorter, toString, toStringShort, wethDaiRinkeby, wethRinkeby)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -7,6 +7,11 @@ import Sort exposing (Sorter)
 
 type Address
     = Address String
+
+
+participantAddresses : List Address
+participantAddresses =
+    [ "0xD5451D0C1ec4cAEF1197c9544Ac1C6782F588DFC", "2323" ] |> List.map String.toLower |> List.map Address
 
 
 fromString : String -> Maybe Address

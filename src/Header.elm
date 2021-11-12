@@ -44,7 +44,9 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
+import Html exposing (address)
 import Html.Attributes
+import List exposing (member)
 import Page as Page exposing (Page)
 import User
 import Utility.Color as Color
@@ -399,7 +401,21 @@ buttons msgs ({ user } as model) =
                             []
 
                         Rinkeby ->
-                            [ faucetButton model ]
+                            [ case user of
+                                Success { address } ->
+                                    if
+                                        Address.participantAddresses
+                                            |> List.member address
+                                    then
+                                        swapButton model
+
+                                    else
+                                        none
+
+                                _ ->
+                                    none
+                            , faucetButton model
+                            ]
                )
          )
             ++ [ case user of
@@ -412,6 +428,72 @@ buttons msgs ({ user } as model) =
                , linksButton msgs model
                ]
         )
+
+
+swapButton :
+    { model | device : Device, images : Images }
+    -> Element msg
+swapButton { device, images } =
+    link
+        ([ width shrink
+         , paddingEach
+            { top = 0
+            , right =
+                if Device.isPhone device then
+                    8
+
+                else
+                    16
+            , bottom = 0
+            , left =
+                if Device.isPhone device then
+                    8
+
+                else
+                    16
+            }
+         , Background.color Color.primary500
+         , Border.rounded 4
+         , Font.bold
+         , Font.size 16
+         , Font.color Color.light100
+         , mouseDown [ Background.color Color.primary400 ]
+         , mouseOver [ Background.color Color.primary300 ]
+         ]
+            ++ (if Device.isPhoneOrTablet device then
+                    [ height <| px 35
+                    ]
+
+                else
+                    [ height <| px 44
+                    ]
+               )
+        )
+        { url = Router.toSwap
+        , label =
+            row
+                [ width shrink
+                , height fill
+                , spacing 6
+                ]
+                [ el
+                    [ centerY
+                    ]
+                    (if Device.isPhone device then
+                        Image.hourglassPrimarySmall images
+                            [ width <| px 19
+                            , centerX
+                            , centerY
+                            ]
+
+                     else if Device.isTablet device then
+                        text "Swap"
+
+                     else
+                        text "Swap"
+                    )
+                ]
+        }
 
 
 faucetButton :

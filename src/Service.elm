@@ -61,6 +61,7 @@ type Service
     | Wallet Wallet.Service
     | Settings Settings.Service Settings
     | Faucet
+    | Swap
 
 
 fromFragment : { model | user : Remote userError { user | chain : Chain } } -> String -> Maybe Service
@@ -87,6 +88,9 @@ fromFragment { user } string =
         ( "faucet", _ ) ->
             Just Faucet
 
+        ( "swap", _ ) ->
+            Just Swap
+
         _ ->
             Nothing
 
@@ -109,6 +113,9 @@ toUrl service =
         Faucet ->
             Router.toFaucet
 
+        Swap ->
+            Router.toSwap
+
 
 same : Service -> Service -> Bool
 same service1 service2 =
@@ -128,6 +135,9 @@ same service1 service2 =
         ( Faucet, Faucet ) ->
             True
 
+        ( Swap, Swap ) ->
+            True
+
         _ ->
             False
 
@@ -137,6 +147,7 @@ type Msg
     | WalletMsg Wallet.Msg
     | SettingsMsg Settings.Msg
     | FaucetMsg Faucet.Msg
+    | SwapMsg Swap.Msg
 
 
 update :
@@ -422,6 +433,28 @@ view msgs ({ device, user } as model) service =
                 ]
                 (Lazy.lazy Faucet.view model)
                 |> Element.map FaucetMsg
+                |> Element.map Either
+
+        ( Swap, _ ) ->
+            el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    paddingEach
+                        { top = 160
+                        , right = 0
+                        , bottom = 0
+                        , left = 0
+                        }
+
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+                (Lazy.lazy Swap.view model)
+                |> Element.map SwapMsg
                 |> Element.map Either
 
         _ ->
