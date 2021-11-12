@@ -1219,7 +1219,7 @@ collateralFactor msgs model ({ pool, duesOut } as modal) =
             , Font.size 14
             , Font.color Color.transparent400
             ]
-            (text "Collateral factor:")
+            (text "CDP:")
         , (case duesOut of
             Default dues ->
                 dues |> Remote.map .cf
@@ -1276,11 +1276,11 @@ collateralFactor msgs model ({ pool, duesOut } as modal) =
                                 , Font.color Color.transparent300
                                 ]
                                 ([ pool.pair
-                                    |> Pair.toAsset
+                                    |> Pair.toCollateral
                                     |> Token.toSymbol
                                  , "PER"
                                  , pool.pair
-                                    |> Pair.toCollateral
+                                    |> Pair.toAsset
                                     |> Token.toSymbol
                                  ]
                                     |> String.join " "

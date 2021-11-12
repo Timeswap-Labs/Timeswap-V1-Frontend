@@ -355,7 +355,7 @@ view msgs model page list =
                             , Font.color Color.transparent300
                             , Font.center
                             ]
-                            (text "MAX COLLATERAL FACTOR")
+                            (text "MIN CDP")
                   , width = px 190
                   , view =
                         \info ->
