@@ -282,7 +282,7 @@ updateDefaultQuery { pool } resultDues duesOut =
                     , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                     , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                     , apr = apr |> toAPR
-                    , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                    , cf = cf |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                     }
                         |> Success
 
@@ -312,7 +312,7 @@ updateSliderQuery { pool } resultDues duesOut =
                             , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                             , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             , apr = apr |> toAPR
-                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             }
                                 |> Success
 
@@ -344,7 +344,7 @@ updateDebtQuery { pool } resultDues duesOut =
                             { collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             , maxCollateral = maxCollateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             , apr = apr |> toAPR
-                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             }
                                 |> Success
 
@@ -376,7 +376,7 @@ updateCollateralQuery { pool } resultDues duesOut =
                             { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                             , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                             , apr = apr |> toAPR
-                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             }
                                 |> Success
 
@@ -405,7 +405,7 @@ updateMaxQuery { pool } resultDues duesOut =
                             { debt = debt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                             , maxDebt = maxDebt |> Uint.toAmount (pool.pair |> Pair.toAsset)
                             , apr = apr |> toAPR
-                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             }
                                 |> Success
                         , collateral = collateral |> Uint.toAmount (pool.pair |> Pair.toCollateral)
