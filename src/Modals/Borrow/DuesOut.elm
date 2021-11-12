@@ -1255,11 +1255,11 @@ collateralFactor msgs model ({ pool, duesOut } as modal) =
                                     , Font.color Color.transparent300
                                     ]
                                     ([ pool.pair
-                                        |> Pair.toAsset
+                                        |> Pair.toCollateral
                                         |> Token.toSymbol
                                      , "PER"
                                      , pool.pair
-                                        |> Pair.toCollateral
+                                        |> Pair.toAsset
                                         |> Token.toSymbol
                                      ]
                                         |> String.join " "
@@ -1329,11 +1329,11 @@ collateralFactorAmount msgs { device } { pool, tooltip } factorAmount =
                                     Just Tooltip.CollateralFactor ->
                                         [ full
                                         , pool.pair
-                                            |> Pair.toAsset
+                                            |> Pair.toCollateral
                                             |> Token.toSymbol
                                         , "PER"
                                         , pool.pair
-                                            |> Pair.toCollateral
+                                            |> Pair.toAsset
                                             |> Token.toSymbol
                                         ]
                                             |> String.join " "
@@ -1373,11 +1373,11 @@ collateralFactorAmount msgs { device } { pool, tooltip } factorAmount =
                                     , Font.color Color.transparent300
                                     ]
                                     ([ pool.pair
-                                        |> Pair.toAsset
+                                        |> Pair.toCollateral
                                         |> Token.toSymbol
                                      , "PER"
                                      , pool.pair
-                                        |> Pair.toCollateral
+                                        |> Pair.toAsset
                                         |> Token.toSymbol
                                      ]
                                         |> String.join " "
@@ -1407,11 +1407,11 @@ collateralFactorAmount msgs { device } { pool, tooltip } factorAmount =
                                 , Font.color Color.transparent300
                                 ]
                                 ([ pool.pair
-                                    |> Pair.toAsset
+                                    |> Pair.toCollateral
                                     |> Token.toSymbol
                                  , "PER"
                                  , pool.pair
-                                    |> Pair.toCollateral
+                                    |> Pair.toAsset
                                     |> Token.toSymbol
                                  ]
                                     |> String.join " "

@@ -976,11 +976,11 @@ collateralFactorAmount msgs { device } { pair, tooltip } maturity factorAmount =
                                         if chosenPair == pair && chosenMaturity == maturity then
                                             [ full
                                             , pair
-                                                |> Pair.toAsset
+                                                |> Pair.toCollateral
                                                 |> Token.toSymbol
                                             , "PER"
                                             , pair
-                                                |> Pair.toCollateral
+                                                |> Pair.toAsset
                                                 |> Token.toSymbol
                                             ]
                                                 |> String.join " "
@@ -1057,11 +1057,11 @@ collateralFactorAmount msgs { device } { pair, tooltip } maturity factorAmount =
                                 , Font.color Color.transparent300
                                 ]
                                 ([ pair
-                                    |> Pair.toAsset
+                                    |> Pair.toCollateral
                                     |> Token.toSymbol
                                  , "PER"
                                  , pair
-                                    |> Pair.toCollateral
+                                    |> Pair.toAsset
                                     |> Token.toSymbol
                                  ]
                                     |> String.join " "
