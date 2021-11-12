@@ -25,9 +25,9 @@ export function calculateCf(
   collateral: string,
   collateralIn: Uint112 | string
 ): string {
-  return new Uint256(assetOut)
-    .mul(pow(10n, BigInt(whitelist.getToken(collateral).decimals)))
-    .div(collateralIn)
+  return new Uint256(collateralIn)
+    .div(assetOut)
+    .div(pow(10n, BigInt(whitelist.getToken(collateral).decimals)))
     .toString();
 }
 
