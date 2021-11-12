@@ -10,6 +10,7 @@ module Service exposing
     , inputSlippage
     , refreshSettings
     , same
+    , subscriptions
     , toUrl
     , update
     , view
@@ -49,6 +50,7 @@ import Services.Connect.Main as Connect
 import Services.Faucet.Main as Faucet
 import Services.NoMetamask.Main as NoMetamask
 import Services.Settings.Main as Settings exposing (Settings)
+import Services.Swap.Main as Swap
 import Services.Wallet.Main as Wallet
 import Utility.Color as Color
 import Utility.Router as Router
@@ -61,7 +63,7 @@ type Service
     | Wallet Wallet.Service
     | Settings Settings.Service Settings
     | Faucet
-    | Swap
+    | Swap Swap.Service
 
 
 fromFragment : { model | user : Remote userError { user | chain : Chain } } -> String -> Maybe Service
@@ -89,7 +91,9 @@ fromFragment { user } string =
             Just Faucet
 
         ( "swap", _ ) ->
-            Just Swap
+            Swap.init
+                |> Swap
+                |> Just
 
         _ ->
             Nothing
@@ -113,7 +117,7 @@ toUrl service =
         Faucet ->
             Router.toFaucet
 
-        Swap ->
+        Swap _ ->
             Router.toSwap
 
 
@@ -135,7 +139,7 @@ same service1 service2 =
         ( Faucet, Faucet ) ->
             True
 
-        ( Swap, Swap ) ->
+        ( Swap _, Swap _ ) ->
             True
 
         _ ->
@@ -187,8 +191,28 @@ update model msg service =
                 |> Cmd.map FaucetMsg
             )
 
+        ( SwapMsg swapMsg, Swap swap ) ->
+            swap
+                |> Swap.update swapMsg
+                |> (\( updatedSwap, cmd ) ->
+                        ( updatedSwap |> Swap
+                        , cmd |> Cmd.map SwapMsg
+                        )
+                   )
+
         _ ->
             ( service, Cmd.none )
+
+
+subscriptions : Service -> Sub Msg
+subscriptions service =
+    case service of
+        Swap swap ->
+            Swap.subscriptions swap
+                |> Sub.map SwapMsg
+
+        _ ->
+            Sub.none
 
 
 inputSlippage : String -> Service -> Service
@@ -435,7 +459,7 @@ view msgs ({ device, user } as model) service =
                 |> Element.map FaucetMsg
                 |> Element.map Either
 
-        ( Swap, _ ) ->
+        ( Swap swap, Success successUser ) ->
             el
                 [ width fill
                 , height fill
@@ -453,7 +477,7 @@ view msgs ({ device, user } as model) service =
                 , Background.color Color.modal
                 , Font.family Typography.supreme
                 ]
-                (Lazy.lazy Swap.view model)
+                (Lazy.lazy3 Swap.view model successUser swap)
                 |> Element.map SwapMsg
                 |> Element.map Either
 

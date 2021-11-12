@@ -11,7 +11,11 @@ type Address
 
 participantAddresses : List Address
 participantAddresses =
-    [ "0xD5451D0C1ec4cAEF1197c9544Ac1C6782F588DFC", "2323" ] |> List.map String.toLower |> List.map Address
+    [ "0xD5451D0C1ec4cAEF1197c9544Ac1C6782F588DFC"
+    , "0xb932c0d5c87B5F8354CC8898Ba74E5F28510C10E"
+    ]
+        |> List.map String.toLower
+        |> List.map Address
 
 
 fromString : String -> Maybe Address

@@ -1,30 +1,31 @@
-module Services.Swap.Main exposing (..)
+port module Services.Swap.Main exposing (Msg, Service, init, subscriptions, update, view)
 
+import Browser.Events
+import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Device as Device exposing (Device)
-import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Remote exposing (Remote(..))
-import Data.Token as Token
 import Data.TokenImages exposing (TokenImages)
-import Data.Tokens as Tokens exposing (Tokens)
-import Dropdown
+import Data.Tokens exposing (Tokens)
 import Element
     exposing
         ( Element
         , alignBottom
         , alignLeft
-        , alignRight
+        , below
         , centerX
         , centerY
         , column
         , el
         , fill
         , height
+        , htmlAttribute
         , inFront
-        , link
         , mouseDown
         , mouseOver
+        , moveDown
+        , none
         , padding
         , paddingEach
         , paddingXY
@@ -39,60 +40,159 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Json.Encode as Encode exposing (Value)
+import Html.Attributes
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode exposing (Value)
+import Services.Swap.Error as Error exposing (Error)
+import Services.Swap.GameToken as GameToken exposing (GameToken)
+import Services.Swap.Notification as Notification exposing (Notification)
+import Services.Swap.Transaction as Transaction
 import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Glass as Glass
 import Utility.Image as Image
-import Utility.Router as Router
-import Utility.TokenImage as TokenImage
+import Utility.Input as Input
 
 
-type GameToken
-    = Token
+type Service
+    = Service
+        { inToken : GameToken
+        , outToken : GameToken
+        , dropdown : Maybe Dropdown
+        , input : String
+        , output : Remote Error String
+        , notification : Maybe (Remote Error Notification)
+        }
 
 
-type alias Item =
-    String
+type Dropdown
+    = InToken
+    | OutToken
 
 
-type alias DropdownModel =
-    { dropdownState : Dropdown.State Item
-    , selectedOption : Maybe Item
+init : Service
+init =
+    { inToken = GameToken.Token1
+    , outToken = GameToken.Token2
+    , dropdown = Nothing
+    , input = ""
+    , output = "" |> Success
+    , notification = Nothing
     }
-
-
-init : () -> ( DropdownModel, Cmd Msg )
-init _ =
-    ( { dropdownState = Dropdown.init "dropdown"
-      , selectedOption = Nothing
-      }
-    , Cmd.none
-    )
-
-
-options : List Item
-options =
-    [ "Option 1", "Option 2", "Option 3" ]
+        |> Service
 
 
 type Msg
-    = OptionPicked (Maybe Item)
-    | DropdownMsg (Dropdown.Msg Item)
+    = OpenDropdown Dropdown
+    | CloseDropdown
+    | Input String
+    | Swap
+    | NotificationMsg Value
 
 
-update : Msg -> DropdownModel -> ( DropdownModel, Cmd Msg )
-update msg model =
+update : Msg -> Service -> ( Service, Cmd Msg )
+update msg (Service service) =
     case msg of
-        OptionPicked option ->
-            ( { model | selectedOption = option }, Cmd.none )
+        OpenDropdown dropdown ->
+            ( { service | dropdown = Just dropdown }
+                |> Service
+            , Cmd.none
+            )
 
-        DropdownMsg subMsg ->
-            let
-                ( state, cmd ) =
-                    Dropdown.update dropdownConfig subMsg model model.dropdownState
-            in
-            ( { model | dropdownState = state }, cmd )
+        CloseDropdown ->
+            ( { service | dropdown = Nothing }
+                |> Service
+            , Cmd.none
+            )
+
+        Input input ->
+            ( (if input |> Input.isFloat then
+                { service | input = input }
+
+               else
+                service
+              )
+                |> Service
+            , Cmd.none
+            )
+
+        Swap ->
+            ( { service
+                | input = ""
+                , output = "" |> Success
+                , notification = Loading |> Just
+              }
+                |> Service
+            , { inToken = service.inToken
+              , outToken = service.outToken
+              , amount = service.input
+              }
+                |> Transaction.encode
+                |> swap
+            )
+
+        NotificationMsg value ->
+            ( value
+                |> Decode.decodeValue
+                    (Decode.oneOf
+                        [ Notification.decoder
+                            |> Decode.map Success
+                        , Error.decoder
+                            |> Decode.map Failure
+                        ]
+                    )
+                |> (\result ->
+                        case result of
+                            Ok notification ->
+                                { service
+                                    | notification =
+                                        notification
+                                            |> Just
+                                }
+                                    |> Service
+
+                            Err _ ->
+                                Service service
+                   )
+            , Cmd.none
+            )
+
+
+port swap : Value -> Cmd msg
+
+
+port notificationMsg : (Value -> msg) -> Sub msg
+
+
+subscriptions : Service -> Sub Msg
+subscriptions service =
+    Sub.batch
+        [ notificationMsg NotificationMsg ]
+
+
+onClickOutsideDropdown : Service -> Sub Msg
+onClickOutsideDropdown (Service { dropdown }) =
+    case dropdown of
+        Just _ ->
+            Browser.Events.onClick
+                (Decode.at [ "target", "id" ] decoderOutsideDropdown)
+
+        Nothing ->
+            Sub.none
+
+
+decoderOutsideDropdown : Decoder Msg
+decoderOutsideDropdown =
+    Decode.string
+        |> Decode.andThen
+            (\string ->
+                if string /= "swap-dropdown" then
+                    Decode.succeed CloseDropdown
+                        |> Debug.log "check"
+
+                else
+                    Decode.fail "Its the dropdown"
+            )
 
 
 view :
@@ -102,11 +202,11 @@ view :
         , tokens : Tokens
         , images : Images
         , tokenImages : TokenImages
-        , dd : DropdownModel
-        , user : Remote userError user
     }
+    -> { user | address : Address }
+    -> Service
     -> Element Msg
-view ({ device, backdrop, images, user } as model) =
+view ({ device, backdrop, images } as model) user service =
     column
         ([ padding 40
          , spacing 24
@@ -127,17 +227,10 @@ view ({ device, backdrop, images, user } as model) =
                     ]
                )
         )
-        ([ title
-         , content model
-         ]
-            ++ (case user of
-                    Success _ ->
-                        []
-
-                    _ ->
-                        [ swapButton model ]
-               )
-        )
+        [ title
+        , content model service
+        , swapButton model
+        ]
 
 
 title : Element msg
@@ -156,35 +249,150 @@ title =
         (text "Swap Your Token")
 
 
-content : { model | tokens : Tokens, images : Images, tokenImages : TokenImages, dd : DropdownModel, user : Remote userError user } -> Element Msg
-content model =
+content :
+    { model
+        | device : Device
+        , backdrop : Backdrop
+        , tokens : Tokens
+        , images : Images
+        , tokenImages : TokenImages
+    }
+    -> Service
+    -> Element Msg
+content model service =
     column
         [ width fill
         , height shrink
         , spacing 14
         ]
-        [ row []
-            [ Dropdown.view dropdownConfig model.dd model.dd.dropdownState
-                |> el []
-            ]
-        , row []
-            [ Input.text [ width fill ]
-                { onChange = ip
-                , text = "test"
-                , placeholder =
-                    Input.placeholder
-                        [ Font.color Color.transparent100 ]
-                        (text "0.0")
-                        |> Just
-                , label = Input.labelHidden "Input Amount"
-                }
-            ]
+        [ inputContent model service
+        , outputContent
         ]
 
 
-swapButton : { model | device : Device, images : Images } -> Element msg
+inputContent :
+    { model
+        | device : Device
+        , backdrop : Backdrop
+        , images : Images
+    }
+    -> Service
+    -> Element Msg
+inputContent model service =
+    row
+        [ width fill
+        , height shrink
+        , spacing 12
+        ]
+        [ inputToken model service
+        , inputAmount model service
+        ]
+
+
+inputToken :
+    { model
+        | device : Device
+        , backdrop : Backdrop
+        , images : Images
+    }
+    -> Service
+    -> Element Msg
+inputToken ({ device, images } as model) (Service { dropdown }) =
+    Input.button
+        ([ width <| px 100
+         , padding 12
+         , (case dropdown of
+                Just InToken ->
+                    tokenDropdown model
+
+                _ ->
+                    none
+           )
+            |> below
+         ]
+            ++ (if Device.isPhoneOrTablet device then
+                    [ height <| px 35 ]
+
+                else
+                    [ height <| px 44 ]
+               )
+            ++ Glass.lightWhiteModal 4
+        )
+        { onPress =
+            (case dropdown of
+                Just InToken ->
+                    CloseDropdown
+
+                _ ->
+                    OpenDropdown InToken
+            )
+                |> Just
+        , label =
+            row
+                [ width shrink
+                , height shrink
+                , alignLeft
+                , centerY
+                ]
+                [ Image.discloser images
+                    [ width <| px 12
+                    , centerY
+                    ]
+                ]
+        }
+
+
+tokenDropdown : { model | backdrop : Backdrop } -> Element msg
+tokenDropdown { backdrop } =
+    column
+        ([ width fill
+         , height <| px 100
+         , padding 8
+         , spacing 8
+         , moveDown 8
+         , Font.regular
+         , Font.size 14
+         , Font.color Color.transparent400
+         , Html.Attributes.id "swap-dropdown"
+            |> htmlAttribute
+         ]
+            ++ Glass.lightPrimaryModal backdrop 0
+        )
+        []
+
+
+inputAmount : { model | device : Device } -> Service -> Element Msg
+inputAmount { device } (Service { input }) =
+    Input.text
+        ([ width fill
+         ]
+            ++ (if Device.isPhoneOrTablet device then
+                    [ height <| px 35 ]
+
+                else
+                    [ height <| px 44 ]
+               )
+        )
+        { onChange = Input
+        , text = input
+        , placeholder = Nothing
+        , label = Input.labelHidden "input amount"
+        }
+
+
+outputContent : Element msg
+outputContent =
+    row
+        [ width fill
+        , height shrink
+        , spacing 12
+        ]
+        []
+
+
+swapButton : { model | device : Device, images : Images } -> Element Msg
 swapButton { device, images } =
-    link
+    Input.button
         ([ width fill
          , paddingEach
             { top = 0
@@ -207,7 +415,7 @@ swapButton { device, images } =
                     [ height <| px 44 ]
                )
         )
-        { url = Router.toConnect
+        { onPress = Just Swap
         , label =
             row
                 [ width shrink
@@ -233,23 +441,4 @@ swapButton { device, images } =
                             ]
                        )
                 )
-        }
-
-
-dropdownConfig : Dropdown.Config Item Msg DropdownModel
-dropdownConfig =
-    let
-        itemToPrompt item =
-            text item
-
-        itemToElement selected highlighted item =
-            text item
-    in
-    Dropdown.basic
-        { itemsFromModel = always options
-        , selectionFromModel = .selectedOption
-        , dropdownMsg = DropdownMsg
-        , onSelectMsg = OptionPicked
-        , itemToPrompt = itemToPrompt
-        , itemToElement = itemToElement
         }

@@ -570,7 +570,7 @@ subscriptions ({ modal, service } as model) =
         , sdkBalancesMsg SdkBalancesMsg
         , sdkAllowancesMsg SdkAllowancesMsg
         , service
-            |> Maybe.map (\_ -> Sub.none)
+            |> Maybe.map (Service.subscriptions >> Sub.map ServiceMsg)
             |> Maybe.withDefault
                 (modal
                     |> Maybe.map (Modal.subscriptions model)
