@@ -5,6 +5,7 @@ import * as images from "url:../../image/*.svg";
 import * as tokenImages from "url:../../image/tokens/*.svg";
 
 import { elmUser, init } from "./init";
+import { sentry } from "./sentry";
 
 export declare let window: any;
 
@@ -29,4 +30,5 @@ async function elmInit() {
   init(app, gp);
 }
 
+sentry();
 elmInit();
