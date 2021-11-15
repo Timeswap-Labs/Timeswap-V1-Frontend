@@ -59,6 +59,7 @@ type Service
         { inToken : GameToken
         , outToken : GameToken
         , dropdown : Maybe Dropdown
+        , options : List GameToken
         , input : String
         , output : Remote Error String
         , notification : Maybe (Remote Error Notification)
@@ -75,6 +76,7 @@ init =
     { inToken = GameToken.Token1
     , outToken = GameToken.Token2
     , dropdown = Nothing
+    , options = [ GameToken.Token1, GameToken.Token2, GameToken.Token3 ]
     , input = ""
     , output = "" |> Success
     , notification = Nothing
@@ -85,6 +87,7 @@ init =
 type Msg
     = OpenDropdown Dropdown
     | CloseDropdown
+    | SelectOption GameToken
     | Input String
     | Swap
     | NotificationMsg Value
@@ -101,6 +104,12 @@ update msg (Service service) =
 
         CloseDropdown ->
             ( { service | dropdown = Nothing }
+                |> Service
+            , Cmd.none
+            )
+
+        SelectOption gameToken ->
+            ( { service | inToken = gameToken }
                 |> Service
             , Cmd.none
             )
@@ -297,13 +306,13 @@ inputToken :
     }
     -> Service
     -> Element Msg
-inputToken ({ device, images } as model) (Service { dropdown }) =
+inputToken ({ device, images } as model) (Service { dropdown, options }) =
     Input.button
         ([ width <| px 100
          , padding 12
          , (case dropdown of
                 Just InToken ->
-                    tokenDropdown model
+                    tokenDropdown model options
 
                 _ ->
                     none
@@ -342,8 +351,8 @@ inputToken ({ device, images } as model) (Service { dropdown }) =
         }
 
 
-tokenDropdown : { model | backdrop : Backdrop } -> Element msg
-tokenDropdown { backdrop } =
+tokenDropdown : { model | backdrop : Backdrop } -> List GameToken -> Element msg
+tokenDropdown { backdrop } options =
     column
         ([ width fill
          , height <| px 100
@@ -358,13 +367,68 @@ tokenDropdown { backdrop } =
          ]
             ++ Glass.lightPrimaryModal backdrop 0
         )
+        -- List.map
+        -- |> dropdownOptions options
         []
+
+
+dropdownOptions : GameToken -> Element Msg
+dropdownOptions gameToken =
+    Input.button
+        [ width fill
+        , height <| px 15
+        ]
+        { onPress =
+            SelectOption gameToken
+                |> Just
+        , label =
+            row
+                [ width shrink
+                , height shrink
+                , alignLeft
+                , centerY
+                ]
+                [ text "option" ]
+        }
 
 
 inputAmount : { model | device : Device } -> Service -> Element Msg
 inputAmount { device } (Service { input }) =
     Input.text
         ([ width fill
+         , height shrink
+         , paddingXY 12 4
+         , alignLeft
+         , centerY
+         , moveDown 1
+         , Background.color Color.none
+         , Border.color Color.none
+         , Border.width 0
+         , Font.regular
+         , Font.size 16
+         , Color.transparent500 |> Font.color
+         , paddingEach
+            { top = 0
+            , right = 12
+            , bottom = 0
+            , left = 0
+            }
+         , spacing 8
+         , Border.widthEach
+            { top = 1
+            , right = 1
+            , bottom = 1
+            , left = 0
+            }
+         , Border.solid
+         , Color.transparent100
+            |> Border.color
+         , Border.roundEach
+            { topLeft = 0
+            , topRight = 4
+            , bottomRight = 4
+            , bottomLeft = 0
+            }
          ]
             ++ (if Device.isPhoneOrTablet device then
                     [ height <| px 35 ]
