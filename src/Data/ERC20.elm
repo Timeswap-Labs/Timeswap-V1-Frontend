@@ -3,9 +3,11 @@ module Data.ERC20 exposing
     , compare
     , daiRinkeby
     , decoder
+    , doge
     , encode
     , fromString
     , maticRinkeby
+    , shiba
     , sorter
     , toAddress
     , toDecimals
@@ -33,6 +35,16 @@ type ERC20
         , symbol : String
         , decimals : Int
         }
+
+
+shiba : ERC20
+shiba =
+    { id = 101, address = Address.shiba, name = "Shiba Inu", symbol = "SHIB", decimals = 18 } |> ERC20
+
+
+doge : ERC20
+doge =
+    { id = 102, address = Address.doge, name = "Dogecoin", symbol = "DOGE", decimals = 18 } |> ERC20
 
 
 fromString : Set ERC20 -> String -> Maybe ERC20

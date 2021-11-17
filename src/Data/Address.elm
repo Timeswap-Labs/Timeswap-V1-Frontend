@@ -1,4 +1,4 @@
-module Data.Address exposing (Address, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, encode, fromString, maticRinkeby, participantAddresses, sorter, toString, toStringShort, wethDaiRinkeby, wethRinkeby)
+module Data.Address exposing (Address, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, doge, encode, fromString, maticRinkeby, participantAddresses, shiba, sorter, toString, toStringShort, wethDaiRinkeby, wethRinkeby)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -7,6 +7,16 @@ import Sort exposing (Sorter)
 
 type Address
     = Address String
+
+
+shiba : Address
+shiba =
+    Address "0xb932c0d5c87B5F8354CC8898Ba74E5F28510C10E"
+
+
+doge : Address
+doge =
+    Address "0xb932c0d5c87B5F8354654898Ba74E5F28510C10E"
 
 
 participantAddresses : List Address
