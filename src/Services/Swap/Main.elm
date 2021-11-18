@@ -3,6 +3,7 @@ port module Services.Swap.Main exposing (Msg, Service, init, subscriptions, upda
 import Browser.Events
 import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
+import Data.Balances exposing (Balances)
 import Data.Device as Device exposing (Device)
 import Data.ERC20 as ERC20
 import Data.Images exposing (Images)
@@ -391,6 +392,7 @@ inTokenDropdownButton :
 inTokenDropdownButton ({ device, images, tokenImages } as model) gameToken dropdown options =
     Input.button
         ([ width <| px 130
+         , height <| px 44
          , padding 12
          , (if dropdown == Just InToken then
                 inTokenDropdown model options
@@ -400,12 +402,6 @@ inTokenDropdownButton ({ device, images, tokenImages } as model) gameToken dropd
            )
             |> below
          ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
             ++ Glass.lightWhiteModal 4
         )
         { onPress =
@@ -476,8 +472,8 @@ inTokenOptions : TokenImages -> GameToken -> Element Msg
 inTokenOptions tokenImages gameToken =
     Input.button
         [ width fill
-        , height <| px 28
-        , padding 6
+        , height <| px 36
+        , paddingEach { top = 6, right = 6, bottom = 6, left = 8 }
         , mouseDown [ Background.color Color.primary400 ]
         , mouseOver [ Background.color Color.primary300 ]
         ]
@@ -495,11 +491,13 @@ inTokenOptions tokenImages gameToken =
                 [ gameToken
                     |> GameToken.toERC20
                     |> Token.ERC20
-                    |> TokenImage.icon tokenImages [ width (px 12), height (px 12) ]
-                , gameToken
-                    |> GameToken.toERC20
-                    |> ERC20.toName
-                    |> text
+                    |> TokenImage.icon tokenImages [ width (px 18), height (px 18) ]
+                , el [ Font.size 16 ]
+                    (gameToken
+                        |> GameToken.toERC20
+                        |> ERC20.toName
+                        |> text
+                    )
                 ]
         }
 
@@ -517,6 +515,7 @@ outTokenDropdownButton :
 outTokenDropdownButton ({ device, images, tokenImages } as model) gameToken dropdown options =
     Input.button
         ([ width <| px 130
+         , height <| px 44
          , padding 12
          , (if dropdown == Just OutToken then
                 outTokenDropdown model options
@@ -526,12 +525,6 @@ outTokenDropdownButton ({ device, images, tokenImages } as model) gameToken drop
            )
             |> below
          ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
             ++ Glass.lightWhiteModal 4
         )
         { onPress =
@@ -602,8 +595,8 @@ outTokenOptions : TokenImages -> GameToken -> Element Msg
 outTokenOptions tokenImages gameToken =
     Input.button
         [ width fill
-        , height <| px 28
-        , padding 6
+        , height <| px 36
+        , paddingEach { top = 6, right = 6, bottom = 6, left = 8 }
         , mouseDown [ Background.color Color.primary400 ]
         , mouseOver [ Background.color Color.primary300 ]
         ]
@@ -621,11 +614,13 @@ outTokenOptions tokenImages gameToken =
                 [ gameToken
                     |> GameToken.toERC20
                     |> Token.ERC20
-                    |> TokenImage.icon tokenImages [ width (px 12), height (px 12) ]
-                , gameToken
-                    |> GameToken.toERC20
-                    |> ERC20.toName
-                    |> text
+                    |> TokenImage.icon tokenImages [ width (px 18), height (px 18) ]
+                , el [ Font.size 16 ]
+                    (gameToken
+                        |> GameToken.toERC20
+                        |> ERC20.toName
+                        |> text
+                    )
                 ]
         }
 
@@ -633,42 +628,36 @@ outTokenOptions tokenImages gameToken =
 inputAmount : { model | device : Device } -> String -> Element Msg
 inputAmount { device } input =
     Input.text
-        ([ width fill
-         , alignLeft
-         , centerY
-         , Background.color Color.none
-         , Font.regular
-         , Font.size 16
-         , Color.transparent500 |> Font.color
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , alignLeft
+        , centerY
+        , Background.color Color.none
+        , Font.regular
+        , Font.size 16
+        , Color.transparent500 |> Font.color
+        , paddingEach
             { top = 12
             , right = 12
             , bottom = 0
             , left = 12
             }
-         , Border.widthEach
+        , Border.widthEach
             { top = 1
             , right = 1
             , bottom = 1
             , left = 0
             }
-         , Border.solid
-         , Color.transparent100
+        , Border.solid
+        , Color.transparent100
             |> Border.color
-         , Border.roundEach
+        , Border.roundEach
             { topLeft = 0
             , topRight = 4
             , bottomRight = 4
             , bottomLeft = 0
             }
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        ]
         { onChange = Input
         , text = input
         , placeholder =
@@ -701,41 +690,35 @@ outputContent model (Service { dropdown, options, outToken, output }) =
 outputAmount : { model | device : Device } -> Remote Error String -> Element Msg
 outputAmount { device } output =
     el
-        ([ width fill
-         , alignLeft
-         , centerY
-         , Background.color Color.none
-         , Font.regular
-         , Font.size 16
-         , Color.transparent500 |> Font.color
-         , paddingEach
+        [ width fill
+        , height <| px 44
+        , alignLeft
+        , centerY
+        , Background.color Color.none
+        , Font.regular
+        , Font.size 16
+        , Color.transparent500 |> Font.color
+        , paddingEach
             { top = 12
             , right = 12
             , bottom = 0
             , left = 12
             }
-         , Border.widthEach
+        , Border.widthEach
             { top = 1
             , right = 1
             , bottom = 1
             , left = 0
             }
-         , Border.solid
-         , Border.color Color.transparent100
-         , Border.roundEach
+        , Border.solid
+        , Border.color Color.transparent100
+        , Border.roundEach
             { topLeft = 0
             , topRight = 4
             , bottomRight = 4
             , bottomLeft = 0
             }
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
-
-                else
-                    [ height <| px 44 ]
-               )
-        )
+        ]
         (case output of
             Loading ->
                 el
