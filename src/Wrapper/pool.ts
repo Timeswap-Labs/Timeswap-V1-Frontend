@@ -310,7 +310,7 @@ async function updateCache(
   await pool.updateCache(cache);
 
   const apr = await pool.calculateApr();
-  const cf = (await pool.calculateCf()).toString();
+  const cf = (await pool.calculateCdp()).toString();
 
   app.ports.sdkPoolsMsg.send([
     {

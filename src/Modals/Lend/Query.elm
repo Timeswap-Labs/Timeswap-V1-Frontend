@@ -267,7 +267,7 @@ updateDefaultQuery { pool } resultClaims claimsOut =
                     , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
                     , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                     , apr = apr |> toAPR
-                    , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                    , cf = cf |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                     }
                         |> Success
 
@@ -297,7 +297,7 @@ updateSliderQuery { pool } resultClaims claimsOut =
                             , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
                             , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             , apr = apr |> toAPR
-                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             }
                                 |> Success
 
@@ -329,7 +329,7 @@ updateBondQuery { pool } resultClaims claimsOut =
                             { insurance = insurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             , minInsurance = minInsurance |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             , apr = apr |> toAPR
-                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             }
                                 |> Success
 
@@ -361,7 +361,7 @@ updateInsuranceQuery { pool } resultClaims claimsOut =
                             { bond = bond |> Uint.toAmount (pool.pair |> Pair.toAsset)
                             , minBond = minBond |> Uint.toAmount (pool.pair |> Pair.toAsset)
                             , apr = apr |> toAPR
-                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toAsset)
+                            , cf = cf |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                             }
                                 |> Success
 

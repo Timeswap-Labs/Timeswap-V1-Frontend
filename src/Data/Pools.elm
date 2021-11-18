@@ -339,7 +339,7 @@ toList time (Pools dict) =
                                     , apr = apr |> toAPR
                                     , cf =
                                         cf
-                                            |> Uint.toAmount (pair |> Pair.toAsset)
+                                            |> Uint.toAmount (pair |> Pair.toCollateral)
                                     }
                                         |> Success
 
@@ -373,7 +373,7 @@ toListSinglePair time pair (Pools dict) =
                         , apr = apr |> toAPR
                         , cf =
                             cf
-                                |> Uint.toAmount (pair |> Pair.toAsset)
+                                |> Uint.toAmount (pair |> Pair.toCollateral)
                         }
                             |> Success
 

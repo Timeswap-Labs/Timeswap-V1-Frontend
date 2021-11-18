@@ -1579,6 +1579,69 @@
     chrome-trace-event "^1.0.2"
     nullthrows "^1.1.1"
 
+"@sentry/browser@^6.14.3":
+  version "6.14.3"
+  resolved "https://registry.yarnpkg.com/@sentry/browser/-/browser-6.14.3.tgz#4e3b67a48b12a70c381cab326d053ee5dfc087d6"
+  integrity sha512-qp4K+XNYNWQxO1U6gvf6VgOMmI0JKCsvx1pKu7X4ZK7sGHmMgfwj7lukpxsqXZvDop8RxUI8/1KJ0azUsHlpAQ==
+  dependencies:
+    "@sentry/core" "6.14.3"
+    "@sentry/types" "6.14.3"
+    "@sentry/utils" "6.14.3"
+    tslib "^1.9.3"
+
+"@sentry/core@6.14.3":
+  version "6.14.3"
+  resolved "https://registry.yarnpkg.com/@sentry/core/-/core-6.14.3.tgz#42d255c1a8838e8f9d122b823ba5ff5c27803537"
+  integrity sha512-3yHmYZzkXlOqPi/CGlNhb2RzXFvYAryBhrMJV26KJ9ULJF8r4OJ7TcWlupDooGk6Knmq8GQML58OApUvYi8IKg==
+  dependencies:
+    "@sentry/hub" "6.14.3"
+    "@sentry/minimal" "6.14.3"
+    "@sentry/types" "6.14.3"
+    "@sentry/utils" "6.14.3"
+    tslib "^1.9.3"
+
+"@sentry/hub@6.14.3":
+  version "6.14.3"
+  resolved "https://registry.yarnpkg.com/@sentry/hub/-/hub-6.14.3.tgz#f6e84e561a4aff1a4447927356fea541465364c1"
+  integrity sha512-ZRWLHcAcv4oZAbpSwvCkXlaa1rVFDxcb9lxo5/5v5n6qJq2IG5Z+bXuT2DZlIHQmuCuqRnFSwuBjmBXY7OTHaw==
+  dependencies:
+    "@sentry/types" "6.14.3"
+    "@sentry/utils" "6.14.3"
+    tslib "^1.9.3"
+
+"@sentry/minimal@6.14.3":
+  version "6.14.3"
+  resolved "https://registry.yarnpkg.com/@sentry/minimal/-/minimal-6.14.3.tgz#f3a5b062bdc578000689fd0b31abbb994e6b81f3"
+  integrity sha512-2KNOJuhBpMICoOgdxX56UcO9vGdxCw5mNGYdWvJdKrMwRQr7mC+Fc9lTuTbrYTj6zkfklj2lbdDc3j44Rg787A==
+  dependencies:
+    "@sentry/hub" "6.14.3"
+    "@sentry/types" "6.14.3"
+    tslib "^1.9.3"
+
+"@sentry/tracing@^6.14.3":
+  version "6.14.3"
+  resolved "https://registry.yarnpkg.com/@sentry/tracing/-/tracing-6.14.3.tgz#0223d365ea0c7d3f7c90cb17ea84c4874bc9ef52"
+  integrity sha512-laFayAxpO/dQL3K3ZcSjtaqJkSf70DH1hHJ8Oiiic0c/xBxh38WSx8yu3TMrbfka5MVIuMNlkq1Gi+SC+moe4w==
+  dependencies:
+    "@sentry/hub" "6.14.3"
+    "@sentry/minimal" "6.14.3"
+    "@sentry/types" "6.14.3"
+    "@sentry/utils" "6.14.3"
+    tslib "^1.9.3"
+
+"@sentry/types@6.14.3":
+  version "6.14.3"
+  resolved "https://registry.yarnpkg.com/@sentry/types/-/types-6.14.3.tgz#4af799df7ddfa2702a46bffabc3f1b6eb195de23"
+  integrity sha512-GuyqvjQ/N0hIgAjGD1Rn0aQ8kpLBBsImk+Aoh7YFhnvXRhCNkp9N8BuXTfC/uMdMshcWa1OFik/udyjdQM3EJA==
+
+"@sentry/utils@6.14.3":
+  version "6.14.3"
+  resolved "https://registry.yarnpkg.com/@sentry/utils/-/utils-6.14.3.tgz#4ae907054152882fbd376906695ac326934669d1"
+  integrity sha512-jsCnclEsR2sV9aHMuaLA5gvxSa0xV4Sc6IJCJ81NTTdb/A5fFbteFBbhuISGF9YoFW1pwbpjuTA6+efXwvLwNQ==
+  dependencies:
+    "@sentry/types" "6.14.3"
+    tslib "^1.9.3"
+
 "@swc/helpers@^0.2.11":
   version "0.2.13"
   resolved "https://registry.yarnpkg.com/@swc/helpers/-/helpers-0.2.13.tgz#95d69aaed0998040d455832efbe1342ed79d0809"
@@ -1592,10 +1655,10 @@
     "@ethersproject/address" "^5.5.0"
     tiny-invariant "^1.1.0"
 
-"@timeswap-labs/timeswap-v1-sdk@^0.1.41":
-  version "0.1.41"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.41/f36f8b9207626cfcb15365e556a1be6b3ea8eed6235ab47ad2cd5eedd251b342#38252627819f0c47d17da03529fb9674bd07471c"
-  integrity sha512-7EW9k/8kJeIh9UesFpgkQTkfkc4XxnTG+LQqea2yq+eEfM8XBm6LgBY7pHovuR1MPy7TJurpwicCucgMmu/CQg==
+"@timeswap-labs/timeswap-v1-sdk@^0.1.44":
+  version "0.1.44"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.44/bb16d245a79e90f1083ab4d038fab88805c463fd582930c1bf04bf76daa997a9#dcd41f466b3ffdabe02dff6a90e5e8e11c477ed2"
+  integrity sha512-v2gkyLTR8VCIObM8IN9clVyEznV0/dGJd5EOyyhYRmoYVJP9uJd9Qrj/o5t8GGpvyOPmKCle4DcHKqvY82SWiA==
   dependencies:
     "@ethersproject/abstract-provider" "^5.5.1"
     "@ethersproject/abstract-signer" "^5.5.0"
@@ -5107,6 +5170,11 @@ tr46@^1.0.1:
   integrity sha1-qLE/1r/SSJUZZ0zN5VujaTtwbQk=
   dependencies:
     punycode "^2.1.0"
+
+tslib@^1.9.3:
+  version "1.14.1"
+  resolved "https://registry.yarnpkg.com/tslib/-/tslib-1.14.1.tgz#cf2d38bdc34a134bcaf1091c41f6619e2f672d00"
+  integrity sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==
 
 tty-browserify@^0.0.1:
   version "0.0.1"

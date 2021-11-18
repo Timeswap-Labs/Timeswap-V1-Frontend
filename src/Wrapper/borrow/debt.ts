@@ -45,7 +45,7 @@ export async function debtCalculate(
     const cf = calculateCf(
       query.assetOut,
       whitelist,
-      query.collateral,
+      query.asset,
       collateralIn
     );
 
