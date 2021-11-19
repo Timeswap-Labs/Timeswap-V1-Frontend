@@ -52,6 +52,7 @@ import Services.NoMetamask.Main as NoMetamask
 import Services.Settings.Main as Settings exposing (Settings)
 import Services.Swap.Main as Swap
 import Services.Wallet.Main as Wallet
+import User exposing (User)
 import Utility.Color as Color
 import Utility.Router as Router
 import Utility.Typography as Typography
@@ -159,6 +160,7 @@ update :
         | key : Key
         , page : Page
         , modal : Maybe Modal
+        , user : Remote User.Error User
     }
     -> Msg
     -> Service
@@ -193,7 +195,7 @@ update model msg service =
 
         ( SwapMsg swapMsg, Swap swap ) ->
             swap
-                |> Swap.update swapMsg
+                |> Swap.update swapMsg model.user
                 |> (\( updatedSwap, cmd ) ->
                         ( updatedSwap |> Swap
                         , cmd |> Cmd.map SwapMsg

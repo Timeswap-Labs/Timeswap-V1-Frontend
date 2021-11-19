@@ -3,12 +3,12 @@ port module Services.Swap.Main exposing (Msg, Service, init, subscriptions, upda
 import Browser.Events
 import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
-import Data.Balances exposing (Balances)
+import Data.Balances exposing (Balances, get, hasEnough)
 import Data.Device as Device exposing (Device)
 import Data.ERC20 as ERC20
 import Data.Images exposing (Images)
 import Data.Remote exposing (Remote(..))
-import Data.Token as Token exposing (Token(..))
+import Data.Token exposing (Token(..))
 import Data.TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
 import Data.Uint as Uint
@@ -49,11 +49,13 @@ import Html.Attributes
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
+import Modals.Lend.Error as LendError
 import Services.Swap.Error as Error exposing (Error)
 import Services.Swap.GameToken as GameToken exposing (GameToken)
 import Services.Swap.Notification as Notification exposing (Notification)
-import Services.Swap.Query as Query exposing (Query, Return)
+import Services.Swap.Query as Query exposing (Return)
 import Services.Swap.Transaction as Transaction
+import User exposing (User)
 import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Glass as Glass
@@ -99,13 +101,18 @@ type Msg
     | SelectInToken GameToken
     | SelectOutToken GameToken
     | Input String
+    | InputMax
     | Swap
     | NotificationMsg Value
     | ReceiveQuery (Result Http.Error Return)
 
 
-update : Msg -> Service -> ( Service, Cmd Msg )
-update msg (Service service) =
+update :
+    Msg
+    -> Remote User.Error User
+    -> Service
+    -> ( Service, Cmd Msg )
+update msg user (Service service) =
     case msg of
         OpenDropdown dropdown ->
             ( { service | dropdown = Just dropdown }
@@ -150,7 +157,7 @@ update msg (Service service) =
         Input input ->
             ( (if
                 input
-                    |> Uint.isAmount (service.inToken |> GameToken.toERC20 |> Token.ERC20)
+                    |> Uint.isAmount (service.inToken |> GameToken.toToken)
                then
                 { service
                     | input = input
@@ -171,7 +178,7 @@ update msg (Service service) =
 
               else
                 input
-                    |> Uint.fromAmount (service.inToken |> GameToken.toERC20 |> Token.ERC20)
+                    |> Uint.fromAmount (service.inToken |> GameToken.toToken)
                     |> Maybe.map
                         (\amount ->
                             Http.post
@@ -188,6 +195,25 @@ update msg (Service service) =
                         )
                     |> Maybe.withDefault Cmd.none
             )
+
+        InputMax ->
+            case user of
+                Success { balances } ->
+                    case balances of
+                        Success successBalances ->
+                            ( successBalances
+                                |> get (service.inToken |> GameToken.toToken)
+                                |> (\string ->
+                                        { service | input = string } |> Service
+                                   )
+                            , Cmd.none
+                            )
+
+                        _ ->
+                            ( Service service, Cmd.none )
+
+                _ ->
+                    ( Service service, Cmd.none )
 
         Swap ->
             ( { service
@@ -237,9 +263,9 @@ update msg (Service service) =
                     && token2
                     == service.outToken
                     && Just amount
-                    == (service.input |> Uint.fromAmount (service.inToken |> GameToken.toERC20 |> Token.ERC20))
+                    == (service.input |> Uint.fromAmount (service.inToken |> GameToken.toToken))
               then
-                { service | output = result |> Uint.toAmount (service.outToken |> GameToken.toERC20 |> Token.ERC20) |> Success } |> Service
+                { service | output = result |> Uint.toAmount (service.outToken |> GameToken.toToken) |> Success } |> Service
 
               else
                 Service service
@@ -295,7 +321,7 @@ view :
         , images : Images
         , tokenImages : TokenImages
     }
-    -> { user | address : Address }
+    -> { user | address : Address, balances : Remote () Balances }
     -> Service
     -> Element Msg
 view ({ device, backdrop, images } as model) user service =
@@ -321,7 +347,7 @@ view ({ device, backdrop, images } as model) user service =
         )
         [ title
         , content model service
-        , swapButton model
+        , swapButton model user service
         ]
 
 
@@ -375,21 +401,20 @@ inputContent model (Service { dropdown, options, inToken, input }) =
         , height shrink
         ]
         [ inTokenDropdownButton model inToken dropdown options
-        , inputAmount model input
+        , inputAmount input
         ]
 
 
 inTokenDropdownButton :
     { model
-        | device : Device
-        , images : Images
+        | images : Images
         , tokenImages : TokenImages
     }
     -> GameToken
     -> Maybe Dropdown
     -> List GameToken
     -> Element Msg
-inTokenDropdownButton ({ device, images, tokenImages } as model) gameToken dropdown options =
+inTokenDropdownButton ({ images, tokenImages } as model) gameToken dropdown options =
     Input.button
         ([ width <| px 130
          , height <| px 44
@@ -423,8 +448,7 @@ inTokenDropdownButton ({ device, images, tokenImages } as model) gameToken dropd
                 , Font.color Color.transparent400
                 ]
                 [ gameToken
-                    |> GameToken.toERC20
-                    |> Token.ERC20
+                    |> GameToken.toToken
                     |> TokenImage.icon tokenImages [ width (px 20), height (px 20) ]
                 , gameToken |> GameToken.toERC20 |> ERC20.toSymbol |> text
                 , Image.discloser images
@@ -489,8 +513,7 @@ inTokenOptions tokenImages gameToken =
                 , spacing 8
                 ]
                 [ gameToken
-                    |> GameToken.toERC20
-                    |> Token.ERC20
+                    |> GameToken.toToken
                     |> TokenImage.icon tokenImages [ width (px 18), height (px 18) ]
                 , el [ Font.size 16 ]
                     (gameToken
@@ -502,17 +525,87 @@ inTokenOptions tokenImages gameToken =
         }
 
 
+inputAmount : String -> Element Msg
+inputAmount input =
+    row
+        [ width fill
+        , height <| px 44
+        , paddingEach
+            { top = 0
+            , right = 12
+            , bottom = 0
+            , left = 12
+            }
+        , Border.widthEach
+            { top = 1
+            , right = 1
+            , bottom = 1
+            , left = 0
+            }
+        , Border.solid
+        , Border.color Color.transparent100
+        , Border.roundEach
+            { topLeft = 0
+            , topRight = 4
+            , bottomRight = 4
+            , bottomLeft = 0
+            }
+        ]
+        [ Input.text
+            [ width fill
+            , height shrink
+            , alignLeft
+            , centerY
+            , paddingEach
+                { top = 0
+                , right = 10
+                , bottom = 0
+                , left = 0
+                }
+            , Background.color Color.none
+            , Border.color Color.none
+            , Font.regular
+            , Font.size 16
+            , Color.transparent500 |> Font.color
+            ]
+            { onChange = Input
+            , text = input
+            , placeholder =
+                Input.placeholder
+                    [ Font.color Color.transparent100 ]
+                    (text "Enter input token amount")
+                    |> Just
+            , label = Input.labelHidden "input amount"
+            }
+        , maxButton
+        ]
+
+
+maxButton : Element Msg
+maxButton =
+    Input.button
+        [ width shrink
+        , height shrink
+        , centerY
+        , Font.regular
+        , Font.size 16
+        , Font.color Color.primary500
+        ]
+        { onPress = InputMax |> Just
+        , label = text "MAX"
+        }
+
+
 outTokenDropdownButton :
     { model
-        | device : Device
-        , images : Images
+        | images : Images
         , tokenImages : TokenImages
     }
     -> GameToken
     -> Maybe Dropdown
     -> List GameToken
     -> Element Msg
-outTokenDropdownButton ({ device, images, tokenImages } as model) gameToken dropdown options =
+outTokenDropdownButton ({ images, tokenImages } as model) gameToken dropdown options =
     Input.button
         ([ width <| px 130
          , height <| px 44
@@ -546,8 +639,7 @@ outTokenDropdownButton ({ device, images, tokenImages } as model) gameToken drop
                 , Font.color Color.transparent400
                 ]
                 [ gameToken
-                    |> GameToken.toERC20
-                    |> Token.ERC20
+                    |> GameToken.toToken
                     |> TokenImage.icon tokenImages [ width (px 20), height (px 20) ]
                 , gameToken |> GameToken.toERC20 |> ERC20.toSymbol |> text
                 , Image.discloser images
@@ -612,8 +704,7 @@ outTokenOptions tokenImages gameToken =
                 , spacing 8
                 ]
                 [ gameToken
-                    |> GameToken.toERC20
-                    |> Token.ERC20
+                    |> GameToken.toToken
                     |> TokenImage.icon tokenImages [ width (px 18), height (px 18) ]
                 , el [ Font.size 16 ]
                     (gameToken
@@ -622,50 +713,6 @@ outTokenOptions tokenImages gameToken =
                         |> text
                     )
                 ]
-        }
-
-
-inputAmount : { model | device : Device } -> String -> Element Msg
-inputAmount { device } input =
-    Input.text
-        [ width fill
-        , height <| px 44
-        , alignLeft
-        , centerY
-        , Background.color Color.none
-        , Font.regular
-        , Font.size 16
-        , Color.transparent500 |> Font.color
-        , paddingEach
-            { top = 12
-            , right = 12
-            , bottom = 0
-            , left = 12
-            }
-        , Border.widthEach
-            { top = 1
-            , right = 1
-            , bottom = 1
-            , left = 0
-            }
-        , Border.solid
-        , Color.transparent100
-            |> Border.color
-        , Border.roundEach
-            { topLeft = 0
-            , topRight = 4
-            , bottomRight = 4
-            , bottomLeft = 0
-            }
-        ]
-        { onChange = Input
-        , text = input
-        , placeholder =
-            Input.placeholder
-                [ Font.color Color.transparent100 ]
-                (text "Enter input token amount")
-                |> Just
-        , label = Input.labelHidden "input amount"
         }
 
 
@@ -678,17 +725,20 @@ outputContent :
     -> Service
     -> Element Msg
 outputContent model (Service { dropdown, options, outToken, output }) =
-    row
-        [ width fill
-        , height shrink
-        ]
-        [ outTokenDropdownButton model outToken dropdown options
-        , outputAmount model output
+    column [ width fill ]
+        [ row
+            [ width fill
+            , height shrink
+            ]
+            [ outTokenDropdownButton model outToken dropdown options
+            , outputAmount output
+            ]
+        , priceDisclaimer
         ]
 
 
-outputAmount : { model | device : Device } -> Remote Error String -> Element Msg
-outputAmount { device } output =
+outputAmount : Remote Error String -> Element Msg
+outputAmount output =
     el
         [ width fill
         , height <| px 44
@@ -735,55 +785,85 @@ outputAmount { device } output =
         )
 
 
-swapButton : { model | device : Device, images : Images } -> Element Msg
-swapButton { device, images } =
-    Input.button
-        ([ width fill
-         , paddingEach
-            { top = 0
-            , right = 16
+priceDisclaimer : Element Msg
+priceDisclaimer =
+    row
+        [ width fill
+        , alignRight
+        , Font.size 12
+        , Font.color Color.transparent300
+        , paddingEach
+            { top = 6
             , bottom = 0
-            , left = 10
+            , left = 0
+            , right = 0
             }
-         , centerY
-         , Background.color Color.primary500
-         , Border.rounded 4
-         , Font.size 16
-         , Font.color Color.light100
-         , mouseDown [ Background.color Color.primary400 ]
-         , mouseOver [ Background.color Color.primary300 ]
-         ]
-            ++ (if Device.isPhoneOrTablet device then
-                    [ height <| px 35 ]
+        ]
+        [ el [ alignRight ] (text "*The swapped token amount is approximate") ]
 
-                else
-                    [ height <| px 44 ]
-               )
-        )
-        { onPress = Just Swap
-        , label =
-            row
-                [ width shrink
-                , height fill
-                , spacing 6
-                , centerX
-                ]
-                (Image.wallet images
-                    [ width <| px 24
-                    , centerY
-                    ]
-                    :: (if Device.isPhone device then
-                            []
 
-                        else
-                            [ el [ centerY, Font.regular ]
-                                (if Device.isTablet device then
-                                    text "Swap"
+swapButton :
+    { model | device : Device, images : Images }
+    -> { user | balances : Remote () Balances }
+    -> Service
+    -> Element Msg
+swapButton { device, images } user (Service service) =
+    case user.balances of
+        Success successbalances ->
+            if successbalances |> hasEnough (service.inToken |> GameToken.toToken) service.input then
+                Input.button
+                    ([ width fill
+                     , paddingEach
+                        { top = 0
+                        , right = 16
+                        , bottom = 0
+                        , left = 10
+                        }
+                     , centerY
+                     , Background.color Color.primary500
+                     , Border.rounded 4
+                     , Font.size 16
+                     , Font.color Color.light100
+                     , mouseDown [ Background.color Color.primary400 ]
+                     , mouseOver [ Background.color Color.primary300 ]
+                     ]
+                        ++ (if Device.isPhoneOrTablet device then
+                                [ height <| px 35 ]
 
-                                 else
-                                    text "Swap tokens"
-                                )
+                            else
+                                [ height <| px 44 ]
+                           )
+                    )
+                    { onPress = Just Swap
+                    , label =
+                        row
+                            [ width shrink
+                            , height fill
+                            , spacing 6
+                            , centerX
                             ]
-                       )
-                )
-        }
+                            (Image.wallet images
+                                [ width <| px 24
+                                , centerY
+                                ]
+                                :: (if Device.isPhone device then
+                                        []
+
+                                    else
+                                        [ el [ centerY, Font.regular ]
+                                            (if Device.isTablet device then
+                                                text "Swap"
+
+                                             else
+                                                text "Swap tokens"
+                                            )
+                                        ]
+                                   )
+                            )
+                    }
+
+            else
+                LendError.insufficientAsset
+
+        _ ->
+            none

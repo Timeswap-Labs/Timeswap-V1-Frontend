@@ -1,6 +1,7 @@
-module Services.Swap.GameToken exposing (GameToken(..), decoder, encode, toERC20)
+module Services.Swap.GameToken exposing (GameToken(..), decoder, encode, toERC20, toToken)
 
 import Data.ERC20 as ERC20 exposing (ERC20)
+import Data.Token as Token exposing (Token)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 
@@ -57,3 +58,8 @@ toERC20 gameToken =
 
         Token3 ->
             ERC20.shiba
+
+
+toToken : GameToken -> Token
+toToken gameToken =
+    gameToken |> toERC20 |> Token.ERC20

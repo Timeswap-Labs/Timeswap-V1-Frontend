@@ -427,7 +427,15 @@ update msg model =
 
         ServiceMsg serviceMsg ->
             model.service
-                |> Maybe.map (Service.update model serviceMsg)
+                |> Maybe.map
+                    (Service.update
+                        { key = model.key
+                        , page = model.page
+                        , modal = model.modal
+                        , user = model.user
+                        }
+                        serviceMsg
+                    )
                 |> Maybe.map
                     (\( service, cmd ) ->
                         ( { model | service = Just service }
