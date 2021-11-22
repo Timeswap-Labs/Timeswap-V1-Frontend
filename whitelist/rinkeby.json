@@ -224,6 +224,13 @@
           "bond": "0xd7cb47c1f7ef9a3e73a7313c336f1ec04a40810f",
           "insurance": "0x9fa664fa2ca09038c0445ccde09caf0cd172ab50",
           "collateralizedDebt": "0x8bfa7db959c19c4dbad1cb700554f08f06ac8a63"
+        },
+        {
+          "maturity": 1637942400,
+          "liquidity": "0x886be14e95200c4bed5c8fb736d384275aaf4840",
+          "bond": "0x3057c84eda3cfba1f1cfccf964284d7d911cb6c9",
+          "insurance": "0x8f9e2b7a3e7a9978bb1c05b2e2d152e677d82ed3",
+          "collateralizedDebt": "0x33d126c3ed01609742869306a07fc1d28fe0693c"
         }
       ]
     }
