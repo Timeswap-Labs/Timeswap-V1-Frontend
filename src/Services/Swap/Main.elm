@@ -11,7 +11,7 @@ import Data.Remote exposing (Remote(..))
 import Data.Token exposing (Token(..))
 import Data.TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
-import Data.Uint as Uint
+import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
@@ -50,11 +50,11 @@ import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Modals.Lend.Error as LendError
-import Services.Swap.Error as Error exposing (Error)
 import Services.Swap.GameToken as GameToken exposing (GameToken)
 import Services.Swap.Notification as Notification exposing (Notification)
 import Services.Swap.Query as Query exposing (Return)
 import Services.Swap.Transaction as Transaction
+import Time exposing (Posix)
 import User exposing (User)
 import Utility.Color as Color
 import Utility.Exit as Exit
@@ -62,6 +62,7 @@ import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Loading as Loading
+import Utility.Millis as Millis
 import Utility.TokenImage as TokenImage
 
 
@@ -72,8 +73,10 @@ type Service
         , dropdown : Maybe Dropdown
         , options : List GameToken
         , input : String
-        , output : Remote Error String
+        , output : Remote Error String -- can be removed
         , notification : Maybe (Remote Error Notification)
+        , cache : Remote Error PriceCache
+        , inputTime : Maybe Posix
         }
 
 
@@ -82,17 +85,34 @@ type Dropdown
     | OutToken
 
 
-init : Service
-init =
-    { inToken = GameToken.Shiba
-    , outToken = GameToken.Doge
-    , dropdown = Nothing
-    , options = [ GameToken.Shiba, GameToken.Doge, GameToken.Token3 ]
-    , input = ""
-    , output = "" |> Success
-    , notification = Nothing
+type alias PriceCache =
+    { value : Return
+    , maxAge : Int --How old can the value be, before considered stale. In ms
+    , lastFetched : Posix
     }
+
+
+type alias Error =
+    { httpError : Http.Error
+    , timeToQuery : Posix
+    }
+
+
+init : ( Service, Cmd Msg )
+init =
+    ( { inToken = GameToken.Shiba
+      , outToken = GameToken.Doge
+      , dropdown = Nothing
+      , options = [ GameToken.Shiba, GameToken.Doge, GameToken.Token3 ]
+      , input = ""
+      , output = "" |> Success
+      , notification = Nothing
+      , cache = Loading
+      , inputTime = Nothing
+      }
         |> Service
+    , fetchPrice { inToken = GameToken.Shiba, outToken = GameToken.Doge }
+    )
 
 
 type Msg
@@ -105,14 +125,15 @@ type Msg
     | Swap
     | NotificationMsg Value
     | ReceiveQuery (Result Http.Error Return)
+    | ReceiveTime Posix
 
 
 update :
-    Msg
-    -> Remote User.Error User
+    { model | time : Posix, user : Remote User.Error User }
+    -> Msg
     -> Service
     -> ( Service, Cmd Msg )
-update msg user (Service service) =
+update { time, user } msg (Service service) =
     case msg of
         OpenDropdown dropdown ->
             ( { service | dropdown = Just dropdown }
@@ -127,18 +148,25 @@ update msg user (Service service) =
             )
 
         SelectInToken gameToken ->
-            ( { service
-                | outToken =
-                    if gameToken == service.outToken then
-                        service.inToken
+            if gameToken == service.inToken then
+                ( Service service, Cmd.none )
 
-                    else
-                        service.outToken
-                , inToken = gameToken
-              }
-                |> Service
-            , Cmd.none
-            )
+            else
+                { service
+                    | outToken =
+                        if gameToken == service.outToken then
+                            service.inToken
+
+                        else
+                            service.outToken
+                    , inToken = gameToken
+                    , cache = Loading
+                }
+                    |> (\updatedService ->
+                            ( updatedService |> Service
+                            , fetchPrice updatedService
+                            )
+                       )
 
         SelectOutToken gameToken ->
             ( { service
@@ -152,6 +180,27 @@ update msg user (Service service) =
               }
                 |> Service
             , Cmd.none
+            )
+
+        ReceiveTime posix ->
+            ( service |> Service
+            , case service.cache of
+                Success { lastFetched, maxAge } ->
+                    if (lastFetched |> Time.posixToMillis) + maxAge <= (posix |> Time.posixToMillis) then
+                        fetchPrice service
+
+                    else
+                        Cmd.none
+
+                Failure { timeToQuery } ->
+                    if (timeToQuery |> Time.posixToMillis) <= (posix |> Time.posixToMillis) then
+                        fetchPrice service
+
+                    else
+                        Cmd.none
+
+                _ ->
+                    Cmd.none
             )
 
         Input input ->
@@ -173,27 +222,7 @@ update msg user (Service service) =
                 service
               )
                 |> Service
-            , if input |> Input.isZero then
-                Cmd.none
-
-              else
-                input
-                    |> Uint.fromAmount (service.inToken |> GameToken.toToken)
-                    |> Maybe.map
-                        (\amount ->
-                            Http.post
-                                { url = "https://api.timeswap.io/swap"
-                                , body =
-                                    { token1 = service.inToken
-                                    , token2 = service.outToken
-                                    , amount = amount
-                                    }
-                                        |> Query.encode
-                                        |> Http.jsonBody
-                                , expect = Query.decoder |> Http.expectJson ReceiveQuery
-                                }
-                        )
-                    |> Maybe.withDefault Cmd.none
+            , Cmd.none
             )
 
         InputMax ->
@@ -256,24 +285,21 @@ update msg user (Service service) =
             , Cmd.none
             )
 
-        ReceiveQuery (Ok { token1, token2, amount, result }) ->
-            ( if
-                token1
-                    == service.inToken
-                    && token2
-                    == service.outToken
-                    && Just amount
-                    == (service.input |> Uint.fromAmount (service.inToken |> GameToken.toToken))
-              then
-                { service | output = result |> Uint.toAmount (service.outToken |> GameToken.toToken) |> Success } |> Service
-
-              else
-                Service service
+        ReceiveQuery (Ok price) ->
+            ( { service
+                | cache = Success { value = price, lastFetched = time, maxAge = 60000 }
+              }
+                |> Service
             , Cmd.none
             )
 
         ReceiveQuery (Err error) ->
-            ( Service service, Cmd.none )
+            ( { service
+                | cache = Failure { httpError = error, timeToQuery = time |> Millis.add 10000 }
+              }
+                |> Service
+            , Cmd.none
+            )
 
 
 port swap : Value -> Cmd msg
@@ -285,7 +311,9 @@ port notificationMsg : (Value -> msg) -> Sub msg
 subscriptions : Service -> Sub Msg
 subscriptions service =
     Sub.batch
-        [ notificationMsg NotificationMsg ]
+        [ notificationMsg NotificationMsg
+        , Time.every 1000 ReceiveTime
+        ]
 
 
 onClickOutsideDropdown : Service -> Sub Msg
@@ -311,6 +339,40 @@ decoderOutsideDropdown =
                 else
                     Decode.fail "Its the dropdown"
             )
+
+
+fetchPrice :
+    { service | inToken : GameToken, outToken : GameToken }
+    -> Cmd Msg
+fetchPrice service =
+    Http.post
+        { url = "https://api.timeswap.io/price"
+        , body =
+            { token1 = service.inToken
+            , token2 = service.outToken
+            }
+                |> Query.encode
+                |> Http.jsonBody
+        , expect = Query.decoder |> Http.expectJson ReceiveQuery
+        }
+
+
+callApi :
+    Uint
+    -> { service | inToken : GameToken, outToken : GameToken }
+    -> Cmd Msg
+callApi amount service =
+    Http.post
+        { url = "https://api.timeswap.io/swap"
+        , body =
+            { token1 = service.inToken
+            , token2 = service.outToken
+            , amount = amount
+            }
+                |> Query.encode
+                |> Http.jsonBody
+        , expect = Query.decoder |> Http.expectJson ReceiveQuery
+        }
 
 
 view :

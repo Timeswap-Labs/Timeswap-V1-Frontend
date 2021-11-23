@@ -52,6 +52,7 @@ import Services.NoMetamask.Main as NoMetamask
 import Services.Settings.Main as Settings exposing (Settings)
 import Services.Swap.Main as Swap
 import Services.Wallet.Main as Wallet
+import Time exposing (Posix)
 import User exposing (User)
 import Utility.Color as Color
 import Utility.Router as Router
@@ -67,33 +68,33 @@ type Service
     | Swap Swap.Service
 
 
-fromFragment : { model | user : Remote userError { user | chain : Chain } } -> String -> Maybe Service
+fromFragment : { model | user : Remote userError { user | chain : Chain } } -> String -> Maybe ( Service, Cmd Msg )
 fromFragment { user } string =
     case ( string, user ) of
         ( "connect", Loading ) ->
-            Just Connect
+            Just ( Connect, Cmd.none )
 
         ( "connect", Failure _ ) ->
-            Just Connect
+            Just ( Connect, Cmd.none )
 
         ( "nometamask", Loading ) ->
-            Just NoMetamask
+            Just ( NoMetamask, Cmd.none )
 
         ( "nometamask", Failure _ ) ->
-            Just NoMetamask
+            Just ( NoMetamask, Cmd.none )
 
         ( "wallet", Success _ ) ->
-            Wallet Wallet.init |> Just
+            ( Wallet Wallet.init, Cmd.none ) |> Just
 
         ( "settings", _ ) ->
-            Settings Settings.init Settings.initSettings |> Just
+            ( Settings Settings.init Settings.initSettings, Cmd.none ) |> Just
 
         ( "faucet", _ ) ->
-            Just Faucet
+            Just ( Faucet, Cmd.none )
 
         ( "swap", _ ) ->
             Swap.init
-                |> Swap
+                |> Tuple.mapBoth Swap (Cmd.map SwapMsg)
                 |> Just
 
         _ ->
@@ -161,6 +162,7 @@ update :
         , page : Page
         , modal : Maybe Modal
         , user : Remote User.Error User
+        , time : Posix
     }
     -> Msg
     -> Service
@@ -195,7 +197,7 @@ update model msg service =
 
         ( SwapMsg swapMsg, Swap swap ) ->
             swap
-                |> Swap.update swapMsg model.user
+                |> Swap.update model swapMsg
                 |> (\( updatedSwap, cmd ) ->
                         ( updatedSwap |> Swap
                         , cmd |> Cmd.map SwapMsg
