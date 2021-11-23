@@ -244,7 +244,7 @@ update msg model =
                                 , cmd |> Cmd.map ModalMsg
                                 )
 
-                            Route.Service service ->
+                            Route.Service ( service, cmd ) ->
                                 ( { model
                                     | device = model.device |> Device.closeAside
                                     , service =
@@ -259,7 +259,7 @@ update msg model =
                                                 )
                                             |> Maybe.withDefault (Just service)
                                   }
-                                , Cmd.none
+                                , cmd |> Cmd.map ServiceMsg
                                 )
 
                             Route.Aside ->
