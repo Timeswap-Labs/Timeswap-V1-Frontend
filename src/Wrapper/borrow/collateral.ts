@@ -46,7 +46,7 @@ export async function collateralCalculate(
     const cf = calculateCf(
       query.assetOut,
       whitelist,
-      query.asset,
+      query.collateral,
       query.collateralIn
     );
 

@@ -1,20 +1,26 @@
 module Data.Deadline exposing
     ( Deadline
+    , Flag
     , Option(..)
-    , fromOption
-    , fromString
+    , encode
+    , fromSettings
     , init
     , isCorrect
     , toInt
-    , toOption
-    , toString
+    , toSettings
     )
 
+import Data.Or exposing (Or(..))
+import Json.Encode as Encode exposing (Value)
 import Time exposing (Posix)
 
 
 type Deadline
     = Deadline Int
+
+
+type alias Flag =
+    Maybe Int
 
 
 type Option
@@ -23,9 +29,26 @@ type Option
     | Long
 
 
-init : Deadline
-init =
-    Deadline 20
+init : Flag -> Deadline
+init maybeMinutes =
+    maybeMinutes
+        |> Maybe.andThen
+            (\minutes ->
+                if minutes > 0 && minutes <= 180 then
+                    minutes
+                        |> Deadline
+                        |> Just
+
+                else
+                    Nothing
+            )
+        |> Maybe.withDefault (Deadline 20)
+
+
+encode : Deadline -> Value
+encode (Deadline minutes) =
+    minutes
+        |> Encode.int
 
 
 toInt : Posix -> Deadline -> Int
@@ -36,30 +59,49 @@ toInt time (Deadline int) =
         |> (+) (int * 60)
 
 
-toOption : Deadline -> Maybe Option
-toOption (Deadline minutes) =
+toSettings : Deadline -> Or Option String
+toSettings (Deadline minutes) =
     if minutes == 10 then
-        Just Short
+        Short |> Left
 
     else if minutes == 20 then
-        Just Medium
+        Medium |> Left
 
     else if minutes == 30 then
-        Just Long
-
-    else
-        Nothing
-
-
-toString : Deadline -> Maybe String
-toString (Deadline minutes) =
-    if minutes == 10 || minutes == 20 || minutes == 30 then
-        Nothing
+        Long |> Left
 
     else
         minutes
             |> String.fromInt
-            |> Just
+            |> Right
+
+
+fromSettings : Or Option String -> Deadline
+fromSettings or =
+    case or of
+        Left Short ->
+            Deadline 10
+
+        Left Medium ->
+            Deadline 20
+
+        Left Long ->
+            Deadline 30
+
+        Right string ->
+            string
+                |> String.toInt
+                |> Maybe.andThen
+                    (\minutes ->
+                        if minutes > 0 && minutes <= 180 then
+                            minutes
+                                |> Deadline
+                                |> Just
+
+                        else
+                            Nothing
+                    )
+                |> Maybe.withDefault (Deadline 20)
 
 
 isCorrect : String -> Bool
@@ -75,33 +117,3 @@ isCorrect string =
                     False
             )
         |> Maybe.withDefault False
-
-
-fromOption : Option -> Deadline
-fromOption option =
-    case option of
-        Short ->
-            Deadline 10
-
-        Medium ->
-            Deadline 20
-
-        Long ->
-            Deadline 30
-
-
-fromString : String -> Deadline
-fromString string =
-    string
-        |> String.toInt
-        |> Maybe.andThen
-            (\minutes ->
-                if minutes > 0 && minutes <= 180 then
-                    minutes
-                        |> Deadline
-                        |> Just
-
-                else
-                    Nothing
-            )
-        |> Maybe.withDefault (Deadline 20)

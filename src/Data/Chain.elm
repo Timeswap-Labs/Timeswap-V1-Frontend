@@ -1,32 +1,33 @@
 module Data.Chain exposing
     ( Chain(..)
-    , Error
-    , decoder
+    , encode
+    , sorter
+    , toChainId
     )
 
-import Json.Decode as Decode exposing (Decoder)
+import Json.Encode as Encode exposing (Value)
+import Sort exposing (Sorter)
 
 
 type Chain
-    = Mainnet
-    | Rinkeby
+    = Chain
+        { chainId : Int
+        , name : String
+        }
 
 
-type Error
-    = UnsupportedNetwork
+encode : Chain -> Value
+encode (Chain { chainId }) =
+    chainId
+        |> Encode.int
 
 
-decoder : Decoder (Result Error Chain)
-decoder =
-    Decode.string
-        |> Decode.andThen
-            (\string ->
-                case string of
-                    "0x4" ->
-                        Ok Rinkeby
-                            |> Decode.succeed
+sorter : Sorter Chain
+sorter =
+    Sort.increasing
+        |> Sort.by (\(Chain { chainId }) -> chainId)
 
-                    _ ->
-                        Err UnsupportedNetwork
-                            |> Decode.succeed
-            )
+
+toChainId : Chain -> Int
+toChainId (Chain { chainId }) =
+    chainId

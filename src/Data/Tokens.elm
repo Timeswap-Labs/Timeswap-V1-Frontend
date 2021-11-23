@@ -1,86 +1,68 @@
 module Data.Tokens exposing
     ( Tokens
-    , decoder
     , decoderERC20
     , decoderToken
-    , fromAssetFragment
-    , fromCollateralFragment
-    , getToken
-    , toERC20s
+    , encodeCustom
+    , fromFragment
+    , getGivenAddress
+    , init
+    , insert
+    , isMemberOf
+    , remove
+    , removeAll
+    , toCustom
+    , toList
     )
 
 import Data.Address as Address exposing (Address)
 import Data.ERC20 as ERC20 exposing (ERC20)
+import Data.ERC20s as ERC20s exposing (ERC20s)
+import Data.Native as Native exposing (Native)
 import Data.Token as Token exposing (Token)
-import Json.Decode as Decode exposing (Decoder, Value)
-import Json.Decode.Pipeline as Pipeline
+import Data.TokenParam as TokenParam exposing (TokenParam)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Encode exposing (Value)
 import Sort.Set as Set exposing (Set)
 
 
-type alias Tokens =
-    Set Token
+type Tokens
+    = Tokens
+        { native : Native
+        , whitelist : ERC20s
+        , custom : ERC20s
+        }
 
 
-getToken : Address -> Tokens -> Maybe Token
-getToken address tokens =
-    tokens
-        |> Set.foldl
-            (\token accumulator ->
-                case token of
-                    Token.ERC20 erc20 ->
-                        if (erc20 |> ERC20.toAddress) == address then
-                            Just token
-
-                        else
-                            accumulator
-
-                    Token.ETH ->
-                        accumulator
-            )
-            Nothing
-
-
-decoder : Decoder Tokens
-decoder =
-    let
-        recursive : Int -> Value -> ( Int, List Token ) -> Decoder (List Token)
-        recursive length value ( id, list ) =
-            if id < length then
-                value
-                    |> Decode.decodeValue (Decode.index id (Token.decoder id))
-                    |> (\result ->
-                            case result of
-                                Ok erc20 ->
-                                    ( id + 1, erc20 :: list )
-                                        |> recursive length value
-
-                                Err error ->
-                                    error
-                                        |> Decode.errorToString
-                                        |> Decode.fail
-                       )
-
-            else
-                Decode.succeed list
-    in
-    Decode.succeed (\length value -> recursive length value ( 0, [] ))
-        |> Pipeline.custom
-            (Decode.succeed ()
-                |> Decode.list
-                |> Decode.map List.length
-            )
-        |> Pipeline.custom Decode.value
-        |> Decode.andThen identity
-        |> Decode.map (Set.fromList Token.sorter)
-        |> Decode.map (Set.insert Token.ETH)
+init : Native -> ERC20s -> ERC20s -> Tokens
+init native whitelist custom =
+    { native = native
+    , whitelist = whitelist
+    , custom = custom
+    }
+        |> Tokens
 
 
 decoderToken : Tokens -> Decoder Token
 decoderToken tokens =
     Decode.oneOf
-        [ Token.decoderETH
-        , decoderERC20 tokens |> Decode.map Token.ERC20
+        [ decoderNative tokens
+            |> Decode.map Token.Native
+        , decoderERC20 tokens
+            |> Decode.map Token.ERC20
         ]
+
+
+decoderNative : Tokens -> Decoder Native
+decoderNative (Tokens { native }) =
+    Decode.string
+        |> Decode.andThen
+            (\string ->
+                if string == (native |> Native.toSymbol) then
+                    native |> Decode.succeed
+
+                else
+                    Decode.fail "Not an ETH"
+            )
 
 
 decoderERC20 : Tokens -> Decoder ERC20
@@ -89,100 +71,154 @@ decoderERC20 tokens =
         |> Decode.andThen
             (\address ->
                 tokens
+                    |> toSet
                     |> Set.foldl
-                        (\token accumulator ->
-                            case token of
-                                Token.ETH ->
-                                    accumulator
+                        (\erc20 accumulator ->
+                            if (erc20 |> ERC20.toAddress) == address then
+                                Decode.succeed erc20
 
-                                Token.ERC20 erc20 ->
-                                    if (erc20 |> ERC20.toAddress) == address then
-                                        Decode.succeed erc20
-
-                                    else
-                                        accumulator
+                            else
+                                accumulator
                         )
                         (Decode.fail "not in whitelist")
             )
 
 
-fromAssetFragment : Tokens -> String -> Maybe Token
-fromAssetFragment tokens string =
-    string
+encodeCustom : Tokens -> Value
+encodeCustom (Tokens { custom }) =
+    custom
+        |> ERC20s.encode
+
+
+toCustom : Tokens -> ERC20s
+toCustom (Tokens { custom }) =
+    custom
+
+
+toSet : Tokens -> Set ERC20
+toSet (Tokens { whitelist, custom }) =
+    whitelist
+        |> Set.union ERC20.sorter custom
+
+
+fromFragment : TokenParam -> Tokens -> String -> Maybe Token
+fromFragment chosenParam ((Tokens { native }) as tokens) fragment =
+    fragment
         |> String.split "="
         |> (\list ->
                 case list of
-                    "asset" :: "ETH" :: _ ->
-                        Just Token.ETH
+                    tokenParamString :: tokenString :: _ ->
+                        tokenParamString
+                            |> TokenParam.fromFragment
+                            |> Maybe.andThen
+                                (\tokenParam ->
+                                    if tokenParam == chosenParam then
+                                        Just ()
 
-                    "asset" :: address :: _ ->
-                        tokens
-                            |> Set.foldl
-                                (\token accumulator ->
-                                    case token of
-                                        Token.ETH ->
-                                            accumulator
-
-                                        Token.ERC20 erc20 ->
-                                            accumulator
-                                                |> Set.insert erc20
+                                    else
+                                        Nothing
                                 )
-                                (Set.empty ERC20.sorter)
-                            |> (\set ->
-                                    address
-                                        |> ERC20.fromString set
-                                        |> Maybe.map Token.ERC20
-                               )
+                            |> Maybe.andThen
+                                (\_ ->
+                                    if
+                                        (native |> Native.toSymbol)
+                                            == tokenString
+                                    then
+                                        native
+                                            |> Token.Native
+                                            |> Just
+
+                                    else
+                                        tokens
+                                            |> toSet
+                                            |> Set.foldl
+                                                (\erc20 accumulator ->
+                                                    if
+                                                        (erc20
+                                                            |> ERC20.toAddress
+                                                            |> Address.toString
+                                                        )
+                                                            == (tokenString |> String.toLower)
+                                                    then
+                                                        Token.ERC20 erc20
+                                                            |> Just
+
+                                                    else
+                                                        accumulator
+                                                )
+                                                Nothing
+                                )
 
                     _ ->
                         Nothing
            )
 
 
-fromCollateralFragment : Tokens -> String -> Maybe Token
-fromCollateralFragment tokens string =
-    string
-        |> String.split "="
-        |> (\list ->
-                case list of
-                    "collateral" :: "ETH" :: _ ->
-                        Just Token.ETH
-
-                    "collateral" :: address :: _ ->
-                        tokens
-                            |> Set.foldl
-                                (\token accumulator ->
-                                    case token of
-                                        Token.ETH ->
-                                            accumulator
-
-                                        Token.ERC20 erc20 ->
-                                            accumulator
-                                                |> Set.insert erc20
-                                )
-                                (Set.empty ERC20.sorter)
-                            |> (\set ->
-                                    address
-                                        |> ERC20.fromString set
-                                        |> Maybe.map Token.ERC20
-                               )
-
-                    _ ->
-                        Nothing
-           )
-
-
-toERC20s : Tokens -> Set ERC20
-toERC20s tokens =
+isMemberOf : Tokens -> Address -> Bool
+isMemberOf tokens address =
     tokens
+        |> toSet
         |> Set.foldl
-            (\token accumulator ->
-                case token of
-                    Token.ETH ->
-                        accumulator
+            (\erc20 accumulator ->
+                if
+                    (erc20 |> ERC20.toAddress)
+                        == address
+                then
+                    True
 
-                    Token.ERC20 erc20 ->
-                        accumulator
-                            |> Set.insert erc20
+                else
+                    accumulator
             )
-            (Set.empty ERC20.sorter)
+            False
+
+
+insert : ERC20 -> Tokens -> Tokens
+insert erc20 (Tokens tokens) =
+    { tokens
+        | custom =
+            tokens.custom
+                |> Set.insert erc20
+    }
+        |> Tokens
+
+
+remove : ERC20 -> Tokens -> Tokens
+remove erc20 (Tokens tokens) =
+    { tokens
+        | custom =
+            tokens.custom
+                |> Set.remove erc20
+    }
+        |> Tokens
+
+
+removeAll : Tokens -> Tokens
+removeAll (Tokens tokens) =
+    { tokens
+        | custom = Set.empty ERC20.sorter
+    }
+        |> Tokens
+
+
+toList : Tokens -> List Token
+toList ((Tokens { native }) as tokens) =
+    tokens
+        |> toSet
+        |> Set.toList
+        |> List.map Token.ERC20
+        |> (::) (Token.Native native)
+
+
+getGivenAddress : Address -> Tokens -> Maybe ERC20
+getGivenAddress address tokens =
+    tokens
+        |> toSet
+        |> Set.foldl
+            (\erc20 accumulator ->
+                if (erc20 |> ERC20.toAddress) == address then
+                    Just erc20
+
+                else
+                    accumulator
+            )
+            Nothing

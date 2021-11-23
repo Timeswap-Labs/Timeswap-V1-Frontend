@@ -1,38 +1,59 @@
 module Data.ERC20 exposing
     ( ERC20
+    , Flag
     , compare
-    , daiRinkeby
     , decoder
+    , decoderSet
     , encode
+    , encodeAddress
     , fromString
-    , maticRinkeby
+    , init
     , sorter
     , toAddress
     , toDecimals
-    , toKey
     , toName
     , toString
     , toSymbol
-    , wethRinkeby
     )
 
 import Data.Address as Address exposing (Address)
-import Data.Chain exposing (Chain(..))
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
-import Json.Encode exposing (Value)
+import Json.Encode as Encode exposing (Value)
 import Sort exposing (Sorter)
 import Sort.Set as Set exposing (Set)
 
 
 type ERC20
     = ERC20
-        { id : Int
-        , address : Address
+        { address : Address
         , name : String
         , symbol : String
         , decimals : Int
         }
+
+
+type alias Flag =
+    { address : String
+    , name : String
+    , symbol : String
+    , decimals : Int
+    }
+
+
+init : Flag -> Maybe ERC20
+init ({ name, symbol, decimals } as flag) =
+    flag.address
+        |> Address.fromString
+        |> Maybe.map
+            (\address ->
+                { address = address
+                , name = name
+                , symbol = symbol
+                , decimals = decimals
+                }
+                    |> ERC20
+            )
 
 
 fromString : Set ERC20 -> String -> Maybe ERC20
@@ -54,12 +75,11 @@ fromString set string =
             )
 
 
-decoder : Int -> Decoder ERC20
-decoder id =
+decoder : Decoder ERC20
+decoder =
     Decode.succeed
         (\address name symbol decimals ->
-            { id = id
-            , address = address
+            { address = address
             , name = name
             , symbol = symbol
             , decimals = decimals
@@ -72,8 +92,25 @@ decoder id =
         |> Pipeline.required "decimals" Decode.int
 
 
+decoderSet : Decoder (Set ERC20)
+decoderSet =
+    decoder
+        |> Decode.list
+        |> Decode.map (Set.fromList sorter)
+
+
 encode : ERC20 -> Value
-encode (ERC20 { address }) =
+encode (ERC20 { address, name, symbol, decimals }) =
+    [ ( "address", address |> Address.encode )
+    , ( "name", name |> Encode.string )
+    , ( "symbol", symbol |> Encode.string )
+    , ( "decimals", decimals |> Encode.int )
+    ]
+        |> Encode.object
+
+
+encodeAddress : ERC20 -> Value
+encodeAddress (ERC20 { address }) =
     address |> Address.encode
 
 
@@ -82,11 +119,6 @@ toString erc20 =
     erc20
         |> toAddress
         |> Address.toString
-
-
-toKey : ERC20 -> String
-toKey =
-    toString
 
 
 toAddress : ERC20 -> Address
@@ -111,42 +143,10 @@ toDecimals (ERC20 { decimals }) =
 
 compare : ERC20 -> ERC20 -> Order
 compare (ERC20 erc20a) (ERC20 erc20b) =
-    Basics.compare erc20a.id erc20b.id
+    Basics.compare erc20a.symbol erc20b.symbol
 
 
 sorter : Sorter ERC20
 sorter =
-    Sort.custom compare
-
-
-daiRinkeby : ERC20
-daiRinkeby =
-    ERC20
-        { id = 0
-        , address = Address.daiRinkeby
-        , name = "DAI Stablecoin"
-        , symbol = "DAI"
-        , decimals = 18
-        }
-
-
-maticRinkeby : ERC20
-maticRinkeby =
-    ERC20
-        { id = 1
-        , address = Address.maticRinkeby
-        , name = "Matic Token"
-        , symbol = "MATIC"
-        , decimals = 18
-        }
-
-
-wethRinkeby : ERC20
-wethRinkeby =
-    ERC20
-        { id = 2
-        , address = Address.wethRinkeby
-        , name = "Wrapped Ether"
-        , symbol = "WETH"
-        , decimals = 18
-        }
+    Sort.alphabetical
+        |> Sort.by (\(ERC20 { symbol }) -> symbol)

@@ -1,4 +1,4 @@
-module Data.Backdrop exposing (Backdrop(..), setBackdrop)
+module Data.Backdrop exposing (Backdrop, Flag, init)
 
 
 type Backdrop
@@ -6,8 +6,12 @@ type Backdrop
     | NotSupported
 
 
-setBackdrop : Bool -> Backdrop
-setBackdrop hasBackdropSupport =
+type alias Flag =
+    Bool
+
+
+init : Flag -> Backdrop
+init hasBackdropSupport =
     if hasBackdropSupport then
         Supported
 

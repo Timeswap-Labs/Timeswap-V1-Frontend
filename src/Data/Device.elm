@@ -1,41 +1,20 @@
-module Data.Device exposing
-    ( Device
-    , checkAsideStatus
-    , closeAside
-    , fromDeviceWidth
-    , fromViewport
-    , fromWidth
-    , isPhone
-    , isPhoneOrTablet
-    , isTablet
-    , openAside
-    )
+module Data.Device exposing (Device(..), fromWidth, isPhoneOrTablet)
 
 
 type Device
-    = Phone AsideStatus
-    | Tablet AsideStatus
+    = Phone
+    | Tablet
     | Desktop
     | BigDesktop
-
-
-type AsideStatus
-    = Open
-    | Close
-
-
-fromViewport : { viewport | width : Int } -> Device
-fromViewport { width } =
-    fromWidth width
 
 
 fromWidth : Int -> Device
 fromWidth width =
     if width < 600 then
-        Phone Close
+        Phone
 
     else if width < 1080 + 278 then
-        Tablet Close
+        Tablet
 
     else if width < 1366 + 278 then
         Desktop
@@ -44,78 +23,13 @@ fromWidth width =
         BigDesktop
 
 
-fromDeviceWidth : Device -> Int -> Device
-fromDeviceWidth device width =
-    let
-        newDevice : Device
-        newDevice =
-            fromWidth width
-    in
-    if checkAsideStatus device then
-        openAside newDevice
-
-    else
-        newDevice
-
-
-openAside : Device -> Device
-openAside device =
-    case device of
-        Phone _ ->
-            Phone Open
-
-        Tablet _ ->
-            Tablet Open
-
-        _ ->
-            device
-
-
-closeAside : Device -> Device
-closeAside device =
-    case device of
-        Phone _ ->
-            Phone Close
-
-        Tablet _ ->
-            Tablet Close
-
-        _ ->
-            device
-
-
-isPhone : Device -> Bool
-isPhone device =
-    case device of
-        Phone _ ->
-            True
-
-        _ ->
-            False
-
-
-isTablet : Device -> Bool
-isTablet device =
-    case device of
-        Tablet _ ->
-            True
-
-        _ ->
-            False
-
-
 isPhoneOrTablet : Device -> Bool
 isPhoneOrTablet device =
-    isPhone device || isTablet device
-
-
-checkAsideStatus : Device -> Bool
-checkAsideStatus device =
     case device of
-        Phone Open ->
+        Phone ->
             True
 
-        Tablet Open ->
+        Tablet ->
             True
 
         _ ->

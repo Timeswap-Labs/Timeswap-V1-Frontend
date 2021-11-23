@@ -1,4 +1,4 @@
-module Data.Pool exposing (Pool, sorter, toFragment, toKey)
+module Data.Pool exposing (Pool, sorter, toFragment, toString)
 
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
@@ -19,10 +19,10 @@ toFragment { pair, maturity } =
         |> String.join "&"
 
 
-toKey : Pool -> String
-toKey { pair, maturity } =
-    [ pair |> Pair.toKey
-    , maturity |> Maturity.toKey
+toString : Pool -> String
+toString { pair, maturity } =
+    [ pair |> Pair.toString
+    , maturity |> Maturity.toUnix
     ]
         |> String.join " "
 

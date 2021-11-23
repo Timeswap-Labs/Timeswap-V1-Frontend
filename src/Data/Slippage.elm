@@ -1,17 +1,16 @@
 module Data.Slippage exposing
-    ( Option(..)
+    ( Flag
+    , Option(..)
     , Slippage
     , encode
     , encodeGivenPercent
-    , fromOption
-    , fromString
+    , fromSettings
     , init
     , isCorrect
-    , toOption
-    , toPercent
-    , toString
+    , toSettings
     )
 
+import Data.Or exposing (Or(..))
 import Json.Encode as Encode exposing (Value)
 
 
@@ -19,10 +18,35 @@ type Slippage
     = Slippage Int
 
 
+type alias Flag =
+    Maybe Float
+
+
 type Option
     = Small
     | Medium
     | Large
+
+
+init : Flag -> Slippage
+init maybeFloat =
+    maybeFloat
+        |> Maybe.andThen
+            (\float ->
+                float
+                    |> (*) 1000
+                    |> truncate
+                    |> (\int ->
+                            if int > 0 && int <= 5000 then
+                                int
+                                    |> Slippage
+                                    |> Just
+
+                            else
+                                Nothing
+                       )
+            )
+        |> Maybe.withDefault (Slippage 50)
 
 
 encode : Slippage -> Value
@@ -41,30 +65,16 @@ encodeGivenPercent (Slippage int) =
         |> Encode.float
 
 
-init : Slippage
-init =
-    Slippage 50
-
-
-toOption : Slippage -> Maybe Option
-toOption (Slippage int) =
+toSettings : Slippage -> Or Option String
+toSettings (Slippage int) =
     if int == 10 then
-        Just Small
+        Small |> Left
 
     else if int == 50 then
-        Just Medium
+        Medium |> Left
 
     else if int == 100 then
-        Just Large
-
-    else
-        Nothing
-
-
-toString : Slippage -> Maybe String
-toString (Slippage int) =
-    if int == 10 || int == 50 || int == 100 then
-        Nothing
+        Large |> Left
 
     else
         int
@@ -76,23 +86,37 @@ toString (Slippage int) =
                     ]
                         |> String.join "."
                )
-            |> Just
+            |> Right
 
 
-toPercent : Slippage -> String
-toPercent (Slippage int) =
-    int
-        |> String.fromInt
-        |> String.padLeft 3 '0'
-        |> (\string ->
-                [ [ string |> String.dropRight 2
-                  , string |> String.right 2
-                  ]
-                    |> String.join "."
-                , "%"
-                ]
-                    |> String.concat
-           )
+fromSettings : Or Option String -> Slippage
+fromSettings or =
+    case or of
+        Left Small ->
+            Slippage 10
+
+        Left Medium ->
+            Slippage 50
+
+        Left Large ->
+            Slippage 100
+
+        Right string ->
+            string
+                |> String.toFloat
+                |> Maybe.map ((*) 100)
+                |> Maybe.map floor
+                |> Maybe.andThen
+                    (\int ->
+                        if int > 0 && int <= 5000 then
+                            int
+                                |> Slippage
+                                |> Just
+
+                        else
+                            Nothing
+                    )
+                |> Maybe.withDefault (Slippage 50)
 
 
 isCorrect : String -> Bool
@@ -110,35 +134,3 @@ isCorrect string =
                     False
             )
         |> Maybe.withDefault False
-
-
-fromOption : Option -> Slippage
-fromOption option =
-    case option of
-        Small ->
-            Slippage 10
-
-        Medium ->
-            Slippage 50
-
-        Large ->
-            Slippage 100
-
-
-fromString : String -> Slippage
-fromString string =
-    string
-        |> String.toFloat
-        |> Maybe.map ((*) 100)
-        |> Maybe.map floor
-        |> Maybe.andThen
-            (\int ->
-                if int > 0 && int <= 5000 then
-                    int
-                        |> Slippage
-                        |> Just
-
-                else
-                    Nothing
-            )
-        |> Maybe.withDefault (Slippage 50)

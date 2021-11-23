@@ -55,7 +55,7 @@ export async function bondCalculate(
     const cf = calculateCf(
       query.assetIn,
       whitelist,
-      query.asset,
+      query.collateral,
       claims.insurance
     );
 

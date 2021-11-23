@@ -2,7 +2,6 @@ module Utility.Image exposing
     ( allPairs
     , arrow
     , arrowDown
-    , background
     , calander
     , checkbox
     , checkboxSelected
@@ -28,217 +27,231 @@ module Utility.Image exposing
     , plus
     , setting
     , telegram
-    , token
     , tripleDots
     , twitter
+    , viewChain
+    , viewToken
     , wallet
     , warning
     )
 
+import Data.Chain exposing (Chain(..))
+import Data.ERC20 as ERC20
 import Data.Images exposing (Images)
+import Data.Native as Native
+import Data.Token as Token exposing (Token)
 import Element
     exposing
         ( Attribute
         , Element
-        , el
-        , fill
-        , height
         , image
-        , none
-        , width
         )
-import Element.Background as Background
 import Sort.Dict as Dict
 
 
-view : String -> Images -> List (Attribute msg) -> Element msg
-view name dict attributes =
+view : String -> List (Attribute msg) -> Images -> Element msg
+view name attributes images =
     image
         attributes
         { src =
-            dict
+            images
+                |> .images
                 |> Dict.get name
                 |> Maybe.withDefault ""
         , description = name
         }
 
 
-background : Images -> Element msg
-background images =
-    el
-        ([ width fill
-         , height fill
-         ]
-            ++ (images
-                    |> Dict.get "Background"
-                    |> Maybe.map Background.image
-                    |> Maybe.map List.singleton
-                    |> Maybe.withDefault []
-               )
-        )
-        none
+viewToken : List (Attribute msg) -> Token -> Images -> Element msg
+viewToken attributes token images =
+    (case token of
+        Token.Native native ->
+            native |> Native.toSymbol
+
+        Token.ERC20 erc20 ->
+            erc20 |> ERC20.toSymbol
+    )
+        |> (\symbol ->
+                image
+                    attributes
+                    { src =
+                        images
+                            |> .tokens
+                            |> Dict.get symbol
+                            |> Maybe.withDefault "default"
+                    , description = symbol
+                    }
+           )
 
 
-openSea : Images -> List (Attribute msg) -> Element msg
+viewChain : List (Attribute msg) -> Chain -> Images -> Element msg
+viewChain attributes (Chain { name }) images =
+    image
+        attributes
+        { src =
+            images
+                |> .chains
+                |> Dict.get name
+                |> Maybe.withDefault "default"
+        , description = name
+        }
+
+
+openSea : List (Attribute msg) -> Images -> Element msg
 openSea =
     view "OpenSea"
 
 
-logo : Images -> List (Attribute msg) -> Element msg
+logo : List (Attribute msg) -> Images -> Element msg
 logo =
     view "Logo"
 
 
-logoPure : Images -> List (Attribute msg) -> Element msg
+logoPure : List (Attribute msg) -> Images -> Element msg
 logoPure =
     view "LogoPure"
 
 
-metamask : Images -> List (Attribute msg) -> Element msg
+metamask : List (Attribute msg) -> Images -> Element msg
 metamask =
     view "Metamask"
 
 
-link : Images -> List (Attribute msg) -> Element msg
+link : List (Attribute msg) -> Images -> Element msg
 link =
     view "Link"
 
 
-energy : Images -> List (Attribute msg) -> Element msg
+energy : List (Attribute msg) -> Images -> Element msg
 energy =
     view "Energy"
 
 
-option : Images -> List (Attribute msg) -> Element msg
+option : List (Attribute msg) -> Images -> Element msg
 option =
     view "Option"
 
 
-allPairs : Images -> List (Attribute msg) -> Element msg
+allPairs : List (Attribute msg) -> Images -> Element msg
 allPairs =
     view "AllPairs"
 
 
-token : Images -> List (Attribute msg) -> Element msg
-token =
-    view "Token"
-
-
-wallet : Images -> List (Attribute msg) -> Element msg
+wallet : List (Attribute msg) -> Images -> Element msg
 wallet =
     view "Wallet"
 
 
-faucet : Images -> List (Attribute msg) -> Element msg
+faucet : List (Attribute msg) -> Images -> Element msg
 faucet =
     view "Faucet"
 
 
-discloser : Images -> List (Attribute msg) -> Element msg
+discloser : List (Attribute msg) -> Images -> Element msg
 discloser =
     view "Discloser"
 
 
-hourglassPrimary : Images -> List (Attribute msg) -> Element msg
+hourglassPrimary : List (Attribute msg) -> Images -> Element msg
 hourglassPrimary =
     view "HourglassPrimary"
 
 
-hourglassPrimarySmall : Images -> List (Attribute msg) -> Element msg
+hourglassPrimarySmall : List (Attribute msg) -> Images -> Element msg
 hourglassPrimarySmall =
     view "HourglassPrimarySmall"
 
 
-plus : Images -> List (Attribute msg) -> Element msg
+plus : List (Attribute msg) -> Images -> Element msg
 plus =
     view "Plus"
 
 
-arrow : Images -> List (Attribute msg) -> Element msg
+arrow : List (Attribute msg) -> Images -> Element msg
 arrow =
     view "Arrow"
 
 
-close : Images -> List (Attribute msg) -> Element msg
+close : List (Attribute msg) -> Images -> Element msg
 close =
     view "Close"
 
 
-arrowDown : Images -> List (Attribute msg) -> Element msg
+arrowDown : List (Attribute msg) -> Images -> Element msg
 arrowDown =
     view "ArrowDown"
 
 
-hourglass : Images -> List (Attribute msg) -> Element msg
+hourglass : List (Attribute msg) -> Images -> Element msg
 hourglass =
     view "Hourglass"
 
 
-info : Images -> List (Attribute msg) -> Element msg
+info : List (Attribute msg) -> Images -> Element msg
 info =
     view "Info"
 
 
-matured : Images -> List (Attribute msg) -> Element msg
+matured : List (Attribute msg) -> Images -> Element msg
 matured =
     view "Matured"
 
 
-calander : Images -> List (Attribute msg) -> Element msg
+calander : List (Attribute msg) -> Images -> Element msg
 calander =
     view "Calendar"
 
 
-setting : Images -> List (Attribute msg) -> Element msg
+setting : List (Attribute msg) -> Images -> Element msg
 setting =
     view "Setting"
 
 
-checkbox : Images -> List (Attribute msg) -> Element msg
+checkbox : List (Attribute msg) -> Images -> Element msg
 checkbox =
     view "Checkbox"
 
 
-checkboxSelected : Images -> List (Attribute msg) -> Element msg
+checkboxSelected : List (Attribute msg) -> Images -> Element msg
 checkboxSelected =
     view "CheckboxSelected"
 
 
-warning : Images -> List (Attribute msg) -> Element msg
+warning : List (Attribute msg) -> Images -> Element msg
 warning =
     view "Warning"
 
 
-tripleDots : Images -> List (Attribute msg) -> Element msg
+tripleDots : List (Attribute msg) -> Images -> Element msg
 tripleDots =
     view "TripleDots"
 
 
-gitbook : Images -> List (Attribute msg) -> Element msg
+gitbook : List (Attribute msg) -> Images -> Element msg
 gitbook =
     view "Gitbook"
 
 
-github : Images -> List (Attribute msg) -> Element msg
+github : List (Attribute msg) -> Images -> Element msg
 github =
     view "Github"
 
 
-discord : Images -> List (Attribute msg) -> Element msg
+discord : List (Attribute msg) -> Images -> Element msg
 discord =
     view "Discord"
 
 
-twitter : Images -> List (Attribute msg) -> Element msg
+twitter : List (Attribute msg) -> Images -> Element msg
 twitter =
     view "Twitter"
 
 
-telegram : Images -> List (Attribute msg) -> Element msg
+telegram : List (Attribute msg) -> Images -> Element msg
 telegram =
     view "Telegram"
 
 
-medium : Images -> List (Attribute msg) -> Element msg
+medium : List (Attribute msg) -> Images -> Element msg
 medium =
     view "Medium"

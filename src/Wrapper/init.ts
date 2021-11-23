@@ -16,7 +16,7 @@ export declare let window: any;
 
 export async function elmUser(): Promise<{
   gp: GlobalParams;
-  user?: { chainId: string; user: string };
+  user?: { wallet: string, chain: string; address: string };
 }> {
   const gp = new GlobalParams();
 
@@ -26,7 +26,7 @@ export async function elmUser(): Promise<{
 
     if (gp.network !== "0x4") {
       gp.metamaskProvider.send("wallet_switchEthereumChain", [
-        { chainId: "0x4" },
+        { chain: "0x4" },
       ]);
       return { gp };
     }
@@ -37,8 +37,9 @@ export async function elmUser(): Promise<{
     );
 
     if (accounts[0]) {
-      const chainId = ethereum.chainId;
-      return { gp, user: { chainId, user: accounts[0] } };
+      const wallet = "metamask";
+      const chain = ethereum.chainId;
+      return { gp, user: { wallet, chain, address: accounts[0] } };
     }
   }
 

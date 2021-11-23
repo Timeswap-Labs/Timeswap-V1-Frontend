@@ -53,7 +53,7 @@ export async function percentCalculate(
     const cf = calculateCf(
       query.assetIn,
       whitelist,
-      query.asset,
+      query.collateral,
       claims.insurance
     );
 

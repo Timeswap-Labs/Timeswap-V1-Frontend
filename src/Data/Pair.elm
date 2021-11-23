@@ -1,94 +1,54 @@
 module Data.Pair exposing
     ( Pair
-    , daiEthRinkeby
-    , daiMaticRinkeby
-    , decoder
+    , init
+    , opposite
     , sorter
     , toAsset
     , toCollateral
     , toFragment
-    , toKey
-    , wethDaiRinkeby
+    , toString
     )
 
-import Data.Address as Address
-import Data.Chain exposing (Chain(..))
-import Data.ERC20 as ERC20
 import Data.Token as Token exposing (Token)
-import Data.Tokens as Tokens exposing (Tokens)
-import Json.Decode as Decode exposing (Decoder)
-import Json.Decode.Pipeline as Pipeline
 import Sort exposing (Sorter)
 
 
 type Pair
     = Pair
-        { id : Int
-        , asset : Token
+        { asset : Token
         , collateral : Token
         }
 
 
-decoder : Tokens -> Int -> Decoder Pair
-decoder tokens id =
-    Decode.succeed
-        (\asset collateral ->
-            if asset == collateral then
-                Decode.fail "Cannot be the same tokens"
+init : Token -> Token -> Maybe Pair
+init asset collateral =
+    if asset == collateral then
+        Nothing
 
-            else
-                { id = id
-                , asset = asset
-                , collateral = collateral
-                }
-                    |> Pair
-                    |> Decode.succeed
-        )
-        |> Pipeline.required "asset"
-            (Decode.oneOf
-                [ Token.decoderETH
-                , Address.decoder
-                    |> Decode.andThen
-                        (\address ->
-                            tokens
-                                |> Tokens.getToken address
-                                |> Maybe.map Decode.succeed
-                                |> Maybe.withDefault (Decode.fail "Not a whitelisted token")
-                        )
-                ]
-            )
-        |> Pipeline.required "collateral"
-            (Decode.oneOf
-                [ Token.decoderETH
-                , Address.decoder
-                    |> Decode.andThen
-                        (\address ->
-                            tokens
-                                |> Tokens.getToken address
-                                |> Maybe.map Decode.succeed
-                                |> Maybe.withDefault (Decode.fail "Not a whitelisted token")
-                        )
-                ]
-            )
-        |> Decode.andThen identity
+    else
+        { asset = asset
+        , collateral = collateral
+        }
+            |> Pair
+            |> Just
 
 
 toFragment : Pair -> String
 toFragment pair =
     [ pair
         |> toAsset
-        |> Token.toAssetFragment
+        |> Token.toFragmentAsset
     , pair
         |> toCollateral
-        |> Token.toCollateralFragment
+        |> Token.toFragmentCollateral
     ]
         |> String.join "&"
 
 
-toKey : Pair -> String
-toKey (Pair { asset, collateral }) =
-    [ asset |> Token.toKey
-    , collateral |> Token.toKey
+toString : Pair -> String
+toString (Pair { asset, collateral }) =
+    [ asset |> Token.toString
+    , collateral |> Token.toString
     ]
         |> String.join " "
 
@@ -103,38 +63,19 @@ toCollateral (Pair { collateral }) =
     collateral
 
 
-compare : Pair -> Pair -> Order
-compare (Pair pair1) (Pair pair2) =
-    Basics.compare pair1.id pair2.id
+opposite : Pair -> Pair
+opposite (Pair { asset, collateral }) =
+    { asset = collateral
+    , collateral = asset
+    }
+        |> Pair
 
 
 sorter : Sorter Pair
 sorter =
-    Sort.custom compare
-
-
-daiEthRinkeby : Pair
-daiEthRinkeby =
-    Pair
-        { id = 0
-        , asset = Token.ERC20 ERC20.daiRinkeby
-        , collateral = Token.ETH
-        }
-
-
-daiMaticRinkeby : Pair
-daiMaticRinkeby =
-    Pair
-        { id = 1
-        , asset = Token.ERC20 ERC20.daiRinkeby
-        , collateral = Token.ERC20 ERC20.maticRinkeby
-        }
-
-
-wethDaiRinkeby : Pair
-wethDaiRinkeby =
-    Pair
-        { id = 2
-        , asset = Token.ERC20 ERC20.wethRinkeby
-        , collateral = Token.ERC20 ERC20.daiRinkeby
-        }
+    Token.sorter
+        |> Sort.by toAsset
+        |> Sort.tiebreaker
+            (Token.sorter
+                |> Sort.by toCollateral
+            )

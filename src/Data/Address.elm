@@ -1,7 +1,18 @@
-module Data.Address exposing (Address, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, encode, fromString, maticRinkeby, sorter, toString, toStringShort, wethDaiRinkeby, wethRinkeby)
+module Data.Address exposing
+    ( Address
+    , compare
+    , decoder
+    , encode
+    , fromString
+    , sorter
+    , toString
+    , toStringShort
+    )
 
+import Hex
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
+import Keccak.Int as Keccak
 import Sort exposing (Sorter)
 
 
@@ -17,13 +28,23 @@ fromString string =
             string
                 |> String.left 2
 
+        remaining : String
+        remaining =
+            string
+                |> String.dropLeft 2
+
         length : Int
         length =
             string
                 |> String.length
     in
-    if (initial == "0x" || initial == "0X") && length == 42 then
+    if
+        (initial == "0x" || initial == "0X")
+            && (remaining |> String.all Char.isHexDigit)
+            && (length == 42)
+    then
         string
+            |> String.toLower
             |> Address
             |> Just
 
@@ -51,6 +72,12 @@ encode (Address string) =
 toString : Address -> String
 toString (Address string) =
     string
+        |> checksumHelper
+        |> (\( addrChars, hashInts ) ->
+                List.map2 compareCharToHash addrChars hashInts
+                    |> String.fromList
+                    |> (++) "0x"
+           )
 
 
 toStringShort : Address -> String
@@ -74,35 +101,40 @@ sorter =
     Sort.custom compare
 
 
-
--- Change the address before testnet
-
-
-daiRinkeby : Address
-daiRinkeby =
-    Address "0xf18f57a842398Aba5420A0405f4D1cf3De8D99Ba"
-
-
-maticRinkeby : Address
-maticRinkeby =
-    Address "0x98ea5A9f9621F160EC378e1F1b1Be78A4809eF32"
-
-
-wethRinkeby : Address
-wethRinkeby =
-    Address "0xa1fcEeFd0bA04519729815Fc0512E47869C8818e"
-
-
-daiWethRinkeby : Address
-daiWethRinkeby =
-    Address "0xf18f57a842398Aba5420A0405f4D1cf3De8D29Ba"
+checksumHelper : String -> ( List Char, List Int )
+checksumHelper address =
+    let
+        addressChars =
+            address
+                |> String.dropLeft 2
+                |> String.toList
+    in
+    addressChars
+        |> List.map (Char.toLower >> Char.toCode)
+        |> Keccak.ethereum_keccak_256
+        |> List.take 20
+        |> List.map (Hex.toString >> toByteLength)
+        |> String.join ""
+        |> String.split ""
+        |> List.map Hex.fromString
+        |> List.foldr (Result.map2 (::)) (Ok [])
+        |> Result.withDefault []
+        |> (\b -> ( addressChars, b ))
 
 
-daiMaticRinkeby : Address
-daiMaticRinkeby =
-    Address "0xf18f57a8423985ba5420A0405f4D1cf3De8D99Ba"
+compareCharToHash : Char -> Int -> Char
+compareCharToHash char hashInt =
+    if hashInt >= 8 then
+        char |> Char.toUpper
+
+    else
+        char
 
 
-wethDaiRinkeby : Address
-wethDaiRinkeby =
-    Address "0xa1fcEeFd0bA04519729814Fc0512E47869C8818e"
+toByteLength : String -> String
+toByteLength string =
+    if (String.length string |> modBy 2) == 1 then
+        string |> String.append "0"
+
+    else
+        string

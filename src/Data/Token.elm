@@ -1,72 +1,51 @@
 module Data.Token exposing
     ( Token(..)
-    , decoder
-    , decoderETH
     , encode
     , sorter
-    , toAssetFragment
-    , toCollateralFragment
     , toDecimals
-    , toKey
+    , toFragmentAsset
+    , toFragmentCollateral
     , toName
+    , toString
     , toSymbol
     )
 
 import Data.ERC20 as ERC20 exposing (ERC20)
-import Json.Decode as Decode exposing (Decoder)
+import Data.Native as Native exposing (Native)
 import Json.Encode as Encode exposing (Value)
 import Sort exposing (Sorter)
 
 
 type Token
-    = ETH
+    = Native Native
     | ERC20 ERC20
-
-
-decoder : Int -> Decoder Token
-decoder id =
-    ERC20.decoder id
-        |> Decode.map ERC20
-
-
-decoderETH : Decoder Token
-decoderETH =
-    Decode.string
-        |> Decode.andThen
-            (\string ->
-                if string == "ETH" then
-                    Decode.succeed ETH
-
-                else
-                    Decode.fail "Not an ETH"
-            )
 
 
 encode : Token -> Value
 encode token =
     case token of
-        ETH ->
-            Encode.string "ETH"
+        Native native ->
+            native |> Native.encode
 
         ERC20 erc20 ->
-            ERC20.encode erc20
+            erc20 |> ERC20.encodeAddress
 
 
-toKey : Token -> String
-toKey token =
+toString : Token -> String
+toString token =
     case token of
-        ETH ->
-            "ETH"
+        Native native ->
+            native |> Native.toSymbol
 
         ERC20 erc20 ->
-            erc20 |> ERC20.toKey
+            erc20 |> ERC20.toString
 
 
 toName : Token -> String
 toName token =
     case token of
-        ETH ->
-            "Ethereum"
+        Native native ->
+            native |> Native.toName
 
         ERC20 erc20 ->
             erc20 |> ERC20.toName
@@ -75,8 +54,8 @@ toName token =
 toSymbol : Token -> String
 toSymbol token =
     case token of
-        ETH ->
-            "ETH"
+        Native native ->
+            native |> Native.toSymbol
 
         ERC20 erc20 ->
             erc20 |> ERC20.toSymbol
@@ -85,47 +64,51 @@ toSymbol token =
 toDecimals : Token -> Int
 toDecimals token =
     case token of
-        ETH ->
-            18
+        Native native ->
+            native |> Native.toDecimals
 
         ERC20 erc20 ->
             erc20 |> ERC20.toDecimals
 
 
-toAssetFragment : Token -> String
-toAssetFragment token =
-    case token of
-        ETH ->
-            "asset=ETH"
+toFragmentAsset : Token -> String
+toFragmentAsset token =
+    (case token of
+        Native native ->
+            native
+                |> Native.toSymbol
 
         ERC20 erc20 ->
             erc20
                 |> ERC20.toString
-                |> (++) "asset="
+    )
+        |> (++) "asset="
 
 
-toCollateralFragment : Token -> String
-toCollateralFragment token =
-    case token of
-        ETH ->
-            "collateral=ETH"
+toFragmentCollateral : Token -> String
+toFragmentCollateral token =
+    (case token of
+        Native native ->
+            native
+                |> Native.toSymbol
 
         ERC20 erc20 ->
             erc20
                 |> ERC20.toString
-                |> (++) "collateral="
+    )
+        |> (++) "collateral="
 
 
 compare : Token -> Token -> Order
 compare token1 token2 =
     case ( token1, token2 ) of
-        ( ETH, ETH ) ->
+        ( Native _, Native _ ) ->
             EQ
 
-        ( ETH, ERC20 _ ) ->
+        ( Native _, ERC20 _ ) ->
             LT
 
-        ( ERC20 _, ETH ) ->
+        ( ERC20 _, Native _ ) ->
             GT
 
         ( ERC20 erc20a, ERC20 erc20b ) ->

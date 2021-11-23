@@ -1,35 +1,20 @@
-module Data.Tab exposing (Tab(..), toName, toUrl)
-
-import Utility.Router as Router
+module Data.Tab exposing (Tab(..), toString)
 
 
 type Tab
-    = Market
-    | Dashboard
+    = Lend
+    | Borrow
     | Liquidity
 
 
-toUrl : Tab -> String
-toUrl tab =
+toString : Tab -> String
+toString tab =
     case tab of
-        Market ->
-            Router.toAllMarket
+        Lend ->
+            "Lend"
 
-        Dashboard ->
-            Router.toLendDashboard Nothing
-
-        Liquidity ->
-            Router.toLiquidityProvider
-
-
-toName : Tab -> String
-toName tab =
-    case tab of
-        Market ->
-            "Market"
-
-        Dashboard ->
-            "Dashboard"
+        Borrow ->
+            "Borrow"
 
         Liquidity ->
             "Liquidity"

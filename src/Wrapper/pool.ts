@@ -12,10 +12,6 @@ import {
 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Contract } from "@ethersproject/contracts";
 import { GlobalParams } from "./global";
-import { ethers, EventFilter } from "ethers";
-import pairEventsAbi from "./abi/pair";
-
-const abiInterface = new ethers.utils.Interface(pairEventsAbi);
 
 export async function pool(
   app: ElmApp<Ports>,
@@ -50,7 +46,7 @@ export async function pool(
         gp.provider
       );
 
-      filters(app, pair, pairContract, asset, collateral, maturity, pool, gp);
+      filters(app, pair, pairContract, asset, collateral, maturity, pool);
     }
   }
 
@@ -105,48 +101,17 @@ function filters(
   asset: string,
   collateral: string,
   maturity: number,
-  pool: Pool,
-  gp: GlobalParams
+  pool: Pool
 ) {
-  const eventFiltersList = [
-    pair.filters.Mint(),
-    pair.filters.Burn(),
-    pair.filters.Lend(),
-    pair.filters.Withdraw(),
-    pair.filters.Borrow(),
-    pair.filters.Pay()
-  ];
+  const mintFilter = pair.filters.Mint();
+  const burnFilter = pair.filters.Burn();
+  const lendFilter = pair.filters.Lend();
+  const withdrawFilter = pair.filters.Withdraw();
+  const borrowFilter = pair.filters.Borrow();
+  const payFilter = pair.filters.Pay();
 
-  const combinedTopics = eventFiltersList.reduce(
-    (accumulator: string[], eventFilter) => accumulator.concat(eventFilter.topics! as string[]),
-    []
-  );
-
-  const combinedFilter: EventFilter = {
-    address: pair.address,
-    topics: [ combinedTopics ],
-  };
-
-  gp.provider.on(combinedFilter, async (event) => {
-    const parsedEvent = abiInterface.parseLog({data: event.data, topics: event.topics});
-
-    if (parsedEvent.name === 'Mint') {
-      onMintEvent(parsedEvent.args[0].toString());
-    } else if (parsedEvent.name === 'Burn') {
-      onBurnEvent(parsedEvent.args[0].toString());
-    } else if (parsedEvent.name === 'Lend') {
-      onLendEvent(parsedEvent.args[0].toString());
-    } else if (parsedEvent.name === 'Withdraw') {
-      onWithdrawEvent(parsedEvent.args[0].toString());
-    } else if (parsedEvent.name === 'Borrow') {
-      onBorrowEvent(parsedEvent.args[0].toString());
-    } else if (parsedEvent.name === 'Pay') {
-      onPayEvent(parsedEvent.args[0].toString());
-    }
-  })
-
-  async function onMintEvent(eventMaturity: string) {
-    if (eventMaturity == maturity.toString()) {
+  pair.on(mintFilter, async (eventMaturity) => {
+    if (eventMaturity.toString() == maturity) {
       const calls = [];
 
       calls.push(pairMulti.constantProduct(maturity));
@@ -170,10 +135,10 @@ function filters(
 
       updateCache(app, asset, collateral, maturity, cache, pool);
     }
-  }
+  });
 
-  async function onBurnEvent(eventMaturity: string) {
-    if (eventMaturity == maturity.toString()) {
+  pair.on(burnFilter, async (eventMaturity) => {
+    if (eventMaturity.toString() == maturity) {
       const calls = [];
 
       calls.push(pairMulti.totalReserves(maturity));
@@ -191,10 +156,10 @@ function filters(
 
       updateCache(app, asset, collateral, maturity, cache, pool);
     }
-  }
+  });
 
-  async function onLendEvent(eventMaturity: string) {
-    if (eventMaturity == maturity.toString()) {
+  pair.on(lendFilter, async (eventMaturity) => {
+    if (eventMaturity.toString() == maturity) {
       const calls = [];
 
       calls.push(pairMulti.constantProduct(maturity));
@@ -221,10 +186,10 @@ function filters(
 
       updateCache(app, asset, collateral, maturity, cache, pool);
     }
-  }
+  });
 
-  async function onWithdrawEvent(eventMaturity: string) {
-    if (eventMaturity == maturity.toString()) {
+  pair.on(withdrawFilter, async (eventMaturity) => {
+    if (eventMaturity.toString() == maturity) {
       const calls = [];
 
       calls.push(pairMulti.totalReserves(maturity));
@@ -245,10 +210,10 @@ function filters(
 
       updateCache(app, asset, collateral, maturity, cache, pool);
     }
-  }
+  });
 
-  async function onBorrowEvent(eventMaturity: string) {
-    if (eventMaturity == maturity.toString()) {
+  pair.on(borrowFilter, async (eventMaturity) => {
+    if (eventMaturity.toString() == maturity) {
       const calls = [];
 
       calls.push(pairMulti.constantProduct(maturity));
@@ -270,10 +235,10 @@ function filters(
 
       updateCache(app, asset, collateral, maturity, cache, pool);
     }
-  }
+  });
 
-  async function onPayEvent(eventMaturity: string) {
-    if (eventMaturity == maturity.toString()) {
+  pair.on(payFilter, async (eventMaturity) => {
+    if (eventMaturity.toString() == maturity) {
       const calls = [];
 
       calls.push(pairMulti.totalReserves(maturity));
@@ -289,7 +254,7 @@ function filters(
 
       updateCache(app, asset, collateral, maturity, cache, pool);
     }
-  }
+  });
 }
 
 async function updateCache(
@@ -310,7 +275,7 @@ async function updateCache(
   await pool.updateCache(cache);
 
   const apr = await pool.calculateApr();
-  const cf = (await pool.calculateCdp()).toString();
+  const cf = (await pool.calculateCf()).toString();
 
   app.ports.sdkPoolsMsg.send([
     {

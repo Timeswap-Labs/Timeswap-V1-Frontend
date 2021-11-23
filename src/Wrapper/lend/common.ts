@@ -27,12 +27,12 @@ export function calculateApr(
 export function calculateCf(
   assetIn: string,
   whitelist: WhiteList,
-  asset: string,
+  collateral: string,
   insuranceOut: Uint128 | string
 ): string {
-  return new Uint256(insuranceOut)
-    .mul(pow(10n, BigInt(whitelist.getToken(asset).decimals)))
-    .div(assetIn)
+  return new Uint256(assetIn)
+    .mul(pow(10n, BigInt(whitelist.getToken(collateral).decimals)))
+    .div(insuranceOut)
     .toString();
 }
 

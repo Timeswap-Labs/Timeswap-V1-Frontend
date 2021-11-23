@@ -10,6 +10,7 @@ module Data.Uint exposing
     , sorter
     , toAmount
     , toString
+    , zero
     )
 
 import Data.Token as Token exposing (Token)
@@ -108,39 +109,6 @@ fromAmount token string =
             )
 
 
-trimZero : String -> String
-trimZero string =
-    string
-        |> String.foldl
-            (\char accumulator ->
-                if accumulator == "" && char == '0' then
-                    ""
-
-                else
-                    String.cons char accumulator
-            )
-            ""
-        |> (\newString ->
-                if newString == "" then
-                    "0"
-
-                else
-                    newString |> String.reverse
-           )
-
-
-isAmount : Token -> String -> Bool
-isAmount token string =
-    fromAmount token string
-        |> Maybe.map (\_ -> True)
-        |> Maybe.withDefault False
-
-
-toString : Uint -> String
-toString (Uint string) =
-    string
-
-
 toAmount : Token -> Uint -> String
 toAmount token (Uint string) =
     token
@@ -172,6 +140,39 @@ toAmount token (Uint string) =
                             else
                                 formattedString
                        )
+           )
+
+
+isAmount : Token -> String -> Bool
+isAmount token string =
+    fromAmount token string
+        |> Maybe.map (\_ -> True)
+        |> Maybe.withDefault False
+
+
+toString : Uint -> String
+toString (Uint string) =
+    string
+
+
+trimZero : String -> String
+trimZero string =
+    string
+        |> String.foldl
+            (\char accumulator ->
+                if accumulator == "" && char == '0' then
+                    ""
+
+                else
+                    String.cons char accumulator
+            )
+            ""
+        |> (\newString ->
+                if newString == "" then
+                    "0"
+
+                else
+                    newString |> String.reverse
            )
 
 
@@ -214,6 +215,11 @@ sorter =
 uint256 : Uint
 uint256 =
     Uint "115792089237316195423570985008687907853269984665640564039457584007913129639936"
+
+
+zero : Uint
+zero =
+    Uint "0"
 
 
 isZero : Uint -> Bool

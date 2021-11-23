@@ -56,7 +56,7 @@ export async function insuranceCalculate(
     const cf = calculateCf(
       query.assetIn,
       whitelist,
-      query.asset,
+      query.collateral,
       query.insuranceOut
     );
 
