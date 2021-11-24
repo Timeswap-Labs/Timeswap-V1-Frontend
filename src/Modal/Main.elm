@@ -2,10 +2,10 @@ module Modal.Main exposing
     ( Effect(..)
     , Modal
     , Msg
-    , closeConnect
     , initConnect
     , initSettings
     , initTokenList
+    , receiveUser
     , subscriptions
     , update
     )
@@ -126,12 +126,12 @@ update msg modal =
             )
 
 
-closeConnect : Modal -> Maybe Modal
-closeConnect modal =
+receiveUser : Modal -> Maybe Modal
+receiveUser modal =
     case modal of
         Connect connect ->
             connect
-                |> Connect.close
+                |> Connect.receiveUser
                 |> Maybe.map Connect
 
         _ ->

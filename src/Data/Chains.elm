@@ -1,12 +1,13 @@
 module Data.Chains exposing
     ( Chains
     , Flags
+    , decoderChain
     , decoderERC20
     , decoderToken
     , encodeCustom
     , fromFragment
     , getGivenAddress
-    , getGivenChain
+    , getGivenChainId
     , head
     , init
     , insert
@@ -128,6 +129,19 @@ decoderERC20 chain chains =
         |> Decode.andThen Tokens.decoderERC20
 
 
+decoderChain : Chains -> Decoder Chain
+decoderChain chains =
+    Decode.int
+        |> Decode.andThen
+            (\int ->
+                chains
+                    |> getGivenChainId int
+                    |> Maybe.map Decode.succeed
+                    |> Maybe.withDefault
+                        (Decode.fail "Not a chain")
+            )
+
+
 fromFragment : TokenParam -> Chain -> Chains -> String -> Maybe Token
 fromFragment chosenParam chain chains fragment =
     chains
@@ -233,8 +247,8 @@ head (Chains { defaultChain }) =
     defaultChain
 
 
-getGivenChain : Int -> Chains -> Maybe Chain
-getGivenChain givenId chains =
+getGivenChainId : Int -> Chains -> Maybe Chain
+getGivenChainId givenId chains =
     chains
         |> toDict
         |> Dict.foldl

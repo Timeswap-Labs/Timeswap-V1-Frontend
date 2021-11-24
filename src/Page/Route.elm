@@ -3,6 +3,7 @@ module Page.Route exposing (Route(..), fromTab, fromUrl, toUrlString)
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Chains exposing (Chains)
 import Data.Parameter as Parameter exposing (Parameter)
+import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
 import Url exposing (Url)
 import Url.Builder as Builder
@@ -57,7 +58,7 @@ toUrlString route =
 
 
 fromUrl :
-    Blockchain
+    Support userNotSupported Blockchain
     -> Chains
     -> Url
     -> Maybe Route
@@ -68,45 +69,55 @@ fromUrl blockchain chains =
 
 
 fromFragment :
-    Blockchain
+    Support userNotSupported Blockchain
     -> Chains
     -> Maybe String
     -> Route
 fromFragment blockchain chains fragment =
-    case blockchain of
-        Blockchain.Supported { chain } ->
-            fragment
-                |> Maybe.map
-                    (\string ->
-                        case string |> String.split "?" of
-                            "lend" :: parameters :: _ ->
-                                parameters
-                                    |> Parameter.fromFragment chain chains
-                                    |> Lend
+    case
+        ( case blockchain of
+            Supported block ->
+                block
+                    |> Blockchain.toChain
+                    |> Just
 
-                            "lend" :: _ ->
-                                Nothing |> Lend
+            _ ->
+                Nothing
+        , fragment |> Maybe.map (String.split "?")
+        )
+    of
+        ( Just chain, Just ("lend" :: parameters :: _) ) ->
+            parameters
+                |> Parameter.fromFragment chain chains
+                |> Lend
 
-                            "borrow" :: parameters :: _ ->
-                                parameters
-                                    |> Parameter.fromFragment chain chains
-                                    |> Borrow
+        ( Just _, Just ("lend" :: _) ) ->
+            Nothing |> Lend
 
-                            "borrow" :: _ ->
-                                Nothing |> Borrow
+        ( Nothing, Just ("lend" :: _) ) ->
+            Nothing |> Lend
 
-                            "liquidity" :: parameters :: _ ->
-                                parameters
-                                    |> Parameter.fromFragment chain chains
-                                    |> Liquidity
+        ( Just chain, Just ("borrow" :: parameters :: _) ) ->
+            parameters
+                |> Parameter.fromFragment chain chains
+                |> Borrow
 
-                            "liquidity" :: _ ->
-                                Nothing |> Liquidity
+        ( Just _, Just ("borrow" :: _) ) ->
+            Nothing |> Borrow
 
-                            _ ->
-                                Nothing |> Lend
-                    )
-                |> Maybe.withDefault (Nothing |> Lend)
+        ( Nothing, Just ("borrow" :: _) ) ->
+            Nothing |> Borrow
 
-        Blockchain.NotSupported _ ->
+        ( Just chain, Just ("liquidity" :: parameters :: _) ) ->
+            parameters
+                |> Parameter.fromFragment chain chains
+                |> Liquidity
+
+        ( Just _, Just ("liquidity" :: _) ) ->
+            Nothing |> Liquidity
+
+        ( Nothing, Just ("liquidity" :: _) ) ->
+            Nothing |> Liquidity
+
+        _ ->
             Nothing |> Lend

@@ -9,6 +9,7 @@ import { elmUser, init } from "./init";
 
 export declare let window: any;
 
+
 async function elmInit() {
   const { gp, user } = await elmUser();
 

@@ -15,7 +15,7 @@ type Section
     | Asset Token
     | Collateral Token
     | Pair Pair
-    | Pool Pool
+    | Pool { pool : Pool }
 
 
 init : Maybe Parameter -> Section
@@ -34,7 +34,8 @@ init parameter =
             Pair pair
 
         Just (Parameter.Pool pool) ->
-            Pool pool
+            Pool
+                { pool = pool }
 
 
 toParameter : Section -> Maybe Parameter
@@ -55,6 +56,6 @@ toParameter section =
             Parameter.Pair pair
                 |> Just
 
-        Pool pool ->
+        Pool { pool } ->
             Parameter.Pool pool
                 |> Just

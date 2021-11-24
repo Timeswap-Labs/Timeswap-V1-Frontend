@@ -1,150 +1,261 @@
 module Blockchain.Main exposing
-    ( Blockchain(..)
+    ( Blockchain
+    , Msg
     , init
+    , initDefault
+    , receiveUser
+    , receiveUserInit
     , toChain
     , toUser
-    , updateUser
+    , update
     )
 
 import Blockchain.User.Main as User exposing (User)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
-import Json.Decode as Decode
+import Data.Wallet as Wallet
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Url exposing (Url)
 
 
 type Blockchain
-    = Supported
+    = Blockchain
         { chain : Chain
         , user : Maybe User
         }
-    | NotSupported User.NotSupported
 
 
-init : Chains -> Maybe User.Flag -> Blockchain
+type Msg
+    = UserMsg User.Msg
+
+
+init :
+    Chains
+    -> User.Flag
+    -> Maybe ( Blockchain, Cmd Msg )
 init chains flag =
-    flag
-        |> Maybe.andThen (User.init chains)
+    chains
+        |> Chains.getGivenChainId flag.chainId
         |> Maybe.map
-            (\result ->
-                case result of
-                    Ok ( chain, user ) ->
-                        { chain = chain
-                        , user = Just user
-                        }
-                            |> Supported
-
-                    Err user ->
-                        user
-                            |> NotSupported
-            )
-        |> Maybe.withDefault
-            ({ chain = chains |> Chains.head
-             , user = Nothing
-             }
-                |> Supported
-            )
-
-
-updateUser :
-    { model | key : Key, url : Url, chains : Chains }
-    -> Value
-    -> Blockchain
-    -> ( Blockchain, Cmd msg )
-updateUser { key, url, chains } value blockchain =
-    case
-        value
-            |> Decode.decodeValue
-                (User.decoder chains)
-    of
-        Ok (Just (Ok ( chain, user ))) ->
-            case blockchain of
-                Supported block ->
-                    if
-                        (chain == block.chain)
-                            && (Just user == block.user)
-                    then
-                        ( blockchain
-                        , Cmd.none
+            (\chain ->
+                User.init flag
+                    |> Maybe.map
+                        (\( user, cmd ) ->
+                            ( { chain = chain
+                              , user = Just user
+                              }
+                                |> Blockchain
+                            , [ cmd |> Cmd.map UserMsg
+                              , Debug.todo "cmd"
+                              ]
+                                |> Cmd.batch
+                            )
                         )
-
-                    else if chain == block.chain then
-                        ( { block | user = Just user }
-                            |> Supported
-                        , Cmd.none
-                        )
-
-                    else
+                    |> Maybe.withDefault
                         ( { chain = chain
-                          , user = Just user
+                          , user = Nothing
                           }
-                            |> Supported
-                        , url
-                            |> Url.toString
-                            |> Navigation.pushUrl key
+                            |> Blockchain
+                        , Debug.todo "cmd"
                         )
-
-                _ ->
-                    ( { chain = chain
-                      , user = Just user
-                      }
-                        |> Supported
-                    , url
-                        |> Url.toString
-                        |> Navigation.pushUrl key
-                    )
-
-        Ok (Just (Err user)) ->
-            ( user |> NotSupported
-            , url
-                |> Url.toString
-                |> Navigation.pushUrl key
             )
 
-        Ok Nothing ->
-            case blockchain of
-                Supported block ->
-                    ( { block | user = Nothing }
-                        |> Supported
+
+initDefault : Chains -> ( Blockchain, Cmd Msg )
+initDefault chains =
+    chains
+        |> Chains.head
+        |> (\chain ->
+                ( { chain = chain
+                  , user = Nothing
+                  }
+                    |> Blockchain
+                , Debug.todo "cmd"
+                )
+           )
+
+
+update : Msg -> Blockchain -> ( Blockchain, Cmd Msg )
+update msg (Blockchain blockchain) =
+    case msg of
+        UserMsg userMsg ->
+            blockchain.user
+                |> Maybe.map (User.update userMsg)
+                |> Maybe.map
+                    (Tuple.mapBoth
+                        (\user ->
+                            { blockchain
+                                | user = Just user
+                            }
+                                |> Blockchain
+                        )
+                        (Cmd.map UserMsg)
+                    )
+                |> Maybe.withDefault
+                    ( blockchain |> Blockchain
                     , Cmd.none
                     )
 
-                NotSupported _ ->
-                    ( { chain = chains |> Chains.head
-                      , user = Nothing
-                      }
-                        |> Supported
-                    , url
-                        |> Url.toString
-                        |> Navigation.pushUrl key
+
+decoder : Chains -> Decoder (Maybe Chain)
+decoder chains =
+    Chains.decoderChain chains
+        |> Decode.field "chainId"
+        |> Decode.nullable
+
+
+receiveUserInit :
+    { model | key : Key, url : Url, chains : Chains }
+    -> Value
+    -> Maybe ( Blockchain, Cmd Msg )
+receiveUserInit { key, url, chains } value =
+    case
+        value
+            |> Decode.decodeValue
+                (decoder chains)
+    of
+        Ok (Just chain) ->
+            User.receiveUserInit value
+                |> Maybe.map
+                    (\( user, cmd ) ->
+                        ( { chain = chain
+                          , user = Just user
+                          }
+                            |> Blockchain
+                        , [ cmd |> Cmd.map UserMsg
+                          , Debug.todo "cmd"
+                          , url
+                                |> Url.toString
+                                |> Navigation.pushUrl key
+                          ]
+                            |> Cmd.batch
+                        )
+                            |> Just
+                    )
+                |> Maybe.withDefault
+                    (( { chain = chain
+                       , user = Nothing
+                       }
+                        |> Blockchain
+                     , [ Debug.todo "cmd"
+                       , url
+                            |> Url.toString
+                            |> Navigation.pushUrl key
+                       ]
+                        |> Cmd.batch
+                     )
+                        |> Just
                     )
 
-        Err _ ->
-            ( blockchain
-            , Cmd.none
+        Ok Nothing ->
+            ( { chain = chains |> Chains.head
+              , user = Nothing
+              }
+                |> Blockchain
+            , [ Debug.todo "cmd"
+              , url
+                    |> Url.toString
+                    |> Navigation.pushUrl key
+              ]
+                |> Cmd.batch
             )
-
-
-toUser : Blockchain -> Maybe (Result User.NotSupported User)
-toUser blockchain =
-    case blockchain of
-        Supported { user } ->
-            user
-                |> Maybe.map Ok
-
-        NotSupported user ->
-            user
-                |> Err
                 |> Just
 
-
-toChain : Blockchain -> Maybe Chain
-toChain blockchain =
-    case blockchain of
-        Supported { chain } ->
-            Just chain
-
-        _ ->
+        Err _ ->
             Nothing
+
+
+receiveUser :
+    { model | key : Key, url : Url, chains : Chains }
+    -> Value
+    -> Blockchain
+    -> Maybe ( Blockchain, Cmd Msg )
+receiveUser { key, url, chains } value (Blockchain blockchain) =
+    case
+        value
+            |> Decode.decodeValue
+                (decoder chains)
+    of
+        Ok (Just chain) ->
+            if chain == blockchain.chain then
+                blockchain.user
+                    |> Maybe.map (User.receiveUser value)
+                    |> Maybe.withDefault
+                        (User.receiveUserInit value)
+                    |> Maybe.map
+                        (\( user, cmd ) ->
+                            ( { blockchain | user = Just user }
+                                |> Blockchain
+                            , cmd |> Cmd.map UserMsg
+                            )
+                        )
+
+            else
+                User.receiveUserInit value
+                    |> Maybe.map
+                        (\( user, cmd ) ->
+                            ( { chain = chain
+                              , user = Just user
+                              }
+                                |> Blockchain
+                            , [ cmd |> Cmd.map UserMsg
+                              , Debug.todo "cmd"
+                              , url
+                                    |> Url.toString
+                                    |> Navigation.pushUrl key
+                              ]
+                                |> Cmd.batch
+                            )
+                                |> Just
+                        )
+                    |> Maybe.withDefault
+                        (( { chain = chain
+                           , user = Nothing
+                           }
+                            |> Blockchain
+                         , [ Debug.todo "cmd"
+                           , url
+                                |> Url.toString
+                                |> Navigation.pushUrl key
+                           ]
+                            |> Cmd.batch
+                         )
+                            |> Just
+                        )
+
+        Ok Nothing ->
+            if (chains |> Chains.head) == blockchain.chain then
+                ( { blockchain | user = Nothing }
+                    |> Blockchain
+                , Cmd.none
+                )
+                    |> Just
+
+            else
+                ( { chain = chains |> Chains.head
+                  , user = Nothing
+                  }
+                    |> Blockchain
+                , [ Debug.todo "cmd"
+                  , url
+                        |> Url.toString
+                        |> Navigation.pushUrl key
+                  ]
+                    |> Cmd.batch
+                )
+                    |> Just
+
+        Err _ ->
+            Nothing
+
+
+toUser : Blockchain -> Maybe User
+toUser (Blockchain { user }) =
+    user
+
+
+toChain : Blockchain -> Chain
+toChain (Blockchain { chain }) =
+    chain

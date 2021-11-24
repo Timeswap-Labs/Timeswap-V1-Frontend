@@ -1,8 +1,8 @@
 port module Modal.Connect.Main exposing
     ( Modal
     , Msg
-    , close
     , init
+    , receiveUser
     , subscriptions
     , update
     )
@@ -109,8 +109,8 @@ update msg modal =
             )
 
 
-close : Modal -> Maybe Modal
-close modal =
+receiveUser : Modal -> Maybe Modal
+receiveUser modal =
     case modal of
         Connected ->
             Just modal

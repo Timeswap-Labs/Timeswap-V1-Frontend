@@ -8,6 +8,7 @@ module Page.Main exposing
 import Blockchain.Main exposing (Blockchain)
 import Data.Chains exposing (Chains)
 import Data.Parameter exposing (Parameter)
+import Data.Support exposing (Support)
 import Data.Tab as Tab exposing (Tab)
 import Page.Route as Route
 import Page.Transaction.Borrow.Main as TransactionBorrow
@@ -23,11 +24,13 @@ type Page
 
 
 init :
-    Blockchain
-    -> Chains
+    { model
+        | chains : Chains
+        , blockchain : Support userNotSupported Blockchain
+    }
     -> Url
     -> Page
-init blockchain chains url =
+init { chains, blockchain } url =
     url
         |> Route.fromUrl blockchain chains
         |> Maybe.map

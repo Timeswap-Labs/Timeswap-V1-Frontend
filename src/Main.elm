@@ -14,6 +14,7 @@ import Data.Images as Images exposing (Images)
 import Data.Oracle as Oracle exposing (Oracle)
 import Data.Parameter as Parameter
 import Data.Slippage as Slippage exposing (Slippage)
+import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
 import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token
@@ -84,7 +85,7 @@ type alias Model =
     , oracle : Oracle
     , wallets : Wallets
     , chains : Chains
-    , blockchain : Blockchain
+    , blockchain : Support User.NotSupported Blockchain
     , page : Page
     , modal : Maybe Modal
     }
@@ -121,19 +122,57 @@ type Msg
     | VisibilityChange Visibility
     | SwitchTheme
     | ReceiveUser Value
+    | BlockchainMsg Blockchain.Msg
     | ModalMsg Modal.Msg
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
 init flags url key =
-    flags.chains
-        |> Chains.init
-        |> (\chains ->
-                ( chains
-                , flags.user |> Blockchain.init chains
+    (case ( flags.chains |> Chains.init, flags.user ) of
+        ( chains, Just user ) ->
+            (case
+                ( user |> Blockchain.init chains
+                , Blockchain.initDefault chains
+                , User.initNotSupported user
                 )
-           )
-        |> (\( chains, blockchain ) ->
+             of
+                ( Just tuple, _, _ ) ->
+                    tuple
+                        |> Tuple.mapBoth
+                            Supported
+                            (Cmd.map BlockchainMsg)
+
+                ( Nothing, _, Just notSupported ) ->
+                    ( notSupported |> NotSupported
+                    , Cmd.none
+                    )
+
+                ( Nothing, tuple, Nothing ) ->
+                    tuple
+                        |> Tuple.mapBoth
+                            Supported
+                            (Cmd.map BlockchainMsg)
+            )
+                |> (\( blockchain, cmd ) ->
+                        ( chains
+                        , blockchain
+                        , cmd
+                        )
+                   )
+
+        ( chains, Nothing ) ->
+            Blockchain.initDefault chains
+                |> Tuple.mapBoth
+                    Supported
+                    (Cmd.map BlockchainMsg)
+                |> (\( blockchain, cmd ) ->
+                        ( chains
+                        , blockchain
+                        , cmd
+                        )
+                   )
+    )
+        |> (\( chains, blockchain, cmd ) ->
                 ( { key = key
                   , url = url
                   , time = flags.time |> Time.millisToPosix
@@ -154,12 +193,18 @@ init flags url key =
                   , wallets = flags.wallets |> Wallets.init
                   , chains = chains
                   , blockchain = blockchain
-                  , page = url |> Page.init blockchain chains
+                  , page =
+                        url
+                            |> Page.init
+                                { chains = chains
+                                , blockchain = blockchain
+                                }
                   , modal = Nothing
                   }
                 , [ Time.now |> Task.perform ReceiveTime
                   , Time.here |> Task.perform ReceiveZone
                   , Time.getZoneName |> Task.perform ReceiveZoneName
+                  , cmd
                   ]
                     |> Cmd.batch
                 )
@@ -184,7 +229,7 @@ update msg model =
         ChangeUrl url ->
             ( { model
                 | url = url
-                , page = url |> Page.init model.blockchain model.chains
+                , page = url |> Page.init model
               }
             , Cmd.none
             )
@@ -231,16 +276,79 @@ update msg model =
             )
 
         ReceiveUser value ->
-            model.blockchain
-                |> Blockchain.updateUser model value
-                |> Tuple.mapFirst
-                    (\blockchain ->
-                        { model
-                            | blockchain = blockchain
-                            , modal =
-                                model.modal
-                                    |> Maybe.andThen Modal.closeConnect
-                        }
+            case model.blockchain of
+                Supported blockchain ->
+                    case
+                        ( blockchain
+                            |> Blockchain.receiveUser model value
+                        , User.receiveNotSupported value
+                        )
+                    of
+                        ( Just ( block, cmd ), _ ) ->
+                            ( { model
+                                | blockchain =
+                                    block |> Supported
+                              }
+                            , cmd |> Cmd.map BlockchainMsg
+                            )
+
+                        ( Nothing, Just userNotSupported ) ->
+                            ( { model
+                                | blockchain =
+                                    userNotSupported |> NotSupported
+                              }
+                            , Cmd.none
+                            )
+
+                        _ ->
+                            ( model
+                            , Cmd.none
+                            )
+
+                NotSupported _ ->
+                    case
+                        ( Blockchain.receiveUserInit model value
+                        , User.receiveNotSupported value
+                        )
+                    of
+                        ( Just ( block, cmd ), _ ) ->
+                            ( { model
+                                | blockchain =
+                                    block |> Supported
+                              }
+                            , cmd |> Cmd.map BlockchainMsg
+                            )
+
+                        ( Nothing, Just userNotSupported ) ->
+                            ( { model
+                                | blockchain =
+                                    userNotSupported |> NotSupported
+                              }
+                            , Cmd.none
+                            )
+
+                        _ ->
+                            ( model
+                            , Cmd.none
+                            )
+
+        BlockchainMsg blockchainMsg ->
+            case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.update blockchainMsg
+                        |> Tuple.mapBoth
+                            (\updated ->
+                                { model
+                                    | blockchain =
+                                        updated |> Supported
+                                }
+                            )
+                            (Cmd.map BlockchainMsg)
+
+                _ ->
+                    ( model
+                    , Cmd.none
                     )
 
         ModalMsg modalMsg ->
@@ -302,67 +410,76 @@ modalEffect effect model =
             )
 
         Modal.AddERC20 tokenParam erc20 ->
-            model.blockchain
-                |> Blockchain.toChain
-                |> Maybe.map
-                    (\chain ->
-                        model.chains
-                            |> Chains.insert chain erc20
-                            |> (\chains ->
-                                    ( { model | chains = chains }
-                                    , [ Route.fromTab
-                                            (model.page |> Page.toTab)
-                                            (model.page
-                                                |> Page.toParameter
-                                                |> Parameter.inputToken tokenParam
-                                                    (erc20 |> Token.ERC20)
-                                                |> Just
+            case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.toChain
+                        |> (\chain ->
+                                model.chains
+                                    |> Chains.insert chain erc20
+                                    |> (\chains ->
+                                            ( { model | chains = chains }
+                                            , [ Route.fromTab
+                                                    (model.page |> Page.toTab)
+                                                    (model.page
+                                                        |> Page.toParameter
+                                                        |> Parameter.inputToken tokenParam
+                                                            (erc20 |> Token.ERC20)
+                                                        |> Just
+                                                    )
+                                                    |> Route.toUrlString
+                                                    |> Navigation.pushUrl model.key
+                                              , chains
+                                                    |> Chains.encodeCustom
+                                                    |> cacheCustom
+                                              ]
+                                                |> Cmd.batch
                                             )
-                                            |> Route.toUrlString
-                                            |> Navigation.pushUrl model.key
-                                      , chains
-                                            |> Chains.encodeCustom
-                                            |> cacheCustom
-                                      ]
-                                        |> Cmd.batch
-                                    )
-                               )
-                    )
-                |> Maybe.withDefault ( model, Cmd.none )
+                                       )
+                           )
+
+                _ ->
+                    ( model, Cmd.none )
 
         Modal.RemoveERC20 erc20 ->
-            model.blockchain
-                |> Blockchain.toChain
-                |> Maybe.map
-                    (\chain ->
-                        model.chains
-                            |> Chains.remove chain erc20
-                            |> (\chains ->
-                                    ( { model | chains = chains }
-                                    , chains
-                                        |> Chains.encodeCustom
-                                        |> cacheCustom
-                                    )
-                               )
-                    )
-                |> Maybe.withDefault ( model, Cmd.none )
+            case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.toChain
+                        |> (\chain ->
+                                model.chains
+                                    |> Chains.remove chain erc20
+                                    |> (\chains ->
+                                            ( { model | chains = chains }
+                                            , chains
+                                                |> Chains.encodeCustom
+                                                |> cacheCustom
+                                            )
+                                       )
+                           )
+
+                _ ->
+                    ( model, Cmd.none )
 
         Modal.RemoveAll ->
-            model.blockchain
-                |> Blockchain.toChain
-                |> Maybe.map
-                    (\chain ->
-                        model.chains
-                            |> Chains.removeAll chain
-                            |> (\chains ->
-                                    ( { model | chains = chains }
-                                    , chains
-                                        |> Chains.encodeCustom
-                                        |> cacheCustom
-                                    )
-                               )
-                    )
-                |> Maybe.withDefault ( model, Cmd.none )
+            case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.toChain
+                        |> (\chain ->
+                                model.chains
+                                    |> Chains.removeAll chain
+                                    |> (\chains ->
+                                            ( { model | chains = chains }
+                                            , chains
+                                                |> Chains.encodeCustom
+                                                |> cacheCustom
+                                            )
+                                       )
+                           )
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 port cacheChosenZone : Value -> Cmd msg
