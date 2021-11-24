@@ -317,7 +317,7 @@ async function updateCache(
       asset,
       collateral,
       maturity,
-      assetLiquidity: cache.reserves.asset.toString(),
+      assetLiquidity: cache.state!.x.toString(),
       collateralLiquidity: cache.reserves.collateral.toString(),
       apr,
       cf,
