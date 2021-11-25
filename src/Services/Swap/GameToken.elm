@@ -1,4 +1,4 @@
-module Services.Swap.GameToken exposing (GameToken(..), decoder, encode, toApiTokenId, toERC20, toToken)
+module Services.Swap.GameToken exposing (GameToken(..), encode, toApiTokenId, toERC20, toToken)
 
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Token as Token exposing (Token)
@@ -25,26 +25,6 @@ encode gameToken =
             "shiba"
     )
         |> Encode.string
-
-
-decoder : Decoder GameToken
-decoder =
-    Decode.string
-        |> Decode.andThen
-            (\tokenStr ->
-                case tokenStr of
-                    "uniswap" ->
-                        Uniswap |> Decode.succeed
-
-                    "balancer" ->
-                        Balancer |> Decode.succeed
-
-                    "shiba" ->
-                        Shiba |> Decode.succeed
-
-                    _ ->
-                        Decode.fail "Not a game token"
-            )
 
 
 toApiTokenId : GameToken -> String

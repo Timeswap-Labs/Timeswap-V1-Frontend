@@ -48,10 +48,8 @@ import Element.Input as Input
 import Html.Attributes
 import Http
 import Json.Decode as Decode exposing (Decoder)
-import Json.Encode exposing (Value)
 import Modals.Lend.Error as LendError
 import Services.Swap.GameToken as GameToken exposing (GameToken)
-import Services.Swap.Notification as Notification exposing (Notification)
 import Services.Swap.Query as Query exposing (Return)
 import Services.Swap.Transaction as Transaction
 import Time exposing (Posix)
@@ -89,6 +87,11 @@ type alias PriceCache =
     }
 
 
+type Notification
+    = Successful
+    | Failed
+
+
 type alias Error =
     { httpError : Http.Error
     , timeToQuery : Posix
@@ -118,7 +121,6 @@ type Msg
     | Input String
     | InputMax
     | Swap
-    | NotificationMsg Value
     | ReceivePrice (Result Http.Error Return)
     | ReceiveTxnNotification (Result Http.Error String)
     | ReceiveTime Posix
@@ -251,33 +253,6 @@ update { time, user } msg (Service service) =
             , swapApi service user
             )
 
-        NotificationMsg value ->
-            ( value
-                |> Decode.decodeValue
-                    (Decode.oneOf
-                        [ Notification.decoder
-                            |> Decode.map Success
-
-                        -- , Error.decoder
-                        --     |> Decode.map Failure
-                        ]
-                    )
-                |> (\result ->
-                        case result of
-                            Ok notification ->
-                                { service
-                                    | notification =
-                                        notification
-                                            |> Just
-                                }
-                                    |> Service
-
-                            Err _ ->
-                                Service service
-                   )
-            , Cmd.none
-            )
-
         ReceivePrice (Ok price) ->
             ( { service
                 | cache =
@@ -307,7 +282,7 @@ update { time, user } msg (Service service) =
         ReceiveTxnNotification (Ok txn) ->
             ( { service
                 | input = ""
-                , notification = Just (Success Notification.Successful)
+                , notification = Just (Success Successful)
               }
                 |> Service
             , Cmd.none
@@ -326,7 +301,8 @@ subscriptions : Service -> Sub Msg
 subscriptions service =
     Sub.batch
         [ Time.every 10000 ReceiveTime
-        , onClickOutsideDropdown service
+
+        -- , onClickOutsideDropdown service
         ]
 
 
@@ -926,6 +902,7 @@ swapButton { device } user (Service service) =
                          , Border.rounded 4
                          , Font.size 16
                          , Font.color Color.light100
+                         , Font.bold
                          , mouseDown [ Background.color Color.primary400 ]
                          , mouseOver [ Background.color Color.primary300 ]
                          ]
@@ -942,14 +919,13 @@ swapButton { device } user (Service service) =
                                 [ width shrink
                                 , height fill
                                 , spacing 6
-                                , Font.bold
                                 , centerX
                                 ]
                                 (if Device.isPhone device then
                                     []
 
                                  else
-                                    [ el [ centerY, Font.regular ]
+                                    [ el [ centerY ]
                                         (if Device.isTablet device then
                                             text "Swap"
 
