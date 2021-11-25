@@ -1031,7 +1031,7 @@ notificationInfo (Service { notification }) =
                                 Http.BadStatus statusCode ->
                                     statusCode
                                         |> String.fromInt
-                                        |> String.append ": Error"
+                                        |> String.append "Not Found : API Error "
 
                                 Http.Timeout ->
                                     "Price fetch timeout"
