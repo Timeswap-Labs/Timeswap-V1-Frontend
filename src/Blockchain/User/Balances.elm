@@ -1,4 +1,4 @@
-module Blockchain.User.Balances exposing (Balances)
+module Blockchain.User.Balances exposing (Balances, hasEnough)
 
 import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
@@ -20,3 +20,20 @@ decoder chain chains =
         |> Pipeline.required "balance" Uint.decoder
         |> Decode.list
         |> Decode.map (Dict.fromList Token.sorter)
+
+
+hasEnough : Token -> Uint -> Balances -> Bool
+hasEnough token amount balances =
+    balances
+        |> Dict.get token
+        |> Maybe.map (Uint.compare amount)
+        |> Maybe.map
+            (\order ->
+                case order of
+                    LT ->
+                        True
+
+                    _ ->
+                        False
+            )
+        |> Maybe.withDefault False

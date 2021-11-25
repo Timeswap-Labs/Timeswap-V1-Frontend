@@ -3,23 +3,32 @@ module Blockchain.User.Main exposing
     , Msg
     , NotSupported
     , User
+    , getStringBalance
+    , hasEnoughAllowance
+    , hasEnoughBalance
     , init
     , initNotSupported
     , receiveNotSupported
     , receiveUser
     , receiveUserInit
+    , toAddress
+    , toAddressNotSupported
     , update
     )
 
-import Blockchain.User.Allowances exposing (Allowances)
-import Blockchain.User.Balances exposing (Balances)
+import Blockchain.User.Allowances as Allowances exposing (Allowances)
+import Blockchain.User.Balances as Balances exposing (Balances)
 import Data.Address as Address exposing (Address)
-import Data.Remote exposing (Remote(..))
+import Data.ERC20 exposing (ERC20)
+import Data.Remote as Remote exposing (Remote(..))
+import Data.Token exposing (Token)
+import Data.Uint as Uint exposing (Uint)
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Web exposing (Web)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode exposing (Value)
+import Sort.Dict as Dict
 
 
 type User
@@ -180,3 +189,39 @@ receiveNotSupported value =
 
         Err _ ->
             Nothing
+
+
+toAddress : User -> Address
+toAddress (User { address }) =
+    address
+
+
+toAddressNotSupported : NotSupported -> Address
+toAddressNotSupported (NotSupported { address }) =
+    address
+
+
+getStringBalance : Token -> User -> Maybe String
+getStringBalance token (User { balances }) =
+    balances
+        |> Remote.map
+            (\dict ->
+                dict
+                    |> Dict.get token
+                    |> Maybe.map (Uint.toAmount token)
+            )
+        |> Remote.withDefault Nothing
+
+
+hasEnoughBalance : Token -> Uint -> User -> Bool
+hasEnoughBalance token amount (User { balances }) =
+    balances
+        |> Remote.map (Balances.hasEnough token amount)
+        |> Remote.withDefault False
+
+
+hasEnoughAllowance : ERC20 -> Uint -> User -> Bool
+hasEnoughAllowance erc20 amount (User { allowances }) =
+    allowances
+        |> Remote.map (Allowances.hasEnough erc20 amount)
+        |> Remote.withDefault False

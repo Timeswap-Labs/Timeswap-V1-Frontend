@@ -2,6 +2,7 @@ module Data.Slippage exposing
     ( Flag
     , Option(..)
     , Slippage
+    , decoder
     , encode
     , encodeGivenPercent
     , fromSettings
@@ -11,6 +12,7 @@ module Data.Slippage exposing
     )
 
 import Data.Or exposing (Or(..))
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 
 
@@ -34,7 +36,7 @@ init maybeFloat =
         |> Maybe.andThen
             (\float ->
                 float
-                    |> (*) 1000
+                    |> (*) 10000
                     |> truncate
                     |> (\int ->
                             if int > 0 && int <= 5000 then
@@ -49,11 +51,31 @@ init maybeFloat =
         |> Maybe.withDefault (Slippage 50)
 
 
+decoder : Decoder Slippage
+decoder =
+    Decode.float
+        |> Decode.andThen
+            (\float ->
+                float
+                    |> (*) 10000
+                    |> truncate
+                    |> (\int ->
+                            if int > 0 && int <= 5000 then
+                                int
+                                    |> Slippage
+                                    |> Decode.succeed
+
+                            else
+                                Decode.fail "Not a slippage"
+                       )
+            )
+
+
 encode : Slippage -> Value
 encode (Slippage int) =
     int
         |> toFloat
-        |> (\float -> float / 1000)
+        |> (\float -> float / 10000)
         |> Encode.float
 
 
@@ -61,7 +83,7 @@ encodeGivenPercent : Slippage -> Value
 encodeGivenPercent (Slippage int) =
     int
         |> toFloat
-        |> (\float -> float / 2000)
+        |> (\float -> float / 20000)
         |> Encode.float
 
 

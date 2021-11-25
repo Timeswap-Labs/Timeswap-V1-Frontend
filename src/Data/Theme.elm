@@ -1,4 +1,4 @@
-module Data.Theme exposing (Flag, Theme, encode, init, switch)
+module Data.Theme exposing (Flag, Theme(..), encode, init, switch)
 
 import Json.Encode as Encode exposing (Value)
 

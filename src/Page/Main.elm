@@ -4,42 +4,65 @@ module Page.Main exposing
     , Page
     , change
     , init
+    , subscriptions
     , toParameter
     , toPoolInfo
     , toTab
     , update
+    , view
     )
 
 import Blockchain.Main exposing (Blockchain)
 import Data.Chains exposing (Chains)
+import Data.Deadline exposing (Deadline)
 import Data.Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
-import Data.Pool exposing (Pool)
+import Data.Slippage exposing (Slippage)
 import Data.Support exposing (Support)
 import Data.Tab as Tab exposing (Tab)
 import Data.TokenParam exposing (TokenParam)
+import Element
+    exposing
+        ( Element
+        , alignTop
+        , centerX
+        , column
+        , el
+        , height
+        , map
+        , padding
+        , shrink
+        , spacing
+        , text
+        , width
+        )
+import Element.Background as Background
+import Element.Border as Border
 import Page.Route as Route
 import Page.Transaction.Borrow.Main as TransactionBorrow
-import Page.Transaction.Lend.Main as TransactionLend
+import Page.Transaction.Lend.Main as Lend
 import Page.Transaction.Liquidity.Main as TransactionLiquidity
+import Page.Transaction.Main as Transaction
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Time exposing (Posix)
 import Url exposing (Url)
+import Utility.Color as Color
 
 
 type Page
-    = Lend { transaction : TransactionLend.Section }
+    = Lend { transaction : Transaction.Section Lend.Transaction () }
     | Borrow { transaction : TransactionBorrow.Section }
     | Liquidity { transaction : TransactionLiquidity.Section }
 
 
 type Msg
-    = TransactionLendMsg TransactionLend.Msg
+    = TransactionLendMsg (Transaction.Msg Lend.Msg)
 
 
 type Effect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
+    | OpenPending
 
 
 init :
@@ -86,7 +109,7 @@ construct ({ chains, blockchain } as model) url maybePage =
                 case ( route, maybePage |> Maybe.andThen toPoolInfo ) of
                     ( Route.Lend (Just (Parameter.Pool pool)), Just poolInfo ) ->
                         poolInfo
-                            |> TransactionLend.initGivenPool model pool
+                            |> Transaction.initGivenPool Lend.init model pool
                             |> (\transaction ->
                                     ( { transaction = transaction }
                                         |> Lend
@@ -96,7 +119,7 @@ construct ({ chains, blockchain } as model) url maybePage =
 
                     ( Route.Lend parameter, _ ) ->
                         parameter
-                            |> TransactionLend.init model
+                            |> Transaction.init model
                             |> Tuple.mapBoth
                                 (\transaction ->
                                     { transaction = transaction }
@@ -118,7 +141,7 @@ construct ({ chains, blockchain } as model) url maybePage =
             )
         |> Maybe.withDefault
             (Nothing
-                |> TransactionLend.init model
+                |> Transaction.init model
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
@@ -128,12 +151,26 @@ construct ({ chains, blockchain } as model) url maybePage =
             )
 
 
-update : Msg -> Page -> ( Page, Cmd Msg, Maybe Effect )
-update msg page =
+update :
+    { model
+        | time : Posix
+        , chains : Chains
+        , slippage : Slippage
+        , deadline : Deadline
+    }
+    -> Blockchain
+    -> Msg
+    -> Page
+    -> ( Page, Cmd Msg, Maybe Effect )
+update model blockchain msg page =
     case ( msg, page ) of
         ( TransactionLendMsg transactionLendMsg, Lend lend ) ->
             lend.transaction
-                |> TransactionLend.update transactionLendMsg
+                |> Transaction.update
+                    Lend.update
+                    model
+                    blockchain
+                    transactionLendMsg
                 |> (\( updated, cmd, maybeEffect ) ->
                         ( { lend | transaction = updated }
                             |> Lend
@@ -147,14 +184,31 @@ update msg page =
             ( page, Cmd.none, Nothing )
 
 
-transactionLendEffect : TransactionLend.Effect -> Effect
+transactionLendEffect : Transaction.Effect Lend.Effect -> Effect
 transactionLendEffect effect =
     case effect of
-        TransactionLend.OpenTokenList tokenParam ->
+        Transaction.OpenTokenList tokenParam ->
             OpenTokenList tokenParam
 
-        TransactionLend.OpenMaturityList pair ->
+        Transaction.OpenMaturityList pair ->
             OpenMaturityList pair
+
+        Transaction.TransactionEffect Lend.OpenPending ->
+            OpenPending
+
+
+subscriptions : Page -> Sub Msg
+subscriptions page =
+    case page of
+        Lend { transaction } ->
+            [ transaction
+                |> Transaction.subscriptions Lend.subscriptions
+                |> Sub.map TransactionLendMsg
+            ]
+                |> Sub.batch
+
+        _ ->
+            Sub.none
 
 
 toTab : Page -> Tab
@@ -175,7 +229,7 @@ toParameter page =
     case page of
         Lend { transaction } ->
             transaction
-                |> TransactionLend.toParameter
+                |> Transaction.toParameter
 
         Borrow { transaction } ->
             transaction
@@ -191,7 +245,24 @@ toPoolInfo page =
     case page of
         Lend { transaction } ->
             transaction
-                |> TransactionLend.toPoolInfo
+                |> Transaction.toPoolInfo
 
         _ ->
             Nothing
+
+
+view : Element Msg
+view =
+    column
+        [ width shrink
+        , height shrink
+        , padding 20
+        , spacing 20
+        , centerX
+        , alignTop
+        , Background.color Color.light100
+        , Border.rounded 8
+        ]
+        [ el [] (text "Lend")
+        , Transaction.view Lend.viewEmpty |> map TransactionLendMsg
+        ]

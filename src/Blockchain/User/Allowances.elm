@@ -1,4 +1,4 @@
-module Blockchain.User.Allowances exposing (Allowances)
+module Blockchain.User.Allowances exposing (Allowances, hasEnough)
 
 import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
@@ -20,3 +20,20 @@ decoder chain chains =
         |> Pipeline.required "allowance" Uint.decoder
         |> Decode.list
         |> Decode.map (Dict.fromList ERC20.sorter)
+
+
+hasEnough : ERC20 -> Uint -> Allowances -> Bool
+hasEnough erc20 amount allowances =
+    allowances
+        |> Dict.get erc20
+        |> Maybe.map (Uint.compare amount)
+        |> Maybe.map
+            (\order ->
+                case order of
+                    LT ->
+                        True
+
+                    _ ->
+                        False
+            )
+        |> Maybe.withDefault False

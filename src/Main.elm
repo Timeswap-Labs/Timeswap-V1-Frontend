@@ -5,6 +5,7 @@ import Blockchain.User.Main as User
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events exposing (Visibility)
 import Browser.Navigation as Navigation exposing (Key)
+import Data.Address as Address
 import Data.Backdrop as Backdrop exposing (Backdrop)
 import Data.Chains as Chains exposing (Chains)
 import Data.ChosenZone as ChosenZone exposing (ChosenZone)
@@ -24,6 +25,8 @@ import Element
         ( Element
         , Option
         , alignLeft
+        , alignRight
+        , centerX
         , centerY
         , column
         , el
@@ -32,17 +35,21 @@ import Element
         , height
         , layoutWith
         , link
+        , map
         , minimum
         , padding
+        , paddingXY
         , px
         , row
         , shrink
+        , spacing
         , text
         , width
         )
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Element.Region as Region
 import Html exposing (Html)
 import Json.Encode exposing (Value)
@@ -54,6 +61,7 @@ import Time exposing (Posix, Zone, ZoneName)
 import Url exposing (Url)
 import Utility.Color as Color
 import Utility.Image as Image
+import Utility.ZoneName as ZoneName
 
 
 main : Program Flags Model Msg
@@ -121,6 +129,7 @@ type Msg
     | ResizeWindow Int Int
     | VisibilityChange Visibility
     | SwitchTheme
+    | OpenConnect
     | ReceiveUser Value
     | BlockchainMsg Blockchain.Msg
     | PageMsg Page.Msg
@@ -294,6 +303,11 @@ update msg model =
                 |> cacheTheme
             )
 
+        OpenConnect ->
+            ( { model | modal = Modal.initConnect |> Just }
+            , Cmd.none
+            )
+
         ReceiveUser value ->
             case model.blockchain of
                 Supported blockchain ->
@@ -371,23 +385,31 @@ update msg model =
                     )
 
         PageMsg pageMsg ->
-            model.page
-                |> Page.update pageMsg
-                |> (\( updated, cmd, maybeEffect ) ->
-                        case ( maybeEffect, model.blockchain ) of
-                            ( Just effect, Supported blockchain ) ->
-                                { model | page = updated }
-                                    |> pageEffect blockchain effect
-                                    |> Tuple.mapSecond List.singleton
-                                    |> Tuple.mapSecond
-                                        ((::) (cmd |> Cmd.map PageMsg))
-                                    |> Tuple.mapSecond Cmd.batch
+            case model.blockchain of
+                Supported blockchain ->
+                    model.page
+                        |> Page.update model blockchain pageMsg
+                        |> (\( updated, cmd, maybeEffect ) ->
+                                maybeEffect
+                                    |> Maybe.map
+                                        (\effect ->
+                                            { model | page = updated }
+                                                |> pageEffect blockchain effect
+                                                |> Tuple.mapSecond List.singleton
+                                                |> Tuple.mapSecond
+                                                    ((::) (cmd |> Cmd.map PageMsg))
+                                                |> Tuple.mapSecond Cmd.batch
+                                        )
+                                    |> Maybe.withDefault
+                                        ( { model | page = updated }
+                                        , cmd |> Cmd.map PageMsg
+                                        )
+                           )
 
-                            _ ->
-                                ( { model | page = updated }
-                                , cmd |> Cmd.map PageMsg
-                                )
-                   )
+                _ ->
+                    ( model
+                    , Cmd.none
+                    )
 
         ModalMsg modalMsg ->
             model.modal
@@ -443,6 +465,13 @@ pageEffect blockchain effect model =
                     )
                     (Cmd.map ModalMsg)
 
+        Page.OpenPending ->
+            ( { model
+                | modal = Modal.initPending |> Just
+              }
+            , Cmd.none
+            )
+
 
 modalEffect :
     Modal.Effect
@@ -456,11 +485,7 @@ modalEffect effect model =
                 , deadline = deadline
                 , spot = spot
               }
-            , [ slippage |> Slippage.encode |> cacheSlippage
-              , deadline |> Deadline.encode |> cacheDeadline
-              , spot |> Spot.encode |> cacheSpot
-              ]
-                |> Cmd.batch
+            , Cmd.none
             )
 
         Modal.InputToken tokenParam token ->
@@ -564,15 +589,6 @@ port cacheChosenZone : Value -> Cmd msg
 port cacheTheme : Value -> Cmd msg
 
 
-port cacheSlippage : Value -> Cmd msg
-
-
-port cacheDeadline : Value -> Cmd msg
-
-
-port cacheSpot : Value -> Cmd msg
-
-
 port cacheCustom : Value -> Cmd msg
 
 
@@ -584,6 +600,9 @@ subscriptions model =
     [ Browser.Events.onResize ResizeWindow
     , Browser.Events.onVisibilityChange VisibilityChange
     , receiveUser ReceiveUser
+    , model.page
+        |> Page.subscriptions
+        |> Sub.map PageMsg
     , model.modal
         |> Maybe.map Modal.subscriptions
         |> (Maybe.map << Sub.map) ModalMsg
@@ -606,12 +625,22 @@ html model =
         [ width <| minimum 360 fill
         , height fill
         , Font.family [ Font.typeface "Supreme" ]
+        , (case model.theme of
+            Theme.Light ->
+                Color.light500
+
+            Theme.Dark ->
+                Color.dark500
+          )
+            |> Background.color
         ]
         (column
             [ width fill
             , height shrink
             ]
-            [ header model ]
+            [ header model
+            , body
+            ]
         )
 
 
@@ -627,8 +656,12 @@ options =
 
 header :
     { model
-        | device : Device
+        | zoneName : ZoneName
+        , chosenZone : ChosenZone
+        , device : Device
+        , theme : Theme
         , images : Images
+        , blockchain : Support User.NotSupported Blockchain
         , page : Page
     }
     -> Element Msg
@@ -638,6 +671,7 @@ header ({ device } as model) =
             [ Region.navigation
             , width fill
             , height shrink
+            , spacing 40
             ]
             [ row
                 [ width fill
@@ -655,32 +689,45 @@ header ({ device } as model) =
         row
             [ Region.navigation
             , width fill
-            , height <| px 80
+            , height <| px 76
+            , spacing 76
+            , paddingXY 16 0
             ]
             [ logo model
             , tabs model
+            , row
+                [ width shrink
+                , height shrink
+                , spacing 10
+                , alignRight
+                , centerY
+                ]
+                [ openConnect model
+                , switchChosenZone model
+                , switchTheme model
+                ]
             ]
 
 
 logo : { model | device : Device, images : Images } -> Element msg
 logo { device, images } =
     row
-        []
+        [ spacing 6 ]
         [ case device of
             Phone ->
                 images
                     |> Image.logoPure
-                        []
+                        [ height <| px 36 ]
 
             Tablet ->
                 images
                     |> Image.logo
-                        []
+                        [ height <| px 36 ]
 
             _ ->
                 images
                     |> Image.logo
-                        []
+                        [ height <| px 36 ]
         , el
             [ width shrink
             , height shrink
@@ -690,15 +737,9 @@ logo { device, images } =
             , Background.color Color.primary500
             , Border.rounded 4
             , Font.bold
+            , Font.size 12
             , Font.color Color.light100
             , Font.letterSpacing 1.28
-            , (if device |> Device.isPhoneOrTablet then
-                18
-
-               else
-                12
-              )
-                |> Font.size
             ]
             (text "ALPHA")
         ]
@@ -714,8 +755,10 @@ tabs ({ device } as model) =
             shrink
           )
             |> width
-        , height fill
+        , height shrink
         , alignLeft
+        , Background.color Color.light500
+        , Border.rounded 8
         ]
         [ tab model Tab.Lend
         , tab model Tab.Borrow
@@ -726,20 +769,149 @@ tabs ({ device } as model) =
 tab : { model | device : Device, page : Page } -> Tab -> Element msg
 tab { device, page } givenTab =
     if (page |> Page.toTab) == givenTab then
-        column
-            []
-            []
+        el
+            [ width <| px 84
+            , height <| px 36
+            ]
+            (el
+                [ centerX
+                , centerY
+                , Font.color Color.light100
+                , Font.size 14
+                ]
+                (givenTab
+                    |> Tab.toString
+                    |> text
+                )
+            )
 
     else
         link
-            []
+            [ width <| px 84
+            , height <| px 36
+            ]
             { url =
                 page
                     |> Page.toParameter
                     |> Route.fromTab givenTab
                     |> Route.toUrlString
             , label =
-                column
-                    []
-                    []
+                el
+                    [ centerX
+                    , centerY
+                    , Font.color Color.light100
+                    , Font.size 14
+                    ]
+                    (givenTab
+                        |> Tab.toString
+                        |> text
+                    )
             }
+
+
+openConnect : { model | blockchain : Support User.NotSupported Blockchain } -> Element Msg
+openConnect model =
+    Input.button
+        [ width shrink
+        , height <| px 36
+        , paddingXY 12 0
+        , Background.color Color.light100
+        , Border.rounded 8
+        ]
+        { onPress = Just OpenConnect
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.size 14
+                ]
+                ((case model.blockchain of
+                    Supported blockchain ->
+                        blockchain
+                            |> Blockchain.toUser
+                            |> Maybe.map User.toAddress
+                            |> Maybe.map Address.toStringShort
+                            |> Maybe.withDefault "Connect Wallet"
+
+                    NotSupported user ->
+                        user
+                            |> User.toAddressNotSupported
+                            |> Address.toStringShort
+                 )
+                    |> text
+                )
+        }
+
+
+switchChosenZone :
+    { model
+        | zoneName : ZoneName
+        , chosenZone : ChosenZone
+    }
+    -> Element Msg
+switchChosenZone { zoneName, chosenZone } =
+    Input.button
+        [ width shrink
+        , height <| px 36
+        , paddingXY 12 0
+        , Background.color Color.light100
+        , Border.rounded 8
+        ]
+        { onPress = Just SwitchZone
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.size 14
+                ]
+                ((case chosenZone of
+                    ChosenZone.UTC ->
+                        "UTC"
+
+                    ChosenZone.Here ->
+                        zoneName
+                            |> ZoneName.toString
+
+                    ChosenZone.Unix ->
+                        "Unix"
+                 )
+                    |> text
+                )
+        }
+
+
+switchTheme : { model | theme : Theme } -> Element Msg
+switchTheme { theme } =
+    Input.button
+        [ width <| px 36
+        , height <| px 36
+        , Background.color Color.light100
+        , Border.rounded 8
+        ]
+        { onPress = Just SwitchTheme
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.size 14
+                ]
+                ((case theme of
+                    Theme.Light ->
+                        "L"
+
+                    Theme.Dark ->
+                        "D"
+                 )
+                    |> text
+                )
+        }
+
+
+body : Element Msg
+body =
+    el
+        [ width fill
+        , height shrink
+        , padding 56
+        ]
+        (Page.view |> map PageMsg)

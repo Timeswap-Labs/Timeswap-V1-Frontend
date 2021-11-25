@@ -127,7 +127,7 @@ update msg (Modal modal) =
                 ( Nothing
                 , [ slippage |> Slippage.encode |> cacheSlippage
                   , deadline |> Deadline.encode |> cacheDeadline
-                  , modal.spot |> Spot.encode |> cacheOracle
+                  , modal.spot |> Spot.encode |> cacheSpot
                   ]
                     |> Cmd.batch
                 , UpdateSettings slippage deadline modal.spot
@@ -144,4 +144,4 @@ port cacheSlippage : Value -> Cmd msg
 port cacheDeadline : Value -> Cmd msg
 
 
-port cacheOracle : Value -> Cmd msg
+port cacheSpot : Value -> Cmd msg

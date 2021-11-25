@@ -3,6 +3,7 @@ module Data.Token exposing
     , encode
     , sorter
     , toDecimals
+    , toERC20
     , toFragmentAsset
     , toFragmentCollateral
     , toName
@@ -12,7 +13,7 @@ module Data.Token exposing
 
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Native as Native exposing (Native)
-import Json.Encode as Encode exposing (Value)
+import Json.Encode exposing (Value)
 import Sort exposing (Sorter)
 
 
@@ -97,6 +98,16 @@ toFragmentCollateral token =
                 |> ERC20.toString
     )
         |> (++) "collateral="
+
+
+toERC20 : Token -> Maybe ERC20
+toERC20 token =
+    case token of
+        ERC20 erc20 ->
+            Just erc20
+
+        Native _ ->
+            Nothing
 
 
 compare : Token -> Token -> Order

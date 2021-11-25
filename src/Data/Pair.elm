@@ -1,5 +1,6 @@
 module Data.Pair exposing
     ( Pair
+    , decoder
     , init
     , opposite
     , sorter
@@ -9,7 +10,11 @@ module Data.Pair exposing
     , toString
     )
 
+import Data.Chain exposing (Chain)
+import Data.Chains as Chains exposing (Chains)
 import Data.Token as Token exposing (Token)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline as Pipeline
 import Sort exposing (Sorter)
 
 
@@ -31,6 +36,27 @@ init asset collateral =
         }
             |> Pair
             |> Just
+
+
+decoder : Chain -> Chains -> Decoder Pair
+decoder chain chains =
+    Decode.succeed
+        (\asset collateral ->
+            if asset == collateral then
+                Decode.fail "Not a pair"
+
+            else
+                { asset = asset
+                , collateral = collateral
+                }
+                    |> Pair
+                    |> Decode.succeed
+        )
+        |> Pipeline.required "asset"
+            (Chains.decoderToken chain chains)
+        |> Pipeline.required "collateral"
+            (Chains.decoderToken chain chains)
+        |> Decode.andThen identity
 
 
 toFragment : Pair -> String

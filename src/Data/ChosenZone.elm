@@ -1,4 +1,4 @@
-module Data.ChosenZone exposing (ChosenZone, Flag, encode, init, switch)
+module Data.ChosenZone exposing (ChosenZone(..), Flag, encode, init, switch)
 
 import Json.Encode as Encode exposing (Value)
 

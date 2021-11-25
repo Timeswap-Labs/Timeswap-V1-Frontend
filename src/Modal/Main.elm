@@ -4,6 +4,7 @@ module Modal.Main exposing
     , Msg
     , initConnect
     , initMaturityList
+    , initPending
     , initSettings
     , initTokenList
     , receiveUser
@@ -25,6 +26,7 @@ import Data.Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
 import Modal.Connect.Main as Connect
 import Modal.MaturityList.Main as MaturityList
+import Modal.Pending.Main as Pending
 import Modal.Settings.Main as Settings
 import Modal.TokenList.Main as TokenList
 
@@ -34,6 +36,7 @@ type Modal
     | Settings Settings.Modal
     | TokenList TokenList.Modal
     | MaturityList MaturityList.Modal
+    | Pending
 
 
 type Msg
@@ -41,6 +44,7 @@ type Msg
     | SettingsMsg Settings.Msg
     | TokenListMsg TokenList.Msg
     | MaturityListMsg MaturityList.Msg
+    | PendingMsg Pending.Msg
 
 
 type Effect
@@ -74,6 +78,11 @@ initTokenList : TokenParam -> Modal
 initTokenList tokenParam =
     TokenList.init tokenParam
         |> TokenList
+
+
+initPending : Modal
+initPending =
+    Pending
 
 
 initMaturityList : Blockchain -> Pair -> ( Modal, Cmd Msg )
@@ -131,6 +140,15 @@ update model msg modal =
                         ( updated |> Maybe.map MaturityList
                         , cmd |> Cmd.map MaturityListMsg
                         , maybeEffect |> Maybe.map maturityListEffect
+                        )
+                   )
+
+        ( PendingMsg pendingMsg, Pending, Supported _ ) ->
+            Pending.update pendingMsg
+                |> (\updated ->
+                        ( updated |> Maybe.map (\_ -> Pending)
+                        , Cmd.none
+                        , Nothing
                         )
                    )
 

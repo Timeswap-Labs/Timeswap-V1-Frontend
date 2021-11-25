@@ -4,6 +4,9 @@ import Page.Transaction.PoolInfo exposing (PoolInfo)
 
 
 type State transaction mint
-    = Active PoolInfo transaction
+    = Active
+        { poolInfo : PoolInfo
+        , transaction : transaction
+        }
     | DoesNotExist mint
     | Matured

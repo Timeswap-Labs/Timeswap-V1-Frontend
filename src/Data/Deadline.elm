@@ -3,11 +3,12 @@ module Data.Deadline exposing
     , Flag
     , Option(..)
     , encode
+    , encodeUnix
     , fromSettings
     , init
     , isCorrect
-    , toInt
     , toSettings
+    , toUnix
     )
 
 import Data.Or exposing (Or(..))
@@ -51,8 +52,15 @@ encode (Deadline minutes) =
         |> Encode.int
 
 
-toInt : Posix -> Deadline -> Int
-toInt time (Deadline int) =
+encodeUnix : Posix -> Deadline -> Value
+encodeUnix time deadline =
+    deadline
+        |> toUnix time
+        |> Encode.int
+
+
+toUnix : Posix -> Deadline -> Int
+toUnix time (Deadline int) =
     time
         |> Time.posixToMillis
         |> (\millis -> millis // 1000)
