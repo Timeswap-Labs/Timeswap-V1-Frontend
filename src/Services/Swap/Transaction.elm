@@ -5,16 +5,18 @@ import Services.Swap.GameToken as GameToken exposing (GameToken)
 
 
 type alias Transaction =
-    { inToken : GameToken
-    , outToken : GameToken
-    , amount : String
+    { incomingTokenId : GameToken
+    , outgoingTokenId : GameToken
+    , incomingTokenQty : Float
+    , userAddress : String
     }
 
 
 encode : Transaction -> Value
-encode { inToken, outToken, amount } =
-    [ ( "inToken", inToken |> GameToken.encode )
-    , ( "outToken", outToken |> GameToken.encode )
-    , ( "amount", amount |> Encode.string )
-    ]
-        |> Encode.object
+encode { incomingTokenId, outgoingTokenId, incomingTokenQty, userAddress } =
+    Encode.object
+        [ ( "incomingTokenId", incomingTokenId |> GameToken.encode )
+        , ( "outgoingTokenId", outgoingTokenId |> GameToken.encode )
+        , ( "incomingTokenQty", incomingTokenQty |> Encode.float )
+        , ( "userAddress", userAddress |> Encode.string )
+        ]

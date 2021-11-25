@@ -212,7 +212,7 @@ subscriptions : Service -> Sub Msg
 subscriptions service =
     case service of
         Swap swap ->
-            Swap.subscriptions swap
+            Swap.subscriptions
                 |> Sub.map SwapMsg
 
         _ ->

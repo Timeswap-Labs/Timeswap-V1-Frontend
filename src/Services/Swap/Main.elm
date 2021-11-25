@@ -1,7 +1,7 @@
-port module Services.Swap.Main exposing (Msg, Service, init, subscriptions, update, view)
+module Services.Swap.Main exposing (Msg, Service, init, subscriptions, update, view)
 
 import Browser.Events
-import Data.Address exposing (Address)
+import Data.Address exposing (Address, toString)
 import Data.Backdrop exposing (Backdrop)
 import Data.Balances exposing (Balances, get, hasEnough)
 import Data.Device as Device exposing (Device)
@@ -11,7 +11,7 @@ import Data.Remote exposing (Remote(..))
 import Data.Token exposing (Token(..))
 import Data.TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
-import Data.Uint as Uint exposing (Uint)
+import Data.Uint as Uint
 import Element
     exposing
         ( Element
@@ -73,10 +73,8 @@ type Service
         , dropdown : Maybe Dropdown
         , options : List GameToken
         , input : String
-        , output : Remote Error String -- can be removed
-        , notification : Maybe (Remote Error Notification)
+        , notification : Maybe (Remote Http.Error Notification)
         , cache : Remote Error PriceCache
-        , inputTime : Maybe Posix
         }
 
 
@@ -87,7 +85,6 @@ type Dropdown
 
 type alias PriceCache =
     { value : Return
-    , maxAge : Int --How old can the value be, before considered stale. In ms
     , lastFetched : Posix
     }
 
@@ -105,10 +102,8 @@ init =
       , dropdown = Nothing
       , options = [ GameToken.Shiba, GameToken.Doge, GameToken.Token3 ]
       , input = ""
-      , output = "" |> Success
       , notification = Nothing
       , cache = Loading
-      , inputTime = Nothing
       }
         |> Service
     , fetchPrice { inToken = GameToken.Shiba, outToken = GameToken.Doge }
@@ -124,7 +119,7 @@ type Msg
     | InputMax
     | Swap
     | NotificationMsg Value
-    | ReceiveQuery (Result Http.Error Return)
+    | ReceivePrice (Result Http.Error Return)
     | ReceiveTime Posix
 
 
@@ -147,19 +142,19 @@ update { time, user } msg (Service service) =
             , Cmd.none
             )
 
-        SelectInToken gameToken ->
-            if gameToken == service.inToken then
+        SelectInToken selectedToken ->
+            if selectedToken == service.inToken then
                 ( Service service, Cmd.none )
 
             else
                 { service
                     | outToken =
-                        if gameToken == service.outToken then
+                        if selectedToken == service.outToken then
                             service.inToken
 
                         else
                             service.outToken
-                    , inToken = gameToken
+                    , inToken = selectedToken
                     , cache = Loading
                 }
                     |> (\updatedService ->
@@ -168,32 +163,39 @@ update { time, user } msg (Service service) =
                             )
                        )
 
-        SelectOutToken gameToken ->
-            ( { service
-                | inToken =
-                    if gameToken == service.inToken then
-                        service.outToken
+        SelectOutToken selectedToken ->
+            if selectedToken == service.outToken then
+                ( Service service, Cmd.none )
 
-                    else
-                        service.inToken
-                , outToken = gameToken
-              }
-                |> Service
-            , Cmd.none
-            )
+            else
+                { service
+                    | inToken =
+                        if selectedToken == service.inToken then
+                            service.outToken
 
-        ReceiveTime posix ->
+                        else
+                            service.inToken
+                    , outToken = selectedToken
+                    , cache = Loading
+                }
+                    |> (\updatedService ->
+                            ( updatedService |> Service
+                            , fetchPrice updatedService
+                            )
+                       )
+
+        ReceiveTime currentTime ->
             ( service |> Service
             , case service.cache of
-                Success { lastFetched, maxAge } ->
-                    if (lastFetched |> Time.posixToMillis) + maxAge <= (posix |> Time.posixToMillis) then
+                Success { lastFetched } ->
+                    if (lastFetched |> Time.posixToMillis) + 60000 <= (currentTime |> Time.posixToMillis) then
                         fetchPrice service
 
                     else
                         Cmd.none
 
                 Failure { timeToQuery } ->
-                    if (timeToQuery |> Time.posixToMillis) <= (posix |> Time.posixToMillis) then
+                    if (timeToQuery |> Time.posixToMillis) <= (currentTime |> Time.posixToMillis) then
                         fetchPrice service
 
                     else
@@ -210,12 +212,6 @@ update { time, user } msg (Service service) =
                then
                 { service
                     | input = input
-                    , output =
-                        if input |> Input.isZero then
-                            Success ""
-
-                        else
-                            Loading
                 }
 
                else
@@ -246,17 +242,10 @@ update { time, user } msg (Service service) =
 
         Swap ->
             ( { service
-                | input = ""
-                , output = "" |> Success
-                , notification = Loading |> Just
+                | notification = Loading |> Just
               }
                 |> Service
-            , { inToken = service.inToken
-              , outToken = service.outToken
-              , amount = service.input
-              }
-                |> Transaction.encode
-                |> swap
+            , swapApi service user
             )
 
         NotificationMsg value ->
@@ -265,8 +254,9 @@ update { time, user } msg (Service service) =
                     (Decode.oneOf
                         [ Notification.decoder
                             |> Decode.map Success
-                        , Error.decoder
-                            |> Decode.map Failure
+
+                        -- , Error.decoder
+                        --     |> Decode.map Failure
                         ]
                     )
                 |> (\result ->
@@ -285,35 +275,27 @@ update { time, user } msg (Service service) =
             , Cmd.none
             )
 
-        ReceiveQuery (Ok price) ->
+        ReceivePrice (Ok price) ->
             ( { service
-                | cache = Success { value = price, lastFetched = time, maxAge = 60000 }
+                | cache = Success { value = price, lastFetched = time }
               }
                 |> Service
             , Cmd.none
             )
 
-        ReceiveQuery (Err error) ->
+        ReceivePrice (Err error) ->
             ( { service
                 | cache = Failure { httpError = error, timeToQuery = time |> Millis.add 10000 }
+                , notification = Just (Failure error)
               }
                 |> Service
             , Cmd.none
             )
 
 
-port swap : Value -> Cmd msg
-
-
-port notificationMsg : (Value -> msg) -> Sub msg
-
-
-subscriptions : Service -> Sub Msg
-subscriptions service =
-    Sub.batch
-        [ notificationMsg NotificationMsg
-        , Time.every 1000 ReceiveTime
-        ]
+subscriptions : Sub Msg
+subscriptions =
+    Time.every 10000 ReceiveTime
 
 
 onClickOutsideDropdown : Service -> Sub Msg
@@ -353,26 +335,36 @@ fetchPrice service =
             }
                 |> Query.encode
                 |> Http.jsonBody
-        , expect = Query.decoder |> Http.expectJson ReceiveQuery
+        , expect = Query.decoder |> Http.expectJson ReceivePrice
         }
 
 
-callApi :
-    Uint
-    -> { service | inToken : GameToken, outToken : GameToken }
+swapApi :
+    { service | inToken : GameToken, outToken : GameToken, input : String }
+    -> Remote User.Error User
     -> Cmd Msg
-callApi amount service =
-    Http.post
-        { url = "https://api.timeswap.io/swap"
-        , body =
-            { token1 = service.inToken
-            , token2 = service.outToken
-            , amount = amount
-            }
-                |> Query.encode
-                |> Http.jsonBody
-        , expect = Query.decoder |> Http.expectJson ReceiveQuery
-        }
+swapApi service user =
+    case user of
+        Success userData ->
+            Http.post
+                { url = "https://api.timeswap.io/swap"
+                , body =
+                    { incomingTokenId = service.inToken
+                    , outgoingTokenId = service.outToken
+                    , incomingTokenQty =
+                        service.input
+                            |> String.toFloat
+                            |> Maybe.map (\float -> float)
+                            |> Maybe.withDefault 0
+                    , userAddress = userData.address |> toString
+                    }
+                        |> Transaction.encode
+                        |> Http.jsonBody
+                , expect = Query.decoder |> Http.expectJson ReceivePrice
+                }
+
+        _ ->
+            Cmd.none
 
 
 view :
@@ -410,6 +402,7 @@ view ({ device, backdrop, images } as model) user service =
         [ title
         , content model service
         , swapButton model user service
+        , notificationInfo service
         ]
 
 
@@ -786,21 +779,24 @@ outputContent :
     }
     -> Service
     -> Element Msg
-outputContent model (Service { dropdown, options, outToken, output }) =
+outputContent model (Service { dropdown, options, outToken, input, cache }) =
     column [ width fill ]
         [ row
             [ width fill
             , height shrink
             ]
             [ outTokenDropdownButton model outToken dropdown options
-            , outputAmount output
+            , outputAmount input cache
             ]
         , priceDisclaimer
         ]
 
 
-outputAmount : Remote Error String -> Element Msg
-outputAmount output =
+outputAmount :
+    String
+    -> Remote Error PriceCache
+    -> Element Msg
+outputAmount input cache =
     el
         [ width fill
         , height <| px 44
@@ -831,7 +827,7 @@ outputAmount output =
             , bottomLeft = 0
             }
         ]
-        (case output of
+        (case cache of
             Loading ->
                 el
                     [ width <| px 50
@@ -839,8 +835,17 @@ outputAmount output =
                     ]
                     Loading.viewSmall
 
-            Success outputValue ->
-                text outputValue
+            Success cacheData ->
+                text
+                    ((cacheData.value.relativeTokenPrice
+                        * (input
+                            |> String.toFloat
+                            |> Maybe.map (\inputFloat -> inputFloat)
+                            |> Maybe.withDefault 0
+                          )
+                     )
+                        |> String.fromFloat
+                    )
 
             _ ->
                 text ""
@@ -929,3 +934,55 @@ swapButton { device, images } user (Service service) =
 
         _ ->
             none
+
+
+notificationInfo : Service -> Element Msg
+notificationInfo (Service { notification }) =
+    el
+        [ width fill
+        , height shrink
+        , padding 0
+        , centerY
+        , Font.center
+        , Font.size 14
+        , Font.color
+            (case notification of
+                Just notif ->
+                    case notif of
+                        Failure error ->
+                            Color.negative500
+
+                        _ ->
+                            Color.light100
+
+                _ ->
+                    Color.light100
+            )
+        ]
+        (text
+            (case notification of
+                Just notif ->
+                    case notif of
+                        Failure error ->
+                            case error of
+                                Http.BadStatus statusCode ->
+                                    statusCode
+                                        |> String.fromInt
+                                        |> String.append ": Error"
+
+                                Http.Timeout ->
+                                    "Price fetch timeout"
+
+                                Http.NetworkError ->
+                                    "Price fetch : Network Error"
+
+                                _ ->
+                                    "Error occured"
+
+                        _ ->
+                            ""
+
+                _ ->
+                    ""
+            )
+        )
