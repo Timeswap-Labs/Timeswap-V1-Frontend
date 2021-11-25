@@ -60,7 +60,7 @@ import Utility.Color as Color
 import Utility.Exit as Exit
 import Utility.Glass as Glass
 import Utility.Image as Image
-import Utility.Input as Input
+import Utility.Input as InputUtil
 import Utility.Loading as Loading
 import Utility.Millis as Millis
 import Utility.TokenImage as TokenImage
@@ -97,16 +97,16 @@ type alias Error =
 
 init : ( Service, Cmd Msg )
 init =
-    ( { inToken = GameToken.Shiba
-      , outToken = GameToken.Doge
+    ( { inToken = GameToken.Uniswap
+      , outToken = GameToken.Balancer
       , dropdown = Nothing
-      , options = [ GameToken.Shiba, GameToken.Doge, GameToken.Token3 ]
+      , options = [ GameToken.Uniswap, GameToken.Balancer, GameToken.Shiba ]
       , input = ""
       , notification = Nothing
       , cache = Loading
       }
         |> Service
-    , fetchPrice { inToken = GameToken.Shiba, outToken = GameToken.Doge }
+    , fetchPrice { inToken = GameToken.Uniswap, outToken = GameToken.Balancer }
     )
 
 
@@ -120,6 +120,7 @@ type Msg
     | Swap
     | NotificationMsg Value
     | ReceivePrice (Result Http.Error Return)
+    | ReceiveTxnNotification (Result Http.Error String)
     | ReceiveTime Posix
 
 
@@ -156,6 +157,7 @@ update { time, user } msg (Service service) =
                             service.outToken
                     , inToken = selectedToken
                     , cache = Loading
+                    , notification = Nothing
                 }
                     |> (\updatedService ->
                             ( updatedService |> Service
@@ -177,6 +179,7 @@ update { time, user } msg (Service service) =
                             service.inToken
                     , outToken = selectedToken
                     , cache = Loading
+                    , notification = Nothing
                 }
                     |> (\updatedService ->
                             ( updatedService |> Service
@@ -277,7 +280,16 @@ update { time, user } msg (Service service) =
 
         ReceivePrice (Ok price) ->
             ( { service
-                | cache = Success { value = price, lastFetched = time }
+                | cache =
+                    if
+                        (price.incomingTokenId == (service.inToken |> GameToken.toApiTokenId))
+                            && (price.outgoingTokenId == (service.outToken |> GameToken.toApiTokenId))
+                    then
+                        Success { value = price, lastFetched = time }
+
+                    else
+                        service.cache
+                , notification = Nothing
               }
                 |> Service
             , Cmd.none
@@ -287,6 +299,23 @@ update { time, user } msg (Service service) =
             ( { service
                 | cache = Failure { httpError = error, timeToQuery = time |> Millis.add 10000 }
                 , notification = Just (Failure error)
+              }
+                |> Service
+            , Cmd.none
+            )
+
+        ReceiveTxnNotification (Ok txn) ->
+            ( { service
+                | input = ""
+                , notification = Just (Success Notification.Successful)
+              }
+                |> Service
+            , Cmd.none
+            )
+
+        ReceiveTxnNotification (Err error) ->
+            ( { service
+                | notification = Just (Failure error)
               }
                 |> Service
             , Cmd.none
@@ -505,7 +534,7 @@ inTokenDropdownButton ({ images, tokenImages } as model) gameToken dropdown opti
                 [ gameToken
                     |> GameToken.toToken
                     |> TokenImage.icon tokenImages [ width (px 20), height (px 20) ]
-                , gameToken |> GameToken.toERC20 |> ERC20.toSymbol |> text
+                , el [ Font.size 18 ] (gameToken |> GameToken.toERC20 |> ERC20.toSymbol |> text)
                 , Image.discloser images
                     [ width <| px 12
                     , centerY
@@ -696,7 +725,7 @@ outTokenDropdownButton ({ images, tokenImages } as model) gameToken dropdown opt
                 [ gameToken
                     |> GameToken.toToken
                     |> TokenImage.icon tokenImages [ width (px 20), height (px 20) ]
-                , gameToken |> GameToken.toERC20 |> ERC20.toSymbol |> text
+                , el [ Font.size 18 ] (gameToken |> GameToken.toERC20 |> ERC20.toSymbol |> text)
                 , Image.discloser images
                     [ width <| px 12
                     , centerY
@@ -870,70 +899,101 @@ priceDisclaimer =
 
 
 swapButton :
-    { model | device : Device, images : Images }
+    { model | device : Device }
     -> { user | balances : Remote () Balances }
     -> Service
     -> Element Msg
-swapButton { device, images } user (Service service) =
-    case user.balances of
-        Success successbalances ->
-            if successbalances |> hasEnough (service.inToken |> GameToken.toToken) service.input then
-                Input.button
-                    ([ width fill
-                     , paddingEach
-                        { top = 0
-                        , right = 16
-                        , bottom = 0
-                        , left = 10
-                        }
-                     , centerY
-                     , Background.color Color.primary500
-                     , Border.rounded 4
-                     , Font.size 16
-                     , Font.color Color.light100
-                     , mouseDown [ Background.color Color.primary400 ]
-                     , mouseOver [ Background.color Color.primary300 ]
-                     ]
-                        ++ (if Device.isPhoneOrTablet device then
-                                [ height <| px 35 ]
+swapButton { device } user (Service service) =
+    if (service.input == "") || (service.input |> InputUtil.isZero) then
+        disabledSwapBtn
 
-                            else
-                                [ height <| px 44 ]
-                           )
-                    )
-                    { onPress = Just Swap
-                    , label =
-                        row
-                            [ width shrink
-                            , height fill
-                            , spacing 6
-                            , centerX
-                            ]
-                            (Image.wallet images
-                                [ width <| px 24
-                                , centerY
+    else
+        case user.balances of
+            Success successbalances ->
+                if successbalances |> hasEnough (service.inToken |> GameToken.toToken) service.input then
+                    Input.button
+                        ([ width fill
+                         , paddingEach
+                            { top = 0
+                            , right = 16
+                            , bottom = 0
+                            , left = 10
+                            }
+                         , centerY
+                         , Background.color Color.primary500
+                         , Border.rounded 4
+                         , Font.size 16
+                         , Font.color Color.light100
+                         , mouseDown [ Background.color Color.primary400 ]
+                         , mouseOver [ Background.color Color.primary300 ]
+                         ]
+                            ++ (if Device.isPhoneOrTablet device then
+                                    [ height <| px 35 ]
+
+                                else
+                                    [ height <| px 44 ]
+                               )
+                        )
+                        { onPress = Just Swap
+                        , label =
+                            row
+                                [ width shrink
+                                , height fill
+                                , spacing 6
+                                , Font.bold
+                                , centerX
                                 ]
-                                :: (if Device.isPhone device then
-                                        []
+                                (if Device.isPhone device then
+                                    []
 
-                                    else
-                                        [ el [ centerY, Font.regular ]
-                                            (if Device.isTablet device then
-                                                text "Swap"
+                                 else
+                                    [ el [ centerY, Font.regular ]
+                                        (if Device.isTablet device then
+                                            text "Swap"
 
-                                             else
-                                                text "Swap tokens"
-                                            )
-                                        ]
-                                   )
-                            )
-                    }
+                                         else
+                                            text "Swap tokens"
+                                        )
+                                    ]
+                                )
+                        }
 
-            else
-                LendError.insufficientAsset
+                else
+                    LendError.insufficientAsset
 
-        _ ->
-            none
+            _ ->
+                none
+
+
+disabledSwapBtn : Element msg
+disabledSwapBtn =
+    el
+        [ width fill
+        , height <| px 44
+        , paddingEach
+            { top = 0
+            , right = 16
+            , bottom = 0
+            , left = 10
+            }
+        , centerX
+        , centerY
+        , Background.color Color.primary100
+        , Border.rounded 4
+        , Font.size 16
+        , Font.color Color.light100
+        ]
+        (el
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.bold
+            , Font.size 16
+            , Font.color Color.transparent100
+            ]
+            (text "Swap tokens")
+        )
 
 
 notificationInfo : Service -> Element Msg
@@ -951,6 +1011,9 @@ notificationInfo (Service { notification }) =
                     case notif of
                         Failure error ->
                             Color.negative500
+
+                        Success a ->
+                            Color.positive500
 
                         _ ->
                             Color.light100
@@ -978,6 +1041,9 @@ notificationInfo (Service { notification }) =
 
                                 _ ->
                                     "Error occured"
+
+                        Success a ->
+                            "Swap successful"
 
                         _ ->
                             ""

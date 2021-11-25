@@ -1,9 +1,9 @@
 module Data.ERC20 exposing
     ( ERC20
+    , balancer
     , compare
     , daiRinkeby
     , decoder
-    , doge
     , encode
     , fromString
     , maticRinkeby
@@ -15,6 +15,7 @@ module Data.ERC20 exposing
     , toName
     , toString
     , toSymbol
+    , uniswap
     , wethRinkeby
     )
 
@@ -42,9 +43,14 @@ shiba =
     { id = 101, address = Address.shiba, name = "Shiba Inu", symbol = "SHIB", decimals = 18 } |> ERC20
 
 
-doge : ERC20
-doge =
-    { id = 102, address = Address.doge, name = "Dogecoin", symbol = "DOGE", decimals = 18 } |> ERC20
+uniswap : ERC20
+uniswap =
+    { id = 2, address = Address.uniswap, name = "Uniswap", symbol = "TS-UNI", decimals = 18 } |> ERC20
+
+
+balancer : ERC20
+balancer =
+    { id = 3, address = Address.balancer, name = "Balancer", symbol = "TS-BAL", decimals = 18 } |> ERC20
 
 
 fromString : Set ERC20 -> String -> Maybe ERC20

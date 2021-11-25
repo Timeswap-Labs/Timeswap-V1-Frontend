@@ -14,6 +14,18 @@
       "name": "Matic TEST TOKEN",
       "symbol": "MATIC",
       "decimals": 18
+    },
+    {
+      "address": "0x2accc7d41a68d1b23565d2c4691aaeb7b1a14371",
+      "name": "Uniswap",
+      "symbol": "TS-UNI",
+      "decimals": 18
+    },
+    {
+      "address": "0x249845eb7a35a47c34e40eb5f13355a64ec2e039",
+      "name": "Balancer",
+      "symbol": "TS-BAL",
+      "decimals": 18
     }
   ],
   "pairs": [
