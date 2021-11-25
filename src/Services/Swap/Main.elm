@@ -345,7 +345,6 @@ decoderOutsideDropdown =
             (\string ->
                 if string /= "swap-dropdown" then
                     Decode.succeed CloseDropdown
-                        |> Debug.log "check"
 
                 else
                     Decode.fail "Its the dropdown"
@@ -1031,7 +1030,7 @@ notificationInfo (Service { notification }) =
                                 Http.BadStatus statusCode ->
                                     statusCode
                                         |> String.fromInt
-                                        |> String.append "Not Found : API Error "
+                                        |> String.append "API Error "
 
                                 Http.Timeout ->
                                     "Price fetch timeout"
