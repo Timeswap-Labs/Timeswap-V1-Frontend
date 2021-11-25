@@ -1,5 +1,17 @@
-module Page.Transaction.PoolInfo exposing (..)
+module Page.Transaction.PoolInfo exposing (PoolInfo)
+
+import Data.Uint exposing (Uint)
 
 
-type PoolInfo
-    = PoolInfo
+type alias PoolInfo =
+    { x : Uint
+    , y : Uint
+    , z : Uint
+    , assetReserve : Uint
+    , collateralReserve : Uint
+    , totalBond : Uint
+    , totalInsurance : Uint
+    , totalDebtCreated : Uint
+    , totalLiquidity : Uint
+    , spot : Maybe Uint
+    }

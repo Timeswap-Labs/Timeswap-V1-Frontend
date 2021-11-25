@@ -116,7 +116,7 @@ inputToken tokenParam token parameter =
         ( Nothing, TokenParam.Collateral ) ->
             Collateral token
 
-        ( Just (Asset asset), TokenParam.Asset ) ->
+        ( Just (Asset _), TokenParam.Asset ) ->
             Asset token
 
         ( Just (Asset asset), TokenParam.Collateral ) ->
@@ -131,7 +131,7 @@ inputToken tokenParam token parameter =
                 |> Maybe.withDefault
                     (Asset token)
 
-        ( Just (Collateral collateral), TokenParam.Collateral ) ->
+        ( Just (Collateral _), TokenParam.Collateral ) ->
             Collateral token
 
         ( Just (Pair pair), TokenParam.Asset ) ->

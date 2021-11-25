@@ -8,8 +8,8 @@ port module Modal.Settings.Main exposing
 
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Or exposing (Or(..))
-import Data.Oracle as Oracle exposing (Oracle)
 import Data.Slippage as Slippage exposing (Slippage)
+import Data.Spot as Spot exposing (Spot)
 import Json.Encode exposing (Value)
 import Modal.Settings.Tooltip exposing (Tooltip)
 import Utility.Input as Input
@@ -19,7 +19,7 @@ type Modal
     = Modal
         { slippage : Or Slippage.Option String
         , deadline : Or Deadline.Option String
-        , oracle : Oracle
+        , spot : Spot
         , tooltip : Maybe Tooltip
         }
 
@@ -27,7 +27,7 @@ type Modal
 type Msg
     = ChooseSlippageOption Slippage.Option
     | ChooseDeadlineOption Deadline.Option
-    | ChooseOracle Oracle
+    | ChooseSpot Spot
     | InputSlippage String
     | InputDeadline String
     | OnMouseEnter Tooltip
@@ -36,20 +36,20 @@ type Msg
 
 
 type Effect
-    = UpdateSettings Slippage Deadline Oracle
+    = UpdateSettings Slippage Deadline Spot
 
 
 init :
     { model
         | slippage : Slippage
         , deadline : Deadline
-        , oracle : Oracle
+        , spot : Spot
     }
     -> Modal
-init { slippage, deadline, oracle } =
+init { slippage, deadline, spot } =
     { slippage = slippage |> Slippage.toSettings
     , deadline = deadline |> Deadline.toSettings
-    , oracle = oracle
+    , spot = spot
     , tooltip = Nothing
     }
         |> Modal
@@ -74,8 +74,8 @@ update msg (Modal modal) =
             , Nothing
             )
 
-        ChooseOracle oracle ->
-            ( { modal | oracle = oracle }
+        ChooseSpot spot ->
+            ( { modal | spot = spot }
                 |> Modal
                 |> Just
             , Cmd.none
@@ -127,10 +127,10 @@ update msg (Modal modal) =
                 ( Nothing
                 , [ slippage |> Slippage.encode |> cacheSlippage
                   , deadline |> Deadline.encode |> cacheDeadline
-                  , modal.oracle |> Oracle.encode |> cacheOracle
+                  , modal.spot |> Spot.encode |> cacheOracle
                   ]
                     |> Cmd.batch
-                , UpdateSettings slippage deadline modal.oracle
+                , UpdateSettings slippage deadline modal.spot
                     |> Just
                 )
             )

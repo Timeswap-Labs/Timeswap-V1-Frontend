@@ -6,6 +6,9 @@ module Modal.TokenList.Main exposing
     , update
     )
 
+import Blockchain.Main as Blockchain exposing (Blockchain)
+import Data.Address as Address
+import Data.Chains as Chains exposing (Chains)
 import Data.ERC20 exposing (ERC20)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Token exposing (Token)
@@ -30,6 +33,18 @@ type State
     | ImportingERC20 ERC20
 
 
+type Msg
+    = GoToCustomERC20s
+    | GoToAllTokens
+    | GoToImportERC20
+    | InputAddress String
+    | ChooseToken Token
+    | ImportERC20
+    | ClearERC20 ERC20
+    | ClearAll
+    | Exit
+
+
 init : TokenParam -> Modal
 init tokenParam =
     { tokenParam = tokenParam
@@ -42,17 +57,6 @@ init tokenParam =
         |> Modal
 
 
-type Msg
-    = GoToCustomERC20s
-    | GoToAllTokens
-    | GoToImportERC20
-    | ChooseToken Token
-    | ImportERC20
-    | ClearERC20 ERC20
-    | ClearAll
-    | Exit
-
-
 type Effect
     = InputToken TokenParam Token
     | AddERC20 TokenParam ERC20
@@ -61,10 +65,12 @@ type Effect
 
 
 update :
-    Msg
+    { model | chains : Chains }
+    -> Blockchain
+    -> Msg
     -> Modal
     -> ( Maybe Modal, Cmd Msg, Maybe Effect )
-update msg (Modal modal) =
+update { chains } blockchain msg (Modal modal) =
     case ( msg, modal.state ) of
         ( GoToCustomERC20s, AllTokens _ ) ->
             ( { modal | state = CustomERC20s }
@@ -101,6 +107,82 @@ update msg (Modal modal) =
             , Cmd.none
             , Nothing
             )
+
+        ( InputAddress "", AllTokens _ ) ->
+            ( { modal
+                | state =
+                    { input = ""
+                    , erc20 = Error.NoResult |> Err |> Success
+                    }
+                        |> AllTokens
+              }
+                |> Modal
+                |> Just
+            , Cmd.none
+            , Nothing
+            )
+
+        ( InputAddress string, AllTokens { input } ) ->
+            if string == input then
+                ( modal |> Modal |> Just
+                , Cmd.none
+                , Nothing
+                )
+
+            else
+                string
+                    |> Address.fromString
+                    |> Maybe.map
+                        (\address ->
+                            chains
+                                |> Chains.getGivenAddress
+                                    (blockchain |> Blockchain.toChain)
+                                    address
+                                |> Maybe.map
+                                    (\erc20 ->
+                                        ( { modal
+                                            | state =
+                                                { input = string
+                                                , erc20 =
+                                                    erc20
+                                                        |> Ok
+                                                        |> Success
+                                                }
+                                                    |> AllTokens
+                                          }
+                                            |> Modal
+                                            |> Just
+                                        , Cmd.none
+                                        , Nothing
+                                        )
+                                    )
+                                |> Maybe.withDefault
+                                    ( { modal
+                                        | state =
+                                            { input = string
+                                            , erc20 = Loading
+                                            }
+                                                |> AllTokens
+                                      }
+                                        |> Modal
+                                        |> Just
+                                    , Debug.todo "cmd"
+                                    , Nothing
+                                    )
+                        )
+                    |> Maybe.withDefault
+                        ( { modal
+                            | state =
+                                { input = string
+                                , erc20 = Error.NoResult |> Err |> Success
+                                }
+                                    |> AllTokens
+                          }
+                            |> Modal
+                            |> Just
+                        , Cmd.none
+                        , Nothing
+                        )
 
         ( GoToImportERC20, AllTokens { erc20 } ) ->
             ( erc20

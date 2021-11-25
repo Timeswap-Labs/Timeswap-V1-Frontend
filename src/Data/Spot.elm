@@ -1,9 +1,14 @@
-module Data.Oracle exposing (Flag, Oracle(..), encode, init)
+module Data.Spot exposing
+    ( Flag
+    , Spot(..)
+    , encode
+    , init
+    )
 
 import Json.Encode as Encode exposing (Value)
 
 
-type Oracle
+type Spot
     = None
     | Uniswap
 
@@ -12,7 +17,7 @@ type alias Flag =
     Maybe String
 
 
-init : Flag -> Oracle
+init : Flag -> Spot
 init maybeString =
     maybeString
         |> Maybe.andThen
@@ -30,7 +35,9 @@ init maybeString =
         |> Maybe.withDefault Uniswap
 
 
-encode : Oracle -> Value
+encode :
+    Spot
+    -> Value
 encode oracle =
     (case oracle of
         None ->

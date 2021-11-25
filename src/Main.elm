@@ -11,9 +11,9 @@ import Data.ChosenZone as ChosenZone exposing (ChosenZone)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device(..))
 import Data.Images as Images exposing (Images)
-import Data.Oracle as Oracle exposing (Oracle)
 import Data.Parameter as Parameter
 import Data.Slippage as Slippage exposing (Slippage)
+import Data.Spot as Spot exposing (Spot)
 import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
 import Data.Theme as Theme exposing (Theme)
@@ -82,7 +82,7 @@ type alias Model =
     , images : Images
     , slippage : Slippage
     , deadline : Deadline
-    , oracle : Oracle
+    , spot : Spot
     , wallets : Wallets
     , chains : Chains
     , blockchain : Support User.NotSupported Blockchain
@@ -104,7 +104,7 @@ type alias Flags =
     , chainImages : Images.Flags
     , slippage : Slippage.Flag
     , deadline : Deadline.Flag
-    , oracle : Oracle.Flag
+    , spot : Spot.Flag
     , wallets : Wallets.Flags
     , chains : Chains.Flags
     , user : Maybe User.Flag
@@ -123,6 +123,7 @@ type Msg
     | SwitchTheme
     | ReceiveUser Value
     | BlockchainMsg Blockchain.Msg
+    | PageMsg Page.Msg
     | ModalMsg Modal.Msg
 
 
@@ -173,6 +174,25 @@ init flags url key =
                    )
     )
         |> (\( chains, blockchain, cmd ) ->
+                url
+                    |> Page.init
+                        { time = flags.time |> Time.millisToPosix
+                        , chains = chains
+                        , blockchain = blockchain
+                        }
+                    |> (\( page, pageCmd ) ->
+                            { chains = chains
+                            , blockchain = blockchain
+                            , page = page
+                            , cmd =
+                                [ cmd
+                                , pageCmd |> Cmd.map PageMsg
+                                ]
+                                    |> Cmd.batch
+                            }
+                       )
+           )
+        |> (\{ chains, blockchain, page, cmd } ->
                 ( { key = key
                   , url = url
                   , time = flags.time |> Time.millisToPosix
@@ -189,16 +209,11 @@ init flags url key =
                   , images = Images.init flags.images flags.tokenImages flags.chainImages
                   , slippage = flags.slippage |> Slippage.init
                   , deadline = flags.deadline |> Deadline.init
-                  , oracle = flags.oracle |> Oracle.init
+                  , spot = flags.spot |> Spot.init
                   , wallets = flags.wallets |> Wallets.init
                   , chains = chains
                   , blockchain = blockchain
-                  , page =
-                        url
-                            |> Page.init
-                                { chains = chains
-                                , blockchain = blockchain
-                                }
+                  , page = page
                   , modal = Nothing
                   }
                 , [ Time.now |> Task.perform ReceiveTime
@@ -227,12 +242,16 @@ update msg model =
             )
 
         ChangeUrl url ->
-            ( { model
-                | url = url
-                , page = url |> Page.init model
-              }
-            , Cmd.none
-            )
+            model.page
+                |> Page.change model url
+                |> Tuple.mapBoth
+                    (\page ->
+                        { model
+                            | url = url
+                            , page = page
+                        }
+                    )
+                    (Cmd.map PageMsg)
 
         ReceiveTime posix ->
             ( { model | time = posix }
@@ -351,9 +370,28 @@ update msg model =
                     , Cmd.none
                     )
 
+        PageMsg pageMsg ->
+            model.page
+                |> Page.update pageMsg
+                |> (\( updated, cmd, maybeEffect ) ->
+                        case ( maybeEffect, model.blockchain ) of
+                            ( Just effect, Supported blockchain ) ->
+                                { model | page = updated }
+                                    |> pageEffect blockchain effect
+                                    |> Tuple.mapSecond List.singleton
+                                    |> Tuple.mapSecond
+                                        ((::) (cmd |> Cmd.map PageMsg))
+                                    |> Tuple.mapSecond Cmd.batch
+
+                            _ ->
+                                ( { model | page = updated }
+                                , cmd |> Cmd.map PageMsg
+                                )
+                   )
+
         ModalMsg modalMsg ->
             model.modal
-                |> Maybe.map (Modal.update modalMsg)
+                |> Maybe.map (Modal.update model modalMsg)
                 |> Maybe.map
                     (\( updated, cmd, maybeEffect ) ->
                         maybeEffect
@@ -377,21 +415,50 @@ update msg model =
                     )
 
 
+pageEffect :
+    Blockchain
+    -> Page.Effect
+    -> Model
+    -> ( Model, Cmd Msg )
+pageEffect blockchain effect model =
+    case effect of
+        Page.OpenTokenList tokenParam ->
+            ( { model
+                | modal =
+                    tokenParam
+                        |> Modal.initTokenList
+                        |> Just
+              }
+            , Cmd.none
+            )
+
+        Page.OpenMaturityList pair ->
+            Modal.initMaturityList blockchain pair
+                |> Tuple.mapBoth
+                    (\maturityList ->
+                        { model
+                            | modal =
+                                maturityList |> Just
+                        }
+                    )
+                    (Cmd.map ModalMsg)
+
+
 modalEffect :
     Modal.Effect
     -> Model
     -> ( Model, Cmd Msg )
 modalEffect effect model =
     case effect of
-        Modal.UpdateSettings slippage deadline oracle ->
+        Modal.UpdateSettings slippage deadline spot ->
             ( { model
                 | slippage = slippage
                 , deadline = deadline
-                , oracle = oracle
+                , spot = spot
               }
             , [ slippage |> Slippage.encode |> cacheSlippage
               , deadline |> Deadline.encode |> cacheDeadline
-              , oracle |> Oracle.encode |> cacheOracle
+              , spot |> Spot.encode |> cacheSpot
               ]
                 |> Cmd.batch
             )
@@ -481,6 +548,15 @@ modalEffect effect model =
                 _ ->
                     ( model, Cmd.none )
 
+        Modal.InputPool pool ->
+            ( model
+            , Route.fromTab
+                (model.page |> Page.toTab)
+                (Parameter.Pool pool |> Just)
+                |> Route.toUrlString
+                |> Navigation.pushUrl model.key
+            )
+
 
 port cacheChosenZone : Value -> Cmd msg
 
@@ -494,7 +570,7 @@ port cacheSlippage : Value -> Cmd msg
 port cacheDeadline : Value -> Cmd msg
 
 
-port cacheOracle : Value -> Cmd msg
+port cacheSpot : Value -> Cmd msg
 
 
 port cacheCustom : Value -> Cmd msg
