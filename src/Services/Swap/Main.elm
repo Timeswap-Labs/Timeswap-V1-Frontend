@@ -322,9 +322,12 @@ update { time, user } msg (Service service) =
             )
 
 
-subscriptions : Sub Msg
-subscriptions =
-    Time.every 10000 ReceiveTime
+subscriptions : Service -> Sub Msg
+subscriptions service =
+    Sub.batch
+        [ Time.every 10000 ReceiveTime
+        , onClickOutsideDropdown service
+        ]
 
 
 onClickOutsideDropdown : Service -> Sub Msg
