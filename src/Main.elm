@@ -33,10 +33,12 @@ import Element
         , fill
         , focusStyle
         , height
+        , inFront
         , layoutWith
         , link
         , map
         , minimum
+        , none
         , padding
         , paddingXY
         , px
@@ -465,10 +467,13 @@ pageEffect blockchain effect model =
                     )
                     (Cmd.map ModalMsg)
 
+        Page.OpenConnect ->
+            ( { model | modal = Modal.initConnect |> Just }
+            , Cmd.none
+            )
+
         Page.OpenPending ->
-            ( { model
-                | modal = Modal.initPending |> Just
-              }
+            ( { model | modal = Modal.initPending |> Just }
             , Cmd.none
             )
 
@@ -624,6 +629,11 @@ html model =
         { options = options }
         [ width <| minimum 360 fill
         , height fill
+        , model.modal
+            |> Maybe.map Modal.view
+            |> (Maybe.map << map) ModalMsg
+            |> Maybe.withDefault none
+            |> inFront
         , Font.family [ Font.typeface "Supreme" ]
         , (case model.theme of
             Theme.Light ->
@@ -639,7 +649,7 @@ html model =
             , height shrink
             ]
             [ header model
-            , body
+            , body model
             ]
         )
 
@@ -677,12 +687,12 @@ header ({ device } as model) =
                 [ width fill
                 , height <| px 55
                 ]
-                [ logo model ]
+                [ logo model |> map never ]
             , row
                 [ width fill
                 , height <| px 45
                 ]
-                [ tabs model ]
+                [ tabs model |> map never ]
             ]
 
     else
@@ -693,8 +703,8 @@ header ({ device } as model) =
             , spacing 76
             , paddingXY 16 0
             ]
-            [ logo model
-            , tabs model
+            [ logo model |> map never
+            , tabs model |> map never
             , row
                 [ width shrink
                 , height shrink
@@ -702,14 +712,14 @@ header ({ device } as model) =
                 , alignRight
                 , centerY
                 ]
-                [ openConnect model
-                , switchChosenZone model
-                , switchTheme model
+                [ connectButton model
+                , zoneButton model
+                , themeButton model
                 ]
             ]
 
 
-logo : { model | device : Device, images : Images } -> Element msg
+logo : { model | device : Device, images : Images } -> Element Never
 logo { device, images } =
     row
         [ spacing 6 ]
@@ -745,7 +755,7 @@ logo { device, images } =
         ]
 
 
-tabs : { model | device : Device, page : Page } -> Element msg
+tabs : { model | device : Device, page : Page } -> Element Never
 tabs ({ device } as model) =
     row
         [ (if device |> Device.isPhoneOrTablet then
@@ -766,7 +776,7 @@ tabs ({ device } as model) =
         ]
 
 
-tab : { model | device : Device, page : Page } -> Tab -> Element msg
+tab : { model | device : Device, page : Page } -> Tab -> Element Never
 tab { device, page } givenTab =
     if (page |> Page.toTab) == givenTab then
         el
@@ -809,8 +819,10 @@ tab { device, page } givenTab =
             }
 
 
-openConnect : { model | blockchain : Support User.NotSupported Blockchain } -> Element Msg
-openConnect model =
+connectButton :
+    { model | blockchain : Support User.NotSupported Blockchain }
+    -> Element Msg
+connectButton model =
     Input.button
         [ width shrink
         , height <| px 36
@@ -843,13 +855,13 @@ openConnect model =
         }
 
 
-switchChosenZone :
+zoneButton :
     { model
         | zoneName : ZoneName
         , chosenZone : ChosenZone
     }
     -> Element Msg
-switchChosenZone { zoneName, chosenZone } =
+zoneButton { zoneName, chosenZone } =
     Input.button
         [ width shrink
         , height <| px 36
@@ -880,8 +892,8 @@ switchChosenZone { zoneName, chosenZone } =
         }
 
 
-switchTheme : { model | theme : Theme } -> Element Msg
-switchTheme { theme } =
+themeButton : { model | theme : Theme } -> Element Msg
+themeButton { theme } =
     Input.button
         [ width <| px 36
         , height <| px 36
@@ -907,11 +919,22 @@ switchTheme { theme } =
         }
 
 
-body : Element Msg
-body =
+body :
+    { model
+        | blockchain : Support User.NotSupported Blockchain
+        , page : Page
+    }
+    -> Element Msg
+body ({ page } as model) =
     el
         [ width fill
         , height shrink
         , padding 56
         ]
-        (Page.view |> map PageMsg)
+        (case model.blockchain of
+            Supported blockchain ->
+                Page.view blockchain page |> map PageMsg
+
+            NotSupported _ ->
+                none
+        )

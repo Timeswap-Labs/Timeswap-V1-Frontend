@@ -5,6 +5,10 @@ port module Page.Transaction.Lend.Main exposing
     , init
     , subscriptions
     , update
+    , updateDoesNotExist
+    , view
+    , viewDisabled
+    , viewDoesNotExist
     , viewEmpty
     )
 
@@ -17,7 +21,7 @@ import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Token as Token
+import Data.Token as Token exposing (Token)
 import Data.Uint as Uint
 import Element
     exposing
@@ -30,8 +34,11 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Input as Input
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
+import Page.Approve as Approve
+import Page.Transaction.Button as Button
 import Page.Transaction.Lend.Answer as Answer
     exposing
         ( ClaimsGivenBond
@@ -94,14 +101,17 @@ type Msg
     | ClickInsuranceOut
     | InputInsuranceOut String
     | QueryAgain Posix
-    | Lend
+    | ClickConnect
+    | ClickApprove
+    | ClickLend
     | ReceiveAnswer Value
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
 
 type Effect
-    = OpenPending
+    = OpenConnect
+    | OpenPending
 
 
 init : Transaction
@@ -133,28 +143,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
     case msg of
         InputAssetIn assetIn ->
             if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
-                (if assetIn |> Input.isZero then
-                    transaction.claimsOut |> updateGivenAssetInZero
+                { transaction
+                    | assetIn = assetIn
+                    , claimsOut =
+                        if assetIn |> Input.isZero then
+                            transaction.claimsOut |> updateGivenAssetInZero
 
-                 else
-                    transaction.claimsOut |> updateGivenAssetIn
-                )
-                    |> (\claimsOut ->
-                            ( { transaction
-                                | assetIn = assetIn
-                                , claimsOut = claimsOut
-                              }
-                                |> Transaction
-                            , query
-                                model
-                                blockchain
-                                pool
-                                poolInfo
-                                assetIn
-                                claimsOut
-                            , Nothing
-                            )
-                       )
+                        else
+                            transaction.claimsOut |> updateGivenAssetIn
+                }
+                    |> query model blockchain pool poolInfo
 
             else
                 ( transaction |> Transaction
@@ -171,28 +169,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     )
                 |> Maybe.map
                     (\assetIn ->
-                        (if assetIn |> Input.isZero then
-                            transaction.claimsOut |> updateGivenAssetInZero
+                        { transaction
+                            | assetIn = assetIn
+                            , claimsOut =
+                                if assetIn |> Input.isZero then
+                                    transaction.claimsOut |> updateGivenAssetInZero
 
-                         else
-                            transaction.claimsOut |> updateGivenAssetIn
-                        )
-                            |> (\claimsOut ->
-                                    ( { transaction
-                                        | assetIn = assetIn
-                                        , claimsOut = claimsOut
-                                      }
-                                        |> Transaction
-                                    , query
-                                        model
-                                        blockchain
-                                        pool
-                                        poolInfo
-                                        assetIn
-                                        claimsOut
-                                    , Nothing
-                                    )
-                               )
+                                else
+                                    transaction.claimsOut |> updateGivenAssetIn
+                        }
+                            |> query model blockchain pool poolInfo
                     )
                 |> Maybe.withDefault
                     ( transaction |> Transaction
@@ -201,61 +187,48 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     )
 
         SwitchMode True ->
-            (if transaction.assetIn |> Input.isZero then
-                transaction.claimsOut |> switchToAdvanceZero
+            ( { transaction
+                | claimsOut =
+                    if transaction.assetIn |> Input.isZero then
+                        transaction.claimsOut |> switchToAdvanceZero
 
-             else
-                transaction.claimsOut |> switchToAdvance
+                    else
+                        transaction.claimsOut |> switchToAdvance
+              }
+                |> Transaction
+            , Cmd.none
+            , Nothing
             )
-                |> (\claimsOut ->
-                        ( { transaction
-                            | claimsOut = claimsOut
-                          }
-                            |> Transaction
-                        , Cmd.none
-                        , Nothing
-                        )
-                   )
 
         SwitchMode False ->
-            (if transaction.assetIn |> Input.isZero then
-                switchToBasicZero
+            { transaction
+                | claimsOut =
+                    if transaction.assetIn |> Input.isZero then
+                        switchToBasicZero
 
-             else
-                transaction.claimsOut |> switchToBasic
-            )
-                |> (\claimsOut ->
-                        ( { transaction
-                            | claimsOut = claimsOut
-                          }
-                            |> Transaction
-                        , case transaction.claimsOut of
+                    else
+                        transaction.claimsOut |> switchToBasic
+            }
+                |> (\updated ->
+                        case transaction.claimsOut of
                             Slider { percent } ->
                                 if (percent |> Percent.toFloat) == 64 then
-                                    Cmd.none
+                                    ( updated |> Transaction
+                                    , Cmd.none
+                                    , Nothing
+                                    )
 
                                 else
-                                    query
-                                        model
-                                        blockchain
-                                        pool
-                                        poolInfo
-                                        transaction.assetIn
-                                        claimsOut
+                                    query model blockchain pool poolInfo updated
 
                             Default _ ->
-                                Cmd.none
+                                ( updated |> Transaction
+                                , Cmd.none
+                                , Nothing
+                                )
 
                             _ ->
-                                query
-                                    model
-                                    blockchain
-                                    pool
-                                    poolInfo
-                                    transaction.assetIn
-                                    claimsOut
-                        , Nothing
-                        )
+                                query model blockchain pool poolInfo updated
                    )
 
         ClickSlider ->
@@ -271,31 +244,19 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             )
                 |> Maybe.map
                     (\percent ->
-                        if transaction.assetIn |> Input.isZero then
-                            percent
-                                |> Percent.toFloat
-                                |> slideZero
+                        { transaction
+                            | claimsOut =
+                                if transaction.assetIn |> Input.isZero then
+                                    percent
+                                        |> Percent.toFloat
+                                        |> slideZero
 
-                        else
-                            percent
-                                |> Percent.toFloat
-                                |> slide
-                    )
-                |> Maybe.map
-                    (\claimsOut ->
-                        ( { transaction
-                            | claimsOut = claimsOut
-                          }
-                            |> Transaction
-                        , query
-                            model
-                            blockchain
-                            pool
-                            poolInfo
-                            transaction.assetIn
-                            claimsOut
-                        , Nothing
-                        )
+                                else
+                                    percent
+                                        |> Percent.toFloat
+                                        |> slide
+                        }
+                            |> query model blockchain pool poolInfo
                     )
                 |> Maybe.withDefault
                     ( transaction |> Transaction
@@ -312,27 +273,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     )
 
                 _ ->
-                    (if transaction.assetIn |> Input.isZero then
-                        float |> slideZero
+                    { transaction
+                        | claimsOut =
+                            if transaction.assetIn |> Input.isZero then
+                                float |> slideZero
 
-                     else
-                        float |> slide
-                    )
-                        |> (\claimsOut ->
-                                ( { transaction
-                                    | claimsOut = claimsOut
-                                  }
-                                    |> Transaction
-                                , query
-                                    model
-                                    blockchain
-                                    pool
-                                    poolInfo
-                                    transaction.assetIn
-                                    claimsOut
-                                , Nothing
-                                )
-                           )
+                            else
+                                float |> slide
+                    }
+                        |> query model blockchain pool poolInfo
 
         ClickBondOut ->
             (case transaction.claimsOut of
@@ -361,29 +310,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             )
                 |> Maybe.map
                     (\bondOut ->
-                        if transaction.assetIn |> Input.isZero then
-                            transaction.claimsOut
-                                |> updateGivenBondOutZero bondOut
+                        { transaction
+                            | claimsOut =
+                                if transaction.assetIn |> Input.isZero then
+                                    transaction.claimsOut
+                                        |> updateGivenBondOutZero bondOut
 
-                        else
-                            transaction.claimsOut
-                                |> updateGivenBondOut bondOut
-                    )
-                |> Maybe.map
-                    (\claimsOut ->
-                        ( { transaction
-                            | claimsOut = claimsOut
-                          }
-                            |> Transaction
-                        , query
-                            model
-                            blockchain
-                            pool
-                            poolInfo
-                            transaction.assetIn
-                            claimsOut
-                        , Nothing
-                        )
+                                else
+                                    transaction.claimsOut
+                                        |> updateGivenBondOut bondOut
+                        }
+                            |> query model blockchain pool poolInfo
                     )
                 |> Maybe.withDefault
                     ( transaction |> Transaction
@@ -393,29 +330,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
 
         InputBondOut bondOut ->
             if bondOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
-                (if transaction.assetIn |> Input.isZero then
-                    transaction.claimsOut
-                        |> updateGivenBondOutZero bondOut
+                { transaction
+                    | claimsOut =
+                        if transaction.assetIn |> Input.isZero then
+                            transaction.claimsOut
+                                |> updateGivenBondOutZero bondOut
 
-                 else
-                    transaction.claimsOut
-                        |> updateGivenBondOut bondOut
-                )
-                    |> (\claimsOut ->
-                            ( { transaction
-                                | claimsOut = claimsOut
-                              }
-                                |> Transaction
-                            , query
-                                model
-                                blockchain
-                                pool
-                                poolInfo
-                                transaction.assetIn
-                                claimsOut
-                            , Nothing
-                            )
-                       )
+                        else
+                            transaction.claimsOut
+                                |> updateGivenBondOut bondOut
+                }
+                    |> query model blockchain pool poolInfo
 
             else
                 ( transaction |> Transaction
@@ -450,29 +375,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             )
                 |> Maybe.map
                     (\insuranceOut ->
-                        if transaction.assetIn |> Input.isZero then
-                            transaction.claimsOut
-                                |> updateGivenInsuranceOutZero insuranceOut
+                        { transaction
+                            | claimsOut =
+                                if transaction.assetIn |> Input.isZero then
+                                    transaction.claimsOut
+                                        |> updateGivenInsuranceOutZero insuranceOut
 
-                        else
-                            transaction.claimsOut
-                                |> updateGivenInsuranceOut insuranceOut
-                    )
-                |> Maybe.map
-                    (\claimsOut ->
-                        ( { transaction
-                            | claimsOut = claimsOut
-                          }
-                            |> Transaction
-                        , query
-                            model
-                            blockchain
-                            pool
-                            poolInfo
-                            transaction.assetIn
-                            claimsOut
-                        , Nothing
-                        )
+                                else
+                                    transaction.claimsOut
+                                        |> updateGivenInsuranceOut insuranceOut
+                        }
+                            |> query model blockchain pool poolInfo
                     )
                 |> Maybe.withDefault
                     ( transaction |> Transaction
@@ -482,29 +395,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
 
         InputInsuranceOut insuranceOut ->
             if insuranceOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
-                (if transaction.assetIn |> Input.isZero then
-                    transaction.claimsOut
-                        |> updateGivenInsuranceOutZero insuranceOut
+                { transaction
+                    | claimsOut =
+                        if transaction.assetIn |> Input.isZero then
+                            transaction.claimsOut
+                                |> updateGivenInsuranceOutZero insuranceOut
 
-                 else
-                    transaction.claimsOut
-                        |> updateGivenInsuranceOut insuranceOut
-                )
-                    |> (\claimsOut ->
-                            ( { transaction
-                                | claimsOut = claimsOut
-                              }
-                                |> Transaction
-                            , query
-                                model
-                                blockchain
-                                pool
-                                poolInfo
-                                transaction.assetIn
-                                claimsOut
-                            , Nothing
-                            )
-                       )
+                        else
+                            transaction.claimsOut
+                                |> updateGivenInsuranceOut insuranceOut
+                }
+                    |> query model blockchain pool poolInfo
 
             else
                 ( transaction |> Transaction
@@ -513,18 +414,70 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 )
 
         QueryAgain _ ->
-            ( transaction |> Transaction
-            , queryPerSecond
-                model
-                blockchain
-                pool
-                poolInfo
-                transaction.assetIn
-                transaction.claimsOut
-            , Nothing
-            )
+            transaction
+                |> queryPerSecond model blockchain pool poolInfo
 
-        Lend ->
+        ClickConnect ->
+            blockchain
+                |> Blockchain.toUser
+                |> Maybe.map
+                    (\_ ->
+                        ( transaction |> Transaction
+                        , Cmd.none
+                        , Nothing
+                        )
+                    )
+                |> Maybe.withDefault
+                    ( transaction |> Transaction
+                    , Cmd.none
+                    , OpenConnect |> Just
+                    )
+
+        ClickApprove ->
+            case
+                ( blockchain |> Blockchain.toUser
+                , transaction.assetIn
+                    |> Uint.fromAmount
+                        (pool.pair |> Pair.toAsset)
+                , pool.pair
+                    |> Pair.toAsset
+                    |> Token.toERC20
+                )
+            of
+                ( Just user, Just assetIn, Just erc20 ) ->
+                    if
+                        (user
+                            |> User.hasEnoughBalance
+                                (pool.pair |> Pair.toAsset)
+                                assetIn
+                        )
+                            && (user
+                                    |> User.hasEnoughAllowance
+                                        erc20
+                                        assetIn
+                                    |> not
+                               )
+                    then
+                        ( transaction |> Transaction
+                        , erc20
+                            |> Approve.encode blockchain user
+                            |> approve
+                        , OpenPending |> Just
+                        )
+
+                    else
+                        ( transaction |> Transaction
+                        , Cmd.none
+                        , Nothing
+                        )
+
+                _ ->
+                    ( transaction |> Transaction
+                    , Cmd.none
+                    , Nothing
+                    )
+
+        ClickLend ->
             case
                 ( blockchain |> Blockchain.toUser
                 , transaction.assetIn
@@ -1093,9 +1046,12 @@ query :
     -> Blockchain
     -> Pool
     -> PoolInfo
-    -> String
-    -> ClaimsOut
-    -> Cmd Msg
+    ->
+        { assetIn : String
+        , claimsOut : ClaimsOut
+        , tooltip : Maybe Tooltip
+        }
+    -> ( Transaction, Cmd Msg, Maybe Effect )
 query =
     constructQuery queryLend
 
@@ -1105,9 +1061,12 @@ queryPerSecond :
     -> Blockchain
     -> Pool
     -> PoolInfo
-    -> String
-    -> ClaimsOut
-    -> Cmd Msg
+    ->
+        { assetIn : String
+        , claimsOut : ClaimsOut
+        , tooltip : Maybe Tooltip
+        }
+    -> ( Transaction, Cmd Msg, Maybe Effect )
 queryPerSecond =
     constructQuery queryLendPerSecond
 
@@ -1118,13 +1077,16 @@ constructQuery :
     -> Blockchain
     -> Pool
     -> PoolInfo
-    -> String
-    -> ClaimsOut
-    -> Cmd Msg
-constructQuery cmd { slippage } blockchain pool poolInfo string claimsOut =
+    ->
+        { assetIn : String
+        , claimsOut : ClaimsOut
+        , tooltip : Maybe Tooltip
+        }
+    -> ( Transaction, Cmd Msg, Maybe Effect )
+constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
     (case
-        ( string |> Input.isZero
-        , string
+        ( transaction.assetIn |> Input.isZero
+        , transaction.assetIn
             |> Uint.fromAmount
                 (pool.pair |> Pair.toAsset)
         )
@@ -1133,7 +1095,7 @@ constructQuery cmd { slippage } blockchain pool poolInfo string claimsOut =
             Nothing
 
         ( False, Just assetIn ) ->
-            case claimsOut of
+            case transaction.claimsOut of
                 Default _ ->
                     { chainId = blockchain |> Blockchain.toChain
                     , pool = pool
@@ -1199,14 +1161,37 @@ constructQuery cmd { slippage } blockchain pool poolInfo string claimsOut =
         _ ->
             Nothing
     )
-        |> Maybe.map cmd
+        |> Maybe.map givenCmd
         |> Maybe.withDefault Cmd.none
+        |> (\cmd ->
+                ( transaction |> Transaction
+                , cmd
+                , Nothing
+                )
+           )
+
+
+updateDoesNotExist :
+    model
+    -> blockchain
+    -> Pool
+    -> Never
+    -> ()
+    -> ( (), Cmd Never, Maybe Never )
+updateDoesNotExist _ _ _ _ () =
+    ( ()
+    , Cmd.none |> Cmd.map never
+    , Nothing |> Maybe.map never
+    )
 
 
 port queryLend : Value -> Cmd msg
 
 
 port queryLendPerSecond : Value -> Cmd msg
+
+
+port approve : Value -> Cmd msg
 
 
 port lend : Value -> Cmd msg
@@ -1223,11 +1208,95 @@ subscriptions =
         |> Sub.batch
 
 
-viewEmpty :
-    { first : Element msg
-    , second : Element msg
+view :
+    Blockchain
+    -> Pool
+    -> Transaction
+    ->
+        { first : Element Msg
+        , second : Element Msg
+        , buttons : Element Msg
+        }
+view blockchain pool transaction =
+    { first =
+        el
+            [ width <| px 335
+            , height <| px 109
+            , Background.color Color.light500
+            , Border.rounded 8
+            ]
+            none
+    , second =
+        el
+            [ width <| px 335
+            , height <| px 392
+            , Background.color Color.light500
+            , Border.rounded 8
+            ]
+            none
+    , buttons = none
     }
-viewEmpty =
+
+
+viewDoesNotExist :
+    blockchain
+    -> Pool
+    -> ()
+    ->
+        { first : Element Never
+        , second : Element Never
+        , buttons : Element Never
+        }
+viewDoesNotExist _ pool () =
+    viewEmpty
+        { asset = pool.pair |> Pair.toAsset |> Just
+        , collateral = pool.pair |> Pair.toCollateral |> Just
+        }
+        |> (\{ first, second } ->
+                { first = first
+                , second = second
+                , buttons = Button.error "Pool Does Not Exist"
+                }
+           )
+
+
+viewDisabled :
+    Blockchain
+    -> Pool
+    -> Transaction
+    ->
+        { first : Element Never
+        , second : Element Never
+        }
+viewDisabled blockchain pool transaction =
+    { first =
+        el
+            [ width <| px 335
+            , height <| px 109
+            , Background.color Color.light500
+            , Border.rounded 8
+            ]
+            none
+    , second =
+        el
+            [ width <| px 335
+            , height <| px 392
+            , Background.color Color.light500
+            , Border.rounded 8
+            ]
+            none
+    }
+
+
+viewEmpty :
+    { asset : Maybe Token
+    , collateral : Maybe Token
+    }
+    ->
+        { first : Element Never
+        , second : Element Never
+        }
+viewEmpty { asset, collateral } =
     { first =
         el
             [ width <| px 335

@@ -6,16 +6,18 @@ module Data.Pair exposing
     , sorter
     , toAsset
     , toCollateral
-    , toFragment
+    , toQueryParameters
     , toString
     )
 
 import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
 import Data.Token as Token exposing (Token)
+import Data.TokenParam as TokenParam
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Sort exposing (Sorter)
+import Url.Builder exposing (QueryParameter)
 
 
 type Pair
@@ -59,16 +61,15 @@ decoder chain chains =
         |> Decode.andThen identity
 
 
-toFragment : Pair -> String
-toFragment pair =
+toQueryParameters : Pair -> List QueryParameter
+toQueryParameters pair =
     [ pair
         |> toAsset
-        |> Token.toFragmentAsset
+        |> Token.toQueryParameter TokenParam.Asset
     , pair
         |> toCollateral
-        |> Token.toFragmentCollateral
+        |> Token.toQueryParameter TokenParam.Collateral
     ]
-        |> String.join "&"
 
 
 toString : Pair -> String

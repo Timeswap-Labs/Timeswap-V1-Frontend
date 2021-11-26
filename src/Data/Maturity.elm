@@ -6,7 +6,7 @@ module Data.Maturity exposing
     , isActive
     , sorter
     , toDuration
-    , toFragment
+    , toQueryParameter
     , toString
     , toUnix
     )
@@ -15,6 +15,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Sort as Sort exposing (Sorter)
 import Time exposing (Month(..), Posix, Zone)
+import Url.Builder as Builder exposing (QueryParameter)
 
 
 type Maturity
@@ -60,20 +61,18 @@ fromFragment string =
            )
 
 
-toFragment : Maturity -> String
-toFragment maturity =
-    [ "maturity"
-    , maturity |> toUnix
-    ]
-        |> String.join "="
+toQueryParameter : Maturity -> QueryParameter
+toQueryParameter maturity =
+    maturity
+        |> toUnix
+        |> Builder.int "maturity"
 
 
-toUnix : Maturity -> String
+toUnix : Maturity -> Int
 toUnix (Maturity posix) =
     posix
         |> Time.posixToMillis
         |> (\millis -> millis // 1000)
-        |> String.fromInt
 
 
 sorter : Sorter Maturity

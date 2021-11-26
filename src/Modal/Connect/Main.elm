@@ -5,14 +5,34 @@ port module Modal.Connect.Main exposing
     , receiveUser
     , subscriptions
     , update
+    , view
     )
 
 import Data.Address as Address exposing (Address)
 import Data.Remote exposing (Remote(..))
 import Data.Wallet as Wallet exposing (Wallet)
+import Element
+    exposing
+        ( Element
+        , alpha
+        , behindContent
+        , centerX
+        , centerY
+        , column
+        , el
+        , fill
+        , height
+        , none
+        , px
+        , width
+        )
+import Element.Background as Background
+import Element.Events as Events
+import Element.Input as Input
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Modal.Connect.Error as Error exposing (Error)
+import Utility.Color as Color
 
 
 type Modal
@@ -141,3 +161,29 @@ subscriptions modal =
 
         _ ->
             Sub.none
+
+
+view : Modal -> Element Msg
+view modal =
+    el
+        [ width fill
+        , height fill
+        , el
+            [ width fill
+            , height fill
+            , Background.color Color.dark500
+            , alpha 0.1
+            , Events.onClick Exit
+            ]
+            none
+            |> behindContent
+        ]
+        (column
+            [ width <| px 335
+            , height <| px 300
+            , centerX
+            , centerY
+            , Background.color Color.light100
+            ]
+            []
+        )

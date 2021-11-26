@@ -1,4 +1,9 @@
-module Data.Parameter exposing (Parameter(..), fromFragment, inputToken, toFragment)
+module Data.Parameter exposing
+    ( Parameter(..)
+    , fromFragment
+    , inputToken
+    , toQueryParameters
+    )
 
 import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
@@ -7,6 +12,7 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Pool as Pool exposing (Pool)
 import Data.Token as Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
+import Url.Builder exposing (QueryParameter)
 
 
 type Parameter
@@ -16,24 +22,28 @@ type Parameter
     | Pool Pool
 
 
-toFragment : Parameter -> String
-toFragment parameter =
+toQueryParameters : Parameter -> List QueryParameter
+toQueryParameters parameter =
     case parameter of
         Asset token ->
             token
-                |> Token.toFragmentAsset
+                |> Token.toQueryParameter
+                    TokenParam.Asset
+                |> List.singleton
 
         Collateral token ->
             token
-                |> Token.toFragmentCollateral
+                |> Token.toQueryParameter
+                    TokenParam.Collateral
+                |> List.singleton
 
         Pair pair ->
             pair
-                |> Pair.toFragment
+                |> Pair.toQueryParameters
 
         Pool pool ->
             pool
-                |> Pool.toFragment
+                |> Pool.toQueryParameters
 
 
 fromFragment : Chain -> Chains -> String -> Maybe Parameter

@@ -3,8 +3,7 @@ module Data.Pool exposing
     , decoder
     , encode
     , sorter
-    , toFragment
-    , toString
+    , toQueryParameters
     )
 
 import Data.Chain exposing (Chain)
@@ -16,6 +15,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode exposing (Value)
 import Sort exposing (Sorter)
+import Url.Builder exposing (QueryParameter)
 
 
 type alias Pool =
@@ -40,20 +40,14 @@ encode { pair, maturity } =
         |> Encode.object
 
 
-toFragment : Pool -> String
-toFragment { pair, maturity } =
-    [ pair |> Pair.toFragment
-    , maturity |> Maturity.toFragment
+toQueryParameters : Pool -> List QueryParameter
+toQueryParameters { pair, maturity } =
+    [ pair |> Pair.toQueryParameters
+    , maturity
+        |> Maturity.toQueryParameter
+        |> List.singleton
     ]
-        |> String.join "&"
-
-
-toString : Pool -> String
-toString { pair, maturity } =
-    [ pair |> Pair.toString
-    , maturity |> Maturity.toUnix
-    ]
-        |> String.join " "
+        |> List.concat
 
 
 sorter : Sorter Pool

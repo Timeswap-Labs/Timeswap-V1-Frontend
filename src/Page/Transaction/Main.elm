@@ -1,9 +1,10 @@
 module Page.Transaction.Main exposing (..)
 
-import Blockchain.Main exposing (Blockchain)
+import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Chains exposing (Chains)
+import Data.Deadline exposing (Deadline)
 import Data.Maturity as Maturity
-import Data.Pair exposing (Pair)
+import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
@@ -21,6 +22,7 @@ import Element
         , height
         , map
         , none
+        , padding
         , px
         , row
         , shrink
@@ -30,6 +32,9 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Input as Input
+import Http
+import Page.Transaction.Button as Button
 import Page.Transaction.Error exposing (Error)
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.State as State exposing (State)
@@ -48,17 +53,21 @@ type Section transaction create
         }
 
 
-type Msg transactionMsg
+type Msg transactionMsg createMsg
     = SelectToken TokenParam
     | SelectMaturity
+    | ClickConnect
     | TransactionMsg transactionMsg
+    | CreateMsg createMsg
     | CheckMaturity Posix
 
 
-type Effect transactionEffect
+type Effect transactionEffect createEffect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
+    | OpenConnect
     | TransactionEffect transactionEffect
+    | CreateEffect createEffect
 
 
 init :
@@ -66,7 +75,7 @@ init :
     -> Maybe Parameter
     ->
         ( Section transaction create
-        , Cmd (Msg transactionMsg)
+        , Cmd (Msg transactionMsg createMsg)
         )
 init { time } parameter =
     case parameter of
@@ -132,24 +141,48 @@ initGivenPool initTransaction { time } pool poolInfo =
 
 
 update :
-    ({ model | chains : Chains, slippage : Slippage }
-     -> Blockchain
-     -> Pool
-     -> PoolInfo
-     -> transactionMsg
-     -> transaction
-     -> ( transaction, Cmd transactionMsg, Maybe transactionEffect )
-    )
-    -> { model | chains : Chains, slippage : Slippage }
+    { transaction :
+        { model
+            | time : Posix
+            , chains : Chains
+            , slippage : Slippage
+            , deadline : Deadline
+        }
+        -> Blockchain
+        -> Pool
+        -> PoolInfo
+        -> transactionMsg
+        -> transaction
+        -> ( transaction, Cmd transactionMsg, Maybe transactionEffect )
+    , create :
+        { model
+            | time : Posix
+            , chains : Chains
+            , slippage : Slippage
+            , deadline : Deadline
+        }
+        -> Blockchain
+        -> Pool
+        -> createMsg
+        -> create
+        -> ( create, Cmd createMsg, Maybe createEffect )
+    }
+    ->
+        { model
+            | time : Posix
+            , chains : Chains
+            , slippage : Slippage
+            , deadline : Deadline
+        }
     -> Blockchain
-    -> Msg transactionMsg
+    -> Msg transactionMsg createMsg
     -> Section transaction create
     ->
         ( Section transaction create
-        , Cmd (Msg transactionMsg)
-        , Maybe (Effect transactionEffect)
+        , Cmd (Msg transactionMsg createMsg)
+        , Maybe (Effect transactionEffect createEffect)
         )
-update transactionUpdate model blockchain msg section =
+update updates model blockchain msg section =
     case ( msg, section ) of
         ( SelectToken tokenParam, _ ) ->
             ( section
@@ -175,11 +208,20 @@ update transactionUpdate model blockchain msg section =
                 |> Just
             )
 
+        ( ClickConnect, _ ) ->
+            ( section
+            , Cmd.none
+            , blockchain
+                |> Blockchain.toUser
+                |> Maybe.map (\_ -> Nothing)
+                |> Maybe.withDefault (Just OpenConnect)
+            )
+
         ( TransactionMsg transactionMsg, Pool { pool, state } ) ->
             case state of
                 Success (State.Active { poolInfo, transaction }) ->
                     transaction
-                        |> transactionUpdate model
+                        |> updates.transaction model
                             blockchain
                             pool
                             poolInfo
@@ -196,6 +238,33 @@ update transactionUpdate model blockchain msg section =
                                     |> Pool
                                 , cmd |> Cmd.map TransactionMsg
                                 , maybeEffect |> Maybe.map TransactionEffect
+                                )
+                           )
+
+                _ ->
+                    ( section
+                    , Cmd.none
+                    , Nothing
+                    )
+
+        ( CreateMsg createMsg, Pool { pool, state } ) ->
+            case state of
+                Success (State.DoesNotExist create) ->
+                    create
+                        |> updates.create model
+                            blockchain
+                            pool
+                            createMsg
+                        |> (\( updated, cmd, maybeEffect ) ->
+                                ( { pool = pool
+                                  , state =
+                                        updated
+                                            |> State.DoesNotExist
+                                            |> Success
+                                  }
+                                    |> Pool
+                                , cmd |> Cmd.map CreateMsg
+                                , maybeEffect |> Maybe.map CreateEffect
                                 )
                            )
 
@@ -230,7 +299,7 @@ update transactionUpdate model blockchain msg section =
 subscriptions :
     Sub transactionMsg
     -> Section transaction create
-    -> Sub (Msg transactionMsg)
+    -> Sub (Msg transactionMsg createMsg)
 subscriptions sub section =
     [ case section of
         Pool { state } ->
@@ -297,59 +366,238 @@ toPoolInfo section =
 
 
 view :
-    { first : Element transactionMsg, second : Element transactionMsg }
-    -> Element (Msg transactionMsg)
-view { first, second } =
-    row
-        [ width shrink
-        , height shrink
-        , spacing 20
-        ]
-        [ column
-            [ width shrink
-            , height shrink
-            , spacing 14
-            , alignTop
-            ]
-            [ el
-                [ width <| px 335
-                , height <| px 199
-                , Background.color Color.light500
-                , Border.rounded 8
-                ]
-                none
-            , first |> map TransactionMsg
-            ]
-        , column
-            [ width shrink
-            , height shrink
-            , alignTop
-            , spacing 14
-            ]
-            [ second |> map TransactionMsg
-            , button
-            , button2
-            ]
-        ]
+    { transaction :
+        Blockchain
+        -> Pool
+        -> transaction
+        ->
+            { first : Element transactionMsg
+            , second : Element transactionMsg
+            , buttons : Element transactionMsg
+            }
+    , create :
+        Blockchain
+        -> Pool
+        -> create
+        ->
+            { first : Element createMsg
+            , second : Element createMsg
+            , buttons : Element createMsg
+            }
+    , disabled :
+        Blockchain
+        -> Pool
+        -> transaction
+        ->
+            { first : Element Never
+            , second : Element Never
+            }
+    , empty :
+        { asset : Maybe Token
+        , collateral : Maybe Token
+        }
+        ->
+            { first : Element Never
+            , second : Element Never
+            }
+    }
+    -> Blockchain
+    -> Section transaction create
+    -> Element (Msg transactionMsg createMsg)
+view views blockchain section =
+    (case section of
+        None ->
+            views.empty
+                { asset = Nothing
+                , collateral = Nothing
+                }
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons =
+                            blockchain
+                                |> Blockchain.toUser
+                                |> Maybe.map (\_ -> Button.disabled "Incomplete")
+                                |> Maybe.withDefault (Button.view ClickConnect "Connect Wallet")
+                        }
+                   )
 
+        Asset asset ->
+            views.empty
+                { asset = Just asset
+                , collateral = Nothing
+                }
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons =
+                            blockchain
+                                |> Blockchain.toUser
+                                |> Maybe.map (\_ -> Button.disabled "Incomplete")
+                                |> Maybe.withDefault (Button.view ClickConnect "Connect Wallet")
+                        }
+                   )
 
-button : Element msg
-button =
-    el
-        [ width <| px 335
-        , height <| px 44
-        , Background.color Color.primary500
-        , Border.rounded 8
-        ]
-        (el [ centerX, centerY ] (text "Approve"))
+        Collateral collateral ->
+            views.empty
+                { asset = Nothing
+                , collateral = Just collateral
+                }
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons =
+                            blockchain
+                                |> Blockchain.toUser
+                                |> Maybe.map (\_ -> Button.disabled "Incomplete")
+                                |> Maybe.withDefault
+                                    (Button.view ClickConnect "Connect Wallet")
+                        }
+                   )
 
+        Pair pair ->
+            views.empty
+                { asset = pair |> Pair.toAsset |> Just
+                , collateral = pair |> Pair.toCollateral |> Just
+                }
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons =
+                            blockchain
+                                |> Blockchain.toUser
+                                |> Maybe.map (\_ -> Button.disabled "Incomplete")
+                                |> Maybe.withDefault
+                                    (Button.view ClickConnect "Connect Wallet")
+                        }
+                   )
 
-button2 : Element msg
-button2 =
-    el
-        [ width <| px 335
-        , height <| px 44
-        , Background.color Color.light500
-        , Border.rounded 8
-        ]
-        (el [ centerX, centerY ] (text "Lend"))
+        Pool { pool, state } ->
+            case state of
+                Loading ->
+                    views.empty
+                        { asset =
+                            pool.pair
+                                |> Pair.toAsset
+                                |> Just
+                        , collateral =
+                            pool.pair
+                                |> Pair.toCollateral
+                                |> Just
+                        }
+                        |> (\{ first, second } ->
+                                { first = first |> map never
+                                , second = second |> map never
+                                , buttons =
+                                    blockchain
+                                        |> Blockchain.toUser
+                                        |> Maybe.map (\_ -> Button.disabled "Incomplete")
+                                        |> Maybe.withDefault
+                                            (Button.view ClickConnect "Connect Wallet")
+                                }
+                           )
+
+                Failure { error, transaction } ->
+                    transaction
+                        |> views.disabled blockchain pool
+                        |> (\{ first, second } ->
+                                { first = first |> map never
+                                , second = second |> map never
+                                , buttons =
+                                    (case error of
+                                        Http.Timeout ->
+                                            "Network Too Slow"
+
+                                        Http.NetworkError ->
+                                            "No Network Connection"
+
+                                        Http.BadStatus status ->
+                                            "Error Code: " ++ (status |> String.fromInt)
+
+                                        _ ->
+                                            "Error"
+                                    )
+                                        |> Button.error
+                                }
+                           )
+
+                Success (State.Active { transaction }) ->
+                    transaction
+                        |> views.transaction blockchain pool
+                        |> (\{ first, second, buttons } ->
+                                { first = first |> map TransactionMsg
+                                , second = second |> map TransactionMsg
+                                , buttons = buttons |> map TransactionMsg
+                                }
+                           )
+
+                Success (State.DoesNotExist create) ->
+                    create
+                        |> views.create blockchain pool
+                        |> (\{ first, second, buttons } ->
+                                { first = first |> map CreateMsg
+                                , second = second |> map CreateMsg
+                                , buttons = buttons |> map CreateMsg
+                                }
+                           )
+
+                Success State.Matured ->
+                    views.empty
+                        { asset =
+                            pool.pair
+                                |> Pair.toAsset
+                                |> Just
+                        , collateral =
+                            pool.pair
+                                |> Pair.toCollateral
+                                |> Just
+                        }
+                        |> (\{ first, second } ->
+                                { first = first |> map never
+                                , second = second |> map never
+                                , buttons = Button.error "Already Matured"
+                                }
+                           )
+    )
+        |> (\{ first, second, buttons } ->
+                column
+                    [ width shrink
+                    , height shrink
+                    , padding 20
+                    , spacing 20
+                    , Background.color Color.light100
+                    , Border.rounded 8
+                    ]
+                    [ el [] (text "Lend")
+                    , row
+                        [ width shrink
+                        , height shrink
+                        , spacing 20
+                        ]
+                        [ column
+                            [ width shrink
+                            , height shrink
+                            , spacing 14
+                            , alignTop
+                            ]
+                            [ el
+                                [ width <| px 335
+                                , height <| px 199
+                                , Background.color Color.light500
+                                , Border.rounded 8
+                                ]
+                                none
+                            , first
+                            ]
+                        , column
+                            [ width shrink
+                            , height shrink
+                            , alignTop
+                            , spacing 14
+                            ]
+                            [ second
+                            , buttons
+                            ]
+                        ]
+                    ]
+           )

@@ -10,6 +10,7 @@ module Modal.Main exposing
     , receiveUser
     , subscriptions
     , update
+    , view
     )
 
 import Blockchain.Main exposing (Blockchain)
@@ -24,6 +25,12 @@ import Data.Spot exposing (Spot)
 import Data.Support exposing (Support(..))
 import Data.Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
+import Element
+    exposing
+        ( Element
+        , map
+        , none
+        )
 import Modal.Connect.Main as Connect
 import Modal.MaturityList.Main as MaturityList
 import Modal.Pending.Main as Pending
@@ -211,3 +218,14 @@ subscriptions modal =
 
         _ ->
             Sub.none
+
+
+view : Modal -> Element Msg
+view modal =
+    case modal of
+        Connect connect ->
+            Connect.view connect
+                |> map ConnectMsg
+
+        _ ->
+            none

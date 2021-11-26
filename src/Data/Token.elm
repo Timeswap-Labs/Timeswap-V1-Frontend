@@ -4,17 +4,18 @@ module Data.Token exposing
     , sorter
     , toDecimals
     , toERC20
-    , toFragmentAsset
-    , toFragmentCollateral
     , toName
+    , toQueryParameter
     , toString
     , toSymbol
     )
 
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Native as Native exposing (Native)
+import Data.TokenParam as TokenParam exposing (TokenParam)
 import Json.Encode exposing (Value)
 import Sort exposing (Sorter)
+import Url.Builder exposing (QueryParameter)
 
 
 type Token
@@ -72,8 +73,8 @@ toDecimals token =
             erc20 |> ERC20.toDecimals
 
 
-toFragmentAsset : Token -> String
-toFragmentAsset token =
+toQueryParameter : TokenParam -> Token -> QueryParameter
+toQueryParameter tokenParam token =
     (case token of
         Native native ->
             native
@@ -83,21 +84,7 @@ toFragmentAsset token =
             erc20
                 |> ERC20.toString
     )
-        |> (++) "asset="
-
-
-toFragmentCollateral : Token -> String
-toFragmentCollateral token =
-    (case token of
-        Native native ->
-            native
-                |> Native.toSymbol
-
-        ERC20 erc20 ->
-            erc20
-                |> ERC20.toString
-    )
-        |> (++) "collateral="
+        |> (tokenParam |> TokenParam.toQueryParameter)
 
 
 toERC20 : Token -> Maybe ERC20

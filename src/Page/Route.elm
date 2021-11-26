@@ -31,30 +31,35 @@ fromTab tab parameter =
 
 toUrlString : Route -> String
 toUrlString route =
-    Builder.absolute
-        [ case route of
-            Lend parameter ->
-                parameter
-                    |> Maybe.map Parameter.toFragment
-                    |> Maybe.map ((++) "?")
-                    |> Maybe.withDefault ""
-                    |> (++) "lend"
+    (case route of
+        Lend parameter ->
+            parameter
 
-            Borrow parameter ->
-                parameter
-                    |> Maybe.map Parameter.toFragment
-                    |> Maybe.map ((++) "?")
-                    |> Maybe.withDefault ""
-                    |> (++) "borrow"
+        Borrow parameter ->
+            parameter
 
-            Liquidity parameter ->
+        Liquidity parameter ->
+            parameter
+    )
+        |> (\parameter ->
                 parameter
-                    |> Maybe.map Parameter.toFragment
-                    |> Maybe.map ((++) "?")
+                    |> Maybe.map Parameter.toQueryParameters
+                    |> Maybe.map Builder.toQuery
                     |> Maybe.withDefault ""
-                    |> (++) "liquidity"
-        ]
-        []
+           )
+        |> (\string ->
+                case route of
+                    Lend _ ->
+                        "lend" ++ string
+
+                    Borrow _ ->
+                        "borrow" ++ string
+
+                    Liquidity _ ->
+                        "liquidity" ++ string
+           )
+        |> Just
+        |> Builder.custom Builder.Absolute [] []
 
 
 fromUrl :

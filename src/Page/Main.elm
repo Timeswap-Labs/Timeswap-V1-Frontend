@@ -27,17 +27,12 @@ import Element
         , alignTop
         , centerX
         , column
-        , el
         , height
         , map
-        , padding
         , shrink
         , spacing
-        , text
         , width
         )
-import Element.Background as Background
-import Element.Border as Border
 import Page.Route as Route
 import Page.Transaction.Borrow.Main as TransactionBorrow
 import Page.Transaction.Lend.Main as Lend
@@ -46,7 +41,6 @@ import Page.Transaction.Main as Transaction
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Time exposing (Posix)
 import Url exposing (Url)
-import Utility.Color as Color
 
 
 type Page
@@ -56,12 +50,13 @@ type Page
 
 
 type Msg
-    = TransactionLendMsg (Transaction.Msg Lend.Msg)
+    = TransactionLendMsg (Transaction.Msg Lend.Msg Never)
 
 
 type Effect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
+    | OpenConnect
     | OpenPending
 
 
@@ -167,7 +162,9 @@ update model blockchain msg page =
         ( TransactionLendMsg transactionLendMsg, Lend lend ) ->
             lend.transaction
                 |> Transaction.update
-                    Lend.update
+                    { transaction = Lend.update
+                    , create = Lend.updateDoesNotExist
+                    }
                     model
                     blockchain
                     transactionLendMsg
@@ -176,7 +173,7 @@ update model blockchain msg page =
                             |> Lend
                         , cmd |> Cmd.map TransactionLendMsg
                         , maybeEffect
-                            |> Maybe.map transactionLendEffect
+                            |> Maybe.andThen transactionLendEffect
                         )
                    )
 
@@ -184,17 +181,28 @@ update model blockchain msg page =
             ( page, Cmd.none, Nothing )
 
 
-transactionLendEffect : Transaction.Effect Lend.Effect -> Effect
+transactionLendEffect :
+    Transaction.Effect Lend.Effect Never
+    -> Maybe Effect
 transactionLendEffect effect =
     case effect of
         Transaction.OpenTokenList tokenParam ->
-            OpenTokenList tokenParam
+            OpenTokenList tokenParam |> Just
 
         Transaction.OpenMaturityList pair ->
-            OpenMaturityList pair
+            OpenMaturityList pair |> Just
+
+        Transaction.OpenConnect ->
+            OpenConnect |> Just
+
+        Transaction.TransactionEffect Lend.OpenConnect ->
+            OpenConnect |> Just
 
         Transaction.TransactionEffect Lend.OpenPending ->
-            OpenPending
+            OpenPending |> Just
+
+        _ ->
+            Nothing
 
 
 subscriptions : Page -> Sub Msg
@@ -251,18 +259,28 @@ toPoolInfo page =
             Nothing
 
 
-view : Element Msg
-view =
+view : Blockchain -> Page -> Element Msg
+view blockchain page =
     column
         [ width shrink
         , height shrink
-        , padding 20
         , spacing 20
         , centerX
         , alignTop
-        , Background.color Color.light100
-        , Border.rounded 8
         ]
-        [ el [] (text "Lend")
-        , Transaction.view Lend.viewEmpty |> map TransactionLendMsg
-        ]
+        (case page of
+            Lend { transaction } ->
+                [ transaction
+                    |> Transaction.view
+                        { transaction = Lend.view
+                        , create = Lend.viewDoesNotExist
+                        , disabled = Lend.viewDisabled
+                        , empty = Lend.viewEmpty
+                        }
+                        blockchain
+                    |> map TransactionLendMsg
+                ]
+
+            _ ->
+                []
+        )
