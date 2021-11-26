@@ -480,7 +480,7 @@ swapButton { device, images } =
                     [ centerY
                     ]
                     (if Device.isPhone device then
-                        Image.hourglassPrimarySmall images
+                        Image.swap images
                             [ width <| px 19
                             , centerX
                             , centerY

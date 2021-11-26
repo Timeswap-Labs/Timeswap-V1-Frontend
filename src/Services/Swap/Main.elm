@@ -889,52 +889,56 @@ swapButton { device } user (Service service) =
         case user.balances of
             Success successbalances ->
                 if successbalances |> hasEnough (service.inToken |> GameToken.toToken) service.input then
-                    Input.button
-                        ([ width fill
-                         , paddingEach
-                            { top = 0
-                            , right = 16
-                            , bottom = 0
-                            , left = 10
-                            }
-                         , centerY
-                         , Background.color Color.primary500
-                         , Border.rounded 4
-                         , Font.size 16
-                         , Font.color Color.light100
-                         , Font.bold
-                         , mouseDown [ Background.color Color.primary400 ]
-                         , mouseOver [ Background.color Color.primary300 ]
-                         ]
-                            ++ (if Device.isPhoneOrTablet device then
-                                    [ height <| px 35 ]
+                    if service.notification == Just Loading then
+                        loadingSwapBtn
 
-                                else
-                                    [ height <| px 44 ]
-                               )
-                        )
-                        { onPress = Just Swap
-                        , label =
-                            row
-                                [ width shrink
-                                , height fill
-                                , spacing 6
-                                , centerX
-                                ]
-                                (if Device.isPhone device then
-                                    []
+                    else
+                        Input.button
+                            ([ width fill
+                             , paddingEach
+                                { top = 0
+                                , right = 16
+                                , bottom = 0
+                                , left = 10
+                                }
+                             , centerY
+                             , Background.color Color.primary500
+                             , Border.rounded 4
+                             , Font.size 16
+                             , Font.color Color.light100
+                             , Font.bold
+                             , mouseDown [ Background.color Color.primary400 ]
+                             , mouseOver [ Background.color Color.primary300 ]
+                             ]
+                                ++ (if Device.isPhoneOrTablet device then
+                                        [ height <| px 35 ]
 
-                                 else
-                                    [ el [ centerY ]
-                                        (if Device.isTablet device then
-                                            text "Swap"
-
-                                         else
-                                            text "Swap tokens"
-                                        )
+                                    else
+                                        [ height <| px 44 ]
+                                   )
+                            )
+                            { onPress = Just Swap
+                            , label =
+                                row
+                                    [ width shrink
+                                    , height fill
+                                    , spacing 6
+                                    , centerX
                                     ]
-                                )
-                        }
+                                    (if Device.isPhone device then
+                                        []
+
+                                     else
+                                        [ el [ centerY ]
+                                            (if Device.isTablet device then
+                                                text "Swap"
+
+                                             else
+                                                text "Swap tokens"
+                                            )
+                                        ]
+                                    )
+                            }
 
                 else
                     LendError.insufficientAsset
@@ -971,6 +975,28 @@ disabledSwapBtn =
             , Font.color Color.transparent100
             ]
             (text "Swap tokens")
+        )
+
+
+loadingSwapBtn : Element msg
+loadingSwapBtn =
+    el
+        [ width fill
+        , height <| px 44
+        , padding 5
+        , centerX
+        , centerY
+        , Background.color Color.primary100
+        , Border.rounded 4
+        ]
+        (el
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.color Color.transparent100
+            ]
+            Loading.viewSmall
         )
 
 
