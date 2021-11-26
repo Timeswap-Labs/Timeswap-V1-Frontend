@@ -13,9 +13,10 @@ port module Page.Transaction.Lend.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User
+import Blockchain.User.Main as User exposing (User)
 import Data.Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
+import Data.Images exposing (Images)
 import Data.Pair as Pair
 import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
@@ -26,15 +27,30 @@ import Data.Uint as Uint
 import Element
     exposing
         ( Element
+        , alignLeft
+        , alignRight
+        , below
+        , centerY
+        , column
         , el
+        , fill
         , height
         , none
+        , padding
+        , paddingXY
         , px
+        , row
+        , shrink
+        , spacing
+        , text
         , width
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
+import Element.Font as Font
 import Element.Input as Input
+import Element.Region as Region
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Page.Approve as Approve
@@ -47,12 +63,14 @@ import Page.Transaction.Lend.Answer as Answer
         )
 import Page.Transaction.Lend.Error exposing (Error)
 import Page.Transaction.Lend.Query as Query
-import Page.Transaction.Lend.Tooltip exposing (Tooltip)
+import Page.Transaction.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.Lend.Write as Write
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Time exposing (Posix)
 import Utility.Color as Color
+import Utility.Image as Image
 import Utility.Input as Input
+import Utility.Truncate as Truncate
 
 
 type Transaction
@@ -111,7 +129,7 @@ type Msg
 
 type Effect
     = OpenConnect
-    | OpenPending
+    | OpenConfirm
 
 
 init : Transaction
@@ -462,7 +480,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         , erc20
                             |> Approve.encode blockchain user
                             |> approve
-                        , OpenPending |> Just
+                        , OpenConfirm |> Just
                         )
 
                     else
@@ -523,7 +541,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                 |> Write.GivenPercent
                                 |> Write.encode model blockchain user
                                 |> lend
-                            , OpenPending |> Just
+                            , OpenConfirm |> Just
                             )
                                 |> Just
 
@@ -551,7 +569,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                             |> Write.GivenPercent
                                             |> Write.encode model blockchain user
                                             |> lend
-                                        , OpenPending |> Just
+                                        , OpenConfirm |> Just
                                         )
                                             |> Just
                                     )
@@ -585,7 +603,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                         |> Write.GivenBond
                                         |> Write.encode model blockchain user
                                         |> lend
-                                    , OpenPending |> Just
+                                    , OpenConfirm |> Just
                                     )
                                         |> Just
 
@@ -620,7 +638,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                         |> Write.GivenInsurance
                                         |> Write.encode model blockchain user
                                         |> lend
-                                    , OpenPending |> Just
+                                    , OpenConfirm |> Just
                                     )
                                         |> Just
 
@@ -1239,15 +1257,14 @@ view blockchain pool transaction =
 
 
 viewDoesNotExist :
-    blockchain
-    -> Pool
+    Pool
     -> ()
     ->
         { first : Element Never
         , second : Element Never
         , buttons : Element Never
         }
-viewDoesNotExist _ pool () =
+viewDoesNotExist pool () =
     viewEmpty
         { asset = pool.pair |> Pair.toAsset |> Just
         , collateral = pool.pair |> Pair.toCollateral |> Just
@@ -1314,3 +1331,165 @@ viewEmpty { asset, collateral } =
             ]
             none
     }
+
+
+lendAsset :
+    { model | images : Images }
+    -> Blockchain
+    -> { transaction | assetIn : String, tooltip : Maybe Tooltip }
+    -> Token
+    -> Element Msg
+lendAsset { images } blockchain { assetIn, tooltip } asset =
+    column
+        [ Region.description "lend asset"
+        , width <| px 335
+        , height shrink
+        , padding 20
+        , spacing 6
+        , Background.color Color.light500
+        , Border.rounded 8
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            (el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                ]
+                (text "Amount to Lend")
+                :: (blockchain
+                        |> Blockchain.toUser
+                        |> Maybe.map
+                            (\user ->
+                                [ userBalance user asset
+                                , maxButton
+                                ]
+                            )
+                        |> Maybe.withDefault
+                            []
+                   )
+            )
+        , el
+            [ width fill
+            , height <| px 44
+            , paddingXY 12 0
+            , Background.color Color.light500
+            , Border.rounded 8
+            ]
+            (Input.text
+                []
+                { onChange = InputAssetIn
+                , text = assetIn
+                , placeholder = Nothing |> Debug.log "placeholder"
+                , label =
+                    Input.labelLeft
+                        [ width fill
+                        , height fill
+                        ]
+                        (row
+                            [ width fill
+                            , height fill
+                            , spacing 6
+                            ]
+                            [ images
+                                |> Image.viewToken
+                                    [ width <| px 24
+                                    , alignLeft
+                                    , centerY
+                                    ]
+                                    asset
+                            , el
+                                [ width shrink
+                                , height shrink
+                                , alignLeft
+                                , centerY
+                                , Font.size 14
+                                ]
+                                (asset
+                                    |> Token.toSymbol
+                                    |> text
+                                )
+                            ]
+                        )
+                }
+            )
+        ]
+
+
+userBalance : User -> Token -> Element Msg
+userBalance user asset =
+    user
+        |> User.getStringBalance asset
+        |> Maybe.map
+            (\balance ->
+                row
+                    [ width shrink
+                    , height shrink
+                    , alignRight
+                    , centerY
+                    ]
+                    [ el
+                        [ width shrink
+                        , height shrink
+                        , Font.size 12
+                        ]
+                        (text "Bal: ")
+                    , { amount = balance
+                      , symbol = asset |> Token.toSymbol
+                      }
+                        |> Truncate.balance
+                        |> (\{ full, truncated } ->
+                                truncated
+                                    |> Maybe.map
+                                        (\short ->
+                                            el
+                                                [ width shrink
+                                                , height shrink
+                                                , Font.size 12
+                                                , Border.widthEach
+                                                    { top = 0
+                                                    , right = 0
+                                                    , bottom = 1
+                                                    , left = 0
+                                                    }
+                                                , Border.dashed
+                                                , Events.onMouseEnter
+                                                    (OnMouseEnter Tooltip.Balance)
+                                                , Events.onMouseLeave OnMouseLeave
+                                                , none
+                                                    |> Debug.log "implement tooltip"
+                                                    |> below
+                                                ]
+                                                (text short)
+                                        )
+                                    |> Maybe.withDefault
+                                        (el
+                                            [ width shrink
+                                            , height shrink
+                                            , Font.size 12
+                                            ]
+                                            (text full)
+                                        )
+                           )
+                    ]
+            )
+        |> Maybe.withDefault none
+
+
+maxButton : Element Msg
+maxButton =
+    Input.button
+        [ width shrink
+        , height shrink
+        , alignRight
+        , centerY
+        , Font.size 12
+        , Font.bold
+        ]
+        { onPress = Just InputMax
+        , label = text "MAX"
+        }

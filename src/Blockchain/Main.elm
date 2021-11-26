@@ -14,7 +14,6 @@ import Blockchain.User.Main as User exposing (User)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
-import Data.Wallet as Wallet
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Url exposing (Url)

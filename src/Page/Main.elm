@@ -14,7 +14,9 @@ module Page.Main exposing
 
 import Blockchain.Main exposing (Blockchain)
 import Data.Chains exposing (Chains)
+import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
+import Data.Images exposing (Images)
 import Data.Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Slippage exposing (Slippage)
@@ -39,7 +41,7 @@ import Page.Transaction.Lend.Main as Lend
 import Page.Transaction.Liquidity.Main as TransactionLiquidity
 import Page.Transaction.Main as Transaction
 import Page.Transaction.PoolInfo exposing (PoolInfo)
-import Time exposing (Posix)
+import Time exposing (Posix, Zone)
 import Url exposing (Url)
 
 
@@ -57,7 +59,7 @@ type Effect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
     | OpenConnect
-    | OpenPending
+    | OpenConfirm
 
 
 init :
@@ -198,8 +200,8 @@ transactionLendEffect effect =
         Transaction.TransactionEffect Lend.OpenConnect ->
             OpenConnect |> Just
 
-        Transaction.TransactionEffect Lend.OpenPending ->
-            OpenPending |> Just
+        Transaction.TransactionEffect Lend.OpenConfirm ->
+            OpenConfirm |> Just
 
         _ ->
             Nothing
@@ -259,8 +261,16 @@ toPoolInfo page =
             Nothing
 
 
-view : Blockchain -> Page -> Element Msg
-view blockchain page =
+view :
+    { model
+        | zone : Zone
+        , chosenZone : ChosenZone
+        , images : Images
+    }
+    -> Blockchain
+    -> Page
+    -> Element Msg
+view model blockchain page =
     column
         [ width shrink
         , height shrink
@@ -272,11 +282,13 @@ view blockchain page =
             Lend { transaction } ->
                 [ transaction
                     |> Transaction.view
-                        { transaction = Lend.view
+                        { title = "Lend"
+                        , transaction = Lend.view blockchain
                         , create = Lend.viewDoesNotExist
-                        , disabled = Lend.viewDisabled
+                        , disabled = Lend.viewDisabled blockchain
                         , empty = Lend.viewEmpty
                         }
+                        model
                         blockchain
                     |> map TransactionLendMsg
                 ]

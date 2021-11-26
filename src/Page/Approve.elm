@@ -1,4 +1,4 @@
-module Page.Approve exposing (Write, encode)
+module Page.Approve exposing (encode)
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User exposing (User)
@@ -8,14 +8,10 @@ import Data.ERC20 as ERC20 exposing (ERC20)
 import Json.Encode as Encode exposing (Value)
 
 
-type alias Write =
-    ERC20
-
-
 encode :
     Blockchain
     -> User
-    -> Write
+    -> ERC20
     -> Value
 encode blockchain user write =
     [ ( "chainId"

@@ -137,6 +137,7 @@ fromFragment chosenParam ((Tokens { native }) as tokens) fragment =
                                                         (erc20
                                                             |> ERC20.toAddress
                                                             |> Address.toString
+                                                            |> String.toLower
                                                         )
                                                             == (tokenString |> String.toLower)
                                                     then

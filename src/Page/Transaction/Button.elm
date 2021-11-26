@@ -14,13 +14,20 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Input as Input
+import Element.Region as Region
 import Utility.Color as Color
 
 
-view : msg -> String -> Element msg
-view msg string =
+view :
+    { msg : msg
+    , label : String
+    , description : String
+    }
+    -> Element msg
+view { msg, label, description } =
     Input.button
-        [ width <| px 335
+        [ Region.description description
+        , width <| px 335
         , height <| px 44
         , Background.color Color.primary500
         , Border.rounded 8
@@ -31,11 +38,11 @@ view msg string =
                 [ centerX
                 , centerY
                 ]
-                (text string)
+                (text label)
         }
 
 
-disabled : String -> Element msg
+disabled : String -> Element Never
 disabled string =
     el
         [ width <| px 335
@@ -51,7 +58,7 @@ disabled string =
         )
 
 
-error : String -> Element msg
+error : String -> Element Never
 error string =
     el
         [ width <| px 335

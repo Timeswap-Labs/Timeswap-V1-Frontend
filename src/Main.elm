@@ -472,8 +472,8 @@ pageEffect blockchain effect model =
             , Cmd.none
             )
 
-        Page.OpenPending ->
-            ( { model | modal = Modal.initPending |> Just }
+        Page.OpenConfirm ->
+            ( { model | modal = Modal.initConfirm |> Just }
             , Cmd.none
             )
 
@@ -630,7 +630,7 @@ html model =
         [ width <| minimum 360 fill
         , height fill
         , model.modal
-            |> Maybe.map Modal.view
+            |> Maybe.map (Modal.view model)
             |> (Maybe.map << map) ModalMsg
             |> Maybe.withDefault none
             |> inFront
@@ -678,7 +678,7 @@ header :
 header ({ device } as model) =
     if device |> Device.isPhoneOrTablet then
         column
-            [ Region.navigation
+            [ Region.description "header"
             , width fill
             , height shrink
             , spacing 40
@@ -697,7 +697,7 @@ header ({ device } as model) =
 
     else
         row
-            [ Region.navigation
+            [ Region.description "header"
             , width fill
             , height <| px 76
             , spacing 76
@@ -722,7 +722,9 @@ header ({ device } as model) =
 logo : { model | device : Device, images : Images } -> Element Never
 logo { device, images } =
     row
-        [ spacing 6 ]
+        [ Region.description "logo"
+        , spacing 6
+        ]
         [ case device of
             Phone ->
                 images
@@ -758,7 +760,8 @@ logo { device, images } =
 tabs : { model | device : Device, page : Page } -> Element Never
 tabs ({ device } as model) =
     row
-        [ (if device |> Device.isPhoneOrTablet then
+        [ Region.navigation
+        , (if device |> Device.isPhoneOrTablet then
             fill
 
            else
@@ -824,7 +827,18 @@ connectButton :
     -> Element Msg
 connectButton model =
     Input.button
-        [ width shrink
+        [ Region.description
+            (case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.toUser
+                        |> Maybe.map (\_ -> "account button")
+                        |> Maybe.withDefault "connect button"
+
+                NotSupported _ ->
+                    "account button"
+            )
+        , width shrink
         , height <| px 36
         , paddingXY 12 0
         , Background.color Color.light100
@@ -863,7 +877,8 @@ zoneButton :
     -> Element Msg
 zoneButton { zoneName, chosenZone } =
     Input.button
-        [ width shrink
+        [ Region.description "zone button"
+        , width shrink
         , height <| px 36
         , paddingXY 12 0
         , Background.color Color.light100
@@ -895,7 +910,8 @@ zoneButton { zoneName, chosenZone } =
 themeButton : { model | theme : Theme } -> Element Msg
 themeButton { theme } =
     Input.button
-        [ width <| px 36
+        [ Region.description "theme button"
+        , width <| px 36
         , height <| px 36
         , Background.color Color.light100
         , Border.rounded 8
@@ -921,19 +937,23 @@ themeButton { theme } =
 
 body :
     { model
-        | blockchain : Support User.NotSupported Blockchain
+        | zone : Zone
+        , chosenZone : ChosenZone
+        , images : Images
+        , blockchain : Support User.NotSupported Blockchain
         , page : Page
     }
     -> Element Msg
 body ({ page } as model) =
     el
-        [ width fill
+        [ Region.mainContent
+        , width fill
         , height shrink
         , padding 56
         ]
         (case model.blockchain of
             Supported blockchain ->
-                Page.view blockchain page |> map PageMsg
+                Page.view model blockchain page |> map PageMsg
 
             NotSupported _ ->
                 none

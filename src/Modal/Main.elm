@@ -2,9 +2,9 @@ module Modal.Main exposing
     ( Effect(..)
     , Modal
     , Msg
+    , initConfirm
     , initConnect
     , initMaturityList
-    , initPending
     , initSettings
     , initTokenList
     , receiveUser
@@ -18,6 +18,7 @@ import Blockchain.User.Main as User
 import Data.Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.ERC20 exposing (ERC20)
+import Data.Images exposing (Images)
 import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Slippage exposing (Slippage)
@@ -31,9 +32,10 @@ import Element
         , map
         , none
         )
+import Modal.ChainList.Main as ChainList
+import Modal.Confirm.Main as Confirm
 import Modal.Connect.Main as Connect
 import Modal.MaturityList.Main as MaturityList
-import Modal.Pending.Main as Pending
 import Modal.Settings.Main as Settings
 import Modal.TokenList.Main as TokenList
 
@@ -41,17 +43,19 @@ import Modal.TokenList.Main as TokenList
 type Modal
     = Connect Connect.Modal
     | Settings Settings.Modal
+    | ChainList
     | TokenList TokenList.Modal
     | MaturityList MaturityList.Modal
-    | Pending
+    | Confirm Confirm.Modal
 
 
 type Msg
     = ConnectMsg Connect.Msg
     | SettingsMsg Settings.Msg
+    | ChainListMsg ChainList.Msg
     | TokenListMsg TokenList.Msg
     | MaturityListMsg MaturityList.Msg
-    | PendingMsg Pending.Msg
+    | ConfirmMsg Confirm.Msg
 
 
 type Effect
@@ -87,9 +91,10 @@ initTokenList tokenParam =
         |> TokenList
 
 
-initPending : Modal
-initPending =
-    Pending
+initConfirm : Modal
+initConfirm =
+    Confirm.init
+        |> Confirm
 
 
 initMaturityList : Blockchain -> Pair -> ( Modal, Cmd Msg )
@@ -130,6 +135,15 @@ update model msg modal =
                         )
                    )
 
+        ( ChainListMsg chainListMsg, ChainList, _ ) ->
+            ChainList.update chainListMsg
+                |> (\( updated, cmd ) ->
+                        ( updated |> Maybe.map never
+                        , cmd |> Cmd.map ChainListMsg
+                        , Nothing
+                        )
+                   )
+
         ( TokenListMsg tokenListMsg, TokenList tokenList, Supported blockchain ) ->
             tokenList
                 |> TokenList.update model blockchain tokenListMsg
@@ -150,10 +164,11 @@ update model msg modal =
                         )
                    )
 
-        ( PendingMsg pendingMsg, Pending, Supported _ ) ->
-            Pending.update pendingMsg
+        ( ConfirmMsg confirmMsg, Confirm confirm, Supported _ ) ->
+            confirm
+                |> Confirm.update confirmMsg
                 |> (\updated ->
-                        ( updated |> Maybe.map (\_ -> Pending)
+                        ( updated |> Maybe.map Confirm
                         , Cmd.none
                         , Nothing
                         )
@@ -220,12 +235,37 @@ subscriptions modal =
             Sub.none
 
 
-view : Modal -> Element Msg
-view modal =
+view :
+    { model
+        | images : Images
+        , chains : Chains
+        , blockchain : Support User.NotSupported Blockchain
+    }
+    -> Modal
+    -> Element Msg
+view model modal =
     case modal of
         Connect connect ->
             Connect.view connect
                 |> map ConnectMsg
+
+        TokenList tokenList ->
+            case model.blockchain of
+                Supported blockchain ->
+                    TokenList.view model blockchain tokenList
+                        |> map TokenListMsg
+
+                _ ->
+                    none
+
+        MaturityList maturityList ->
+            case model.blockchain of
+                Supported blockchain ->
+                    MaturityList.view maturityList
+                        |> map MaturityListMsg
+
+                _ ->
+                    none
 
         _ ->
             none

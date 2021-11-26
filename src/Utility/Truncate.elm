@@ -1,10 +1,77 @@
-module Utility.Truncate exposing (amount)
+module Utility.Truncate exposing (amount, balance, symbol)
 
 
 type alias Truncated =
     { full : String
     , truncated : Maybe String
     }
+
+
+balance :
+    { amount : String
+    , symbol : String
+    }
+    -> Truncated
+balance full =
+    case
+        ( full.amount
+            |> amount
+            |> .truncated
+        , full.symbol
+            |> symbol
+            |> .truncated
+        )
+    of
+        ( Just truncatedAmount, Just truncatedSymbol ) ->
+            { full =
+                [ full.amount
+                , full.symbol
+                ]
+                    |> String.join " "
+            , truncated =
+                [ truncatedAmount
+                , truncatedSymbol
+                ]
+                    |> String.join " "
+                    |> Just
+            }
+
+        ( Just truncatedAmount, Nothing ) ->
+            { full =
+                [ full.amount
+                , full.symbol
+                ]
+                    |> String.join " "
+            , truncated =
+                [ truncatedAmount
+                , full.symbol
+                ]
+                    |> String.join " "
+                    |> Just
+            }
+
+        ( Nothing, Just truncatedSymbol ) ->
+            { full =
+                [ full.amount
+                , full.symbol
+                ]
+                    |> String.join " "
+            , truncated =
+                [ full.amount
+                , truncatedSymbol
+                ]
+                    |> String.join " "
+                    |> Just
+            }
+
+        _ ->
+            { full =
+                [ full.amount
+                , full.symbol
+                ]
+                    |> String.join " "
+            , truncated = Nothing
+            }
 
 
 amount : String -> Truncated
@@ -151,3 +218,17 @@ amount full =
                     _ ->
                         Truncated full Nothing
            )
+
+
+symbol : String -> Truncated
+symbol string =
+    { full = string
+    , truncated =
+        if (string |> String.length) >= 5 then
+            string
+                |> String.left 5
+                |> Just
+
+        else
+            Nothing
+    }

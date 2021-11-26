@@ -4,6 +4,7 @@ module Modal.MaturityList.Main exposing
     , Msg
     , init
     , update
+    , view
     )
 
 import Blockchain.Main exposing (Blockchain)
@@ -12,9 +13,28 @@ import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Web exposing (Web)
+import Element
+    exposing
+        ( Element
+        , alpha
+        , behindContent
+        , centerX
+        , centerY
+        , column
+        , el
+        , fill
+        , height
+        , none
+        , px
+        , width
+        )
+import Element.Background as Background
+import Element.Events as Events
+import Element.Input as Input
 import Modal.MaturityList.Pools exposing (Pools)
 import Modal.MaturityList.Sorting as Sorting exposing (Sorting)
 import Sort.Dict as Dict
+import Utility.Color as Color
 
 
 type Modal
@@ -46,7 +66,7 @@ init blockchain pair =
       , pools = Loading
       }
         |> Modal
-    , Debug.todo "http call"
+    , Cmd.none |> Debug.log "http call"
     )
 
 
@@ -109,3 +129,29 @@ update blockchain msg (Modal modal) =
             , Cmd.none
             , Nothing
             )
+
+
+view : Modal -> Element Msg
+view modal =
+    el
+        [ width fill
+        , height fill
+        , el
+            [ width fill
+            , height fill
+            , Background.color Color.dark500
+            , alpha 0.1
+            , Events.onClick Exit
+            ]
+            none
+            |> behindContent
+        ]
+        (column
+            [ width <| px 335
+            , height <| px 300
+            , centerX
+            , centerY
+            , Background.color Color.light100
+            ]
+            []
+        )
