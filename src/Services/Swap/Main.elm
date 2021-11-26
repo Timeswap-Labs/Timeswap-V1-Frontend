@@ -367,7 +367,7 @@ swapApi service user =
                     }
                         |> Transaction.encode
                         |> Http.jsonBody
-                , expect = Query.decoder |> Http.expectJson ReceivePrice
+                , expect = Http.expectString ReceiveTxnNotification
                 }
 
         _ ->
