@@ -33,6 +33,7 @@ participantAddresses =
     , "0x94c820722D1A9F2Ce3aa640a272a63cE2e032aCE"
     , "0xd1B856ee12Bd00922cae8DD86ab068f8c0F95224"
     , "0xc840D0A9bb73e1C76915c013804B7b6Cb67462ec"
+    , "0xa1d1a9E75Ba80725890eed232869A8321E84Bb32"
     ]
         |> List.map String.toLower
         |> List.map Address
