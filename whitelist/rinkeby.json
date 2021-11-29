@@ -16,15 +16,33 @@
       "decimals": 18
     },
     {
-      "address": "0x2accc7d41a68d1b23565d2c4691aaeb7b1a14371",
-      "name": "Uniswap",
-      "symbol": "TS-UNI",
+      "address": "0x1a416ee7cb46df23c8e2bed192b491c37dde9da7",
+      "name": "TS Dogecoin",
+      "symbol": "TS-DOGE",
       "decimals": 18
     },
     {
-      "address": "0x249845eb7a35a47c34e40eb5f13355a64ec2e039",
-      "name": "Balancer",
+      "address": "0xcb0dfb7f2375bdbaa2e02a39bd55fda918b53c54",
+      "name": "TS Shiba-Inu",
+      "symbol": "TS-SHIB",
+      "decimals": 18
+    },
+    {
+      "address": "0x4d86d74cfcdd70897a6d0bf10698aefe7df9d49e",
+      "name": "TS USDC",
+      "symbol": "TS-USDC",
+      "decimals": 18
+    },
+    {
+      "address": "0xbd61cd5d1cd4b7e39056cfd0998483d251d9adcd",
+      "name": "TS Balancer",
       "symbol": "TS-BAL",
+      "decimals": 18
+    },
+    {
+      "address": "0xe9f6e0c17acb6f0afa8f7563b5be01cf51b9328e",
+      "name": "TS Uniswap",
+      "symbol": "TS-UNI",
       "decimals": 18
     }
   ],
@@ -306,6 +324,76 @@
           "bond": "0x3ecfc0a6a1a086b389b6e175900eb8d883f255e8",
           "insurance": "0x3ada0a38ac4393c822b204eb02620211a1bb1fef",
           "collateralizedDebt": "0x2703aa6d3c3f14c4cc334ecdc983fa8080424340"
+        }
+      ]
+    },
+    {
+      "pair": "0xf22ae3ba210202a8822b36cd3a0981e6d8a68620",
+      "asset": "0x4d86d74cfcdd70897a6d0bf10698aefe7df9d49e",
+      "collateral": "0x1a416ee7cb46df23c8e2bed192b491c37dde9da7",
+      "pools": [
+        {
+          "maturity": 1638288000,
+          "liquidity": "0x967de210db1091aa04608102c1a81906b0e9dd56",
+          "bond": "0x7a689d94f75ad2c68ceee8b8b7d86c03a7f7a16b",
+          "insurance": "0x4bee7cafd7b79817b868b84675f4b8a66c81acec",
+          "collateralizedDebt": "0x07ee421dbf655e1fd4fe1ffcce0368f3501b2d1e"
+        }
+      ]
+    },
+    {
+      "pair": "0xdf8fbae91b7e19d9a98d2d3f35a15fd0283aa67f",
+      "asset": "0x4d86d74cfcdd70897a6d0bf10698aefe7df9d49e",
+      "collateral": "0xbd61cd5d1cd4b7e39056cfd0998483d251d9adcd",
+      "pools": [
+        {
+          "maturity": 1638288000,
+          "liquidity": "0x04200cfeb55c6b0b9f79f78a469e04cf812034f2",
+          "bond": "0x6af3cc1494e10c9e9caec2f92f73c0590c00024f",
+          "insurance": "0x843c9cfe6fbf15aa8572bee2426d713a2c31f854",
+          "collateralizedDebt": "0x3247208e9cbcf5830b3cf674146956254653804e"
+        }
+      ]
+    },
+    {
+      "pair": "0xfb5d11fb7124e07742cd63f9c7681a7ae85797fd",
+      "asset": "0x4d86d74cfcdd70897a6d0bf10698aefe7df9d49e",
+      "collateral": "0xe9f6e0c17acb6f0afa8f7563b5be01cf51b9328e",
+      "pools": [
+        {
+          "maturity": 1638288000,
+          "liquidity": "0x858c0a8ab94c9341cd437c213a4b59befe8f74dd",
+          "bond": "0x6ec3fab44b964deb30e2fe5a1f4cc690050dcc2a",
+          "insurance": "0x605b1ae5d75eada82f6f35a5fe9aec5836df026e",
+          "collateralizedDebt": "0x8376aa5307d2bcd25ca5ff39855c3830e144eccf"
+        }
+      ]
+    },
+    {
+      "pair": "0xed8f187d1389f6312ff3bbbeede12e3aba021a99",
+      "asset": "0x1a416ee7cb46df23c8e2bed192b491c37dde9da7",
+      "collateral": "0x4d86d74cfcdd70897a6d0bf10698aefe7df9d49e",
+      "pools": [
+        {
+          "maturity": 1638288000,
+          "liquidity": "0x825fb0207ba88af4aa93a7cf04bc8b672a6396e4",
+          "bond": "0xc451b0811cd067db3ba57f83fd4010285c596ce1",
+          "insurance": "0x5584129e25cd63f7f03cd3e7be7ccb56e60e848f",
+          "collateralizedDebt": "0xcc29741830c741d348a4c087d4f2fe19ebdb9006"
+        }
+      ]
+    },
+    {
+      "pair": "0x16e12e8f24b0dd5f898402a04e61d9f71f9b5722",
+      "asset": "0xbd61cd5d1cd4b7e39056cfd0998483d251d9adcd",
+      "collateral": "0x4d86d74cfcdd70897a6d0bf10698aefe7df9d49e",
+      "pools": [
+        {
+          "maturity": 1638288000,
+          "liquidity": "0xcd7d293aaf754c7532d3235b00fa8d8133dd7dfc",
+          "bond": "0xe788c7a3deb400c8a0e9fb1606b071cca4487067",
+          "insurance": "0x420cac7880602c47a1f67a44d6a91199b90e4e01",
+          "collateralizedDebt": "0x3e770737e294fb31add05feca0ed461545cd9327"
         }
       ]
     }
