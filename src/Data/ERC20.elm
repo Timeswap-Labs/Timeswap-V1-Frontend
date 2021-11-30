@@ -40,29 +40,29 @@ type ERC20
         }
 
 
-shiba : ERC20
-shiba =
-    { id = 101, address = Address.shiba, name = "Shiba Inu", symbol = "TS-SHIB", decimals = 18 } |> ERC20
-
-
 doge : ERC20
 doge =
-    { id = 101, address = Address.doge, name = "Dogecoin", symbol = "TS-DOGE", decimals = 18 } |> ERC20
+    { id = 2, address = Address.doge, name = "Dogecoin", symbol = "TS-DOGE", decimals = 18 } |> ERC20
 
 
-uniswap : ERC20
-uniswap =
-    { id = 2, address = Address.uniswap, name = "Uniswap", symbol = "TS-UNI", decimals = 18 } |> ERC20
-
-
-balancer : ERC20
-balancer =
-    { id = 3, address = Address.balancer, name = "Balancer", symbol = "TS-BAL", decimals = 18 } |> ERC20
+shiba : ERC20
+shiba =
+    { id = 3, address = Address.shiba, name = "Shiba Inu", symbol = "TS-SHIB", decimals = 18 } |> ERC20
 
 
 usdc : ERC20
 usdc =
-    { id = 101, address = Address.usdc, name = "USDC", symbol = "TS-USDC", decimals = 18 } |> ERC20
+    { id = 4, address = Address.usdc, name = "USDC", symbol = "TS-USDC", decimals = 18 } |> ERC20
+
+
+balancer : ERC20
+balancer =
+    { id = 5, address = Address.balancer, name = "Balancer", symbol = "TS-BAL", decimals = 18 } |> ERC20
+
+
+uniswap : ERC20
+uniswap =
+    { id = 6, address = Address.uniswap, name = "Uniswap", symbol = "TS-UNI", decimals = 18 } |> ERC20
 
 
 fromString : Set ERC20 -> String -> Maybe ERC20
