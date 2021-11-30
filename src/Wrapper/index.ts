@@ -4,6 +4,7 @@ import rinkeby from "../../whitelist/rinkeby.json";
 import * as images from "url:../../image/*.svg";
 import * as tokenImages from "url:../../image/tokens/*.svg";
 import * as chainImages from "url:../../image/chains/*.svg";
+import * as walletImages from "url:../../image/wallets/*.svg";
 
 import { elmUser, init } from "./init";
 
@@ -28,6 +29,7 @@ async function elmInit() {
       images: Object.entries(images),
       tokenImages: Object.entries(tokenImages),
       chainImages: Object.entries(chainImages),
+      walletImages: Object.entries(walletImages),
       slippage: null,
       deadline: null,
       spot: null,
@@ -35,7 +37,7 @@ async function elmInit() {
       chains: {
         default: {
           chainId: 0x4,
-          name: "RINKEBY",
+          name: "Rinkeby",
           native: {
             name: "Ether",
             symbol: "ETH",

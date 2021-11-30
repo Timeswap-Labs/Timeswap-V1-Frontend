@@ -13,6 +13,7 @@ module Page.Main exposing
     )
 
 import Blockchain.Main exposing (Blockchain)
+import Data.Backdrop exposing (Backdrop)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
@@ -20,7 +21,7 @@ import Data.Images exposing (Images)
 import Data.Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Slippage exposing (Slippage)
-import Data.Support exposing (Support)
+import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
 import Data.TokenParam exposing (TokenParam)
 import Element
@@ -58,6 +59,7 @@ type Msg
 type Effect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
+    | OpenSettings
     | OpenConnect
     | OpenConfirm
 
@@ -98,53 +100,49 @@ construct :
     -> Url
     -> Maybe Page
     -> ( Page, Cmd Msg )
-construct ({ chains, blockchain } as model) url maybePage =
-    url
-        |> Route.fromUrl blockchain chains
-        |> Maybe.map
-            (\route ->
-                case ( route, maybePage |> Maybe.andThen toPoolInfo ) of
-                    ( Route.Lend (Just (Parameter.Pool pool)), Just poolInfo ) ->
-                        poolInfo
-                            |> Transaction.initGivenPool Lend.init model pool
-                            |> (\transaction ->
-                                    ( { transaction = transaction }
-                                        |> Lend
-                                    , Cmd.none
-                                    )
-                               )
-
-                    ( Route.Lend parameter, _ ) ->
-                        parameter
-                            |> Transaction.init model
-                            |> Tuple.mapBoth
-                                (\transaction ->
-                                    { transaction = transaction }
-                                        |> Lend
-                                )
-                                (Cmd.map TransactionLendMsg)
-
-                    ( Route.Borrow parameter, _ ) ->
-                        ( { transaction = TransactionBorrow.init parameter }
-                            |> Borrow
-                        , Cmd.none
-                        )
-
-                    ( Route.Liquidity parameter, _ ) ->
-                        ( { transaction = TransactionLiquidity.init parameter }
-                            |> Liquidity
-                        , Cmd.none
-                        )
-            )
-        |> Maybe.withDefault
-            (Nothing
-                |> Transaction.init model
+construct ({ chains } as model) url maybePage =
+    case
+        ( url |> Route.fromUrl model.blockchain chains
+        , model.blockchain
+        , maybePage |> Maybe.andThen toPoolInfo
+        )
+    of
+        ( Just (Route.Lend (Just (Parameter.Pool pool))), Supported blockchain, Just poolInfo ) ->
+            poolInfo
+                |> Transaction.initGivenPool Lend.init model blockchain pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
                             |> Lend
                     )
                     (Cmd.map TransactionLendMsg)
+
+        ( Just (Route.Lend parameter), Supported blockchain, _ ) ->
+            parameter
+                |> Transaction.init model blockchain
+                |> Tuple.mapBoth
+                    (\transaction ->
+                        { transaction = transaction }
+                            |> Lend
+                    )
+                    (Cmd.map TransactionLendMsg)
+
+        ( Just (Route.Borrow parameter), _, _ ) ->
+            ( { transaction = TransactionBorrow.init parameter }
+                |> Borrow
+            , Cmd.none
+            )
+
+        ( Just (Route.Liquidity parameter), _, _ ) ->
+            ( { transaction = TransactionLiquidity.init parameter }
+                |> Liquidity
+            , Cmd.none
+            )
+
+        _ ->
+            ( { transaction = Transaction.notSupported }
+                |> Lend
+            , Cmd.none
             )
 
 
@@ -164,7 +162,11 @@ update model blockchain msg page =
         ( TransactionLendMsg transactionLendMsg, Lend lend ) ->
             lend.transaction
                 |> Transaction.update
-                    { transaction = Lend.update
+                    { initTransaction = Lend.init
+                    , refreshTransaction = Lend.refresh
+                    , transaction = Lend.update model blockchain
+                    , initCreate = Lend.initDoesNotExist
+                    , refreshCreate = Lend.refreshDoesNotExist
                     , create = Lend.updateDoesNotExist
                     }
                     model
@@ -193,6 +195,9 @@ transactionLendEffect effect =
 
         Transaction.OpenMaturityList pair ->
             OpenMaturityList pair |> Just
+
+        Transaction.OpenSettings ->
+            OpenSettings |> Just
 
         Transaction.OpenConnect ->
             OpenConnect |> Just
@@ -263,8 +268,10 @@ toPoolInfo page =
 
 view :
     { model
-        | zone : Zone
+        | time : Posix
+        , zone : Zone
         , chosenZone : ChosenZone
+        , backdrop : Backdrop
         , images : Images
     }
     -> Blockchain
@@ -283,13 +290,13 @@ view model blockchain page =
                 [ transaction
                     |> Transaction.view
                         { title = "Lend"
-                        , transaction = Lend.view blockchain
-                        , create = Lend.viewDoesNotExist
-                        , disabled = Lend.viewDisabled blockchain
-                        , empty = Lend.viewEmpty
+                        , transaction = Lend.view model blockchain
+                        , disabledTransaction = Lend.disabled model blockchain
+                        , create = Lend.doesNotExist model
+                        , disabledCreate = Lend.disabledDoesNotExist model
+                        , empty = Lend.empty model
                         }
                         model
-                        blockchain
                     |> map TransactionLendMsg
                 ]
 

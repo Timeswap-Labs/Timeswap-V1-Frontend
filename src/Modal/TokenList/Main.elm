@@ -8,7 +8,8 @@ module Modal.TokenList.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Data.Address as Address
+import Data.Address as Address exposing (Address)
+import Data.Backdrop exposing (Backdrop)
 import Data.Chains as Chains exposing (Chains)
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
@@ -40,8 +41,14 @@ import Element.Background as Background
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
+import Http
+import Modal.TokenList.Answer as Answer exposing (Answer)
 import Modal.TokenList.Error as Error exposing (Error)
+import Modal.TokenList.Query as Query
+import Process
+import Task
 import Utility.Color as Color
+import Utility.Glass as Glass
 import Utility.Image as Image
 
 
@@ -66,6 +73,8 @@ type Msg
     | GoToAllTokens
     | GoToImportERC20
     | InputAddress String
+    | QueryAgain
+    | ReceiveAnswer (Result Http.Error Answer)
     | ChooseToken Token
     | ImportERC20
     | ClearERC20 ERC20
@@ -98,7 +107,7 @@ update :
     -> Msg
     -> Modal
     -> ( Maybe Modal, Cmd Msg, Maybe Effect )
-update { chains } blockchain msg (Modal modal) =
+update ({ chains } as model) blockchain msg (Modal modal) =
     case ( msg, modal.state ) of
         ( GoToCustomERC20s, AllTokens _ ) ->
             ( { modal | state = CustomERC20s }
@@ -194,7 +203,7 @@ update { chains } blockchain msg (Modal modal) =
                                       }
                                         |> Modal
                                         |> Just
-                                    , Debug.todo "cmd"
+                                    , get model blockchain address
                                     , Nothing
                                     )
                         )
@@ -211,6 +220,107 @@ update { chains } blockchain msg (Modal modal) =
                         , Cmd.none
                         , Nothing
                         )
+
+        ( QueryAgain, AllTokens allTokens ) ->
+            case
+                ( allTokens.input |> Address.fromString
+                , allTokens.erc20
+                )
+            of
+                ( Just address, Failure _ ) ->
+                    chains
+                        |> Chains.getGivenAddress
+                            (blockchain |> Blockchain.toChain)
+                            address
+                        |> Maybe.map
+                            (\erc20 ->
+                                ( { modal
+                                    | state =
+                                        { input = allTokens.input
+                                        , erc20 =
+                                            erc20
+                                                |> Ok
+                                                |> Success
+                                        }
+                                            |> AllTokens
+                                  }
+                                    |> Modal
+                                    |> Just
+                                , Cmd.none
+                                , Nothing
+                                )
+                            )
+                        |> Maybe.withDefault
+                            ( { modal
+                                | state =
+                                    { input = allTokens.input
+                                    , erc20 = Loading
+                                    }
+                                        |> AllTokens
+                              }
+                                |> Modal
+                                |> Just
+                            , get model blockchain address
+                            , Nothing
+                            )
+
+                _ ->
+                    ( { modal
+                        | state =
+                            { input = allTokens.input
+                            , erc20 = Error.NoResult |> Err |> Success
+                            }
+                                |> AllTokens
+                      }
+                        |> Modal
+                        |> Just
+                    , Cmd.none
+                    , Nothing
+                    )
+
+        ( ReceiveAnswer (Ok answer), AllTokens allTokens ) ->
+            ( (if
+                (answer.chainId == (blockchain |> Blockchain.toChain))
+                    && (Just answer.address
+                            == (allTokens.input |> Address.fromString)
+                       )
+               then
+                { modal
+                    | state =
+                        { allTokens
+                            | erc20 =
+                                answer.result
+                                    |> Maybe.map Ok
+                                    |> Maybe.withDefault
+                                        (Err Error.NoResult)
+                                    |> Success
+                        }
+                            |> AllTokens
+                }
+
+               else
+                modal
+              )
+                |> Modal
+                |> Just
+            , Cmd.none
+            , Nothing
+            )
+
+        ( ReceiveAnswer (Err error), AllTokens allTokens ) ->
+            ( { modal
+                | state =
+                    { allTokens
+                        | erc20 = Failure error
+                    }
+                        |> AllTokens
+              }
+                |> Modal
+                |> Just
+            , Process.sleep 5000
+                |> Task.perform (\_ -> QueryAgain)
+            , Nothing
+            )
 
         ( GoToImportERC20, AllTokens { erc20 } ) ->
             ( erc20
@@ -263,25 +373,24 @@ update { chains } blockchain msg (Modal modal) =
             )
 
 
+get : { model | chains : Chains } -> Blockchain -> Address -> Cmd Msg
+get model blockchain address =
+    Http.get
+        { url = address |> Query.toUrlString blockchain
+        , expect =
+            Answer.decoder model
+                |> Http.expectJson ReceiveAnswer
+        }
+
+
 view :
-    { model | images : Images, chains : Chains }
+    { model | backdrop : Backdrop, images : Images, chains : Chains }
     -> Blockchain
     -> Modal
     -> Element Msg
-view ({ chains } as model) blockchain modal =
-    el
-        [ width fill
-        , height fill
-        , el
-            [ width fill
-            , height fill
-            , Background.color Color.dark500
-            , alpha 0.1
-            , Events.onClick Exit
-            ]
-            none
-            |> behindContent
-        ]
+view ({ backdrop, chains } as model) blockchain modal =
+    Glass.outsideModal backdrop
+        Exit
         (column
             [ width <| px 335
             , height <| px 300

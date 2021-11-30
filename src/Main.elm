@@ -7,6 +7,7 @@ import Browser.Events exposing (Visibility)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Address as Address
 import Data.Backdrop as Backdrop exposing (Backdrop)
+import Data.Chain as Chain
 import Data.Chains as Chains exposing (Chains)
 import Data.ChosenZone as ChosenZone exposing (ChosenZone)
 import Data.Deadline as Deadline exposing (Deadline)
@@ -62,6 +63,7 @@ import Task
 import Time exposing (Posix, Zone, ZoneName)
 import Url exposing (Url)
 import Utility.Color as Color
+import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.ZoneName as ZoneName
 
@@ -112,6 +114,7 @@ type alias Flags =
     , images : Images.Flags
     , tokenImages : Images.Flags
     , chainImages : Images.Flags
+    , walletImages : Images.Flags
     , slippage : Slippage.Flag
     , deadline : Deadline.Flag
     , spot : Spot.Flag
@@ -132,6 +135,7 @@ type Msg
     | VisibilityChange Visibility
     | SwitchTheme
     | OpenConnect
+    | OpenChainList
     | ReceiveUser Value
     | BlockchainMsg Blockchain.Msg
     | PageMsg Page.Msg
@@ -217,7 +221,13 @@ init flags url key =
                   , visibility = Browser.Events.Visible
                   , backdrop = flags.hasBackdropSupport |> Backdrop.init
                   , theme = flags.theme |> Theme.init
-                  , images = Images.init flags.images flags.tokenImages flags.chainImages
+                  , images =
+                        Images.init
+                            { images = flags.images
+                            , tokenImages = flags.tokenImages
+                            , chainImages = flags.chainImages
+                            , walletImages = flags.walletImages
+                            }
                   , slippage = flags.slippage |> Slippage.init
                   , deadline = flags.deadline |> Deadline.init
                   , spot = flags.spot |> Spot.init
@@ -260,6 +270,7 @@ update msg model =
                         { model
                             | url = url
                             , page = page
+                            , modal = Nothing
                         }
                     )
                     (Cmd.map PageMsg)
@@ -307,6 +318,11 @@ update msg model =
 
         OpenConnect ->
             ( { model | modal = Modal.initConnect |> Just }
+            , Cmd.none
+            )
+
+        OpenChainList ->
+            ( { model | modal = Modal.initChainList |> Just }
             , Cmd.none
             )
 
@@ -457,7 +473,7 @@ pageEffect blockchain effect model =
             )
 
         Page.OpenMaturityList pair ->
-            Modal.initMaturityList blockchain pair
+            Modal.initMaturityList model blockchain pair
                 |> Tuple.mapBoth
                     (\maturityList ->
                         { model
@@ -466,6 +482,11 @@ pageEffect blockchain effect model =
                         }
                     )
                     (Cmd.map ModalMsg)
+
+        Page.OpenSettings ->
+            ( { model | modal = Modal.initSettings model |> Just }
+            , Cmd.none
+            )
 
         Page.OpenConnect ->
             ( { model | modal = Modal.initConnect |> Just }
@@ -637,7 +658,7 @@ html model =
         , Font.family [ Font.typeface "Supreme" ]
         , (case model.theme of
             Theme.Light ->
-                Color.light500
+                Color.light100
 
             Theme.Dark ->
                 Color.dark500
@@ -669,6 +690,7 @@ header :
         | zoneName : ZoneName
         , chosenZone : ChosenZone
         , device : Device
+        , backdrop : Backdrop
         , theme : Theme
         , images : Images
         , blockchain : Support User.NotSupported Blockchain
@@ -678,7 +700,7 @@ header :
 header ({ device } as model) =
     if device |> Device.isPhoneOrTablet then
         column
-            [ Region.description "header"
+            [ Region.navigation
             , width fill
             , height shrink
             , spacing 40
@@ -697,7 +719,7 @@ header ({ device } as model) =
 
     else
         row
-            [ Region.description "header"
+            [ Region.navigation
             , width fill
             , height <| px 76
             , spacing 76
@@ -712,7 +734,8 @@ header ({ device } as model) =
                 , alignRight
                 , centerY
                 ]
-                [ connectButton model
+                [ chainListButton model
+                , connectButton model
                 , zoneButton model
                 , themeButton model
                 ]
@@ -757,20 +780,22 @@ logo { device, images } =
         ]
 
 
-tabs : { model | device : Device, page : Page } -> Element Never
+tabs :
+    { model
+        | device : Device
+        , backdrop : Backdrop
+        , page : Page
+    }
+    -> Element Never
 tabs ({ device } as model) =
     row
-        [ Region.navigation
-        , (if device |> Device.isPhoneOrTablet then
-            fill
-
-           else
-            shrink
-          )
-            |> width
-        , height shrink
+        [ Region.description "tabs"
+        , width shrink
+        , height <| px 36
         , alignLeft
-        , Background.color Color.light500
+        , padding 4
+        , spacing 4
+        , Background.color Color.primary100
         , Border.rounded 8
         ]
         [ tab model Tab.Lend
@@ -784,7 +809,9 @@ tab { device, page } givenTab =
     if (page |> Page.toTab) == givenTab then
         el
             [ width <| px 84
-            , height <| px 36
+            , height fill
+            , Background.color Color.primary500
+            , Border.rounded 4
             ]
             (el
                 [ centerX
@@ -801,7 +828,7 @@ tab { device, page } givenTab =
     else
         link
             [ width <| px 84
-            , height <| px 36
+            , height fill
             ]
             { url =
                 page
@@ -822,34 +849,98 @@ tab { device, page } givenTab =
             }
 
 
-connectButton :
-    { model | blockchain : Support User.NotSupported Blockchain }
+chainListButton :
+    { model
+        | backdrop : Backdrop
+        , images : Images
+        , blockchain : Support User.NotSupported Blockchain
+    }
     -> Element Msg
-connectButton model =
+chainListButton ({ images } as model) =
     Input.button
-        [ Region.description
-            (case model.blockchain of
-                Supported blockchain ->
-                    blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map (\_ -> "account button")
-                        |> Maybe.withDefault "connect button"
-
-                NotSupported _ ->
-                    "account button"
-            )
+        [ Region.description "chains button"
         , width shrink
         , height <| px 36
         , paddingXY 12 0
-        , Background.color Color.light100
-        , Border.rounded 8
+        , Background.color Color.primary100
+        , Border.rounded 4
         ]
+        { onPress = Just OpenChainList
+        , label =
+            row
+                [ centerX
+                , centerY
+                , paddingXY 0 3
+                , spacing 6
+                , Font.size 14
+                , Font.color Color.transparent400
+                ]
+                (case model.blockchain of
+                    Supported blockchain ->
+                        [ images
+                            |> Image.viewChain
+                                [ width <| px 24
+                                , height <| px 24
+                                , centerY
+                                ]
+                                (blockchain
+                                    |> Blockchain.toChain
+                                )
+                        , blockchain
+                            |> Blockchain.toChain
+                            |> Chain.toString
+                            |> text
+                        ]
+
+                    NotSupported _ ->
+                        [ "Not Supported" |> text ]
+                )
+        }
+
+
+connectButton :
+    { model
+        | backdrop : Backdrop
+        , blockchain : Support User.NotSupported Blockchain
+    }
+    -> Element Msg
+connectButton model =
+    Input.button
+        ([ width shrink
+         , height <| px 36
+         , paddingXY 12 0
+         ]
+            ++ (case model.blockchain of
+                    Supported blockchain ->
+                        blockchain
+                            |> Blockchain.toUser
+                            |> Maybe.map
+                                (\_ ->
+                                    [ Region.description "account button"
+                                    , Background.color Color.primary100
+                                    , Border.rounded 4
+                                    ]
+                                )
+                            |> Maybe.withDefault
+                                [ Region.description "connect button"
+                                , Background.color Color.primary500
+                                , Border.rounded 4
+                                ]
+
+                    NotSupported _ ->
+                        [ Region.description "account button"
+                        , Background.color Color.primary100
+                        , Border.rounded 4
+                        ]
+               )
+        )
         { onPress = Just OpenConnect
         , label =
             el
                 [ centerX
                 , centerY
                 , Font.size 14
+                , Font.color Color.transparent400
                 ]
                 ((case model.blockchain of
                     Supported blockchain ->
@@ -873,16 +964,17 @@ zoneButton :
     { model
         | zoneName : ZoneName
         , chosenZone : ChosenZone
+        , backdrop : Backdrop
     }
     -> Element Msg
-zoneButton { zoneName, chosenZone } =
+zoneButton ({ zoneName, chosenZone } as model) =
     Input.button
         [ Region.description "zone button"
         , width shrink
         , height <| px 36
         , paddingXY 12 0
-        , Background.color Color.light100
-        , Border.rounded 8
+        , Background.color Color.primary100
+        , Border.rounded 4
         ]
         { onPress = Just SwitchZone
         , label =
@@ -890,6 +982,7 @@ zoneButton { zoneName, chosenZone } =
                 [ centerX
                 , centerY
                 , Font.size 14
+                , Font.color Color.transparent400
                 ]
                 ((case chosenZone of
                     ChosenZone.UTC ->
@@ -907,14 +1000,14 @@ zoneButton { zoneName, chosenZone } =
         }
 
 
-themeButton : { model | theme : Theme } -> Element Msg
-themeButton { theme } =
+themeButton : { model | backdrop : Backdrop, theme : Theme } -> Element Msg
+themeButton ({ theme } as model) =
     Input.button
         [ Region.description "theme button"
         , width <| px 36
         , height <| px 36
-        , Background.color Color.light100
-        , Border.rounded 8
+        , Background.color Color.primary100
+        , Border.rounded 4
         ]
         { onPress = Just SwitchTheme
         , label =
@@ -922,6 +1015,7 @@ themeButton { theme } =
                 [ centerX
                 , centerY
                 , Font.size 14
+                , Font.color Color.transparent400
                 ]
                 ((case theme of
                     Theme.Light ->
@@ -937,8 +1031,10 @@ themeButton { theme } =
 
 body :
     { model
-        | zone : Zone
+        | time : Posix
+        , zone : Zone
         , chosenZone : ChosenZone
+        , backdrop : Backdrop
         , images : Images
         , blockchain : Support User.NotSupported Blockchain
         , page : Page

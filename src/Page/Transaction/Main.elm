@@ -1,8 +1,9 @@
 module Page.Transaction.Main exposing (..)
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
+import Data.Backdrop exposing (Backdrop)
 import Data.Chains exposing (Chains)
-import Data.ChosenZone as ChosenZone exposing (ChosenZone)
+import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
@@ -11,7 +12,7 @@ import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Token as Token exposing (Token)
+import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
 import Element
     exposing
@@ -19,13 +20,13 @@ import Element
         , alignLeft
         , alignRight
         , alignTop
+        , centerX
         , centerY
         , column
         , el
         , fill
         , height
         , map
-        , none
         , padding
         , paddingXY
         , px
@@ -41,136 +42,190 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Http
+import Page.Transaction.Answer as Answer exposing (Answer)
 import Page.Transaction.Button as Button
-import Page.Transaction.Error exposing (Error)
+import Page.Transaction.Error as Error exposing (Error)
 import Page.Transaction.PoolInfo exposing (PoolInfo)
-import Page.Transaction.State as State exposing (State)
+import Page.Transaction.PoolState as PoolState exposing (PoolState)
+import Page.Transaction.Query as Query
+import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
+import Process
+import Task
 import Time exposing (Posix, Zone)
 import Utility.Color as Color
+import Utility.Direction as Direction
+import Utility.Duration as Duration
+import Utility.FontStyle as FontStyle
+import Utility.Glass as Glass
 import Utility.Image as Image
+import Utility.Truncate as Truncate
 
 
 type Section transaction create
+    = Section
+        { state : State transaction create
+        , tooltip : Maybe Tooltip
+        }
+
+
+type State transaction create
     = None
     | Asset Token
     | Collateral Token
     | Pair Pair
     | Pool
         { pool : Pool
-        , state : Remote (Error transaction) (State transaction create)
+        , state :
+            Remote
+                (Error transaction create)
+                (PoolState transaction create)
         }
 
 
 type Msg transactionMsg createMsg
     = SelectToken TokenParam
     | SelectMaturity
-    | ClickConnect
+    | ClickSettings
     | TransactionMsg transactionMsg
     | CreateMsg createMsg
+    | QueryAgain
+    | ReceiveAnswer (Result Http.Error Answer)
     | CheckMaturity Posix
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
 
 
 type Effect transactionEffect createEffect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
+    | OpenSettings
     | OpenConnect
     | TransactionEffect transactionEffect
     | CreateEffect createEffect
 
 
 init :
-    { model | time : Posix }
+    { model | time : Posix, chains : Chains }
+    -> Blockchain
     -> Maybe Parameter
     ->
         ( Section transaction create
         , Cmd (Msg transactionMsg createMsg)
         )
-init { time } parameter =
+init ({ time } as model) blockchain parameter =
     case parameter of
         Nothing ->
-            ( None
+            ( { state = None
+              , tooltip = Nothing
+              }
+                |> Section
             , Cmd.none
             )
 
         Just (Parameter.Asset asset) ->
-            ( Asset asset
+            ( { state = Asset asset
+              , tooltip = Nothing
+              }
+                |> Section
             , Cmd.none
             )
 
         Just (Parameter.Collateral collateral) ->
-            ( Collateral collateral
+            ( { state = Collateral collateral
+              , tooltip = Nothing
+              }
+                |> Section
             , Cmd.none
             )
 
         Just (Parameter.Pair pair) ->
-            ( Pair pair
+            ( { state = Pair pair
+              , tooltip = Nothing
+              }
+                |> Section
             , Cmd.none
             )
 
         Just (Parameter.Pool pool) ->
             if pool.maturity |> Maturity.isActive time then
-                ( { pool = pool
-                  , state = Loading
+                ( { state =
+                        { pool = pool
+                        , state = Loading
+                        }
+                            |> Pool
+                  , tooltip = Nothing
                   }
-                    |> Pool
-                , Debug.todo "http call"
+                    |> Section
+                , get model blockchain pool
                 )
 
             else
-                ( { pool = pool
-                  , state = State.Matured |> Success
+                ( { state =
+                        { pool = pool
+                        , state = PoolState.Matured |> Success
+                        }
+                            |> Pool
+                  , tooltip = Nothing
                   }
-                    |> Pool
+                    |> Section
                 , Cmd.none
                 )
 
 
 initGivenPool :
     transaction
-    -> { model | time : Posix }
+    -> { model | time : Posix, chains : Chains }
+    -> Blockchain
     -> Pool
     -> PoolInfo
-    -> Section transaction create
-initGivenPool initTransaction { time } pool poolInfo =
-    { pool = pool
-    , state =
-        (if pool.maturity |> Maturity.isActive time then
-            { poolInfo = poolInfo
-            , transaction = initTransaction
-            }
-                |> State.Active
-
-         else
-            State.Matured
+    ->
+        ( Section transaction create
+        , Cmd (Msg transactionMsg createMsg)
         )
-            |> Success
+initGivenPool initTransaction ({ time } as model) blockchain pool poolInfo =
+    ( { state =
+            { pool = pool
+            , state =
+                (if pool.maturity |> Maturity.isActive time then
+                    { poolInfo = poolInfo
+                    , transaction = initTransaction
+                    }
+                        |> PoolState.Active
+
+                 else
+                    PoolState.Matured
+                )
+                    |> Success
+            }
+                |> Pool
+      , tooltip = Nothing
+      }
+        |> Section
+    , get model blockchain pool
+    )
+
+
+notSupported : Section transaction create
+notSupported =
+    { state = None
+    , tooltip = Nothing
     }
-        |> Pool
+        |> Section
 
 
 update :
-    { transaction :
-        { model
-            | time : Posix
-            , chains : Chains
-            , slippage : Slippage
-            , deadline : Deadline
-        }
-        -> Blockchain
-        -> Pool
+    { initTransaction : transaction
+    , refreshTransaction : transaction -> transaction
+    , transaction :
+        Pool
         -> PoolInfo
         -> transactionMsg
         -> transaction
         -> ( transaction, Cmd transactionMsg, Maybe transactionEffect )
+    , initCreate : create
+    , refreshCreate : create -> create
     , create :
-        { model
-            | time : Posix
-            , chains : Chains
-            , slippage : Slippage
-            , deadline : Deadline
-        }
-        -> Blockchain
-        -> Pool
+        Pool
         -> createMsg
         -> create
         -> ( create, Cmd createMsg, Maybe createEffect )
@@ -190,10 +245,10 @@ update :
         , Cmd (Msg transactionMsg createMsg)
         , Maybe (Effect transactionEffect createEffect)
         )
-update updates model blockchain msg section =
-    case ( msg, section ) of
+update updates model blockchain msg (Section section) =
+    case ( msg, section.state ) of
         ( SelectToken tokenParam, _ ) ->
-            ( section
+            ( section |> Section
             , Cmd.none
             , tokenParam
                 |> OpenTokenList
@@ -201,7 +256,7 @@ update updates model blockchain msg section =
             )
 
         ( SelectMaturity, Pair pair ) ->
-            ( section
+            ( section |> Section
             , Cmd.none
             , pair
                 |> OpenMaturityList
@@ -209,110 +264,299 @@ update updates model blockchain msg section =
             )
 
         ( SelectMaturity, Pool { pool } ) ->
-            ( section
+            ( section |> Section
             , Cmd.none
             , pool.pair
                 |> OpenMaturityList
                 |> Just
             )
 
-        ( ClickConnect, _ ) ->
-            ( section
+        ( ClickSettings, _ ) ->
+            ( section |> Section
             , Cmd.none
-            , blockchain
-                |> Blockchain.toUser
-                |> Maybe.map (\_ -> Nothing)
-                |> Maybe.withDefault (Just OpenConnect)
+            , Just OpenSettings
             )
 
         ( TransactionMsg transactionMsg, Pool { pool, state } ) ->
             case state of
-                Success (State.Active { poolInfo, transaction }) ->
+                Success (PoolState.Active { poolInfo, transaction }) ->
                     transaction
-                        |> updates.transaction model
-                            blockchain
+                        |> updates.transaction
                             pool
                             poolInfo
                             transactionMsg
                         |> (\( updated, cmd, maybeEffect ) ->
-                                ( { pool = pool
-                                  , state =
-                                        { poolInfo = poolInfo
-                                        , transaction = updated
+                                ( { section
+                                    | state =
+                                        { pool = pool
+                                        , state =
+                                            { poolInfo = poolInfo
+                                            , transaction = updated
+                                            }
+                                                |> PoolState.Active
+                                                |> Success
                                         }
-                                            |> State.Active
-                                            |> Success
+                                            |> Pool
                                   }
-                                    |> Pool
+                                    |> Section
                                 , cmd |> Cmd.map TransactionMsg
                                 , maybeEffect |> Maybe.map TransactionEffect
                                 )
                            )
 
                 _ ->
-                    ( section
+                    ( section |> Section
                     , Cmd.none
                     , Nothing
                     )
 
         ( CreateMsg createMsg, Pool { pool, state } ) ->
             case state of
-                Success (State.DoesNotExist create) ->
+                Success (PoolState.DoesNotExist create) ->
                     create
-                        |> updates.create model
-                            blockchain
+                        |> updates.create
                             pool
                             createMsg
                         |> (\( updated, cmd, maybeEffect ) ->
-                                ( { pool = pool
-                                  , state =
-                                        updated
-                                            |> State.DoesNotExist
-                                            |> Success
+                                ( { section
+                                    | state =
+                                        { pool = pool
+                                        , state =
+                                            updated
+                                                |> PoolState.DoesNotExist
+                                                |> Success
+                                        }
+                                            |> Pool
                                   }
-                                    |> Pool
+                                    |> Section
                                 , cmd |> Cmd.map CreateMsg
                                 , maybeEffect |> Maybe.map CreateEffect
                                 )
                            )
 
                 _ ->
-                    ( section
+                    ( section |> Section
                     , Cmd.none
                     , Nothing
                     )
 
-        ( CheckMaturity posix, Pool ({ pool } as state) ) ->
-            ( if pool.maturity |> Maturity.isActive posix then
-                state |> Pool
+        ( QueryAgain, Pool { pool, state } ) ->
+            ( section |> Section
+            , case state of
+                Success PoolState.Matured ->
+                    Cmd.none
 
-              else
-                { state
-                    | state =
-                        State.Matured
+                _ ->
+                    get model blockchain pool
+            , Nothing
+            )
+
+        ( ReceiveAnswer (Ok answer), Pool { pool, state } ) ->
+            ( (if
+                (answer.chainId == (blockchain |> Blockchain.toChain))
+                    && (answer.pool == pool)
+               then
+                case ( answer.result, state ) of
+                    ( Just poolInfo, Success (PoolState.Active active) ) ->
+                        { active | poolInfo = poolInfo }
+                            |> PoolState.Active
                             |> Success
-                }
-                    |> Pool
+
+                    ( Just poolInfo, Success (PoolState.DoesNotExist _) ) ->
+                        { poolInfo = poolInfo
+                        , transaction = updates.initTransaction
+                        }
+                            |> PoolState.Active
+                            |> Success
+
+                    ( Just poolInfo, Failure failure ) ->
+                        { poolInfo = poolInfo
+                        , transaction =
+                            case failure.state of
+                                Error.Active transaction ->
+                                    transaction
+
+                                Error.DoesNotExist _ ->
+                                    updates.initTransaction
+                        }
+                            |> PoolState.Active
+                            |> Success
+
+                    ( Just poolInfo, Loading ) ->
+                        { poolInfo = poolInfo
+                        , transaction = updates.initTransaction
+                        }
+                            |> PoolState.Active
+                            |> Success
+
+                    ( Nothing, Success (PoolState.Active _) ) ->
+                        updates.initCreate
+                            |> PoolState.DoesNotExist
+                            |> Success
+
+                    ( Nothing, Failure failure ) ->
+                        (case failure.state of
+                            Error.Active _ ->
+                                updates.initCreate
+
+                            Error.DoesNotExist create ->
+                                create
+                        )
+                            |> PoolState.DoesNotExist
+                            |> Success
+
+                    ( Nothing, Loading ) ->
+                        updates.initCreate
+                            |> PoolState.DoesNotExist
+                            |> Success
+
+                    _ ->
+                        state
+
+               else
+                state
+              )
+                |> (\updated ->
+                        { section
+                            | state =
+                                { pool = pool
+                                , state = updated
+                                }
+                                    |> Pool
+                        }
+                            |> Section
+                   )
+            , case state of
+                Success PoolState.Matured ->
+                    Cmd.none
+
+                _ ->
+                    Process.sleep 5000
+                        |> Task.perform (\_ -> QueryAgain)
+            , Nothing
+            )
+
+        ( ReceiveAnswer (Err error), Pool { pool, state } ) ->
+            ( (case state of
+                Success (PoolState.Active { transaction }) ->
+                    { error = error
+                    , state =
+                        transaction
+                            |> updates.refreshTransaction
+                            |> Error.Active
+                    }
+                        |> Failure
+
+                Success (PoolState.DoesNotExist create) ->
+                    { error = error
+                    , state =
+                        create
+                            |> updates.refreshCreate
+                            |> Error.DoesNotExist
+                    }
+                        |> Failure
+
+                Failure failure ->
+                    { failure | error = error }
+                        |> Failure
+
+                Loading ->
+                    { error = error
+                    , state =
+                        updates.initTransaction
+                            |> Error.Active
+                    }
+                        |> Failure
+
+                _ ->
+                    state
+              )
+                |> (\updated ->
+                        { section
+                            | state =
+                                { pool = pool
+                                , state = updated
+                                }
+                                    |> Pool
+                        }
+                            |> Section
+                   )
+            , case state of
+                Success PoolState.Matured ->
+                    Cmd.none
+
+                _ ->
+                    Process.sleep 5000
+                        |> Task.perform (\_ -> QueryAgain)
+            , Nothing
+            )
+
+        ( CheckMaturity posix, Pool ({ pool } as state) ) ->
+            ( { section
+                | state =
+                    if pool.maturity |> Maturity.isActive posix then
+                        state |> Pool
+
+                    else
+                        { state
+                            | state =
+                                PoolState.Matured
+                                    |> Success
+                        }
+                            |> Pool
+              }
+                |> Section
+            , Cmd.none
+            , Nothing
+            )
+
+        ( OnMouseEnter tooltip, _ ) ->
+            ( { section | tooltip = Just tooltip }
+                |> Section
+            , Cmd.none
+            , Nothing
+            )
+
+        ( OnMouseLeave, _ ) ->
+            ( { section | tooltip = Nothing }
+                |> Section
             , Cmd.none
             , Nothing
             )
 
         _ ->
-            ( section
+            ( section |> Section
             , Cmd.none
             , Nothing
             )
 
 
+get :
+    { model | chains : Chains }
+    -> Blockchain
+    -> Pool
+    -> Cmd (Msg transactionMsg createMsg)
+get model blockchain pool =
+    Http.get
+        { url = pool |> Query.toUrlString blockchain
+        , expect =
+            Answer.decoder model
+                |> Http.expectJson ReceiveAnswer
+        }
+
+
 subscriptions :
-    Sub transactionMsg
+    (transaction -> Sub transactionMsg)
     -> Section transaction create
     -> Sub (Msg transactionMsg createMsg)
-subscriptions sub section =
-    [ case section of
+subscriptions sub (Section section) =
+    [ case section.state of
         Pool { state } ->
             case state of
-                Success (State.Active _) ->
+                Success (PoolState.Active _) ->
+                    Time.every 1000 CheckMaturity
+
+                Success (PoolState.DoesNotExist _) ->
                     Time.every 1000 CheckMaturity
 
                 _ ->
@@ -320,11 +564,13 @@ subscriptions sub section =
 
         _ ->
             Sub.none
-    , case section of
+    , case section.state of
         Pool { state } ->
             case state of
-                Success (State.Active _) ->
-                    sub |> Sub.map TransactionMsg
+                Success (PoolState.Active { transaction }) ->
+                    transaction
+                        |> sub
+                        |> Sub.map TransactionMsg
 
                 _ ->
                     Sub.none
@@ -336,8 +582,8 @@ subscriptions sub section =
 
 
 toParameter : Section transaction create -> Maybe Parameter
-toParameter section =
-    case section of
+toParameter (Section section) =
+    case section.state of
         None ->
             Nothing
 
@@ -359,11 +605,11 @@ toParameter section =
 
 
 toPoolInfo : Section transaction create -> Maybe PoolInfo
-toPoolInfo section =
-    case section of
+toPoolInfo (Section section) =
+    case section.state of
         Pool { state } ->
             case state of
-                Success (State.Active { poolInfo }) ->
+                Success (PoolState.Active { poolInfo }) ->
                     poolInfo |> Just
 
                 _ ->
@@ -383,6 +629,13 @@ view :
             , second : Element transactionMsg
             , buttons : Element transactionMsg
             }
+    , disabledTransaction :
+        Pool
+        -> transaction
+        ->
+            { first : Element Never
+            , second : Element Never
+            }
     , create :
         Pool
         -> create
@@ -391,9 +644,9 @@ view :
             , second : Element createMsg
             , buttons : Element createMsg
             }
-    , disabled :
+    , disabledCreate :
         Pool
-        -> transaction
+        -> create
         ->
             { first : Element Never
             , second : Element Never
@@ -407,12 +660,18 @@ view :
             , second : Element Never
             }
     }
-    -> { model | zone : Zone, chosenZone : ChosenZone, images : Images }
-    -> Blockchain
+    ->
+        { model
+            | time : Posix
+            , zone : Zone
+            , chosenZone : ChosenZone
+            , backdrop : Backdrop
+            , images : Images
+        }
     -> Section transaction create
     -> Element (Msg transactionMsg createMsg)
-view views model blockchain section =
-    (case section of
+view views model (Section section) =
+    (case section.state of
         None ->
             views.empty
                 { asset = Nothing
@@ -422,14 +681,8 @@ view views model blockchain section =
                         { first = first |> map never
                         , second = second |> map never
                         , buttons =
-                            blockchain
-                                |> Blockchain.toUser
-                                |> Maybe.map
-                                    (\_ ->
-                                        Button.disabled "Select Pair First"
-                                            |> map never
-                                    )
-                                |> Maybe.withDefault connectButton
+                            Button.disabled "Select Pair First"
+                                |> map never
                         }
                    )
 
@@ -442,14 +695,8 @@ view views model blockchain section =
                         { first = first |> map never
                         , second = second |> map never
                         , buttons =
-                            blockchain
-                                |> Blockchain.toUser
-                                |> Maybe.map
-                                    (\_ ->
-                                        Button.disabled "Select Pair First"
-                                            |> map never
-                                    )
-                                |> Maybe.withDefault connectButton
+                            Button.disabled "Select Pair First"
+                                |> map never
                         }
                    )
 
@@ -462,14 +709,8 @@ view views model blockchain section =
                         { first = first |> map never
                         , second = second |> map never
                         , buttons =
-                            blockchain
-                                |> Blockchain.toUser
-                                |> Maybe.map
-                                    (\_ ->
-                                        Button.disabled "Select Pair First"
-                                            |> map never
-                                    )
-                                |> Maybe.withDefault connectButton
+                            Button.disabled "Select Pair First"
+                                |> map never
                         }
                    )
 
@@ -482,14 +723,8 @@ view views model blockchain section =
                         { first = first |> map never
                         , second = second |> map never
                         , buttons =
-                            blockchain
-                                |> Blockchain.toUser
-                                |> Maybe.map
-                                    (\_ ->
-                                        Button.disabled "Select Maturity First"
-                                            |> map never
-                                    )
-                                |> Maybe.withDefault connectButton
+                            Button.disabled "Select Maturity First"
+                                |> map never
                         }
                    )
 
@@ -510,25 +745,26 @@ view views model blockchain section =
                                 { first = first |> map never
                                 , second = second |> map never
                                 , buttons =
-                                    blockchain
-                                        |> Blockchain.toUser
-                                        |> Maybe.map
-                                            (\_ ->
-                                                Button.disabled "Loading"
-                                                    |> map never
-                                            )
-                                        |> Maybe.withDefault connectButton
+                                    Button.disabled "Loading"
+                                        |> map never
                                 }
                            )
 
-                Failure { error, transaction } ->
-                    transaction
-                        |> views.disabled pool
+                Failure failure ->
+                    (case failure.state of
+                        Error.Active transaction ->
+                            transaction
+                                |> views.disabledTransaction pool
+
+                        Error.DoesNotExist create ->
+                            create
+                                |> views.disabledCreate pool
+                    )
                         |> (\{ first, second } ->
                                 { first = first |> map never
                                 , second = second |> map never
                                 , buttons =
-                                    (case error of
+                                    (case failure.error of
                                         Http.Timeout ->
                                             "Network Too Slow"
 
@@ -546,22 +782,17 @@ view views model blockchain section =
                                 }
                            )
 
-                Success (State.Active { transaction }) ->
+                Success (PoolState.Active { transaction }) ->
                     transaction
                         |> views.transaction pool
                         |> (\{ first, second, buttons } ->
                                 { first = first |> map TransactionMsg
                                 , second = second |> map TransactionMsg
-                                , buttons =
-                                    blockchain
-                                        |> Blockchain.toUser
-                                        |> Maybe.map
-                                            (\_ -> buttons |> map TransactionMsg)
-                                        |> Maybe.withDefault connectButton
+                                , buttons = buttons |> map TransactionMsg
                                 }
                            )
 
-                Success (State.DoesNotExist create) ->
+                Success (PoolState.DoesNotExist create) ->
                     create
                         |> views.create pool
                         |> (\{ first, second, buttons } ->
@@ -571,7 +802,7 @@ view views model blockchain section =
                                 }
                            )
 
-                Success State.Matured ->
+                Success PoolState.Matured ->
                     views.empty
                         { asset =
                             pool.pair
@@ -585,26 +816,42 @@ view views model blockchain section =
                         |> (\{ first, second } ->
                                 { first = first |> map never
                                 , second = second |> map never
-                                , buttons =
-                                    Button.error "Already Matured"
-                                        |> map never
+                                , buttons = Button.error "Already Matured" |> map never
                                 }
                            )
     )
         |> (\{ first, second, buttons } ->
                 column
                     [ Region.description
-                        ((views.title |> String.toLower)
-                            ++ " transaction"
+                        ([ views.title |> String.toLower
+                         , "transaction"
+                         ]
+                            |> String.join " "
                         )
                     , width shrink
                     , height shrink
-                    , padding 20
-                    , spacing 20
-                    , Background.color Color.light100
+                    , padding 16
+                    , spacing 16
                     , Border.rounded 8
+                    , Glass.background model.backdrop
+                    , Border.width 1
+                    , Border.color Color.transparent100
                     ]
-                    [ el [] (text views.title)
+                    [ row
+                        [ width fill
+                        , height shrink
+                        ]
+                        [ el
+                            [ width shrink
+                            , height shrink
+                            , paddingXY 0 4
+                            , Font.size 24
+                            , Font.color Color.light100
+                            , Font.bold
+                            ]
+                            (text views.title)
+                        , settingsButton model
+                        ]
                     , row
                         [ width shrink
                         , height shrink
@@ -633,27 +880,48 @@ view views model blockchain section =
            )
 
 
-connectButton : Element (Msg transactionMsg createMsg)
-connectButton =
-    Button.view
-        { msg = ClickConnect
-        , label = "Connect Wallet"
-        , description = "connect button"
+settingsButton :
+    { model | images : Images }
+    -> Element (Msg transactionMsg createMsg)
+settingsButton { images } =
+    Input.button
+        [ width shrink
+        , height shrink
+        , alignRight
+        , centerY
+        ]
+        { onPress = Just ClickSettings
+        , label =
+            images
+                |> Image.option
+                    [ width <| px 20
+                    , height <| px 20
+                    ]
         }
 
 
 parameters :
-    { model | zone : Zone, chosenZone : ChosenZone, images : Images }
-    -> Section transaction create
+    { model
+        | time : Posix
+        , zone : Zone
+        , chosenZone : ChosenZone
+        , backdrop : Backdrop
+        , images : Images
+    }
+    ->
+        { section
+            | state : State transaction create
+            , tooltip : Maybe Tooltip
+        }
     -> Element (Msg transactionMsg createMsg)
-parameters model section =
+parameters ({ backdrop } as model) section =
     column
         [ Region.description "pool parameters"
-        , width <| px 335
+        , width <| px 343
         , height shrink
-        , padding 20
-        , spacing 20
-        , Background.color Color.light500
+        , padding 16
+        , spacing 12
+        , Background.color Color.primary100
         , Border.rounded 8
         ]
         [ pairParameters model section
@@ -663,13 +931,17 @@ parameters model section =
 
 pairParameters :
     { model | images : Images }
-    -> Section transaction create
+    ->
+        { section
+            | state : State transaction create
+            , tooltip : Maybe Tooltip
+        }
     -> Element (Msg transactionMsg createMsg)
 pairParameters model section =
     row
         [ width fill
         , height shrink
-        , spacing 20
+        , spacing 16
         ]
         [ tokenParameter TokenParam.Asset model section
         , tokenParameter TokenParam.Collateral model section
@@ -679,10 +951,14 @@ pairParameters model section =
 tokenParameter :
     TokenParam
     -> { model | images : Images }
-    -> Section transaction create
+    ->
+        { section
+            | state : State transaction create
+            , tooltip : Maybe Tooltip
+        }
     -> Element (Msg transactionMsg createMsg)
-tokenParameter tokenParam { images } section =
-    (case ( section, tokenParam ) of
+tokenParameter tokenParam { images } { state, tooltip } =
+    (case ( state, tokenParam ) of
         ( Asset asset, TokenParam.Asset ) ->
             Just asset
 
@@ -716,12 +992,14 @@ tokenParameter tokenParam { images } section =
                 column
                     [ width fill
                     , height shrink
-                    , spacing 6
+                    , spacing 8
                     ]
                     [ el
                         [ width shrink
                         , height shrink
+                        , paddingXY 0 3
                         , Font.size 14
+                        , Font.color Color.primary400
                         ]
                         ((case tokenParam of
                             TokenParam.Asset ->
@@ -733,7 +1011,7 @@ tokenParameter tokenParam { images } section =
                             |> text
                         )
                     , Input.button
-                        [ Region.description
+                        ([ Region.description
                             (case tokenParam of
                                 TokenParam.Asset ->
                                     "asset button"
@@ -741,43 +1019,63 @@ tokenParameter tokenParam { images } section =
                                 TokenParam.Collateral ->
                                     "collateral button"
                             )
-                        , width fill
-                        , height <| px 44
-                        , maybeToken
-                            |> Maybe.map (\_ -> Color.light100)
-                            |> Maybe.withDefault Color.primary500
-                            |> Background.color
-                        , Border.rounded 8
-                        ]
+                         , width fill
+                         , height <| px 44
+                         ]
+                            ++ (maybeToken
+                                    |> Maybe.map
+                                        (\_ ->
+                                            [ Background.color Color.primary100
+                                            , Border.rounded 8
+                                            ]
+                                        )
+                                    |> Maybe.withDefault
+                                        [ Background.color Color.primary500
+                                        , Border.rounded 8
+                                        ]
+                               )
+                        )
                         { onPress = SelectToken tokenParam |> Just
                         , label =
                             row
                                 [ width fill
                                 , height fill
                                 , paddingXY 12 0
-                                , spacing 6
                                 ]
                                 (maybeToken
                                     |> Maybe.map
                                         (\token ->
-                                            [ images
-                                                |> Image.viewToken
-                                                    [ width <| px 24
-                                                    , alignLeft
-                                                    , centerY
-                                                    ]
-                                                    token
-                                            , el
-                                                [ width shrink
-                                                , height shrink
-                                                , alignLeft
-                                                , centerY
-                                                , Font.size 14
+                                            [ row
+                                                [ width <| px 100
+                                                , height fill
+                                                , spacing 6
                                                 ]
-                                                (token
-                                                    |> Token.toSymbol
-                                                    |> text
-                                                )
+                                                [ images
+                                                    |> Image.viewToken
+                                                        [ width <| px 24
+                                                        , alignLeft
+                                                        , centerY
+                                                        ]
+                                                        token
+                                                , Truncate.view
+                                                    { tooltip =
+                                                        { align = Direction.Left ()
+                                                        , move = Direction.Left 0 |> Debug.log "later"
+                                                        , onMouseEnterMsg = OnMouseEnter
+                                                        , onMouseLeaveMsg = OnMouseLeave
+                                                        , given = Tooltip.Token tokenParam
+                                                        , opened = tooltip
+                                                        }
+                                                    , main =
+                                                        { fontSize = 16
+                                                        , fontPadding = 4
+                                                        , fontColor = Color.light100
+                                                        , texts =
+                                                            token
+                                                                |> Truncate.fromSymbol
+                                                        }
+                                                    }
+                                                ]
                                             , images
                                                 |> Image.discloser
                                                     [ width <| px 9
@@ -793,6 +1091,7 @@ tokenParameter tokenParam { images } section =
                                             , alignLeft
                                             , centerY
                                             , Font.size 14
+                                            , Font.color Color.light100
                                             ]
                                             (text "Select Token")
                                         , images
@@ -809,28 +1108,39 @@ tokenParameter tokenParam { images } section =
 
 
 maturityParameter :
-    { model | zone : Zone, chosenZone : ChosenZone, images : Images }
-    -> Section transaction create
+    { model
+        | time : Posix
+        , zone : Zone
+        , chosenZone : ChosenZone
+        , images : Images
+    }
+    ->
+        { section
+            | state : State transaction create
+            , tooltip : Maybe Tooltip
+        }
     -> Element (Msg transactionMsg createMsg)
-maturityParameter { zone, chosenZone, images } section =
+maturityParameter ({ images } as model) { state, tooltip } =
     column
         [ width fill
         , height shrink
-        , spacing 6
+        , spacing 8
         ]
         [ el
             [ width shrink
             , height shrink
+            , paddingXY 0 3
             , Font.size 14
+            , Font.color Color.primary400
             ]
             (text "Maturity")
-        , case section of
+        , case state of
             Pool { pool } ->
                 Input.button
                     [ Region.description "maturity button"
                     , width fill
                     , height <| px 44
-                    , Background.color Color.light100
+                    , Background.color Color.primary100
                     , Border.rounded 8
                     ]
                     { onPress = SelectMaturity |> Just
@@ -841,36 +1151,17 @@ maturityParameter { zone, chosenZone, images } section =
                             , paddingXY 12 0
                             , spacing 6
                             ]
-                            [ el
-                                [ width shrink
-                                , height shrink
-                                , alignLeft
-                                , centerY
-                                , Font.size 14
-                                ]
-                                ((case chosenZone of
-                                    ChosenZone.Here ->
-                                        Just zone
-
-                                    ChosenZone.UTC ->
-                                        Just Time.utc
-
-                                    ChosenZone.Unix ->
-                                        Nothing
-                                 )
-                                    |> Maybe.map
-                                        (\givenZone ->
-                                            pool.maturity
-                                                |> Maturity.toString
-                                                    givenZone
-                                        )
-                                    |> Maybe.withDefault
-                                        (pool.maturity
-                                            |> Maturity.toUnix
-                                            |> String.fromInt
-                                        )
-                                    |> text
-                                )
+                            [ Duration.viewMaturity model
+                                { tooltip =
+                                    { align = Direction.Left ()
+                                    , move = Direction.Left 0 |> Debug.log "later"
+                                    , onMouseEnterMsg = OnMouseEnter
+                                    , onMouseLeaveMsg = OnMouseLeave
+                                    , given = Tooltip.Maturity
+                                    , opened = tooltip
+                                    }
+                                , maturity = pool.maturity
+                                }
                             , images
                                 |> Image.discloser
                                     [ width <| px 9
@@ -897,11 +1188,22 @@ maturityParameter { zone, chosenZone, images } section =
                             , spacing 6
                             ]
                             [ el
+                                [ width <| px 24
+                                , height <| px 24
+                                ]
+                                (images
+                                    |> Image.hourglass
+                                        [ height <| px 24
+                                        , centerX
+                                        ]
+                                )
+                            , el
                                 [ width shrink
                                 , height shrink
                                 , alignLeft
                                 , centerY
                                 , Font.size 14
+                                , Font.color Color.transparent400
                                 ]
                                 (text "Select Maturity")
                             , images
@@ -919,7 +1221,7 @@ maturityParameter { zone, chosenZone, images } section =
                     , height <| px 44
                     , paddingXY 12 0
                     , spacing 6
-                    , Background.color Color.light100
+                    , Background.color Color.primary100
                     , Border.rounded 8
                     ]
                     (el
@@ -928,6 +1230,7 @@ maturityParameter { zone, chosenZone, images } section =
                         , alignLeft
                         , centerY
                         , Font.size 14
+                        , Font.color Color.transparent400
                         ]
                         (text "Select Pair First")
                     )

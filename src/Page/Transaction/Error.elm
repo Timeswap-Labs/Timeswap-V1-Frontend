@@ -1,9 +1,14 @@
-module Page.Transaction.Error exposing (Error)
+module Page.Transaction.Error exposing (Error, State(..))
 
 import Http
 
 
-type alias Error transaction =
+type alias Error transaction create =
     { error : Http.Error
-    , transaction : transaction
+    , state : State transaction create
     }
+
+
+type State transaction create
+    = Active transaction
+    | DoesNotExist create

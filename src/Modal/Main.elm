@@ -2,6 +2,7 @@ module Modal.Main exposing
     ( Effect(..)
     , Modal
     , Msg
+    , initChainList
     , initConfirm
     , initConnect
     , initMaturityList
@@ -15,7 +16,9 @@ module Modal.Main exposing
 
 import Blockchain.Main exposing (Blockchain)
 import Blockchain.User.Main as User
+import Data.Backdrop exposing (Backdrop)
 import Data.Chains exposing (Chains)
+import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
@@ -26,6 +29,7 @@ import Data.Spot exposing (Spot)
 import Data.Support exposing (Support(..))
 import Data.Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
+import Data.Wallets exposing (Wallets)
 import Element
     exposing
         ( Element
@@ -38,6 +42,7 @@ import Modal.Connect.Main as Connect
 import Modal.MaturityList.Main as MaturityList
 import Modal.Settings.Main as Settings
 import Modal.TokenList.Main as TokenList
+import Time exposing (Posix, Zone)
 
 
 type Modal
@@ -97,12 +102,17 @@ initConfirm =
         |> Confirm
 
 
-initMaturityList : Blockchain -> Pair -> ( Modal, Cmd Msg )
-initMaturityList blockchain pair =
-    MaturityList.init blockchain pair
+initMaturityList : { model | chains : Chains } -> Blockchain -> Pair -> ( Modal, Cmd Msg )
+initMaturityList model blockchain pair =
+    MaturityList.init model blockchain pair
         |> Tuple.mapBoth
             MaturityList
             (Cmd.map MaturityListMsg)
+
+
+initChainList : Modal
+initChainList =
+    ChainList
 
 
 update :
@@ -156,7 +166,7 @@ update model msg modal =
 
         ( MaturityListMsg maturityListMsg, MaturityList maturityList, Supported blockchain ) ->
             maturityList
-                |> MaturityList.update blockchain maturityListMsg
+                |> MaturityList.update model blockchain maturityListMsg
                 |> (\( updated, cmd, maybeEffect ) ->
                         ( updated |> Maybe.map MaturityList
                         , cmd |> Cmd.map MaturityListMsg
@@ -237,7 +247,12 @@ subscriptions modal =
 
 view :
     { model
-        | images : Images
+        | time : Posix
+        , zone : Zone
+        , chosenZone : ChosenZone
+        , backdrop : Backdrop
+        , images : Images
+        , wallets : Wallets
         , chains : Chains
         , blockchain : Support User.NotSupported Blockchain
     }
@@ -246,8 +261,16 @@ view :
 view model modal =
     case modal of
         Connect connect ->
-            Connect.view connect
+            Connect.view model connect
                 |> map ConnectMsg
+
+        Settings settings ->
+            Settings.view model settings
+                |> map SettingsMsg
+
+        ChainList ->
+            ChainList.view model
+                |> map ChainListMsg
 
         TokenList tokenList ->
             case model.blockchain of
@@ -260,8 +283,8 @@ view model modal =
 
         MaturityList maturityList ->
             case model.blockchain of
-                Supported blockchain ->
-                    MaturityList.view maturityList
+                Supported _ ->
+                    MaturityList.view model maturityList
                         |> map MaturityListMsg
 
                 _ ->

@@ -1,9 +1,9 @@
-module Page.Transaction.State exposing (State(..))
+module Page.Transaction.PoolState exposing (PoolState(..))
 
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 
 
-type State transaction create
+type PoolState transaction create
     = Active
         { poolInfo : PoolInfo
         , transaction : transaction

@@ -75,21 +75,21 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
 }
 
 function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
-  app.ports.connectMetamask.subscribe(() => {
-    if (window.ethereum && ethereum) {
+  app.ports.connect.subscribe(wallet => {
+    if (wallet == "metamask" && window.ethereum && ethereum) {
       gp.metamaskProvider = window.ethereum;
-      metamaskConnect(app, whitelist, gp);
+      receiveUser(app, whitelist, gp);
     } else {
       app.ports.noMetamask.send();
     }
   });
 
   app.ports.disconnect.subscribe(() => {
-    app.ports.metamaskMsg.send(null);
+    app.ports.receiveUser.send(null);
   });
 }
 
-function metamaskConnect(
+function receiveUser(
   app: ElmApp<Ports>,
   whitelist: WhiteList,
   gp: GlobalParams
@@ -97,9 +97,10 @@ function metamaskConnect(
   gp.metamaskProvider
     .send("eth_requestAccounts", [])
     .then((accounts: string[]) => {
-      app.ports.metamaskMsg.send({
+      app.ports.receiveUser.send({
         chainId: ethereum.chainId,
-        user: accounts[0],
+        wallet: "metamask",
+        address: accounts[0],
       });
       gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
@@ -114,9 +115,10 @@ function metamaskConnected(
 ) {
   gp.metamaskProvider.send("eth_accounts", []).then((accounts: string[]) => {
     if (accounts[0]) {
-      app.ports.metamaskMsg.send({
+      app.ports.receiveUser.send({
         chainId: ethereum.chainId,
-        user: accounts[0],
+        wallet: "metamask",
+        address: accounts[0],
       });
       gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
@@ -133,9 +135,10 @@ function metamaskChainChange(
   ethereum.on("chainChanged", (chainId: string) => {
     gp.metamaskProvider!.send("eth_accounts", []).then((accounts: string[]) => {
       if (accounts[0]) {
-        app.ports.metamaskMsg.send({
+        app.ports.receiveUser.send({
           chainId,
-          user: accounts[0],
+          wallet: "metamask",
+          address: accounts[0],
         });
 
         gp.provider.removeAllListeners();
@@ -157,9 +160,10 @@ function metamaskAccountsChange(
 ) {
   ethereum.on("accountsChanged", (accounts: string[]) => {
     if (accounts[0]) {
-      app.ports.metamaskMsg.send({
+      app.ports.receiveUser.send({
         chainId: ethereum.chainId,
-        user: accounts[0],
+        wallet: "metamask",
+        address: accounts[0],
       });
 
       gp.metamaskProvider.removeAllListeners();
@@ -169,7 +173,7 @@ function metamaskAccountsChange(
 
       userInit(app, whitelist, gp, accounts[0]);
     } else {
-      app.ports.metamaskMsg.send(null);
+      app.ports.receiveUser.send(null);
     }
   });
 }

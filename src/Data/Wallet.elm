@@ -5,11 +5,14 @@ module Data.Wallet exposing
     , encode
     , init
     , sorter
+    , toString
+    , toUrlString
     )
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Sort exposing (Sorter)
+import Url.Builder as Builder
 
 
 type Wallet
@@ -28,6 +31,20 @@ init string =
 
         _ ->
             Nothing
+
+
+toString : Wallet -> String
+toString wallet =
+    case wallet of
+        Metamask ->
+            "Metamask"
+
+
+toUrlString : Wallet -> String
+toUrlString wallet =
+    case wallet of
+        Metamask ->
+            Builder.crossOrigin "https://metamask.io" [] []
 
 
 decoder : Decoder Wallet

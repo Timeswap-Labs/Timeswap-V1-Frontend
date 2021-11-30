@@ -13,9 +13,11 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Utility.Color as Color
+import Utility.Glass as Glass
 
 
 view :
@@ -37,6 +39,8 @@ view { msg, label, description } =
             el
                 [ centerX
                 , centerY
+                , Font.size 14
+                , Font.color Color.light100
                 ]
                 (text label)
         }
@@ -47,12 +51,14 @@ disabled string =
     el
         [ width <| px 335
         , height <| px 44
-        , Background.color Color.light500
+        , Background.color Color.primary100
         , Border.rounded 8
         ]
         (el
             [ centerX
             , centerY
+            , Font.size 14
+            , Font.color Color.light100
             ]
             (text string)
         )
@@ -63,12 +69,14 @@ error string =
     el
         [ width <| px 335
         , height <| px 44
-        , Background.color Color.light500
+        , Background.color Color.negative500
         , Border.rounded 8
         ]
         (el
             [ centerX
             , centerY
+            , Font.size 14
+            , Font.color Color.light100
             ]
             (text string)
         )

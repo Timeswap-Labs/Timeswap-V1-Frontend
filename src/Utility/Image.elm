@@ -31,6 +31,7 @@ module Utility.Image exposing
     , twitter
     , viewChain
     , viewToken
+    , viewWallet
     , wallet
     , warning
     )
@@ -40,6 +41,7 @@ import Data.ERC20 as ERC20
 import Data.Images exposing (Images)
 import Data.Native as Native
 import Data.Token as Token exposing (Token)
+import Data.Wallet as Wallet exposing (Wallet)
 import Element
     exposing
         ( Attribute
@@ -94,6 +96,24 @@ viewChain attributes (Chain { name }) images =
                 |> Dict.get name
                 |> Maybe.withDefault "default"
         , description = name
+        }
+
+
+viewWallet : List (Attribute msg) -> Wallet -> Images -> Element msg
+viewWallet attributes givenWallet images =
+    image
+        attributes
+        { src =
+            images
+                |> .wallets
+                |> Dict.get
+                    (givenWallet
+                        |> Wallet.toString
+                    )
+                |> Maybe.withDefault "default"
+        , description =
+            givenWallet
+                |> Wallet.toString
         }
 
 

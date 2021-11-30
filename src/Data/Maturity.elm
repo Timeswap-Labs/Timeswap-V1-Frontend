@@ -1,5 +1,6 @@
 module Data.Maturity exposing
     ( Maturity
+    , Status(..)
     , decoder
     , encode
     , fromFragment

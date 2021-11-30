@@ -1,10 +1,12 @@
 module Modal.Confirm.Main exposing (Modal, Msg, init, update, view)
 
+import Data.Backdrop exposing (Backdrop)
 import Element
     exposing
         ( Element
         , none
         )
+import Utility.Glass as Glass
 
 
 type Modal
@@ -28,6 +30,8 @@ update msg modal =
             Nothing
 
 
-view : Element Never
-view =
-    none
+view : { model | backdrop : Backdrop } -> Element Msg
+view { backdrop } =
+    Glass.outsideModal backdrop
+        Exit
+        none

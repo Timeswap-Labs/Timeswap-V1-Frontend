@@ -1,4 +1,4 @@
-module Data.Backdrop exposing (Backdrop, Flag, init)
+module Data.Backdrop exposing (Backdrop(..), Flag, init)
 
 
 type Backdrop

@@ -5,6 +5,7 @@ module Data.Address exposing
     , encode
     , fromString
     , sorter
+    , toQueryParameter
     , toString
     , toStringShort
     )
@@ -14,6 +15,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Keccak.Int as Keccak
 import Sort exposing (Sorter)
+import Url.Builder as Builder exposing (QueryParameter)
 
 
 type Address
@@ -89,6 +91,13 @@ toStringShort address =
                 |> toString
     in
     String.left 5 string ++ "..." ++ String.right 3 string
+
+
+toQueryParameter : Address -> QueryParameter
+toQueryParameter address =
+    address
+        |> toString
+        |> Builder.string "address"
 
 
 compare : Address -> Address -> Order

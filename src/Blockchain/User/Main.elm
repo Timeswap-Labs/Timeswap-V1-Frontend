@@ -3,7 +3,7 @@ module Blockchain.User.Main exposing
     , Msg
     , NotSupported
     , User
-    , getStringBalance
+    , getBalance
     , hasEnoughAllowance
     , hasEnoughBalance
     , init
@@ -201,14 +201,13 @@ toAddressNotSupported (NotSupported { address }) =
     address
 
 
-getStringBalance : Token -> User -> Maybe String
-getStringBalance token (User { balances }) =
+getBalance : Token -> User -> Maybe Uint
+getBalance token (User { balances }) =
     balances
         |> Remote.map
             (\dict ->
                 dict
                     |> Dict.get token
-                    |> Maybe.map (Uint.toAmount token)
             )
         |> Remote.withDefault Nothing
 

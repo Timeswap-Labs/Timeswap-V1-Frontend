@@ -7,8 +7,8 @@ declare module "*.elm" {
 }
 
 declare interface Ports {
-  connectMetamask: PortFromElm;
-  metamaskMsg: PortToElm<MetamaskMsg | null>;
+  connect: PortFromElm<string>;
+  receiveUser: PortToElm<ReceiveUser | null>;
   noMetamask: PortToElm;
   disconnect: PortFromElm;
 
@@ -39,9 +39,10 @@ declare interface Ports {
   faucetMint: PortFromElm<Faucet>;
 }
 
-interface MetamaskMsg {
-  chainId: string;
-  user: string;
+interface ReceiveUser {
+  chainId: int;
+  wallet: string;
+  address: string
 }
 
 interface SdkPoolsMsg {

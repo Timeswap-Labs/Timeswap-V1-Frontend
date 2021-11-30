@@ -4,14 +4,36 @@ port module Modal.Settings.Main exposing
     , Msg
     , init
     , update
+    , view
     )
 
+import Data.Backdrop exposing (Backdrop)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Or exposing (Or(..))
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.Spot as Spot exposing (Spot)
+import Element
+    exposing
+        ( Element
+        , alpha
+        , behindContent
+        , centerX
+        , centerY
+        , column
+        , el
+        , fill
+        , height
+        , none
+        , px
+        , width
+        )
+import Element.Background as Background
+import Element.Events as Events
+import Element.Input as Input
 import Json.Encode exposing (Value)
 import Modal.Settings.Tooltip exposing (Tooltip)
+import Utility.Color as Color
+import Utility.Glass as Glass
 import Utility.Input as Input
 
 
@@ -145,3 +167,18 @@ port cacheDeadline : Value -> Cmd msg
 
 
 port cacheSpot : Value -> Cmd msg
+
+
+view : { model | backdrop : Backdrop } -> Modal -> Element Msg
+view { backdrop } modal =
+    Glass.outsideModal backdrop
+        Exit
+        (column
+            [ width <| px 335
+            , height <| px 300
+            , centerX
+            , centerY
+            , Background.color Color.light100
+            ]
+            []
+        )
