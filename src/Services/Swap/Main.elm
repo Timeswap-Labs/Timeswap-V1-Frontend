@@ -103,7 +103,7 @@ init =
     ( { inToken = GameToken.Uniswap
       , outToken = GameToken.Balancer
       , dropdown = Nothing
-      , options = [ GameToken.Uniswap, GameToken.Balancer, GameToken.Shiba ]
+      , options = [ GameToken.Uniswap, GameToken.Balancer, GameToken.Shiba, GameToken.Doge, GameToken.USDC ]
       , input = ""
       , notification = Nothing
       , cache = Loading
@@ -478,7 +478,7 @@ inTokenDropdownButton :
     -> Element Msg
 inTokenDropdownButton ({ images, tokenImages } as model) gameToken dropdown options =
     Input.button
-        ([ width <| px 130
+        ([ width <| px 150
          , height <| px 44
          , padding 12
          , (if dropdown == Just InToken then
@@ -669,7 +669,7 @@ outTokenDropdownButton :
     -> Element Msg
 outTokenDropdownButton ({ images, tokenImages } as model) gameToken dropdown options =
     Input.button
-        ([ width <| px 130
+        ([ width <| px 150
          , height <| px 44
          , padding 12
          , (if dropdown == Just OutToken then

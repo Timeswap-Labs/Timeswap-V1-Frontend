@@ -1,4 +1,4 @@
-module Data.Address exposing (Address, balancer, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, encode, fromString, maticRinkeby, participantAddresses, shiba, sorter, toString, toStringShort, uniswap, wethDaiRinkeby, wethRinkeby)
+module Data.Address exposing (Address, balancer, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, doge, encode, fromString, maticRinkeby, participantAddresses, shiba, sorter, toString, toStringShort, uniswap, usdc, wethDaiRinkeby, wethRinkeby)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -11,7 +11,12 @@ type Address
 
 shiba : Address
 shiba =
-    Address "0xb932c0d5c87B5F8354CC8898Ba74E5F28510C10E"
+    Address "0xCb0DfB7f2375BDBAA2E02A39BD55fda918b53c54"
+
+
+doge : Address
+doge =
+    Address "0x1A416eE7Cb46DF23c8e2beD192b491c37dDE9Da7"
 
 
 balancer : Address
@@ -22,6 +27,11 @@ balancer =
 uniswap : Address
 uniswap =
     Address "0x2accc7d41a68d1b23565d2c4691aaeb7b1a14371"
+
+
+usdc : Address
+usdc =
+    Address "0x4d86d74cfcdd70897a6d0bf10698aefe7df9d49e"
 
 
 participantAddresses : List Address

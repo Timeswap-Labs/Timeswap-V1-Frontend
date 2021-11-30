@@ -10,20 +10,14 @@ type GameToken
     = Uniswap
     | Balancer
     | Shiba
+    | Doge
+    | USDC
 
 
 encode : GameToken -> Value
 encode gameToken =
-    (case gameToken of
-        Uniswap ->
-            "uniswap"
-
-        Balancer ->
-            "balancer"
-
-        Shiba ->
-            "shiba"
-    )
+    gameToken
+        |> toApiTokenId
         |> Encode.string
 
 
@@ -39,6 +33,12 @@ toApiTokenId gameToken =
         Shiba ->
             "shiba-inu"
 
+        Doge ->
+            "dogecoin"
+
+        USDC ->
+            "usd-coin"
+
 
 toERC20 : GameToken -> ERC20
 toERC20 gameToken =
@@ -51,6 +51,12 @@ toERC20 gameToken =
 
         Shiba ->
             ERC20.shiba
+
+        Doge ->
+            ERC20.doge
+
+        USDC ->
+            ERC20.usdc
 
 
 toToken : GameToken -> Token

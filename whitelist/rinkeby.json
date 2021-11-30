@@ -26,6 +26,24 @@
       "name": "Balancer",
       "symbol": "TS-BAL",
       "decimals": 18
+    },
+    {
+      "address": "0xCb0DfB7f2375BDBAA2E02A39BD55fda918b53c54",
+      "name": "Shiba Inu",
+      "symbol": "TS-SHIB",
+      "decimals": 18
+    },
+    {
+      "address": "0x1A416eE7Cb46DF23c8e2beD192b491c37dDE9Da7",
+      "name": "Dogecoin",
+      "symbol": "TS-DOGE",
+      "decimals": 18
+    },
+    {
+      "address": "0x4D86d74Cfcdd70897a6D0BF10698AEfe7dF9d49E",
+      "name": "USDC",
+      "symbol": "TS-USDC",
+      "decimals": 18
     }
   ],
   "pairs": [
