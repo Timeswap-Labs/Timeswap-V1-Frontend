@@ -103,8 +103,8 @@ init =
     ( { inToken = GameToken.Doge
       , outToken = GameToken.Shiba
       , dropdown = Nothing
-      , options = [ GameToken.Matic, GameToken.Axie, GameToken.Shiba, GameToken.Doge, GameToken.USDC ]
-      , input = ""
+      , options = [ GameToken.ETH, GameToken.Shiba, GameToken.Doge, GameToken.USDC ]
+      , input = "0"
       , notification = Nothing
       , cache = Loading
       }

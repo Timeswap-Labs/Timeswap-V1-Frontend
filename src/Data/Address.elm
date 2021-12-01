@@ -1,4 +1,4 @@
-module Data.Address exposing (Address, axie, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, doge, encode, fromString, matic, maticRinkeby, participantAddresses, shiba, sorter, toString, toStringShort, usdc, wethDaiRinkeby, wethRinkeby)
+module Data.Address exposing (Address, axie, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, doge, encode, eth, fromString, matic, maticRinkeby, participantAddresses, shiba, sorter, toString, toStringShort, usdc, wethDaiRinkeby, wethRinkeby)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -32,6 +32,11 @@ axie =
 matic : Address
 matic =
     Address "0x2586D0c90b4D432033Cc5fB370c54d4B3A93b857"
+
+
+eth : Address
+eth =
+    Address "0x95f8eCE5EC5838a78Df7CF60211F2Ee7764Aa7d9"
 
 
 participantAddresses : List Address

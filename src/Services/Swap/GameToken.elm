@@ -11,6 +11,7 @@ type GameToken
     | Shiba
     | Doge
     | USDC
+    | ETH
 
 
 encode : GameToken -> Value
@@ -38,6 +39,9 @@ toApiTokenId gameToken =
         USDC ->
             "usd-coin"
 
+        ETH ->
+            "ethereum"
+
 
 toERC20 : GameToken -> ERC20
 toERC20 gameToken =
@@ -56,6 +60,9 @@ toERC20 gameToken =
 
         USDC ->
             ERC20.usdc
+
+        ETH ->
+            ERC20.eth
 
 
 toToken : GameToken -> Token
