@@ -335,7 +335,7 @@ fetchPrice :
     -> Cmd Msg
 fetchPrice service =
     Http.post
-        { url = "https://api.timeswap.io/price"
+        { url = "https://ts-gamification-api.herokuapp.com/price"
         , body =
             { token1 = service.inToken
             , token2 = service.outToken
@@ -354,7 +354,7 @@ swapApi service user =
     case user of
         Success userData ->
             Http.post
-                { url = "https://api.timeswap.io/swap"
+                { url = "https://ts-gamification-api.herokuapp.com/swap"
                 , body =
                     { incomingTokenId = service.inToken
                     , outgoingTokenId = service.outToken
@@ -819,13 +819,6 @@ outputAmount input cache =
             , bottom = 0
             , left = 12
             }
-        , Border.widthEach
-            { top = 1
-            , right = 1
-            , bottom = 1
-            , left = 0
-            }
-        , Border.solid
         , Border.color Color.transparent100
         , Border.roundEach
             { topLeft = 0
