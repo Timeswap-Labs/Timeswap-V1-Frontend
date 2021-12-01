@@ -1,12 +1,13 @@
 module Data.ERC20 exposing
     ( ERC20
-    , balancer
+    , axie
     , compare
     , daiRinkeby
     , decoder
     , doge
     , encode
     , fromString
+    , matic
     , maticRinkeby
     , shiba
     , sorter
@@ -16,7 +17,6 @@ module Data.ERC20 exposing
     , toName
     , toString
     , toSymbol
-    , uniswap
     , usdc
     , wethRinkeby
     )
@@ -55,14 +55,14 @@ usdc =
     { id = 4, address = Address.usdc, name = "USDC", symbol = "TS-USDC", decimals = 18 } |> ERC20
 
 
-balancer : ERC20
-balancer =
-    { id = 5, address = Address.balancer, name = "Balancer", symbol = "TS-BAL", decimals = 18 } |> ERC20
+axie : ERC20
+axie =
+    { id = 5, address = Address.axie, name = "Axie Infinity", symbol = "TS-AXS", decimals = 18 } |> ERC20
 
 
-uniswap : ERC20
-uniswap =
-    { id = 6, address = Address.uniswap, name = "Uniswap", symbol = "TS-UNI", decimals = 18 } |> ERC20
+matic : ERC20
+matic =
+    { id = 6, address = Address.matic, name = "Polygon", symbol = "TS-MATIC", decimals = 18 } |> ERC20
 
 
 fromString : Set ERC20 -> String -> Maybe ERC20

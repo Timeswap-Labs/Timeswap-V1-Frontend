@@ -100,16 +100,16 @@ type alias Error =
 
 init : ( Service, Cmd Msg )
 init =
-    ( { inToken = GameToken.Uniswap
-      , outToken = GameToken.Balancer
+    ( { inToken = GameToken.Doge
+      , outToken = GameToken.Shiba
       , dropdown = Nothing
-      , options = [ GameToken.Uniswap, GameToken.Balancer, GameToken.Shiba, GameToken.Doge, GameToken.USDC ]
+      , options = [ GameToken.Matic, GameToken.Axie, GameToken.Shiba, GameToken.Doge, GameToken.USDC ]
       , input = ""
       , notification = Nothing
       , cache = Loading
       }
         |> Service
-    , fetchPrice { inToken = GameToken.Uniswap, outToken = GameToken.Balancer }
+    , fetchPrice { inToken = GameToken.Doge, outToken = GameToken.Shiba }
     )
 
 

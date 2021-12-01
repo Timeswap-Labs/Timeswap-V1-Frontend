@@ -2,13 +2,12 @@ module Services.Swap.GameToken exposing (GameToken(..), encode, toApiTokenId, to
 
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Token as Token exposing (Token)
-import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 
 
 type GameToken
-    = Uniswap
-    | Balancer
+    = Matic
+    | Axie
     | Shiba
     | Doge
     | USDC
@@ -24,11 +23,11 @@ encode gameToken =
 toApiTokenId : GameToken -> String
 toApiTokenId gameToken =
     case gameToken of
-        Uniswap ->
-            "uniswap"
+        Matic ->
+            "matic-network"
 
-        Balancer ->
-            "balancer"
+        Axie ->
+            "axie-infinity"
 
         Shiba ->
             "shiba-inu"
@@ -43,11 +42,11 @@ toApiTokenId gameToken =
 toERC20 : GameToken -> ERC20
 toERC20 gameToken =
     case gameToken of
-        Uniswap ->
-            ERC20.uniswap
+        Matic ->
+            ERC20.matic
 
-        Balancer ->
-            ERC20.balancer
+        Axie ->
+            ERC20.axie
 
         Shiba ->
             ERC20.shiba

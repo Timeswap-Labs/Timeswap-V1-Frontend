@@ -34,15 +34,15 @@
       "decimals": 18
     },
     {
-      "address": "0xbd61cd5d1cd4b7e39056cfd0998483d251d9adcd",
-      "name": "TS Balancer",
-      "symbol": "TS-BAL",
+      "address": "0x4bABb4A5e0324b75E5c9401906E16434a7B59d89",
+      "name": "TS Axie Infinity",
+      "symbol": "TS-AXS",
       "decimals": 18
     },
     {
-      "address": "0xe9f6e0c17acb6f0afa8f7563b5be01cf51b9328e",
-      "name": "TS Uniswap",
-      "symbol": "TS-UNI",
+      "address": "0x2586D0c90b4D432033Cc5fB370c54d4B3A93b857",
+      "name": "TS Polygon",
+      "symbol": "TS-MATIC",
       "decimals": 18
     }
   ],
