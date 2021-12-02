@@ -318,7 +318,7 @@ metamaskButton ({ images, wallets } as model) =
                     , Wallet.Metamask |> Set.memberOf wallets
                     )
                 of
-                    ( Just Wallet.Metmask, True ) ->
+                    ( Just Wallet.Metamask, True ) ->
                         row
                             [ width fill
                             , height <| px 54
