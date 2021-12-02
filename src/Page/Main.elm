@@ -165,9 +165,9 @@ update model blockchain msg page =
                     { initTransaction = Lend.init
                     , refreshTransaction = Lend.refresh
                     , transaction = Lend.update model blockchain
-                    , initCreate = Lend.initDoesNotExist
-                    , refreshCreate = Lend.refreshDoesNotExist
-                    , create = Lend.updateDoesNotExist
+                    , initCreate = ()
+                    , refreshCreate = identity
+                    , create = \_ _ () -> ( (), Cmd.none, Nothing )
                     }
                     model
                     blockchain

@@ -7,12 +7,9 @@ port module Page.Transaction.Lend.Main exposing
     , doesNotExist
     , empty
     , init
-    , initDoesNotExist
     , refresh
-    , refreshDoesNotExist
     , subscriptions
     , update
-    , updateDoesNotExist
     , view
     )
 
@@ -153,16 +150,6 @@ init =
     , tooltip = Nothing
     }
         |> Transaction
-
-
-initDoesNotExist : ()
-initDoesNotExist =
-    ()
-
-
-refreshDoesNotExist : () -> ()
-refreshDoesNotExist =
-    identity
 
 
 refresh : Transaction -> Transaction
@@ -1112,18 +1099,6 @@ updateGivenInsuranceOut input claimsOut =
                     |> Insurance
             )
         |> Maybe.withDefault claimsOut
-
-
-updateDoesNotExist :
-    Pool
-    -> Never
-    -> ()
-    -> ( (), Cmd Never, Maybe Never )
-updateDoesNotExist _ _ () =
-    ( ()
-    , Cmd.none |> Cmd.map never
-    , Nothing |> Maybe.map never
-    )
 
 
 query :

@@ -13,6 +13,8 @@ module Blockchain.User.Main exposing
     , receiveUserInit
     , toAddress
     , toAddressNotSupported
+    , toWallet
+    , toWalletNotSupported
     , update
     )
 
@@ -189,6 +191,16 @@ receiveNotSupported value =
 
         Err _ ->
             Nothing
+
+
+toWallet : User -> Wallet
+toWallet (User { wallet }) =
+    wallet
+
+
+toWalletNotSupported : NotSupported -> Wallet
+toWalletNotSupported (NotSupported { wallet }) =
+    wallet
 
 
 toAddress : User -> Address

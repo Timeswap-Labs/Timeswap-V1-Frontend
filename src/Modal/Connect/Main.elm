@@ -8,17 +8,19 @@ port module Modal.Connect.Main exposing
     , view
     )
 
+import Blockchain.Main as Blockchain exposing (Blockchain)
+import Blockchain.User.Main as User
 import Data.Address as Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Images exposing (Images)
 import Data.Remote exposing (Remote(..))
+import Data.Support exposing (Support(..))
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Wallets exposing (Wallets)
 import Element
     exposing
         ( Element
         , alignRight
-        , behindContent
         , centerX
         , centerY
         , column
@@ -39,7 +41,6 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
-import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Json.Decode as Decode
@@ -185,6 +186,7 @@ view :
         | backdrop : Backdrop
         , images : Images
         , wallets : Wallets
+        , blockchain : Support User.NotSupported Blockchain
     }
     -> Modal
     -> Element Msg
@@ -215,7 +217,13 @@ view ({ backdrop } as model) modal =
         )
 
 
-viewWallets : { model | images : Images, wallets : Wallets } -> Element Msg
+viewWallets :
+    { model
+        | images : Images
+        , wallets : Wallets
+        , blockchain : Support User.NotSupported Blockchain
+    }
+    -> Element Msg
 viewWallets ({ images } as model) =
     column
         [ width fill
@@ -226,15 +234,45 @@ viewWallets ({ images } as model) =
             [ width fill
             , height shrink
             ]
-            [ el
-                [ width shrink
-                , height shrink
-                , centerY
-                , Font.size 18
-                , paddingXY 0 3
-                , Font.color Color.light100
-                ]
-                (text "Connect Wallet")
+            [ (case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.toUser
+                        |> Maybe.map User.toWallet
+
+                NotSupported notSupported ->
+                    notSupported
+                        |> User.toWalletNotSupported
+                        |> Just
+              )
+                |> Maybe.map
+                    (\_ ->
+                        Input.button
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            ]
+                            { onPress = Just GoToWallets
+                            , label =
+                                images
+                                    |> Image.arrowDown
+                                        [ width <| px 18
+                                        , height <| px 18
+                                        , rotate (pi / 2)
+                                        ]
+                            }
+                    )
+                |> Maybe.withDefault
+                    (el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        , Font.size 18
+                        , paddingXY 0 3
+                        , Font.color Color.light100
+                        ]
+                        (text "Connect Wallet")
+                    )
             , Input.button
                 [ width shrink
                 , height shrink
@@ -255,98 +293,161 @@ viewWallets ({ images } as model) =
         ]
 
 
-metamaskButton : { model | images : Images, wallets : Wallets } -> Element Msg
-metamaskButton { images, wallets } =
-    if Wallet.Metamask |> Set.memberOf wallets then
-        Input.button
-            [ width fill
-            , height <| px 54
-            , paddingXY 18 0
-            , Background.color Color.primary100
-            , Border.rounded 8
-            ]
-            { onPress = Connect Wallet.Metamask |> Just
-            , label =
-                row
-                    [ width fill
-                    , height fill
-                    , spacing 8
-                    ]
-                    [ images
-                        |> Image.viewWallet
-                            [ width <| px 24
-                            , height <| px 24
-                            , centerY
-                            ]
-                            Wallet.Metamask
-                    , el
-                        [ width shrink
-                        , height shrink
-                        , centerY
-                        , Font.size 16
-                        , paddingXY 0 4
-                        , Font.color Color.light100
-                        ]
-                        (Wallet.Metamask
-                            |> Wallet.toString
-                            |> text
-                        )
-                    , images
-                        |> Image.arrow
-                            [ width <| px 24
-                            , height <| px 24
-                            , alignRight
-                            , centerY
-                            ]
-                    ]
-            }
+metamaskButton :
+    { model
+        | images : Images
+        , wallets : Wallets
+        , blockchain : Support User.NotSupported Blockchain
+    }
+    -> Element Msg
+metamaskButton ({ images, wallets } as model) =
+    (case model.blockchain of
+        Supported blockchain ->
+            blockchain
+                |> Blockchain.toUser
+                |> Maybe.map User.toWallet
 
-    else
-        newTabLink
-            [ width fill
-            , height <| px 54
-            , paddingXY 18 0
-            , Background.color Color.primary100
-            , Border.rounded 8
-            ]
-            { url = Wallet.Metamask |> Wallet.toUrlString
-            , label =
-                row
-                    [ width fill
-                    , height fill
-                    , spacing 8
-                    ]
-                    [ images
-                        |> Image.viewWallet
-                            [ width <| px 24
-                            , height <| px 24
-                            , centerY
+        NotSupported notSupported ->
+            notSupported
+                |> User.toWalletNotSupported
+                |> Just
+    )
+        |> (\wallet ->
+                case
+                    ( wallet
+                    , Wallet.Metamask |> Set.memberOf wallets
+                    )
+                of
+                    ( Just Wallet.Metmask, True ) ->
+                        row
+                            [ width fill
+                            , height <| px 54
+                            , paddingXY 18 0
+                            , spacing 8
+                            , Background.color Color.primary100
+                            , Border.rounded 8
                             ]
-                            Wallet.Metamask
-                    , el
-                        [ width shrink
-                        , height shrink
-                        , centerY
-                        , Font.size 16
-                        , paddingXY 0 4
-                        , Font.color Color.light100
-                        ]
-                        ([ "Install"
-                         , Wallet.Metamask
-                            |> Wallet.toString
-                         ]
-                            |> String.join " "
-                            |> text
-                        )
-                    , images
-                        |> Image.link
-                            [ width <| px 18
-                            , height <| px 18
-                            , alignRight
-                            , centerY
+                            [ images
+                                |> Image.viewWallet
+                                    [ width <| px 24
+                                    , height <| px 24
+                                    , centerY
+                                    ]
+                                    Wallet.Metamask
+                            , el
+                                [ width shrink
+                                , height shrink
+                                , centerY
+                                , Font.size 16
+                                , paddingXY 0 4
+                                , Font.color Color.light100
+                                ]
+                                (Wallet.Metamask
+                                    |> Wallet.toString
+                                    |> text
+                                )
+                            , el
+                                [ width <| px 8
+                                , height <| px 8
+                                , alignRight
+                                , centerY
+                                , Background.color Color.positive500
+                                , Border.rounded 4
+                                ]
+                                none
                             ]
-                    ]
-            }
+
+                    ( _, True ) ->
+                        Input.button
+                            [ width fill
+                            , height <| px 54
+                            , paddingXY 18 0
+                            , Background.color Color.primary100
+                            , Border.rounded 8
+                            ]
+                            { onPress = Connect Wallet.Metamask |> Just
+                            , label =
+                                row
+                                    [ width fill
+                                    , height fill
+                                    , spacing 8
+                                    ]
+                                    [ images
+                                        |> Image.viewWallet
+                                            [ width <| px 24
+                                            , height <| px 24
+                                            , centerY
+                                            ]
+                                            Wallet.Metamask
+                                    , el
+                                        [ width shrink
+                                        , height shrink
+                                        , centerY
+                                        , Font.size 16
+                                        , paddingXY 0 4
+                                        , Font.color Color.light100
+                                        ]
+                                        (Wallet.Metamask
+                                            |> Wallet.toString
+                                            |> text
+                                        )
+                                    , images
+                                        |> Image.arrow
+                                            [ width <| px 24
+                                            , height <| px 24
+                                            , alignRight
+                                            , centerY
+                                            ]
+                                    ]
+                            }
+
+                    ( _, False ) ->
+                        newTabLink
+                            [ width fill
+                            , height <| px 54
+                            , paddingXY 18 0
+                            , Background.color Color.primary100
+                            , Border.rounded 8
+                            ]
+                            { url = Wallet.Metamask |> Wallet.toUrlString
+                            , label =
+                                row
+                                    [ width fill
+                                    , height fill
+                                    , spacing 8
+                                    ]
+                                    [ images
+                                        |> Image.viewWallet
+                                            [ width <| px 24
+                                            , height <| px 24
+                                            , centerY
+                                            ]
+                                            Wallet.Metamask
+                                    , el
+                                        [ width shrink
+                                        , height shrink
+                                        , centerY
+                                        , Font.size 16
+                                        , paddingXY 0 4
+                                        , Font.color Color.light100
+                                        ]
+                                        ([ "Install"
+                                         , Wallet.Metamask
+                                            |> Wallet.toString
+                                         ]
+                                            |> String.join " "
+                                            |> text
+                                        )
+                                    , images
+                                        |> Image.link
+                                            [ width <| px 18
+                                            , height <| px 18
+                                            , alignRight
+                                            , centerY
+                                            ]
+                                    ]
+                            }
+           )
 
 
 viewWaiting :
