@@ -11,6 +11,7 @@ import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
+import Data.Images exposing (Images)
 import Data.Maturity exposing (Maturity)
 import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)
@@ -19,6 +20,7 @@ import Data.Web exposing (Web)
 import Element
     exposing
         ( Element
+        , alignRight
         , alpha
         , behindContent
         , centerX
@@ -28,11 +30,20 @@ import Element
         , fill
         , height
         , none
+        , padding
+        , paddingXY
         , px
+        , row
+        , shrink
+        , spacing
+        , text
         , width
         )
 import Element.Background as Background
+import Element.Border as Border
 import Element.Events as Events
+import Element.Font as Font
+import Element.Input as Input
 import Http
 import Modal.MaturityList.Answer as Answer exposing (Answer)
 import Modal.MaturityList.Pools exposing (Pools)
@@ -47,6 +58,7 @@ import Utility.Color as Color
 import Utility.Direction as Direction
 import Utility.Duration as Duration
 import Utility.Glass as Glass
+import Utility.Image as Image
 
 
 type Modal
@@ -215,42 +227,79 @@ view :
         , zone : Zone
         , chosenZone : ChosenZone
         , backdrop : Backdrop
+        , images : Images
     }
     -> Modal
     -> Element Msg
-view ({ backdrop } as model) (Modal modal) =
+view ({ backdrop, images } as model) (Modal modal) =
     Glass.outsideModal backdrop
         Exit
         (column
-            [ width <| px 335
-            , height <| px 300
+            [ width <| px 375
+            , height shrink
+            , padding 24
+            , spacing 16
             , centerX
             , centerY
-            , Background.color Color.light100
+            , Glass.background backdrop
+            , Border.rounded 8
+            , Border.color Color.transparent100
+            , Border.width 1
             ]
-            (case modal.pools of
-                Success pools ->
-                    pools
-                        |> Dict.toList
-                        |> List.map
-                            (\( maturity, summary ) ->
-                                el
-                                    []
-                                    (Duration.viewMaturity model
-                                        { tooltip =
-                                            { align = Direction.Left ()
-                                            , move = Direction.Left 0 |> Debug.todo "later"
-                                            , onMouseEnterMsg = OnMouseEnter
-                                            , onMouseLeaveMsg = OnMouseLeave
-                                            , given = Tooltip.Maturity maturity
-                                            , opened = modal.tooltip
+            [ row
+                [ width fill
+                , height shrink
+                ]
+                [ el
+                    [ width shrink
+                    , height shrink
+                    , centerY
+                    , Font.size 18
+                    , paddingXY 0 3
+                    , Font.color Color.light100
+                    ]
+                    (text "Select Maturity")
+                , Input.button
+                    [ width shrink
+                    , height shrink
+                    , alignRight
+                    , centerY
+                    ]
+                    { onPress = Just Exit
+                    , label =
+                        images
+                            |> Image.close
+                                [ width <| px 24
+                                , height <| px 24
+                                ]
+                    }
+                ]
+            , column
+                []
+                (case modal.pools of
+                    Success pools ->
+                        pools
+                            |> Dict.toList
+                            |> List.map
+                                (\( maturity, summary ) ->
+                                    el
+                                        []
+                                        (Duration.viewMaturity model
+                                            { tooltip =
+                                                { align = Direction.Left ()
+                                                , move = Direction.Left 0 |> Debug.todo "later"
+                                                , onMouseEnterMsg = OnMouseEnter
+                                                , onMouseLeaveMsg = OnMouseLeave
+                                                , given = Tooltip.Maturity maturity
+                                                , opened = modal.tooltip
+                                                }
+                                            , maturity = maturity
                                             }
-                                        , maturity = maturity
-                                        }
-                                    )
-                            )
+                                        )
+                                )
 
-                _ ->
-                    []
-            )
+                    _ ->
+                        []
+                )
+            ]
         )

@@ -10,6 +10,7 @@ import Element
         , el
         , fill
         , height
+        , none
         , padding
         , paddingXY
         , px
@@ -217,10 +218,8 @@ empty { images } param =
                     , height shrink
                     , alignLeft
                     , centerY
-                    , Font.size 14
-                    , Font.color Color.transparent400
                     ]
-                    (text "Select Token")
+                    none
                 ]
         )
 
@@ -267,9 +266,7 @@ emptyNoInput { images } param =
                     , height shrink
                     , alignLeft
                     , centerY
-                    , Font.size 14
-                    , Font.color Color.transparent400
                     ]
-                    (text "Select Token")
+                    none
                 ]
         )

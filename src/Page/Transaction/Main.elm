@@ -1026,6 +1026,8 @@ tokenParameter tokenParam { images } { state, tooltip } =
                                     |> Maybe.map
                                         (\_ ->
                                             [ Background.color Color.primary100
+                                            , Border.width 1
+                                            , Border.color Color.transparent100
                                             , Border.rounded 8
                                             ]
                                         )
@@ -1141,6 +1143,8 @@ maturityParameter ({ images } as model) { state, tooltip } =
                     , width fill
                     , height <| px 44
                     , Background.color Color.primary100
+                    , Border.width 1
+                    , Border.color Color.transparent100
                     , Border.rounded 8
                     ]
                     { onPress = SelectMaturity |> Just
@@ -1230,7 +1234,7 @@ maturityParameter ({ images } as model) { state, tooltip } =
                         , alignLeft
                         , centerY
                         , Font.size 14
-                        , Font.color Color.transparent400
+                        , Font.color Color.transparent100
                         ]
                         (text "Select Pair First")
                     )

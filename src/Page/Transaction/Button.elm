@@ -58,7 +58,7 @@ disabled string =
             [ centerX
             , centerY
             , Font.size 14
-            , Font.color Color.light100
+            , Font.color Color.transparent100
             ]
             (text string)
         )

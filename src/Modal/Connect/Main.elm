@@ -208,8 +208,13 @@ view ({ backdrop } as model) modal =
                 Wallets ->
                     viewWallets model
 
-                Waiting waiting ->
-                    viewWaiting model waiting
+                Waiting ({ error } as waiting) ->
+                    case error of
+                        Loading ->
+                            viewInitializing model waiting
+
+                        _ ->
+                            viewError model waiting
 
                 _ ->
                     none |> Debug.log "later"
@@ -234,7 +239,7 @@ viewWallets ({ images } as model) =
             [ width fill
             , height shrink
             ]
-            [ (case model.blockchain of
+            (((case model.blockchain of
                 Supported blockchain ->
                     blockchain
                         |> Blockchain.toUser
@@ -247,7 +252,7 @@ viewWallets ({ images } as model) =
               )
                 |> Maybe.map
                     (\_ ->
-                        Input.button
+                        [ Input.button
                             [ width shrink
                             , height shrink
                             , centerY
@@ -261,9 +266,20 @@ viewWallets ({ images } as model) =
                                         , rotate (pi / 2)
                                         ]
                             }
+                        , el
+                            [ width shrink
+                            , height shrink
+                            , centerX
+                            , centerY
+                            , Font.size 18
+                            , paddingXY 0 3
+                            , Font.color Color.light100
+                            ]
+                            (text "Change Wallet")
+                        ]
                     )
                 |> Maybe.withDefault
-                    (el
+                    [ el
                         [ width shrink
                         , height shrink
                         , centerY
@@ -272,22 +288,24 @@ viewWallets ({ images } as model) =
                         , Font.color Color.light100
                         ]
                         (text "Connect Wallet")
-                    )
-            , Input.button
-                [ width shrink
-                , height shrink
-                , alignRight
-                , centerY
-                ]
-                { onPress = Just Exit
-                , label =
-                    images
-                        |> Image.close
-                            [ width <| px 24
-                            , height <| px 24
-                            ]
-                }
-            ]
+                    ]
+             )
+                ++ [ Input.button
+                        [ width shrink
+                        , height shrink
+                        , alignRight
+                        , centerY
+                        ]
+                        { onPress = Just Exit
+                        , label =
+                            images
+                                |> Image.close
+                                    [ width <| px 24
+                                    , height <| px 24
+                                    ]
+                        }
+                   ]
+            )
         , metamaskButton model
         , Terms.view
         ]
@@ -450,14 +468,11 @@ metamaskButton ({ images, wallets } as model) =
            )
 
 
-viewWaiting :
+viewInitializing :
     { model | images : Images }
-    ->
-        { wallet : Wallet
-        , error : Remote Error Never
-        }
+    -> { waiting | wallet : Wallet }
     -> Element Msg
-viewWaiting ({ images } as model) waiting =
+viewInitializing ({ images } as model) waiting =
     column
         [ width fill
         , height shrink
@@ -482,6 +497,16 @@ viewWaiting ({ images } as model) waiting =
                             , rotate (pi / 2)
                             ]
                 }
+            , el
+                [ width shrink
+                , height shrink
+                , centerX
+                , centerY
+                , Font.size 18
+                , paddingXY 0 3
+                , Font.color Color.light100
+                ]
+                (text "Initializing")
             , Input.button
                 [ width shrink
                 , height shrink
@@ -498,12 +523,65 @@ viewWaiting ({ images } as model) waiting =
                 }
             ]
         , walletWaiting model waiting
-        , case waiting.error of
-            Loading ->
-                initializing
+        , Terms.view
+        ]
 
-            _ ->
-                noConnectError
+
+viewError :
+    { model | images : Images }
+    -> { waiting | wallet : Wallet }
+    -> Element Msg
+viewError ({ images } as model) waiting =
+    column
+        [ width fill
+        , height shrink
+        , spacing 16
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 16
+            ]
+            [ Input.button
+                [ width shrink
+                , height shrink
+                , centerY
+                ]
+                { onPress = Just GoToWallets
+                , label =
+                    images
+                        |> Image.arrowDown
+                            [ width <| px 18
+                            , height <| px 18
+                            , rotate (pi / 2)
+                            ]
+                }
+            , el
+                [ width shrink
+                , height shrink
+                , centerX
+                , centerY
+                , Font.size 18
+                , paddingXY 0 3
+                , Font.color Color.negative500
+                ]
+                (text "Error")
+            , Input.button
+                [ width shrink
+                , height shrink
+                , alignRight
+                , centerY
+                ]
+                { onPress = Just Exit
+                , label =
+                    images
+                        |> Image.close
+                            [ width <| px 24
+                            , height <| px 24
+                            ]
+                }
+            ]
+        , walletError model waiting
         , Terms.view
         ]
 
@@ -540,21 +618,42 @@ walletWaiting { images } { wallet } =
                 |> Wallet.toString
                 |> text
             )
+        , el
+            [ width shrink
+            , height shrink
+            , alignRight
+            , centerY
+            , Font.color Color.light100
+            , Font.size 16
+            ]
+            (text "Loading")
+            |> Debug.log "loading symbol"
         ]
 
 
-initializing : Element msg
-initializing =
+walletError :
+    { model | images : Images }
+    -> { waiting | wallet : Wallet }
+    -> Element Msg
+walletError { images } { wallet } =
     row
         [ width fill
         , height <| px 54
         , paddingXY 18 0
         , spacing 8
+        , Background.color Color.primary100
         , Border.width 1
-        , Border.color Color.primary100
+        , Border.color Color.negative500
         , Border.rounded 8
         ]
-        [ el
+        [ images
+            |> Image.viewWallet
+                [ width <| px 24
+                , height <| px 24
+                , centerY
+                ]
+                wallet
+        , el
             [ width shrink
             , height shrink
             , centerY
@@ -562,34 +661,16 @@ initializing =
             , paddingXY 0 4
             , Font.color Color.light100
             ]
-            (text "Initializing...")
-        ]
-
-
-noConnectError : Element Msg
-noConnectError =
-    row
-        [ width fill
-        , height <| px 54
-        , paddingXY 18 0
-        , spacing 8
-        , Border.width 1
-        , Border.color Color.negative500
-        , Border.rounded 8
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , centerY
-            , Font.size 16
-            , paddingXY 0 4
-            , Font.color Color.negative500
-            ]
-            (text "Error connecting")
+            (wallet
+                |> Wallet.toString
+                |> text
+            )
         , Input.button
             [ width shrink
             , height <| px 44
             , paddingXY 12 0
+            , alignRight
+            , centerY
             , Background.color Color.primary100
             , Border.rounded 4
             ]

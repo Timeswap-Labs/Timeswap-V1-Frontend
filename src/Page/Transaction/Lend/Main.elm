@@ -59,6 +59,7 @@ import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Page.Approve as Approve
 import Page.Transaction.Button as Button
+import Page.Transaction.Info as Info
 import Page.Transaction.Lend.Answer as Answer
     exposing
         ( ClaimsGivenBond
@@ -70,6 +71,7 @@ import Page.Transaction.Lend.Query as Query
 import Page.Transaction.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.Lend.Write as Write
 import Page.Transaction.PoolInfo exposing (PoolInfo)
+import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -1359,7 +1361,7 @@ empty :
         }
 empty model { asset, collateral } =
     { first = emptyAssetIn model asset
-    , second = emptyClaimsOut model asset collateral
+    , second = emptyClaims model asset collateral
     }
 
 
@@ -1614,12 +1616,12 @@ disabledMaxButton =
         (text "MAX")
 
 
-emptyClaimsOut :
+emptyClaims :
     { model | backdrop : Backdrop, images : Images }
     -> Maybe Token
     -> Maybe Token
     -> Element Never
-emptyClaimsOut ({ backdrop } as model) asset collateral =
+emptyClaims ({ backdrop } as model) asset collateral =
     column
         [ Region.description "claims"
         , width <| px 343
@@ -1630,99 +1632,35 @@ emptyClaimsOut ({ backdrop } as model) asset collateral =
         , Background.color Color.primary100
         , Border.rounded 8
         ]
-        [ emptySwitch
+        [ Switch.empty
         , row
             [ width fill
             , height shrink
             , spacing 16
             ]
-            [ emptyAPR
-            , emptyCDP
+            [ Info.emptyAPR
+            , Info.emptyCDP
             ]
-        , emptyBondOut model asset
+        , emptyClaimsOut model asset collateral
+        ]
+
+
+emptyClaimsOut :
+    { model | images : Images }
+    -> Maybe Token
+    -> Maybe Token
+    -> Element Never
+emptyClaimsOut model asset collateral =
+    column
+        [ width fill
+        , height shrink
+        , padding 12
+        , spacing 12
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ emptyBondOut model asset
         , emptyInsuranceOut model collateral
-        ]
-
-
-emptySwitch : Element Never
-emptySwitch =
-    row
-        [ width shrink
-        , height shrink
-        , centerX
-        , spacing 4
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , Font.color Color.light100
-            ]
-            (text "Customize Risk")
-        , el
-            [ width <| px 40
-            , height <| px 20
-            , padding 2
-            , Background.color Color.transparent200
-            , Border.rounded 999
-            ]
-            (el
-                [ width <| px 16
-                , height <| px 16
-                , alignLeft
-                , Background.color Color.dark300
-                , Border.rounded 999
-                ]
-                none
-            )
-        ]
-
-
-emptyAPR : Element Never
-emptyAPR =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , Font.color Color.primary400
-            ]
-            (text "APR")
-        , el
-            [ width fill
-            , height <| px 44
-            , Background.color Color.transparent100
-            , Border.rounded 8
-            ]
-            none
-        ]
-
-
-emptyCDP : Element Never
-emptyCDP =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , Font.color Color.primary400
-            ]
-            (text "CDP")
-        , el
-            [ width fill
-            , height <| px 44
-            , Background.color Color.transparent100
-            , Border.rounded 8
-            ]
-            none
         ]
 
 
@@ -1730,7 +1668,7 @@ emptyBondOut :
     { model | images : Images }
     -> Maybe Token
     -> Element Never
-emptyBondOut model asset =
+emptyBondOut { images } asset =
     column
         [ width fill
         , height shrink
@@ -1743,10 +1681,38 @@ emptyBondOut model asset =
             , Font.color Color.primary400
             ]
             (text "Amount to Receive")
-        , Textbox.emptyNoInput model
-            { token = asset
-            , description = "bond textbox"
-            }
+        , asset
+            |> Maybe.map
+                (\token ->
+                    row
+                        [ width fill
+                        , height shrink
+                        , spacing 6
+                        , centerY
+                        ]
+                        [ images
+                            |> Image.viewToken
+                                [ width <| px 24
+                                , height <| px 24
+                                ]
+                                token
+                        , Truncate.disabled
+                            { fontSize = 18
+                            , fontPadding = 3
+                            , fontColor = Color.light100
+                            , texts =
+                                token
+                                    |> Truncate.fromSymbol
+                            }
+                        ]
+                )
+            |> Maybe.withDefault
+                (el
+                    [ width fill
+                    , height <| px 24
+                    ]
+                    none
+                )
         ]
 
 
@@ -1754,7 +1720,7 @@ emptyInsuranceOut :
     { model | images : Images }
     -> Maybe Token
     -> Element Never
-emptyInsuranceOut model asset =
+emptyInsuranceOut { images } collateral =
     column
         [ width fill
         , height shrink
@@ -1767,8 +1733,36 @@ emptyInsuranceOut model asset =
             , Font.color Color.primary400
             ]
             (text "Amount Protecting")
-        , Textbox.emptyNoInput model
-            { token = asset
-            , description = "insurance textbox"
-            }
+        , collateral
+            |> Maybe.map
+                (\token ->
+                    row
+                        [ width fill
+                        , height shrink
+                        , spacing 6
+                        , centerY
+                        ]
+                        [ images
+                            |> Image.viewToken
+                                [ width <| px 24
+                                , height <| px 24
+                                ]
+                                token
+                        , Truncate.disabled
+                            { fontSize = 18
+                            , fontPadding = 3
+                            , fontColor = Color.light100
+                            , texts =
+                                token
+                                    |> Truncate.fromSymbol
+                            }
+                        ]
+                )
+            |> Maybe.withDefault
+                (el
+                    [ width fill
+                    , height <| px 24
+                    ]
+                    none
+                )
         ]
