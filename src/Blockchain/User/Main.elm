@@ -13,6 +13,7 @@ module Blockchain.User.Main exposing
     , receiveUserInit
     , toAddress
     , toAddressNotSupported
+    , toName
     , toWallet
     , toWalletNotSupported
     , update
@@ -24,7 +25,7 @@ import Data.Address as Address exposing (Address)
 import Data.ERC20 exposing (ERC20)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Token exposing (Token)
-import Data.Uint as Uint exposing (Uint)
+import Data.Uint exposing (Uint)
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Web exposing (Web)
 import Json.Decode as Decode exposing (Decoder)
@@ -211,6 +212,11 @@ toAddress (User { address }) =
 toAddressNotSupported : NotSupported -> Address
 toAddressNotSupported (NotSupported { address }) =
     address
+
+
+toName : User -> Maybe String
+toName (User { name }) =
+    name
 
 
 getBalance : Token -> User -> Maybe Uint

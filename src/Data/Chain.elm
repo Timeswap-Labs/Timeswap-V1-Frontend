@@ -3,6 +3,7 @@ module Data.Chain exposing
     , encode
     , sorter
     , toChainId
+    , toEtherscan
     , toQueryParameter
     , toString
     )
@@ -16,6 +17,7 @@ type Chain
     = Chain
         { chainId : Int
         , name : String
+        , etherscan : String
         }
 
 
@@ -39,6 +41,11 @@ toChainId (Chain { chainId }) =
 toString : Chain -> String
 toString (Chain { name }) =
     name
+
+
+toEtherscan : Chain -> String
+toEtherscan (Chain { etherscan }) =
+    etherscan
 
 
 toQueryParameter : Chain -> QueryParameter

@@ -9,7 +9,7 @@ port module Modal.Connect.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User
+import Blockchain.User.Main as User exposing (User)
 import Data.Address as Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Images exposing (Images)
@@ -46,6 +46,7 @@ import Element.Input as Input
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Modal.Connect.Error as Error exposing (Error)
+import Modal.Connect.Etherscan as Etherscan
 import Modal.Connect.Terms as Terms
 import Sort.Set as Set
 import Utility.Color as Color
@@ -66,7 +67,8 @@ type Msg
     = GoToWallets
     | Connect Wallet
     | TryAgain
-    | CopyToClipboard Address
+    | InstallMetamask
+    | CopyAddress Address
     | ReceiveNoConnect Value
     | Exit
 
@@ -109,7 +111,12 @@ update msg modal =
                 |> connect
             )
 
-        ( CopyToClipboard address, _ ) ->
+        ( InstallMetamask, Wallets ) ->
+            ( modal |> Just
+            , installMetamask ()
+            )
+
+        ( CopyAddress address, _ ) ->
             ( modal |> Just
             , address
                 |> Address.encode
@@ -160,6 +167,9 @@ receiveUser modal =
 port connect : Value -> Cmd msg
 
 
+port installMetamask : () -> Cmd msg
+
+
 port copyToClipboard : Value -> Cmd msg
 
 
@@ -204,11 +214,22 @@ view ({ backdrop } as model) modal =
             , Border.color Color.transparent100
             , Border.width 1
             ]
-            (case modal of
-                Wallets ->
+            (case
+                ( case model.blockchain of
+                    Supported blockchain ->
+                        blockchain
+                            |> Ok
+
+                    NotSupported notSupported ->
+                        notSupported
+                            |> Err
+                , modal
+                )
+             of
+                ( _, Wallets ) ->
                     viewWallets model
 
-                Waiting ({ error } as waiting) ->
+                ( _, Waiting ({ error } as waiting) ) ->
                     case error of
                         Loading ->
                             viewInitializing model waiting
@@ -216,8 +237,16 @@ view ({ backdrop } as model) modal =
                         _ ->
                             viewError model waiting
 
-                _ ->
-                    none |> Debug.log "later"
+                ( Ok blockchain, Connected ) ->
+                    blockchain
+                        |> Blockchain.toUser
+                        |> Maybe.map
+                            (viewConnected model blockchain)
+                        |> Maybe.withDefault
+                            (viewWallets model)
+
+                ( Err notSupported, Connected ) ->
+                    viewNotSupported model notSupported
             )
         )
 
@@ -420,14 +449,14 @@ metamaskButton ({ images, wallets } as model) =
                             }
 
                     ( _, False ) ->
-                        newTabLink
+                        Input.button
                             [ width fill
                             , height <| px 54
                             , paddingXY 18 0
                             , Background.color Color.primary100
                             , Border.rounded 8
                             ]
-                            { url = Wallet.Metamask |> Wallet.toUrlString
+                            { onPress = Just InstallMetamask
                             , label =
                                 row
                                     [ width fill
@@ -685,5 +714,211 @@ walletError { images } { wallet } =
                     , Font.color Color.light100
                     ]
                     (text "Try Again")
+            }
+        ]
+
+
+viewConnected :
+    { model | images : Images }
+    -> Blockchain
+    -> User
+    -> Element Msg
+viewConnected ({ images } as model) blockchain user =
+    column
+        [ width fill
+        , height shrink
+        , spacing 16
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , centerY
+                , Font.size 18
+                , paddingXY 0 3
+                , Font.color Color.light100
+                ]
+                (text "Account")
+            , Input.button
+                [ width shrink
+                , height shrink
+                , alignRight
+                , centerY
+                ]
+                { onPress = Just Exit
+                , label =
+                    images
+                        |> Image.close
+                            [ width <| px 24
+                            , height <| px 24
+                            ]
+                }
+            ]
+        , walletConnected model blockchain user
+        ]
+
+
+walletConnected :
+    { model | images : Images }
+    -> Blockchain
+    -> User
+    -> Element Msg
+walletConnected { images } blockchain user =
+    row
+        [ width fill
+        , height <| px 54
+        , paddingXY 18 0
+        , spacing 8
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ images
+            |> Image.viewWallet
+                [ width <| px 24
+                , height <| px 24
+                , centerY
+                ]
+                (user |> User.toWallet)
+        , el
+            [ width shrink
+            , height shrink
+            , centerY
+            , Font.size 16
+            , paddingXY 0 4
+            , Font.color Color.primary500
+            ]
+            (user
+                |> User.toName
+                |> Maybe.withDefault
+                    (user
+                        |> User.toAddress
+                        |> Address.toStringShort
+                    )
+                |> text
+            )
+        , newTabLink
+            [ width shrink
+            , height shrink
+            , centerY
+            ]
+            { url =
+                user
+                    |> User.toAddress
+                    |> Etherscan.toUrlString
+                        (blockchain |> Blockchain.toChain)
+                        (user |> User.toName)
+            , label =
+                images
+                    |> Image.link
+                        [ width <| px 16
+                        , height <| px 16
+                        ]
+            }
+        , Input.button
+            [ width shrink
+            , height shrink
+            , alignRight
+            , centerY
+            , Font.color Color.primary500
+            , Font.size 14
+            , paddingXY 0 3
+            ]
+            { onPress = Just GoToWallets
+            , label = text "Change"
+            }
+        ]
+
+
+viewNotSupported :
+    { model | images : Images }
+    -> User.NotSupported
+    -> Element Msg
+viewNotSupported ({ images } as model) notSupported =
+    column
+        [ width fill
+        , height shrink
+        , spacing 16
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , centerY
+                , Font.size 18
+                , paddingXY 0 3
+                , Font.color Color.light100
+                ]
+                (text "Not Supported")
+            , Input.button
+                [ width shrink
+                , height shrink
+                , alignRight
+                , centerY
+                ]
+                { onPress = Just Exit
+                , label =
+                    images
+                        |> Image.close
+                            [ width <| px 24
+                            , height <| px 24
+                            ]
+                }
+            ]
+        , walletNotSupported model notSupported
+        ]
+
+
+walletNotSupported :
+    { model | images : Images }
+    -> User.NotSupported
+    -> Element Msg
+walletNotSupported { images } notSupported =
+    row
+        [ width fill
+        , height <| px 54
+        , paddingXY 18 0
+        , spacing 8
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ images
+            |> Image.viewWallet
+                [ width <| px 24
+                , height <| px 24
+                , centerY
+                ]
+                (notSupported
+                    |> User.toWalletNotSupported
+                )
+        , el
+            [ width shrink
+            , height shrink
+            , centerY
+            , Font.size 16
+            , paddingXY 0 4
+            , Font.color Color.primary500
+            ]
+            (notSupported
+                |> User.toAddressNotSupported
+                |> Address.toStringShort
+                |> text
+            )
+        , Input.button
+            [ width shrink
+            , height shrink
+            , alignRight
+            , centerY
+            , Font.color Color.primary500
+            , Font.size 14
+            , paddingXY 0 3
+            ]
+            { onPress = Just GoToWallets
+            , label = text "Change"
             }
         ]

@@ -42,6 +42,7 @@ type alias Flags =
     { default :
         { chainId : Int
         , name : String
+        , etherscan : String
         , native : Native.Flag
         , whitelist : ERC20s.Flags
         , custom : ERC20s.Flags
@@ -50,6 +51,7 @@ type alias Flags =
         List
             { chainId : Int
             , name : String
+            , etherscan : String
             , native : Native.Flag
             , whitelist : ERC20s.Flags
             , custom : ERC20s.Flags
@@ -62,6 +64,7 @@ init { default, others } =
     { defaultChain =
         { chainId = default.chainId
         , name = default.name
+        , etherscan = default.etherscan
         }
             |> Chain
     , defaultTokens =
@@ -72,9 +75,10 @@ init { default, others } =
     , others =
         others
             |> List.map
-                (\{ chainId, name, native, whitelist, custom } ->
+                (\{ chainId, name, etherscan, native, whitelist, custom } ->
                     ( { chainId = chainId
                       , name = name
+                      , etherscan = etherscan
                       }
                         |> Chain
                     , Tokens.init

@@ -20,6 +20,7 @@ import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
 import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token
+import Data.Wallet as Wallet
 import Data.Wallets as Wallets exposing (Wallets)
 import Element
     exposing
@@ -59,6 +60,7 @@ import Json.Encode exposing (Value)
 import Modal.Main as Modal exposing (Modal)
 import Page.Main as Page exposing (Page)
 import Page.Route as Route
+import Sort.Set as Set
 import Task
 import Time exposing (Posix, Zone, ZoneName)
 import Url exposing (Url)
@@ -136,6 +138,7 @@ type Msg
     | SwitchTheme
     | OpenConnect
     | OpenChainList
+    | ReceiveMetamaskInstalled ()
     | ReceiveUser Value
     | BlockchainMsg Blockchain.Msg
     | PageMsg Page.Msg
@@ -323,6 +326,11 @@ update msg model =
 
         OpenChainList ->
             ( { model | modal = Modal.initChainList |> Just }
+            , Cmd.none
+            )
+
+        ReceiveMetamaskInstalled () ->
+            ( { model | wallets = model.wallets |> Set.insert Wallet.Metamask }
             , Cmd.none
             )
 
@@ -618,6 +626,9 @@ port cacheTheme : Value -> Cmd msg
 port cacheCustom : Value -> Cmd msg
 
 
+port receiveMetamaskInstalled : (() -> msg) -> Sub msg
+
+
 port receiveUser : (Value -> msg) -> Sub msg
 
 
@@ -625,6 +636,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     [ Browser.Events.onResize ResizeWindow
     , Browser.Events.onVisibilityChange VisibilityChange
+    , receiveMetamaskInstalled ReceiveMetamaskInstalled
     , receiveUser ReceiveUser
     , model.page
         |> Page.subscriptions

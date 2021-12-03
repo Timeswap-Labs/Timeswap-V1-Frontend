@@ -38,6 +38,7 @@ async function elmInit() {
         default: {
           chainId: 0x4,
           name: "Rinkeby",
+          etherscan: "https://rinkeby.etherscan.io",
           native: {
             name: "Ether",
             symbol: "ETH",
