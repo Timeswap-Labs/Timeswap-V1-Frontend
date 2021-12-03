@@ -8,6 +8,7 @@ module Modal.TokenList.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
+import Blockchain.User.Main exposing (User, getBalance)
 import Data.Address as Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chains as Chains exposing (Chains)
@@ -16,11 +17,13 @@ import Data.Images exposing (Images)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Token as Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
+import Data.Uint as Uint exposing (Uint)
 import Data.Web exposing (Web)
 import Element
     exposing
         ( Element
         , alignLeft
+        , alignRight
         , alpha
         , behindContent
         , centerX
@@ -31,16 +34,20 @@ import Element
         , height
         , none
         , padding
+        , paddingEach
+        , paddingXY
         , px
         , row
+        , shrink
         , spacing
         , text
         , width
         )
 import Element.Background as Background
+import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
-import Element.Input as Input
+import Element.Input as Input exposing (Placeholder)
 import Http
 import Modal.TokenList.Answer as Answer exposing (Answer)
 import Modal.TokenList.Error as Error exposing (Error)
@@ -388,37 +395,135 @@ view :
     -> Blockchain
     -> Modal
     -> Element Msg
-view ({ backdrop, chains } as model) blockchain modal =
+view ({ backdrop, images, chains } as model) blockchain modal =
     Glass.outsideModal backdrop
         Exit
         (column
-            [ width <| px 335
-            , height <| px 300
+            [ width <| px 350
+            , height shrink
             , centerX
             , centerY
-            , padding 20
-            , Background.color Color.light100
+            , padding 0
+            , Background.color Color.background
+            , Border.color Color.transparent100
+            , Border.width 1
+            , Border.rounded 8
             ]
-            (chains
-                |> Chains.toList (blockchain |> Blockchain.toChain)
-                |> List.map (tokenButton model)
-            )
+            [ modalHeader model modal
+            , tokenList model blockchain
+            , manageTokensBtn model
+            ]
         )
 
 
-tokenButton : { model | images : Images } -> Token -> Element Msg
-tokenButton { images } token =
+modalHeader : { model | images : Images } -> Modal -> Element Msg
+modalHeader { images } (Modal { state }) =
+    column
+        [ width fill
+        , height shrink
+        , spacing 16
+        , paddingEach
+            { top = 24
+            , right = 24
+            , bottom = 20
+            , left = 24
+            }
+        , Font.color Color.light100
+        , Font.bold
+        , Font.size 18
+        , Border.color Color.transparent100
+        , Border.widthEach
+            { top = 0
+            , right = 0
+            , bottom = 1
+            , left = 0
+            }
+        ]
+        [ row
+            [ width fill ]
+            [ el
+                [ alignLeft
+                ]
+                (text "Select Token")
+            , Input.button
+                [ width shrink
+                , alignRight
+                , centerY
+                ]
+                { onPress = Just Exit
+                , label =
+                    images
+                        |> Image.close
+                            [ width <| px 24
+                            , height <| px 24
+                            ]
+                }
+            ]
+        , Input.text
+            [ width fill
+            , height fill
+            , padding 14
+            , Font.size 16
+            , Font.regular
+            , Background.color Color.completelyTransparent
+            , Border.width 1
+            , Border.color Color.transparent100
+            , Border.rounded 8
+            ]
+            { onChange = InputAddress
+            , text =
+                case state of
+                    AllTokens { input } ->
+                        input
+
+                    _ ->
+                        ""
+            , placeholder =
+                Input.placeholder
+                    [ Font.color Color.transparent300
+                    , Font.size 14
+                    , Font.regular
+                    ]
+                    (text "Search a token or paste address")
+                    |> Just
+            , label = Input.labelHidden "Search token"
+            }
+        ]
+
+
+tokenList :
+    { model | backdrop : Backdrop, images : Images, chains : Chains }
+    -> Blockchain
+    -> Element Msg
+tokenList ({ backdrop, chains } as model) blockchain =
+    column
+        [ width fill
+        , paddingXY 24 6
+        ]
+        (chains
+            |> Chains.toList (blockchain |> Blockchain.toChain)
+            |> List.map (tokenButton model blockchain)
+        )
+
+
+tokenButton :
+    { model | images : Images }
+    -> Blockchain
+    -> Token
+    -> Element Msg
+tokenButton { images } blockchain token =
     Input.button
         [ width fill
-        , height <| px 56
+        , height shrink
+        , Font.color Color.transparent500
         ]
         { onPress = ChooseToken token |> Just
         , label =
             row
                 [ width fill
                 , height fill
-                , padding 20
-                , spacing 5
+                , paddingXY 0 10
+                , centerY
                 ]
                 [ images
                     |> Image.viewToken
@@ -430,11 +535,113 @@ tokenButton { images } token =
                 , el
                     [ alignLeft
                     , centerY
-                    , Font.size 14
+                    , paddingEach
+                        { top = 0
+                        , right = 0
+                        , bottom = 0
+                        , left = 8
+                        }
+                    , Font.size 16
+                    , Font.bold
                     ]
                     (token
                         |> Token.toSymbol
                         |> text
                     )
+                , el
+                    [ height <| px 23
+                    , paddingXY 5 0
+                    , Font.size 22
+                    , Font.color Color.transparent300
+                    ]
+                    (text (String.fromChar (Char.fromCode 0x2022)))
+                , el
+                    [ Font.size 12
+                    , Font.color Color.transparent300
+                    , Font.regular
+                    ]
+                    (token
+                        |> Token.toName
+                        |> text
+                    )
+                , case blockchain |> Blockchain.toUser of
+                    Just user ->
+                        tokenBalance user token
+
+                    _ ->
+                        none
                 ]
         }
+
+
+tokenBalance : User -> Token -> Element Msg
+tokenBalance user token =
+    let
+        balances =
+            user |> getBalance token
+    in
+    case balances of
+        Just balance ->
+            el
+                [ alignRight
+                , Font.regular
+                , Font.size 16
+                ]
+                (balance |> Uint.toString |> text)
+
+        _ ->
+            none
+
+
+manageTokensBtn : { model | images : Images } -> Element Msg
+manageTokensBtn { images } =
+    el
+        [ width fill
+        , height shrink
+        , paddingXY 0 17
+        , centerX
+        , centerY
+        , Font.size 14
+        , Font.regular
+        , Font.color Color.primary400
+        , Font.center
+        , Border.widthEach
+            { top = 1
+            , right = 0
+            , bottom = 0
+            , left = 0
+            }
+        , Border.color Color.transparent100
+        ]
+        (Input.button
+            [ width shrink
+            , height shrink
+            , centerX
+            , padding 0
+            , Background.color Color.completelyTransparent
+            , Border.rounded 8
+            ]
+            { onPress = Just GoToCustomERC20s
+            , label =
+                row
+                    [ width fill
+                    , height fill
+                    , spacing 6
+                    , centerX
+                    ]
+                    [ el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        , padding 0
+                        ]
+                        ("Manage Token Lists" |> text)
+                    , images
+                        |> Image.arrow
+                            [ width <| px 16
+                            , height <| px 16
+                            , centerY
+                            ]
+                    ]
+            }
+        )
