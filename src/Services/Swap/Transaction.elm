@@ -9,14 +9,16 @@ type alias Transaction =
     , outgoingTokenId : GameToken
     , incomingTokenQty : Float
     , userAddress : String
+    , signature : String
     }
 
 
 encode : Transaction -> Value
-encode { incomingTokenId, outgoingTokenId, incomingTokenQty, userAddress } =
+encode { incomingTokenId, outgoingTokenId, incomingTokenQty, userAddress, signature } =
     Encode.object
         [ ( "incomingTokenId", incomingTokenId |> GameToken.encode )
         , ( "outgoingTokenId", outgoingTokenId |> GameToken.encode )
         , ( "incomingTokenQty", incomingTokenQty |> Encode.float )
         , ( "userAddress", userAddress |> Encode.string )
+        , ( "signature", signature |> Encode.string )
         ]

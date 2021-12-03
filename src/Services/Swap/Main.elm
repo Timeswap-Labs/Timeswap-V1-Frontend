@@ -1,4 +1,4 @@
-module Services.Swap.Main exposing (Msg, Service, init, subscriptions, update, view)
+port module Services.Swap.Main exposing (Msg, Service, init, subscriptions, update, view)
 
 import Browser.Events
 import Data.Address exposing (Address, toString)
@@ -48,6 +48,7 @@ import Element.Input as Input
 import Html.Attributes
 import Http
 import Json.Decode as Decode exposing (Decoder)
+import Json.Encode exposing (Value)
 import Modals.Lend.Error as LendError
 import Services.Swap.GameToken as GameToken exposing (GameToken)
 import Services.Swap.Query as Query exposing (Return)
@@ -120,7 +121,8 @@ type Msg
     | SelectOutToken GameToken
     | Input String
     | InputMax
-    | Swap
+    | SignMsg
+    | SwapSignatureMsg Value
     | ReceivePrice (Result Http.Error Return)
     | ReceiveTxnNotification (Result Http.Error String)
     | ReceiveTime Posix
@@ -245,13 +247,26 @@ update { time, user } msg (Service service) =
                 _ ->
                     ( Service service, Cmd.none )
 
-        Swap ->
-            ( { service
-                | notification = Loading |> Just
-              }
-                |> Service
-            , swapApi service user
-            )
+        SignMsg ->
+            ( Service service, signSwapTxn () )
+
+        SwapSignatureMsg signature ->
+            case Decode.decodeValue Decode.string signature of
+                Ok signString ->
+                    ( { service
+                        | notification = Loading |> Just
+                      }
+                        |> Service
+                    , swapApi service user signString
+                    )
+
+                _ ->
+                    ( { service
+                        | notification = Nothing
+                      }
+                        |> Service
+                    , Cmd.none
+                    )
 
         ReceivePrice (Ok price) ->
             ( { service
@@ -297,10 +312,17 @@ update { time, user } msg (Service service) =
             )
 
 
+port signSwapTxn : () -> Cmd msg
+
+
+port swapSignatureMsg : (Value -> msg) -> Sub msg
+
+
 subscriptions : Service -> Sub Msg
 subscriptions service =
     Sub.batch
         [ Time.every 10000 ReceiveTime
+        , swapSignatureMsg SwapSignatureMsg
 
         -- , onClickOutsideDropdown service
         ]
@@ -349,8 +371,9 @@ fetchPrice service =
 swapApi :
     { service | inToken : GameToken, outToken : GameToken, input : String }
     -> Remote User.Error User
+    -> String
     -> Cmd Msg
-swapApi service user =
+swapApi service user signature =
     case user of
         Success userData ->
             Http.post
@@ -364,6 +387,7 @@ swapApi service user =
                             |> Maybe.map (\float -> float)
                             |> Maybe.withDefault 0
                     , userAddress = userData.address |> toString
+                    , signature = signature
                     }
                         |> Transaction.encode
                         |> Http.jsonBody
@@ -910,7 +934,7 @@ swapButton { device } user (Service service) =
                                         [ height <| px 44 ]
                                    )
                             )
-                            { onPress = Just Swap
+                            { onPress = Just SignMsg
                             , label =
                                 row
                                     [ width shrink
