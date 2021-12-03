@@ -19,21 +19,19 @@ import Data.Backdrop exposing (Backdrop)
 import Data.Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
-import Data.Pair as Pair
+import Data.Pair as Pair exposing (Pair)
 import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
 import Data.Token as Token exposing (Token)
-import Data.Uint as Uint
+import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
         , alignLeft
         , alignRight
         , alpha
-        , below
-        , centerX
         , centerY
         , column
         , el
@@ -71,13 +69,13 @@ import Page.Transaction.Lend.Query as Query
 import Page.Transaction.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.Lend.Write as Write
 import Page.Transaction.PoolInfo exposing (PoolInfo)
-import Page.Transaction.Switch as Switch
+import Page.Transaction.Slider as Slider
+import Page.Transaction.Switch as Switch exposing (Mode)
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Direction as Direction
 import Utility.FontStyle as FontStyle
-import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Truncate as Truncate
@@ -121,7 +119,7 @@ type alias InsuranceInput =
 type Msg
     = InputAssetIn String
     | InputMax
-    | SwitchMode Bool
+    | SwitchMode Mode
     | ClickSlider
     | Slide Float
     | ClickBondOut
@@ -248,7 +246,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     , Nothing
                     )
 
-        SwitchMode True ->
+        SwitchMode Switch.Pro ->
             ( { transaction
                 | claimsOut =
                     if transaction.assetIn |> Input.isZero then
@@ -262,7 +260,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             , Nothing
             )
 
-        SwitchMode False ->
+        SwitchMode Switch.Recommended ->
             { transaction
                 | claimsOut =
                     if transaction.assetIn |> Input.isZero then
@@ -1271,7 +1269,11 @@ view :
         , buttons : Element Msg
         }
 view model blockchain pool (Transaction transaction) =
-    { first = viewAssetIn model blockchain (pool.pair |> Pair.toAsset) transaction
+    { first =
+        transaction
+            |> viewAssetIn model
+                blockchain
+                (pool.pair |> Pair.toAsset)
     , second =
         el
             [ width <| px 335
@@ -1281,87 +1283,6 @@ view model blockchain pool (Transaction transaction) =
             ]
             none
     , buttons = none
-    }
-
-
-doesNotExist :
-    { model | backdrop : Backdrop, images : Images }
-    -> Pool
-    -> ()
-    ->
-        { first : Element Never
-        , second : Element Never
-        , buttons : Element Never
-        }
-doesNotExist model pool () =
-    empty model
-        { asset = pool.pair |> Pair.toAsset |> Just
-        , collateral = pool.pair |> Pair.toCollateral |> Just
-        }
-        |> (\{ first, second } ->
-                { first = first
-                , second = second
-                , buttons = Button.error "Pool Does Not Exist"
-                }
-           )
-
-
-disabled :
-    { model | images : Images }
-    -> Blockchain
-    -> Pool
-    -> Transaction
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-disabled model blockchain pool (Transaction transaction) =
-    { first = disabledAssetIn model blockchain (pool.pair |> Pair.toAsset) transaction
-    , second =
-        el
-            [ width <| px 335
-            , height <| px 392
-            , Background.color Color.light500
-            , Border.rounded 8
-            ]
-            none
-    }
-
-
-disabledDoesNotExist :
-    { model | backdrop : Backdrop, images : Images }
-    -> Pool
-    -> ()
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-disabledDoesNotExist model { pair } () =
-    empty model
-        { asset =
-            pair
-                |> Pair.toAsset
-                |> Just
-        , collateral =
-            pair
-                |> Pair.toCollateral
-                |> Just
-        }
-
-
-empty :
-    { model | backdrop : Backdrop, images : Images }
-    ->
-        { asset : Maybe Token
-        , collateral : Maybe Token
-        }
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-empty model { asset, collateral } =
-    { first = emptyAssetIn model asset
-    , second = emptyClaims model asset collateral
     }
 
 
@@ -1424,83 +1345,6 @@ viewAssetIn model blockchain asset transaction =
         ]
 
 
-disabledAssetIn :
-    { model | images : Images }
-    -> Blockchain
-    -> Token
-    -> { transaction | assetIn : String }
-    -> Element Never
-disabledAssetIn model blockchain asset transaction =
-    column
-        [ Region.description "lend asset"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 10
-        , Background.color Color.light500
-        , Border.rounded 8
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 6
-            , centerY
-            ]
-            (el
-                [ width shrink
-                , height shrink
-                , Font.size 14
-                ]
-                (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ disabledUserBalance user asset
-                                , disabledMaxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
-        , Textbox.disabled model
-            { token = asset
-            , text = transaction.assetIn
-            , description = "lend asset textbox"
-            }
-        ]
-
-
-emptyAssetIn :
-    { model | backdrop : Backdrop, images : Images }
-    -> Maybe Token
-    -> Element Never
-emptyAssetIn ({ backdrop } as model) token =
-    column
-        [ Region.description "lend asset"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 10
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , Font.color Color.primary400
-            ]
-            (text "Amount to Lend")
-        , Textbox.empty model
-            { token = token
-            , description = "lend asset textbox"
-            }
-        ]
-
-
 userBalance :
     { transaction | tooltip : Maybe Tooltip }
     -> User
@@ -1547,6 +1391,373 @@ userBalance { tooltip } user asset =
         |> Maybe.withDefault none
 
 
+maxButton : Element Msg
+maxButton =
+    Input.button
+        [ Region.description "max asset lend"
+        , width shrink
+        , height shrink
+        , alignRight
+        , centerY
+        , Font.size 12
+        , paddingXY 0 2
+        , Font.color Color.warning400
+        , Font.bold
+        ]
+        { onPress = Just InputMax
+        , label = text "MAX"
+        }
+
+
+viewClaims :
+    { model | images : Images }
+    -> Pool
+    -> { transaction | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
+    -> Element Msg
+viewClaims model pool ({ claimsOut } as transaction) =
+    column
+        [ Region.description "claims"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 12
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ (case claimsOut of
+            Default _ ->
+                Switch.Recommended
+
+            _ ->
+                Switch.Pro
+          )
+            |> (\mode ->
+                    Switch.view
+                        { onChange = SwitchMode
+                        , mode = mode
+                        }
+               )
+        , (case claimsOut of
+            Default _ ->
+                Nothing
+
+            Slider { percent } ->
+                Just percent
+
+            Bond { percent } ->
+                Just percent
+
+            Insurance { percent } ->
+                Just percent
+          )
+            |> Maybe.map viewSlider
+            |> Maybe.withDefault none
+        , transaction
+            |> viewClaimsOut model pool.pair
+        ]
+
+
+viewSlider : Percent -> Element Msg
+viewSlider percent =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , paddingXY 0 3
+            , Font.size 14
+            ]
+            [ el
+                [ alignLeft
+                , Font.regular
+                , Font.color Color.transparent500
+                ]
+                (text "Adjust your APR")
+            ]
+        , column
+            [ width fill
+            , height shrink
+            , spacing 6
+            ]
+            [ Slider.view
+                { onChange = Slide
+                , click = ClickSlider
+                , percent = percent
+                }
+            , row
+                [ width fill
+                , height shrink
+                , paddingXY 0 2
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                [ el
+                    [ alignLeft
+                    , Font.regular
+                    ]
+                    (text "Low")
+                , el
+                    [ alignRight
+                    , Font.regular
+                    ]
+                    (text "High")
+                ]
+            ]
+        ]
+
+
+viewClaimsOut :
+    { model | images : Images }
+    -> Pair
+    -> { transaction | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
+    -> Element Msg
+viewClaimsOut model pair ({ claimsOut } as transaction) =
+    case claimsOut of
+        Default default ->
+            column
+                [ width fill
+                , height shrink
+                , padding 12
+                , spacing 12
+                , Background.color Color.primary100
+                , Border.rounded 8
+                ]
+                (case default of
+                    Success { bond, insurance } ->
+                        [ bond
+                            |> Just
+                            |> recommendedBondOut model
+                                (pair |> Pair.toAsset)
+                                transaction
+                        , insurance
+                            |> Just
+                            |> recommendedInsuranceOut model
+                                (pair |> Pair.toCollateral)
+                                transaction
+                        ]
+
+                    _ ->
+                        [ Nothing
+                            |> recommendedBondOut model
+                                (pair |> Pair.toAsset)
+                                transaction
+                        , Nothing
+                            |> recommendedInsuranceOut model
+                                (pair |> Pair.toCollateral)
+                                transaction
+                        ]
+                )
+
+        _ ->
+            none |> Debug.log "later"
+
+
+recommendedBondOut :
+    { model | images : Images }
+    -> Token
+    -> { transaction | tooltip : Maybe Tooltip }
+    -> Maybe Uint
+    -> Element Msg
+recommendedBondOut { images } asset { tooltip } uint =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , Font.color Color.primary400
+            ]
+            (text "Amount to Receive")
+        , row
+            [ width fill
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            [ images
+                |> Image.viewToken
+                    [ width <| px 24
+                    , height <| px 24
+                    ]
+                    asset
+            , Truncate.view
+                { tooltip =
+                    { align = Direction.Left ()
+                    , move = Direction.Left 0 |> Debug.log "later"
+                    , onMouseEnterMsg = OnMouseEnter
+                    , onMouseLeaveMsg = OnMouseLeave
+                    , given = Tooltip.BondOutSymbol
+                    , opened = tooltip
+                    }
+                , main =
+                    { fontSize = 18
+                    , fontPadding = 3
+                    , fontColor = Color.light100
+                    , texts =
+                        asset
+                            |> Truncate.fromSymbol
+                    }
+                }
+            , el
+                [ width fill
+                , height shrink
+                , Font.size 18
+                , paddingXY 0 3
+                , Font.color Color.light100
+                ]
+                (uint
+                    |> Maybe.map (Uint.toAmount asset)
+                    |> Maybe.withDefault ""
+                    |> text
+                )
+            ]
+        ]
+
+
+recommendedInsuranceOut :
+    { model | images : Images }
+    -> Token
+    -> { transaction | tooltip : Maybe Tooltip }
+    -> Maybe Uint
+    -> Element Msg
+recommendedInsuranceOut { images } collateral { tooltip } uint =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , Font.color Color.primary400
+            ]
+            (text "Amount Protecting")
+        , row
+            [ width fill
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            [ images
+                |> Image.viewToken
+                    [ width <| px 24
+                    , height <| px 24
+                    ]
+                    collateral
+            , Truncate.view
+                { tooltip =
+                    { align = Direction.Left ()
+                    , move = Direction.Left 0 |> Debug.log "later"
+                    , onMouseEnterMsg = OnMouseEnter
+                    , onMouseLeaveMsg = OnMouseLeave
+                    , given = Tooltip.BondOutSymbol
+                    , opened = tooltip
+                    }
+                , main =
+                    { fontSize = 18
+                    , fontPadding = 3
+                    , fontColor = Color.light100
+                    , texts =
+                        collateral
+                            |> Truncate.fromSymbol
+                    }
+                }
+            , el
+                [ width fill
+                , height shrink
+                , Font.size 18
+                , paddingXY 0 3
+                , Font.color Color.light100
+                ]
+                (uint
+                    |> Maybe.map (Uint.toAmount collateral)
+                    |> Maybe.withDefault ""
+                    |> text
+                )
+            ]
+        ]
+
+
+disabled :
+    { model | images : Images }
+    -> Blockchain
+    -> Pool
+    -> Transaction
+    ->
+        { first : Element Never
+        , second : Element Never
+        }
+disabled model blockchain pool (Transaction transaction) =
+    { first =
+        transaction
+            |> disabledAssetIn
+                model
+                blockchain
+                (pool.pair |> Pair.toAsset)
+    , second =
+        transaction
+            |> disabledClaims model pool
+    }
+
+
+disabledAssetIn :
+    { model | images : Images }
+    -> Blockchain
+    -> Token
+    -> { transaction | assetIn : String }
+    -> Element Never
+disabledAssetIn model blockchain asset transaction =
+    column
+        [ Region.description "lend asset"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 10
+        , alpha 0.2
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            (el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "Amount to Lend")
+                :: (blockchain
+                        |> Blockchain.toUser
+                        |> Maybe.map
+                            (\user ->
+                                [ disabledUserBalance user asset
+                                , disabledMaxButton
+                                ]
+                            )
+                        |> Maybe.withDefault
+                            []
+                   )
+            )
+        , Textbox.disabled model
+            { token = asset
+            , text = transaction.assetIn
+            , description = "lend asset textbox"
+            }
+        ]
+
+
 disabledUserBalance :
     User
     -> Token
@@ -1582,24 +1793,6 @@ disabledUserBalance user asset =
         |> Maybe.withDefault none
 
 
-maxButton : Element Msg
-maxButton =
-    Input.button
-        [ Region.description "max asset lend"
-        , width shrink
-        , height shrink
-        , alignRight
-        , centerY
-        , Font.size 12
-        , paddingXY 0 2
-        , Font.color Color.warning400
-        , Font.bold
-        ]
-        { onPress = Just InputMax
-        , label = text "MAX"
-        }
-
-
 disabledMaxButton : Element Never
 disabledMaxButton =
     el
@@ -1616,12 +1809,323 @@ disabledMaxButton =
         (text "MAX")
 
 
-emptyClaims :
+disabledClaims :
+    { model | images : Images }
+    -> Pool
+    -> { transaction | claimsOut : ClaimsOut }
+    -> Element Never
+disabledClaims model pool ({ claimsOut } as transaction) =
+    column
+        [ Region.description "claims"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 12
+        , alpha 0.2
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ (case claimsOut of
+            Default _ ->
+                Switch.Recommended
+
+            _ ->
+                Switch.Pro
+          )
+            |> Switch.disabled
+        , (case claimsOut of
+            Default _ ->
+                Nothing
+
+            Slider { percent } ->
+                Just percent
+
+            Bond { percent } ->
+                Just percent
+
+            Insurance { percent } ->
+                Just percent
+          )
+            |> Maybe.map disabledSlider
+            |> Maybe.withDefault none
+        , row
+            [ width fill
+            , height shrink
+            , spacing 16
+            ]
+            [ Info.emptyAPR
+            , Info.emptyCDP
+            ]
+        , disabledClaimsOut model pool.pair transaction
+        ]
+
+
+disabledSlider : Percent -> Element Never
+disabledSlider percent =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , paddingXY 0 3
+            , Font.size 14
+            ]
+            [ el
+                [ alignLeft
+                , Font.regular
+                , Font.color Color.transparent500
+                ]
+                (text "Adjust your APR")
+            ]
+        , column
+            [ width fill
+            , height shrink
+            , spacing 6
+            ]
+            [ Slider.disabled percent
+            , row
+                [ width fill
+                , height shrink
+                , paddingXY 0 2
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                [ el
+                    [ alignLeft
+                    , Font.regular
+                    ]
+                    (text "Low")
+                , el
+                    [ alignRight
+                    , Font.regular
+                    ]
+                    (text "High")
+                ]
+            ]
+        ]
+
+
+disabledClaimsOut :
+    { model | images : Images }
+    -> Pair
+    -> { transaction | claimsOut : ClaimsOut }
+    -> Element Never
+disabledClaimsOut model pair { claimsOut } =
+    case claimsOut of
+        Default _ ->
+            column
+                [ width fill
+                , height shrink
+                , padding 12
+                , spacing 12
+                , Background.color Color.primary100
+                , Border.rounded 8
+                ]
+                [ pair
+                    |> Pair.toAsset
+                    |> Just
+                    |> emptyBondOut model
+                , pair
+                    |> Pair.toCollateral
+                    |> Just
+                    |> emptyInsuranceOut model
+                ]
+
+        Slider _ ->
+            column
+                [ width fill
+                , height shrink
+                , spacing 12
+                ]
+                [ Nothing
+                    |> disabledBondOut model
+                        (pair |> Pair.toAsset)
+                , Nothing
+                    |> disabledInsuranceOut model
+                        (pair |> Pair.toCollateral)
+                ]
+
+        Bond { bond } ->
+            column
+                [ width fill
+                , height shrink
+                , spacing 12
+                ]
+                [ bond
+                    |> Just
+                    |> disabledBondOut model
+                        (pair |> Pair.toAsset)
+                , Nothing
+                    |> disabledInsuranceOut model
+                        (pair |> Pair.toCollateral)
+                ]
+
+        Insurance { insurance } ->
+            column
+                [ width fill
+                , height shrink
+                , spacing 12
+                ]
+                [ Nothing
+                    |> disabledBondOut model
+                        (pair |> Pair.toAsset)
+                , insurance
+                    |> Just
+                    |> disabledInsuranceOut model
+                        (pair |> Pair.toCollateral)
+                ]
+
+
+disabledBondOut :
+    { model | images : Images }
+    -> Token
+    -> Maybe String
+    -> Element Never
+disabledBondOut model asset input =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , Font.color Color.primary400
+            ]
+            (text "Amount to Receive")
+        , Textbox.disabled model
+            { token = asset
+            , text = input |> Maybe.withDefault ""
+            , description = "bond out input"
+            }
+        ]
+
+
+disabledInsuranceOut :
+    { model | images : Images }
+    -> Token
+    -> Maybe String
+    -> Element Never
+disabledInsuranceOut model collateral input =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , Font.color Color.primary400
+            ]
+            (text "Amount Protecting")
+        , Textbox.disabled model
+            { token = collateral
+            , text = input |> Maybe.withDefault ""
+            , description = "insurance out input"
+            }
+        ]
+
+
+doesNotExist :
     { model | backdrop : Backdrop, images : Images }
+    -> Pool
+    -> ()
+    ->
+        { first : Element Never
+        , second : Element Never
+        , buttons : Element Never
+        }
+doesNotExist model pool () =
+    empty model
+        { asset = pool.pair |> Pair.toAsset |> Just
+        , collateral = pool.pair |> Pair.toCollateral |> Just
+        }
+        |> (\{ first, second } ->
+                { first = first
+                , second = second
+                , buttons = Button.error "Pool Does Not Exist"
+                }
+           )
+
+
+disabledDoesNotExist :
+    { model | images : Images }
+    -> Pool
+    -> ()
+    ->
+        { first : Element Never
+        , second : Element Never
+        }
+disabledDoesNotExist model { pair } () =
+    empty model
+        { asset =
+            pair
+                |> Pair.toAsset
+                |> Just
+        , collateral =
+            pair
+                |> Pair.toCollateral
+                |> Just
+        }
+
+
+empty :
+    { model | images : Images }
+    ->
+        { asset : Maybe Token
+        , collateral : Maybe Token
+        }
+    ->
+        { first : Element Never
+        , second : Element Never
+        }
+empty model { asset, collateral } =
+    { first = emptyAssetIn model asset
+    , second = emptyClaims model asset collateral
+    }
+
+
+emptyAssetIn :
+    { model | images : Images }
+    -> Maybe Token
+    -> Element Never
+emptyAssetIn model token =
+    column
+        [ Region.description "lend asset"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 10
+        , alpha 0.2
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , paddingXY 0 3
+            , Font.color Color.primary400
+            ]
+            (text "Amount to Lend")
+        , Textbox.empty model
+            { token = token
+            , description = "lend asset textbox"
+            }
+        ]
+
+
+emptyClaims :
+    { model | images : Images }
     -> Maybe Token
     -> Maybe Token
     -> Element Never
-emptyClaims ({ backdrop } as model) asset collateral =
+emptyClaims model asset collateral =
     column
         [ Region.description "claims"
         , width <| px 343

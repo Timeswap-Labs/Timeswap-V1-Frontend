@@ -124,7 +124,8 @@ disabled { images } param =
         , height <| px 44
         , paddingXY 12 0
         , spacing 12
-        , Background.color Color.primary100
+        , Border.width 1
+        , Border.color Color.primary100
         , Border.rounded 8
         ]
         [ row

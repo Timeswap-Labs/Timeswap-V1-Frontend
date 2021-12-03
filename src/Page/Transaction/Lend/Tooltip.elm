@@ -5,3 +5,4 @@ type Tooltip
     = Balance
     | AssetInSymbol
     | BondOutSymbol
+    | InsuranceOutSymbol

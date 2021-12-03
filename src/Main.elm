@@ -636,6 +636,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     [ Browser.Events.onResize ResizeWindow
     , Browser.Events.onVisibilityChange VisibilityChange
+    , Time.every 1000 ReceiveTime
     , receiveMetamaskInstalled ReceiveMetamaskInstalled
     , receiveUser ReceiveUser
     , model.page
