@@ -18,7 +18,7 @@ encode { incomingTokenId, outgoingTokenId, incomingTokenQty, userAddress, signat
     Encode.object
         [ ( "incomingTokenId", incomingTokenId |> GameToken.encode )
         , ( "outgoingTokenId", outgoingTokenId |> GameToken.encode )
-        , ( "incomingTokenQty", incomingTokenQty |> Encode.float )
+        , ( "incomingTokenQty", (incomingTokenQty |> String.fromFloat) |> Encode.string )
         , ( "userAddress", userAddress |> Encode.string )
         , ( "signature", signature |> Encode.string )
         ]
