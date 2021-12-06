@@ -323,8 +323,7 @@ subscriptions service =
     Sub.batch
         [ Time.every 10000 ReceiveTime
         , swapSignatureMsg SwapSignatureMsg
-
-        -- , onClickOutsideDropdown service
+        , onClickOutsideDropdown service
         ]
 
 
@@ -512,6 +511,14 @@ inTokenDropdownButton ({ images, tokenImages } as model) gameToken dropdown opti
                 none
            )
             |> below
+         , el
+            [ width fill
+            , height fill
+            , Html.Attributes.id "swap-dropdown"
+                |> htmlAttribute
+            ]
+            none
+            |> inFront
          ]
             ++ Glass.lightWhiteModal 4
         )
@@ -572,8 +579,6 @@ inTokenDropdown { tokenImages } options =
             , blur = 7
             , color = Color.primary100
             }
-        , Html.Attributes.id "swap-dropdown"
-            |> htmlAttribute
         ]
         (options |> List.map (inTokenOptions tokenImages))
 
@@ -703,6 +708,14 @@ outTokenDropdownButton ({ images, tokenImages } as model) gameToken dropdown opt
                 none
            )
             |> below
+         , el
+            [ width fill
+            , height fill
+            , Html.Attributes.id "swap-dropdown"
+                |> htmlAttribute
+            ]
+            none
+            |> inFront
          ]
             ++ Glass.lightWhiteModal 4
         )
@@ -763,8 +776,6 @@ outTokenDropdown { tokenImages } options =
             , blur = 7
             , color = Color.primary100
             }
-        , Html.Attributes.id "swap-dropdown"
-            |> htmlAttribute
         ]
         (options |> List.map (outTokenOptions tokenImages))
 
