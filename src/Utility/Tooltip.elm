@@ -1,10 +1,11 @@
-module Utility.Tooltip exposing (below)
+module Utility.Tooltip exposing (belowAlignLeft, belowAlignRight)
 
 import Element
     exposing
         ( Attribute
         , Element
-        , Length
+        , alignLeft
+        , alignRight
         , centerX
         , column
         , el
@@ -14,29 +15,21 @@ import Element
         , htmlAttribute
         , moveDown
         , padding
-        , paragraph
         , shrink
-        , text
         , width
         )
 import Element.Background as Background
 import Element.Border as Border
-import Element.Font as Font
 import Html.Attributes
 import Svg
 import Svg.Attributes
 import Utility.Color as Color
-import Utility.Direction as Direction exposing (Direction)
 
 
-below :
-    { width : Length
-    , align : Direction ()
-    , move : Direction Int
-    , text : String
-    }
+belowAlignLeft :
+    Element msg
     -> Element msg
-below param =
+belowAlignLeft element =
     column
         [ width fill
         , height shrink
@@ -45,19 +38,41 @@ below param =
         [ el
             [ centerX ]
             triangleUp
-        , paragraph
-            [ width param.width
+        , el
+            [ width shrink
             , height shrink
+            , alignLeft
             , padding 12
-            , param.align |> Direction.toAlign
-            , param.move |> Direction.toMove
             , Background.color Color.dark500
             , Border.rounded 4
             , shadow
-            , Font.size 12
-            , Font.color Color.transparent300
             ]
-            [ text param.text ]
+            element
+        ]
+
+
+belowAlignRight :
+    Element msg
+    -> Element msg
+belowAlignRight element =
+    column
+        [ width fill
+        , height shrink
+        , moveDown 4
+        ]
+        [ el
+            [ centerX ]
+            triangleUp
+        , el
+            [ width shrink
+            , height shrink
+            , alignRight
+            , padding 12
+            , Background.color Color.dark500
+            , Border.rounded 4
+            , shadow
+            ]
+            element
         ]
 
 

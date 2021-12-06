@@ -20,6 +20,7 @@ import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
 import Data.Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
+import Data.Show as Show
 import Data.Slippage exposing (Slippage)
 import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
@@ -39,7 +40,7 @@ import Element
 import Page.Route as Route
 import Page.Transaction.Borrow.Main as TransactionBorrow
 import Page.Transaction.Lend.Main as Lend
-import Page.Transaction.Liquidity.Main as TransactionLiquidity
+import Page.Transaction.Liquidity.Main as Liquidity
 import Page.Transaction.Main as Transaction
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Time exposing (Posix, Zone)
@@ -49,16 +50,18 @@ import Url exposing (Url)
 type Page
     = Lend { transaction : Transaction.Section Lend.Transaction () }
     | Borrow { transaction : TransactionBorrow.Section }
-    | Liquidity { transaction : TransactionLiquidity.Section }
+    | Liquidity { transaction : Transaction.Section Liquidity.Transaction Liquidity.Create }
 
 
 type Msg
     = TransactionLendMsg (Transaction.Msg Lend.Msg Never)
+    | TransactionLiquidityMsg (Transaction.Msg Liquidity.TransactionMsg Liquidity.CreateMsg)
 
 
 type Effect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
+    | OpenChooseMaturity Pair
     | OpenSettings
     | OpenConnect
     | OpenConfirm
@@ -133,11 +136,25 @@ construct ({ chains } as model) url maybePage =
             , Cmd.none
             )
 
-        ( Just (Route.Liquidity parameter), _, _ ) ->
-            ( { transaction = TransactionLiquidity.init parameter }
-                |> Liquidity
-            , Cmd.none
-            )
+        ( Just (Route.Liquidity (Just (Parameter.Pool pool))), Supported blockchain, Just poolInfo ) ->
+            poolInfo
+                |> Transaction.initGivenPool Liquidity.init model blockchain pool
+                |> Tuple.mapBoth
+                    (\transaction ->
+                        { transaction = transaction }
+                            |> Liquidity
+                    )
+                    (Cmd.map TransactionLiquidityMsg)
+
+        ( Just (Route.Liquidity parameter), Supported blockchain, _ ) ->
+            parameter
+                |> Transaction.init model blockchain
+                |> Tuple.mapBoth
+                    (\transaction ->
+                        { transaction = transaction }
+                            |> Liquidity
+                    )
+                    (Cmd.map TransactionLiquidityMsg)
 
         _ ->
             ( { transaction = Transaction.notSupported }
@@ -181,6 +198,28 @@ update model blockchain msg page =
                         )
                    )
 
+        ( TransactionLiquidityMsg transactionLiquidityMsg, Liquidity liquidity ) ->
+            liquidity.transaction
+                |> Transaction.update
+                    { initTransaction = Liquidity.init
+                    , refreshTransaction = Liquidity.refresh
+                    , transaction = Liquidity.update model blockchain
+                    , initCreate = Liquidity.initCreate
+                    , refreshCreate = Liquidity.refreshCreate
+                    , create = Liquidity.updateCreate model blockchain
+                    }
+                    model
+                    blockchain
+                    transactionLiquidityMsg
+                |> (\( updated, cmd, maybeEffect ) ->
+                        ( { liquidity | transaction = updated }
+                            |> Liquidity
+                        , cmd |> Cmd.map TransactionLiquidityMsg
+                        , maybeEffect
+                            |> Maybe.map transactionLiquidityEffect
+                        )
+                   )
+
         _ ->
             ( page, Cmd.none, Nothing )
 
@@ -210,6 +249,39 @@ transactionLendEffect effect =
 
         _ ->
             Nothing
+
+
+transactionLiquidityEffect :
+    Transaction.Effect Liquidity.Effect Liquidity.Effect
+    -> Effect
+transactionLiquidityEffect effect =
+    case effect of
+        Transaction.OpenTokenList tokenParam ->
+            OpenTokenList tokenParam
+
+        Transaction.OpenMaturityList pair ->
+            OpenMaturityList pair
+
+        Transaction.OpenChooseMaturity pair ->
+            OpenChooseMaturity pair
+
+        Transaction.OpenSettings ->
+            OpenSettings
+
+        Transaction.OpenConnect ->
+            OpenConnect
+
+        Transaction.TransactionEffect Liquidity.OpenConnect ->
+            OpenConnect
+
+        Transaction.TransactionEffect Liquidity.OpenConfirm ->
+            OpenConfirm
+
+        Transaction.CreateEffect Liquidity.OpenConnect ->
+            OpenConnect
+
+        Transaction.CreateEffect Liquidity.OpenConfirm ->
+            OpenConfirm
 
 
 subscriptions : Page -> Sub Msg
@@ -252,13 +324,17 @@ toParameter page =
 
         Liquidity { transaction } ->
             transaction
-                |> TransactionLiquidity.toParameter
+                |> Transaction.toParameter
 
 
 toPoolInfo : Page -> Maybe PoolInfo
 toPoolInfo page =
     case page of
         Lend { transaction } ->
+            transaction
+                |> Transaction.toPoolInfo
+
+        Liquidity { transaction } ->
             transaction
                 |> Transaction.toPoolInfo
 
@@ -290,6 +366,8 @@ view model blockchain page =
                 [ transaction
                     |> Transaction.view
                         { title = "Lend"
+                        , createTitle = "Lend"
+                        , showCreate = Show.DoNot
                         , transaction = Lend.view model blockchain
                         , disabledTransaction = Lend.disabled model blockchain
                         , create = Lend.doesNotExist model

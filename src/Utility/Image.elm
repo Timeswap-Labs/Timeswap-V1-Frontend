@@ -2,6 +2,7 @@ module Utility.Image exposing
     ( allPairs
     , arrow
     , arrowDown
+    , blackSun
     , calander
     , checkbox
     , checkboxSelected
@@ -25,6 +26,7 @@ module Utility.Image exposing
     , openSea
     , option
     , plus
+    , plusPositive
     , setting
     , telegram
     , tripleDots
@@ -34,6 +36,7 @@ module Utility.Image exposing
     , viewWallet
     , wallet
     , warning
+    , whiteSun
     )
 
 import Data.Chain exposing (Chain(..))
@@ -115,6 +118,21 @@ viewWallet attributes givenWallet images =
             givenWallet
                 |> Wallet.toString
         }
+
+
+plusPositive : List (Attribute msg) -> Images -> Element msg
+plusPositive =
+    view "PlusPositive"
+
+
+whiteSun : List (Attribute msg) -> Images -> Element msg
+whiteSun =
+    view "WhiteSun"
+
+
+blackSun : List (Attribute msg) -> Images -> Element msg
+blackSun =
+    view "BlackSun"
 
 
 openSea : List (Attribute msg) -> Images -> Element msg

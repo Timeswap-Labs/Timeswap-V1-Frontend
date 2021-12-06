@@ -66,8 +66,8 @@ type alias AnswerInsurance =
 
 
 type alias ResultPercent =
-    { bond : Uint
-    , insurance : Uint
+    { bondOut : Uint
+    , insuranceOut : Uint
     , minBond : Uint
     , minInsurance : Uint
     , apr : Float
@@ -77,7 +77,7 @@ type alias ResultPercent =
 
 type alias ResultBond =
     { percent : Percent
-    , insurance : Uint
+    , insuranceOut : Uint
     , minInsurance : Uint
     , apr : Float
     , cdp : CDP
@@ -86,7 +86,7 @@ type alias ResultBond =
 
 type alias ResultInsurance =
     { percent : Percent
-    , bond : Uint
+    , bondOut : Uint
     , minBond : Uint
     , apr : Float
     , cdp : CDP
@@ -98,7 +98,7 @@ type alias ClaimsGivenPercent =
 
 
 type alias ClaimsGivenBond =
-    { insurance : Uint
+    { insuranceOut : Uint
     , minInsurance : Uint
     , apr : Float
     , cdp : CDP
@@ -106,7 +106,7 @@ type alias ClaimsGivenBond =
 
 
 type alias ClaimsGivenInsurance =
-    { bond : Uint
+    { bondOut : Uint
     , minBond : Uint
     , apr : Float
     , cdp : CDP
@@ -115,8 +115,8 @@ type alias ClaimsGivenInsurance =
 
 initGivenPercent : ClaimsGivenPercent
 initGivenPercent =
-    { bond = Uint.zero
-    , insurance = Uint.zero
+    { bondOut = Uint.zero
+    , insuranceOut = Uint.zero
     , minBond = Uint.zero
     , minInsurance = Uint.zero
     , apr = 0
@@ -126,7 +126,7 @@ initGivenPercent =
 
 initGivenBond : ClaimsGivenBond
 initGivenBond =
-    { insurance = Uint.zero
+    { insuranceOut = Uint.zero
     , minInsurance = Uint.zero
     , apr = 0
     , cdp = CDP.init
@@ -135,7 +135,7 @@ initGivenBond =
 
 initGivenInsurance : ClaimsGivenInsurance
 initGivenInsurance =
-    { bond = Uint.zero
+    { bondOut = Uint.zero
     , minBond = Uint.zero
     , apr = 0
     , cdp = CDP.init
@@ -212,7 +212,7 @@ decoderAnswerInsurance { chains } =
                     |> Pipeline.required "pool" (Pool.decoder chain chains)
                     |> Pipeline.required "poolInfo" PoolInfo.decoder
                     |> Pipeline.required "assetIn" Uint.decoder
-                    |> Pipeline.required "bondOut" Uint.decoder
+                    |> Pipeline.required "insuranceOut" Uint.decoder
                     |> Pipeline.required "slippage" Slippage.decoder
                     |> Pipeline.required "result"
                         ([ decoderResultInsurance |> Decode.map Ok
@@ -226,8 +226,8 @@ decoderAnswerInsurance { chains } =
 decoderResultPercent : Decoder ResultPercent
 decoderResultPercent =
     Decode.succeed ResultPercent
-        |> Pipeline.required "bond" Uint.decoder
-        |> Pipeline.required "insurance" Uint.decoder
+        |> Pipeline.required "bondOut" Uint.decoder
+        |> Pipeline.required "insuranceOut" Uint.decoder
         |> Pipeline.required "minBond" Uint.decoder
         |> Pipeline.required "minInsurance" Uint.decoder
         |> Pipeline.required "apr" Decode.float
@@ -238,7 +238,7 @@ decoderResultBond : Decoder ResultBond
 decoderResultBond =
     Decode.succeed ResultBond
         |> Pipeline.required "percent" Percent.decoder
-        |> Pipeline.required "insurance" Uint.decoder
+        |> Pipeline.required "insuranceOut" Uint.decoder
         |> Pipeline.required "minInsurance" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
@@ -248,7 +248,7 @@ decoderResultInsurance : Decoder ResultInsurance
 decoderResultInsurance =
     Decode.succeed ResultInsurance
         |> Pipeline.required "percent" Percent.decoder
-        |> Pipeline.required "bond" Uint.decoder
+        |> Pipeline.required "bondOut" Uint.decoder
         |> Pipeline.required "minBond" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
@@ -271,8 +271,8 @@ toClaimsGivenBond :
     -> Remote Error ClaimsGivenBond
 toClaimsGivenBond result =
     case result of
-        Ok { insurance, minInsurance, apr, cdp } ->
-            { insurance = insurance
+        Ok { insuranceOut, minInsurance, apr, cdp } ->
+            { insuranceOut = insuranceOut
             , minInsurance = minInsurance
             , apr = apr
             , cdp = cdp
@@ -288,8 +288,8 @@ toClaimsGivenInsurance :
     -> Remote Error ClaimsGivenInsurance
 toClaimsGivenInsurance result =
     case result of
-        Ok { bond, minBond, apr, cdp } ->
-            { bond = bond
+        Ok { bondOut, minBond, apr, cdp } ->
+            { bondOut = bondOut
             , minBond = minBond
             , apr = apr
             , cdp = cdp

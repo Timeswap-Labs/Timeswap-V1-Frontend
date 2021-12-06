@@ -1,22 +1,23 @@
 module Utility.Truncate exposing
-    ( disabled
-    , fromBalance
-    , fromSymbol
-    , view
+    ( disabledBalance
+    , disabledSymbol
+    , viewAmount
+    , viewBalance
+    , viewName
+    , viewSymbol
     )
 
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
-        ( Color
-        , Element
+        ( Element
         , below
         , el
         , height
-        , maximum
         , none
         , paddingEach
+        , paddingXY
         , shrink
         , text
         , width
@@ -25,190 +26,484 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Utility.Color as Color
-import Utility.Direction exposing (Direction)
-import Utility.FontStyle as FontStyle exposing (FontStyle)
 import Utility.Tooltip as Tooltip
 
 
-type alias Truncated =
-    { full : String
-    , truncated : Maybe String
-    }
-
-
-view :
-    { tooltip :
-        { align : Direction ()
-        , move : Direction Int
-        , onMouseEnterMsg : tooltip -> msg
-        , onMouseLeaveMsg : msg
-        , given : tooltip
-        , opened : Maybe tooltip
-        }
-    , main :
-        { fontSize : Int
-        , fontPadding : Int
-        , fontColor : Color
-        , texts : Truncated
-        }
+viewSymbol :
+    { onMouseEnter : tooltip -> msg
+    , onMouseLeave : msg
+    , tooltip : tooltip
+    , opened : Maybe tooltip
+    , token : Token
     }
     -> Element msg
-view { tooltip, main } =
-    construct
-        { tooltip = Just tooltip
-        , main = main
-        }
+viewSymbol param =
+    case
+        ( fromSymbol param.token
+        , param.opened
+        )
+    of
+        ( ( full, Just short ), Just opened ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 4
+                    , right = 0
+                    , bottom = 3
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , (if opened == param.tooltip then
+                    el
+                        [ Font.size 14
+                        , Font.color Color.transparent300
+                        ]
+                        (text full)
+                        |> Tooltip.belowAlignLeft
+
+                   else
+                    none
+                  )
+                    |> below
+                , Font.size 16
+                , Font.color Color.light100
+                ]
+                (text short)
+
+        ( ( _, Just short ), Nothing ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 4
+                    , right = 0
+                    , bottom = 3
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , Font.size 16
+                , Font.color Color.light100
+                ]
+                (text short)
+
+        ( ( full, Nothing ), _ ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 4
+                , Font.size 16
+                , Font.color Color.light100
+                ]
+                (text full)
 
 
-disabled :
-    { fontSize : Int
-    , fontPadding : Int
-    , fontColor : Color
-    , texts : Truncated
+viewName :
+    { onMouseEnter : tooltip -> msg
+    , onMouseLeave : msg
+    , tooltip : tooltip
+    , opened : Maybe tooltip
+    , token : Token
+    }
+    -> Element msg
+viewName param =
+    case
+        ( fromName param.token
+        , param.opened
+        )
+    of
+        ( ( full, Just short ), Just opened ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 2
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , (if opened == param.tooltip then
+                    el
+                        [ Font.size 12
+                        , Font.color Color.transparent300
+                        ]
+                        (text full)
+                        |> Tooltip.belowAlignLeft
+
+                   else
+                    none
+                  )
+                    |> below
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text short)
+
+        ( ( _, Just short ), Nothing ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 2
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text short)
+
+        ( ( full, Nothing ), _ ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 2
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text full)
+
+
+viewAmount :
+    { onMouseEnter : tooltip -> msg
+    , onMouseLeave : msg
+    , tooltip : tooltip
+    , opened : Maybe tooltip
+    , token : Token
+    , amount : Uint
+    }
+    -> Element msg
+viewAmount param =
+    case
+        ( param.amount |> fromAmount param.token
+        , param.opened
+        )
+    of
+        ( ( full, Just short ), Just opened ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 4
+                    , right = 0
+                    , bottom = 3
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , (if opened == param.tooltip then
+                    el
+                        [ Font.size 12
+                        , Font.color Color.transparent300
+                        ]
+                        (text full)
+                        |> Tooltip.belowAlignRight
+
+                   else
+                    none
+                  )
+                    |> below
+                , Font.size 16
+                , Font.color Color.light100
+                ]
+                (text short)
+
+        ( ( _, Just short ), Nothing ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 4
+                    , right = 0
+                    , bottom = 3
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , Font.size 16
+                , Font.color Color.light100
+                ]
+                (text short)
+
+        ( ( full, Nothing ), _ ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 4
+                , Font.size 16
+                , Font.color Color.light100
+                ]
+                (text full)
+
+
+viewBalance :
+    { onMouseEnter : tooltip -> msg
+    , onMouseLeave : msg
+    , tooltip : tooltip
+    , opened : Maybe tooltip
+    , token : Token
+    , balance : Uint
+    }
+    -> Element msg
+viewBalance param =
+    case
+        ( param.balance |> fromBalance param.token
+        , param.opened
+        )
+    of
+        ( ( full, Just short ), Just opened ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 2
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , (if opened == param.tooltip then
+                    el
+                        [ Font.size 12
+                        , Font.color Color.transparent300
+                        ]
+                        (text full)
+                        |> Tooltip.belowAlignRight
+
+                   else
+                    none
+                  )
+                    |> below
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text short)
+
+        ( ( _, Just short ), Nothing ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 2
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text short)
+
+        ( ( full, Nothing ), _ ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 4
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text full)
+
+
+disabledSymbol : Token -> Element Never
+disabledSymbol token =
+    case token |> fromSymbol of
+        ( _, Just short ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 4
+                    , right = 0
+                    , bottom = 3
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Font.size 16
+                , Font.color Color.light100
+                ]
+                (text short)
+
+        ( full, Nothing ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 4
+                , Font.size 16
+                , Font.color Color.light100
+                ]
+                (text full)
+
+
+disabledBalance :
+    { token : Token
+    , balance : Uint
     }
     -> Element Never
-disabled param =
-    construct
-        { tooltip = Nothing
-        , main = param
-        }
+disabledBalance param =
+    case param.balance |> fromBalance param.token of
+        ( _, Just short ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 2
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text short)
+
+        ( full, Nothing ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 4
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text full)
 
 
-construct :
-    { tooltip :
-        Maybe
-            { align : Direction ()
-            , move : Direction Int
-            , onMouseEnterMsg : tooltip -> msg
-            , onMouseLeaveMsg : msg
-            , given : tooltip
-            , opened : Maybe tooltip
-            }
-    , main :
-        { fontSize : Int
-        , fontPadding : Int
-        , fontColor : Color
-        , texts : Truncated
-        }
-    }
-    -> Element msg
-construct { tooltip, main } =
-    el
-        ([ width shrink
-         , height shrink
-         , paddingEach
-            { top = main.fontPadding
-            , right = 0
-            , bottom =
-                main.texts.truncated
-                    |> Maybe.map
-                        (\_ ->
-                            main.fontPadding - 1
-                        )
-                    |> Maybe.withDefault
-                        main.fontPadding
-            , left = 0
-            }
-         , Font.regular
-         , Font.size main.fontSize
-         , Font.color Color.light100
-         ]
-            ++ (main.texts.truncated
-                    |> Maybe.map
-                        (\_ ->
-                            [ Border.widthEach
-                                { top = 0
-                                , right = 0
-                                , bottom = 1
-                                , left = 0
-                                }
-                            , Border.dashed
-                            , Border.color Color.transparent200
-                            ]
-                        )
-                    |> Maybe.withDefault []
-               )
-            ++ (Maybe.map2
-                    (\_ param ->
-                        [ Events.onMouseEnter
-                            (param.onMouseEnterMsg param.given)
-                        , Events.onMouseLeave
-                            param.onMouseLeaveMsg
-                        , param.opened
-                            |> Maybe.map
-                                (\openedTooltip ->
-                                    if
-                                        openedTooltip
-                                            == param.given
-                                    then
-                                        Tooltip.below
-                                            { width =
-                                                shrink
-                                                    |> maximum 335
-                                            , align = param.align
-                                            , move = param.move
-                                            , text = main.texts.full
-                                            }
-
-                                    else
-                                        none
-                                )
-                            |> Maybe.withDefault none
-                            |> below
-                        ]
-                    )
-                    main.texts.truncated
-                    tooltip
-                    |> Maybe.withDefault []
-               )
-        )
-        (main.texts.truncated
-            |> Maybe.withDefault main.texts.full
-            |> text
-        )
-
-
-fromBalance : Token -> Uint -> Truncated
+fromBalance : Token -> Uint -> ( String, Maybe String )
 fromBalance token uint =
     ( fromAmount token uint
     , fromSymbol token
     )
         |> (\( amount, symbol ) ->
-                { full =
-                    [ amount.full
-                    , symbol.full
-                    ]
-                        |> String.join " "
-                , truncated =
-                    case ( amount.truncated, symbol.truncated ) of
-                        ( Just truncatedAmount, Just truncatedSymbol ) ->
-                            [ truncatedAmount
-                            , truncatedSymbol
-                            ]
-                                |> String.join " "
-                                |> Just
+                ( [ amount |> Tuple.first
+                  , symbol |> Tuple.first
+                  ]
+                    |> String.join " "
+                , case ( amount |> Tuple.second, symbol |> Tuple.second ) of
+                    ( Just shortAmount, Just shortSymbol ) ->
+                        [ shortAmount
+                        , shortSymbol
+                        ]
+                            |> String.join " "
+                            |> Just
 
-                        ( Just truncatedAmount, Nothing ) ->
-                            [ truncatedAmount
-                            , symbol.full
-                            ]
-                                |> String.join " "
-                                |> Just
+                    ( Just shortAmount, Nothing ) ->
+                        [ shortAmount
+                        , symbol |> Tuple.first
+                        ]
+                            |> String.join " "
+                            |> Just
 
-                        ( Nothing, Just truncatedSymbol ) ->
-                            [ amount.full
-                            , truncatedSymbol
-                            ]
-                                |> String.join " "
-                                |> Just
+                    ( Nothing, Just shortSymbol ) ->
+                        [ amount |> Tuple.first
+                        , shortSymbol
+                        ]
+                            |> String.join " "
+                            |> Just
 
-                        _ ->
-                            Nothing
-                }
+                    _ ->
+                        Nothing
+                )
            )
 
 
-fromAmount : Token -> Uint -> Truncated
+fromAmount : Token -> Uint -> ( String, Maybe String )
 fromAmount token uint =
     uint
         |> Uint.toAmount token
@@ -229,7 +524,7 @@ fromAmount token uint =
                                         ]
                                             |> String.concat
                                             |> Just
-                                            |> Truncated full
+                                            |> Tuple.pair full
 
                                     else if (whole |> String.length) > 12 then
                                         [ [ whole |> String.dropRight 12
@@ -242,7 +537,7 @@ fromAmount token uint =
                                         ]
                                             |> String.concat
                                             |> Just
-                                            |> Truncated full
+                                            |> Tuple.pair full
 
                                     else if (whole |> String.length) > 9 then
                                         [ [ whole |> String.dropRight 9
@@ -255,7 +550,7 @@ fromAmount token uint =
                                         ]
                                             |> String.concat
                                             |> Just
-                                            |> Truncated full
+                                            |> Tuple.pair full
 
                                     else if (whole |> String.length) > 6 then
                                         [ [ whole |> String.dropRight 6
@@ -268,7 +563,7 @@ fromAmount token uint =
                                         ]
                                             |> String.concat
                                             |> Just
-                                            |> Truncated full
+                                            |> Tuple.pair full
 
                                     else if (whole |> String.length) > 3 then
                                         [ whole |> String.dropRight 3
@@ -276,10 +571,10 @@ fromAmount token uint =
                                         ]
                                             |> String.join ","
                                             |> Just
-                                            |> Truncated full
+                                            |> Tuple.pair full
 
                                     else if (fraction |> String.length) <= 3 then
-                                        Truncated full Nothing
+                                        Tuple.pair full Nothing
 
                                     else
                                         [ whole
@@ -287,7 +582,7 @@ fromAmount token uint =
                                         ]
                                             |> String.join "."
                                             |> Just
-                                            |> Truncated full
+                                            |> Tuple.pair full
 
                                 whole :: _ ->
                                     if (whole |> String.length) > 15 then
@@ -301,7 +596,7 @@ fromAmount token uint =
                                         ]
                                             |> String.concat
                                             |> Just
-                                            |> Truncated full
+                                            |> Tuple.pair full
 
                                     else if (whole |> String.length) > 12 then
                                         [ [ whole |> String.dropRight 12
@@ -314,7 +609,7 @@ fromAmount token uint =
                                         ]
                                             |> String.concat
                                             |> Just
-                                            |> Truncated full
+                                            |> Tuple.pair full
 
                                     else if (whole |> String.length) > 9 then
                                         [ [ whole |> String.dropRight 9
@@ -327,7 +622,7 @@ fromAmount token uint =
                                         ]
                                             |> String.concat
                                             |> Just
-                                            |> Truncated full
+                                            |> Tuple.pair full
 
                                     else if (whole |> String.length) > 6 then
                                         [ [ whole |> String.dropRight 6
@@ -340,37 +635,53 @@ fromAmount token uint =
                                         ]
                                             |> String.concat
                                             |> Just
-                                            |> Truncated full
+                                            |> Tuple.pair full
 
                                     else if (whole |> String.length) > 3 then
                                         [ whole |> String.dropRight 3
                                         , whole |> String.right 3
                                         ]
                                             |> String.join ","
-                                            |> (\formattedFull -> Truncated formattedFull Nothing)
+                                            |> (\formattedFull -> Tuple.pair formattedFull Nothing)
 
                                     else
-                                        Truncated full Nothing
+                                        Tuple.pair full Nothing
 
                                 _ ->
-                                    Truncated full Nothing
+                                    Tuple.pair full Nothing
                        )
            )
 
 
-fromSymbol : Token -> Truncated
+fromSymbol : Token -> ( String, Maybe String )
 fromSymbol token =
     token
         |> Token.toSymbol
         |> (\string ->
-                { full = string
-                , truncated =
-                    if (string |> String.length) > 5 then
-                        string
-                            |> String.left 5
-                            |> Just
+                ( string
+                , if (string |> String.length) > 5 then
+                    string
+                        |> String.left 5
+                        |> Just
 
-                    else
-                        Nothing
-                }
+                  else
+                    Nothing
+                )
+           )
+
+
+fromName : Token -> ( String, Maybe String )
+fromName token =
+    token
+        |> Token.toName
+        |> (\string ->
+                ( string
+                , if (string |> String.length) > 20 then
+                    string
+                        |> String.left 20
+                        |> Just
+
+                  else
+                    Nothing
+                )
            )

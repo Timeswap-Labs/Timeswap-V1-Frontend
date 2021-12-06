@@ -1,11 +1,11 @@
-module Page.Transaction.Lend.Query exposing
-    ( givenBond
-    , givenInsurance
-    , givenPercent
+module Page.Transaction.Liquidity.Query exposing
+    ( givenAsset
+    , givenCollateral
+    , givenDebt
+    , givenNew
     )
 
 import Data.Chain as Chain exposing (Chain)
-import Data.Percent as Percent exposing (Percent)
 import Data.Pool as Pool exposing (Pool)
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.Uint as Uint exposing (Uint)
@@ -13,67 +13,81 @@ import Json.Encode as Encode exposing (Value)
 import Page.Transaction.PoolInfo as PoolInfo exposing (PoolInfo)
 
 
-type alias QueryPercent =
+type alias QueryAsset =
     { chainId : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetIn : Uint
-    , percent : Percent
     , slippage : Slippage
     }
 
 
-type alias QueryBond =
+type alias QueryDebt =
     { chainId : Chain
     , pool : Pool
     , poolInfo : PoolInfo
-    , assetIn : Uint
-    , bondOut : Uint
+    , debtOut : Uint
     , slippage : Slippage
     }
 
 
-type alias QueryInsurance =
+type alias QueryCollateral =
     { chainId : Chain
     , pool : Pool
     , poolInfo : PoolInfo
-    , assetIn : Uint
-    , insuranceOut : Uint
+    , collateralOut : Uint
     , slippage : Slippage
     }
 
 
-givenPercent : QueryPercent -> Value
-givenPercent { chainId, pool, poolInfo, assetIn, percent, slippage } =
+type alias QueryNew =
+    { chainId : Chain
+    , pool : Pool
+    , assetIn : Uint
+    , debtOut : Uint
+    , collateralOut : Uint
+    }
+
+
+givenAsset : QueryAsset -> Value
+givenAsset { chainId, pool, poolInfo, assetIn, slippage } =
     [ ( "chainId", chainId |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "assetIn", assetIn |> Uint.encode )
-    , ( "percent", percent |> Percent.encode )
     , ( "slippage", slippage |> Slippage.encodeGivenPercent )
     ]
         |> Encode.object
 
 
-givenBond : QueryBond -> Value
-givenBond { chainId, pool, poolInfo, assetIn, bondOut, slippage } =
+givenDebt : QueryDebt -> Value
+givenDebt { chainId, pool, poolInfo, debtOut, slippage } =
     [ ( "chainId", chainId |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
-    , ( "assetIn", assetIn |> Uint.encode )
-    , ( "bondOut", bondOut |> Uint.encode )
-    , ( "slippage", slippage |> Slippage.encode )
+    , ( "debtOut", debtOut |> Uint.encode )
+    , ( "slippage", slippage |> Slippage.encodeGivenPercent )
     ]
         |> Encode.object
 
 
-givenInsurance : QueryInsurance -> Value
-givenInsurance { chainId, pool, poolInfo, assetIn, insuranceOut, slippage } =
+givenCollateral : QueryCollateral -> Value
+givenCollateral { chainId, pool, poolInfo, collateralOut, slippage } =
     [ ( "chainId", chainId |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
+    , ( "collateralOut", collateralOut |> Uint.encode )
+    , ( "slippage", slippage |> Slippage.encodeGivenPercent )
+    ]
+        |> Encode.object
+
+
+givenNew : QueryNew -> Value
+givenNew { chainId, pool, assetIn, debtOut, collateralOut } =
+    [ ( "chainId", chainId |> Chain.encode )
+    , ( "pool", pool |> Pool.encode )
     , ( "assetIn", assetIn |> Uint.encode )
-    , ( "insuranceOut", insuranceOut |> Uint.encode )
-    , ( "slippage", slippage |> Slippage.encode )
+    , ( "debtOut", debtOut |> Uint.encode )
+    , ( "collateralOut", collateralOut |> Uint.encode )
     ]
         |> Encode.object

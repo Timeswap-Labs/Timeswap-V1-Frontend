@@ -3,6 +3,7 @@ module Modal.Main exposing
     , Modal
     , Msg
     , initChainList
+    , initChooseMaturity
     , initConfirm
     , initConnect
     , initMaturityList
@@ -37,6 +38,7 @@ import Element
         , none
         )
 import Modal.ChainList.Main as ChainList
+import Modal.ChooseMaturity.Main as ChooseMaturity
 import Modal.Confirm.Main as Confirm
 import Modal.Connect.Main as Connect
 import Modal.MaturityList.Main as MaturityList
@@ -51,6 +53,7 @@ type Modal
     | ChainList
     | TokenList TokenList.Modal
     | MaturityList MaturityList.Modal
+    | ChooseMaturity ChooseMaturity.Modal
     | Confirm Confirm.Modal
 
 
@@ -108,6 +111,12 @@ initMaturityList model blockchain pair =
         |> Tuple.mapBoth
             MaturityList
             (Cmd.map MaturityListMsg)
+
+
+initChooseMaturity : Pair -> Modal
+initChooseMaturity pair =
+    ChooseMaturity.init pair
+        |> ChooseMaturity
 
 
 initChainList : Modal

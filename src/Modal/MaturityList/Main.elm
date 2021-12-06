@@ -55,7 +55,6 @@ import Sort.Dict as Dict
 import Task
 import Time exposing (Posix, Zone)
 import Utility.Color as Color
-import Utility.Direction as Direction
 import Utility.Duration as Duration
 import Utility.Glass as Glass
 import Utility.Image as Image
@@ -231,7 +230,7 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ backdrop, images } as model) (Modal modal) =
+view ({ time, zone, chosenZone, backdrop, images } as model) (Modal ({ tooltip } as modal)) =
     Glass.outsideModal backdrop
         Exit
         (column
@@ -284,15 +283,14 @@ view ({ backdrop, images } as model) (Modal modal) =
                                 (\( maturity, summary ) ->
                                     el
                                         []
-                                        (Duration.viewMaturity model
-                                            { tooltip =
-                                                { align = Direction.Left ()
-                                                , move = Direction.Left 0 |> Debug.todo "later"
-                                                , onMouseEnterMsg = OnMouseEnter
-                                                , onMouseLeaveMsg = OnMouseLeave
-                                                , given = Tooltip.Maturity maturity
-                                                , opened = modal.tooltip
-                                                }
+                                        (Duration.viewMaturity
+                                            { onMouseEnter = OnMouseEnter
+                                            , onMouseLeave = OnMouseLeave
+                                            , tooltip = Tooltip.Maturity maturity
+                                            , opened = tooltip
+                                            , time = time
+                                            , zone = zone
+                                            , chosenZone = chosenZone
                                             , maturity = maturity
                                             }
                                         )

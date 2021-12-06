@@ -1,4 +1,17 @@
-module Page.Transaction.Main exposing (..)
+module Page.Transaction.Main exposing
+    ( Effect(..)
+    , Msg
+    , Section
+    , init
+    , initDoesNotExist
+    , initGivenPool
+    , notSupported
+    , subscriptions
+    , toParameter
+    , toPoolInfo
+    , update
+    , view
+    )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Backdrop exposing (Backdrop)
@@ -11,6 +24,7 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
+import Data.Show as Show exposing (Show)
 import Data.Slippage exposing (Slippage)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
@@ -27,6 +41,7 @@ import Element
         , fill
         , height
         , map
+        , none
         , padding
         , paddingXY
         , px
@@ -53,9 +68,7 @@ import Process
 import Task
 import Time exposing (Posix, Zone)
 import Utility.Color as Color
-import Utility.Direction as Direction
 import Utility.Duration as Duration
-import Utility.FontStyle as FontStyle
 import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.Truncate as Truncate
@@ -85,6 +98,7 @@ type State transaction create
 type Msg transactionMsg createMsg
     = SelectToken TokenParam
     | SelectMaturity
+    | ClickCreatePool
     | ClickSettings
     | TransactionMsg transactionMsg
     | CreateMsg createMsg
@@ -98,6 +112,7 @@ type Msg transactionMsg createMsg
 type Effect transactionEffect createEffect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
+    | OpenChooseMaturity Pair
     | OpenSettings
     | OpenConnect
     | TransactionEffect transactionEffect
@@ -205,6 +220,36 @@ initGivenPool initTransaction ({ time } as model) blockchain pool poolInfo =
     )
 
 
+initDoesNotExist :
+    create
+    -> { model | time : Posix }
+    -> Pool
+    ->
+        ( Section transaction create
+        , Cmd (Msg transactionMsg createMsg)
+        )
+initDoesNotExist initCreate { time } pool =
+    ( { state =
+            { pool = pool
+            , state =
+                (if pool.maturity |> Maturity.isActive time then
+                    initCreate
+                        |> PoolState.DoesNotExist
+
+                 else
+                    PoolState.Matured
+                )
+                    |> Success
+            }
+                |> Pool
+      , tooltip = Nothing
+      }
+        |> Section
+    , Process.sleep 5000
+        |> Task.perform (\_ -> QueryAgain)
+    )
+
+
 notSupported : Section transaction create
 notSupported =
     { state = None
@@ -268,6 +313,22 @@ update updates model blockchain msg (Section section) =
             , Cmd.none
             , pool.pair
                 |> OpenMaturityList
+                |> Just
+            )
+
+        ( ClickCreatePool, Pair pair ) ->
+            ( section |> Section
+            , Cmd.none
+            , pair
+                |> OpenChooseMaturity
+                |> Just
+            )
+
+        ( ClickCreatePool, Pool { pool } ) ->
+            ( section |> Section
+            , Cmd.none
+            , pool.pair
+                |> OpenChooseMaturity
                 |> Just
             )
 
@@ -621,6 +682,8 @@ toPoolInfo (Section section) =
 
 view :
     { title : String
+    , createTitle : String
+    , showCreate : Show
     , transaction :
         Pool
         -> transaction
@@ -678,7 +741,9 @@ view views model (Section section) =
                 , collateral = Nothing
                 }
                 |> (\{ first, second } ->
-                        { first = first |> map never
+                        { title = views.title
+                        , showCreate = Show.DoNot
+                        , first = first |> map never
                         , second = second |> map never
                         , buttons =
                             Button.disabled "Select Pair First"
@@ -692,7 +757,9 @@ view views model (Section section) =
                 , collateral = Nothing
                 }
                 |> (\{ first, second } ->
-                        { first = first |> map never
+                        { title = views.title
+                        , showCreate = Show.DoNot
+                        , first = first |> map never
                         , second = second |> map never
                         , buttons =
                             Button.disabled "Select Pair First"
@@ -706,7 +773,9 @@ view views model (Section section) =
                 , collateral = Just collateral
                 }
                 |> (\{ first, second } ->
-                        { first = first |> map never
+                        { title = views.title
+                        , showCreate = Show.DoNot
+                        , first = first |> map never
                         , second = second |> map never
                         , buttons =
                             Button.disabled "Select Pair First"
@@ -720,7 +789,9 @@ view views model (Section section) =
                 , collateral = pair |> Pair.toCollateral |> Just
                 }
                 |> (\{ first, second } ->
-                        { first = first |> map never
+                        { title = views.title
+                        , showCreate = views.showCreate
+                        , first = first |> map never
                         , second = second |> map never
                         , buttons =
                             Button.disabled "Select Maturity First"
@@ -742,7 +813,9 @@ view views model (Section section) =
                                 |> Just
                         }
                         |> (\{ first, second } ->
-                                { first = first |> map never
+                                { title = views.title
+                                , showCreate = views.showCreate
+                                , first = first |> map never
                                 , second = second |> map never
                                 , buttons =
                                     Button.disabled "Loading"
@@ -753,15 +826,19 @@ view views model (Section section) =
                 Failure failure ->
                     (case failure.state of
                         Error.Active transaction ->
-                            transaction
-                                |> views.disabledTransaction pool
+                            ( transaction |> views.disabledTransaction pool
+                            , views.title
+                            )
 
                         Error.DoesNotExist create ->
-                            create
-                                |> views.disabledCreate pool
+                            ( create |> views.disabledCreate pool
+                            , views.createTitle
+                            )
                     )
-                        |> (\{ first, second } ->
-                                { first = first |> map never
+                        |> (\( { first, second }, title ) ->
+                                { title = title
+                                , showCreate = views.showCreate
+                                , first = first |> map never
                                 , second = second |> map never
                                 , buttons =
                                     (case failure.error of
@@ -786,7 +863,9 @@ view views model (Section section) =
                     transaction
                         |> views.transaction pool
                         |> (\{ first, second, buttons } ->
-                                { first = first |> map TransactionMsg
+                                { title = views.title
+                                , showCreate = views.showCreate
+                                , first = first |> map TransactionMsg
                                 , second = second |> map TransactionMsg
                                 , buttons = buttons |> map TransactionMsg
                                 }
@@ -796,7 +875,9 @@ view views model (Section section) =
                     create
                         |> views.create pool
                         |> (\{ first, second, buttons } ->
-                                { first = first |> map CreateMsg
+                                { title = views.createTitle
+                                , showCreate = views.showCreate
+                                , first = first |> map CreateMsg
                                 , second = second |> map CreateMsg
                                 , buttons = buttons |> map CreateMsg
                                 }
@@ -814,16 +895,18 @@ view views model (Section section) =
                                 |> Just
                         }
                         |> (\{ first, second } ->
-                                { first = first |> map never
+                                { title = views.title
+                                , showCreate = views.showCreate
+                                , first = first |> map never
                                 , second = second |> map never
                                 , buttons = Button.error "Already Matured" |> map never
                                 }
                            )
     )
-        |> (\{ first, second, buttons } ->
+        |> (\{ title, showCreate, first, second, buttons } ->
                 column
                     [ Region.description
-                        ([ views.title |> String.toLower
+                        ([ title |> String.toLower
                          , "transaction"
                          ]
                             |> String.join " "
@@ -840,6 +923,7 @@ view views model (Section section) =
                     [ row
                         [ width fill
                         , height shrink
+                        , spacing 24
                         ]
                         [ el
                             [ width shrink
@@ -849,7 +933,13 @@ view views model (Section section) =
                             , Font.color Color.light100
                             , Font.bold
                             ]
-                            (text views.title)
+                            (text title)
+                        , case showCreate of
+                            Show.Create ->
+                                createButton model
+
+                            Show.DoNot ->
+                                none
                         , settingsButton model
                         ]
                     , row
@@ -878,6 +968,43 @@ view views model (Section section) =
                         ]
                     ]
            )
+
+
+createButton :
+    { model | images : Images }
+    -> Element (Msg transactionMsg createMsg)
+createButton { images } =
+    Input.button
+        [ width shrink
+        , height shrink
+        , alignRight
+        , centerY
+        ]
+        { onPress = ClickCreatePool |> Just
+        , label =
+            row
+                [ width shrink
+                , height shrink
+                , spacing 4
+                ]
+                [ images
+                    |> Image.plusPositive
+                        [ width <| px 14
+                        , height <| px 14
+                        , centerY
+                        ]
+                , el
+                    [ width shrink
+                    , height shrink
+                    , centerY
+                    , Font.bold
+                    , Font.size 16
+                    , paddingXY 0 4
+                    , Font.color Color.positive400
+                    ]
+                    (text "Create Pool")
+                ]
+        }
 
 
 settingsButton :
@@ -943,21 +1070,56 @@ pairParameters model section =
         , height shrink
         , spacing 16
         ]
-        [ tokenParameter TokenParam.Asset model section
-        , tokenParameter TokenParam.Collateral model section
+        [ tokenParameter model section TokenParam.Asset
+        , tokenParameter model section TokenParam.Collateral
         ]
 
 
 tokenParameter :
-    TokenParam
-    -> { model | images : Images }
+    { model | images : Images }
     ->
         { section
             | state : State transaction create
             , tooltip : Maybe Tooltip
         }
+    -> TokenParam
     -> Element (Msg transactionMsg createMsg)
-tokenParameter tokenParam { images } { state, tooltip } =
+tokenParameter model section tokenParam =
+    column
+        [ width fill
+        , height shrink
+        , spacing 8
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , paddingXY 0 3
+            , Font.size 14
+            , Font.color Color.primary400
+            ]
+            ((case tokenParam of
+                TokenParam.Asset ->
+                    "Asset"
+
+                TokenParam.Collateral ->
+                    "Collateral"
+             )
+                |> text
+            )
+        , tokenButton model section tokenParam
+        ]
+
+
+tokenButton :
+    { model | images : Images }
+    ->
+        { section
+            | state : State transaction create
+            , tooltip : Maybe Tooltip
+        }
+    -> TokenParam
+    -> Element (Msg transactionMsg createMsg)
+tokenButton { images } { state, tooltip } tokenParam =
     (case ( state, tokenParam ) of
         ( Asset asset, TokenParam.Asset ) ->
             Just asset
@@ -988,125 +1150,95 @@ tokenParameter tokenParam { images } { state, tooltip } =
         _ ->
             Nothing
     )
-        |> (\maybeToken ->
-                column
-                    [ width fill
-                    , height shrink
-                    , spacing 8
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , paddingXY 0 3
-                        , Font.size 14
-                        , Font.color Color.primary400
-                        ]
-                        ((case tokenParam of
+        |> Maybe.map
+            (\token ->
+                Input.button
+                    [ Region.description
+                        (case tokenParam of
                             TokenParam.Asset ->
-                                "Asset"
+                                "asset button"
 
                             TokenParam.Collateral ->
-                                "Collateral"
-                         )
-                            |> text
+                                "collateral button"
                         )
-                    , Input.button
-                        ([ Region.description
-                            (case tokenParam of
-                                TokenParam.Asset ->
-                                    "asset button"
-
-                                TokenParam.Collateral ->
-                                    "collateral button"
-                            )
-                         , width fill
-                         , height <| px 44
-                         ]
-                            ++ (maybeToken
-                                    |> Maybe.map
-                                        (\_ ->
-                                            [ Background.color Color.primary100
-                                            , Border.width 1
-                                            , Border.color Color.transparent100
-                                            , Border.rounded 8
-                                            ]
-                                        )
-                                    |> Maybe.withDefault
-                                        [ Background.color Color.primary500
-                                        , Border.rounded 8
-                                        ]
-                               )
-                        )
-                        { onPress = SelectToken tokenParam |> Just
-                        , label =
-                            row
-                                [ width fill
-                                , height fill
-                                , paddingXY 12 0
-                                ]
-                                (maybeToken
-                                    |> Maybe.map
-                                        (\token ->
-                                            [ row
-                                                [ width <| px 100
-                                                , height fill
-                                                , spacing 6
-                                                ]
-                                                [ images
-                                                    |> Image.viewToken
-                                                        [ width <| px 24
-                                                        , alignLeft
-                                                        , centerY
-                                                        ]
-                                                        token
-                                                , Truncate.view
-                                                    { tooltip =
-                                                        { align = Direction.Left ()
-                                                        , move = Direction.Left 0 |> Debug.log "later"
-                                                        , onMouseEnterMsg = OnMouseEnter
-                                                        , onMouseLeaveMsg = OnMouseLeave
-                                                        , given = Tooltip.Token tokenParam
-                                                        , opened = tooltip
-                                                        }
-                                                    , main =
-                                                        { fontSize = 16
-                                                        , fontPadding = 4
-                                                        , fontColor = Color.light100
-                                                        , texts =
-                                                            token
-                                                                |> Truncate.fromSymbol
-                                                        }
-                                                    }
-                                                ]
-                                            , images
-                                                |> Image.discloser
-                                                    [ width <| px 9
-                                                    , alignRight
-                                                    , centerY
-                                                    ]
-                                            ]
-                                        )
-                                    |> Maybe.withDefault
-                                        [ el
-                                            [ width shrink
-                                            , height shrink
-                                            , alignLeft
-                                            , centerY
-                                            , Font.size 14
-                                            , Font.color Color.light100
-                                            ]
-                                            (text "Select Token")
-                                        , images
-                                            |> Image.discloser
-                                                [ width <| px 9
-                                                , alignRight
-                                                , centerY
-                                                ]
-                                        ]
-                                )
-                        }
+                    , width fill
+                    , height <| px 44
+                    , Background.color Color.primary100
+                    , Border.width 1
+                    , Border.color Color.transparent100
+                    , Border.rounded 8
                     ]
-           )
+                    { onPress = SelectToken tokenParam |> Just
+                    , label =
+                        row
+                            [ width fill
+                            , height fill
+                            , paddingXY 12 0
+                            , spacing 6
+                            ]
+                            [ images
+                                |> Image.viewToken
+                                    [ width <| px 24
+                                    , alignLeft
+                                    , centerY
+                                    ]
+                                    token
+                            , Truncate.viewSymbol
+                                { onMouseEnter = OnMouseEnter
+                                , onMouseLeave = OnMouseLeave
+                                , tooltip = Tooltip.Token tokenParam
+                                , opened = tooltip
+                                , token = token
+                                }
+                            , images
+                                |> Image.discloser
+                                    [ width <| px 9
+                                    , alignRight
+                                    , centerY
+                                    ]
+                            ]
+                    }
+            )
+        |> Maybe.withDefault
+            (Input.button
+                [ Region.description
+                    (case tokenParam of
+                        TokenParam.Asset ->
+                            "asset button"
+
+                        TokenParam.Collateral ->
+                            "collateral button"
+                    )
+                , width fill
+                , height <| px 44
+                , Background.color Color.primary500
+                , Border.rounded 8
+                ]
+                { onPress = SelectToken tokenParam |> Just
+                , label =
+                    row
+                        [ width fill
+                        , height fill
+                        , paddingXY 12 0
+                        ]
+                        [ el
+                            [ width shrink
+                            , height shrink
+                            , alignLeft
+                            , centerY
+                            , Font.size 14
+                            , Font.color Color.light100
+                            ]
+                            (text "Select Token")
+                        , images
+                            |> Image.discloser
+                                [ width <| px 9
+                                , alignRight
+                                , centerY
+                                ]
+                        ]
+                }
+            )
 
 
 maturityParameter :
@@ -1122,7 +1254,7 @@ maturityParameter :
             , tooltip : Maybe Tooltip
         }
     -> Element (Msg transactionMsg createMsg)
-maturityParameter ({ images } as model) { state, tooltip } =
+maturityParameter { time, zone, chosenZone, images } { state, tooltip } =
     column
         [ width fill
         , height shrink
@@ -1155,15 +1287,14 @@ maturityParameter ({ images } as model) { state, tooltip } =
                             , paddingXY 12 0
                             , spacing 6
                             ]
-                            [ Duration.viewMaturity model
-                                { tooltip =
-                                    { align = Direction.Left ()
-                                    , move = Direction.Left 0 |> Debug.log "later"
-                                    , onMouseEnterMsg = OnMouseEnter
-                                    , onMouseLeaveMsg = OnMouseLeave
-                                    , given = Tooltip.Maturity
-                                    , opened = tooltip
-                                    }
+                            [ Duration.viewMaturity
+                                { onMouseEnter = OnMouseEnter
+                                , onMouseLeave = OnMouseLeave
+                                , tooltip = Tooltip.Maturity
+                                , opened = tooltip
+                                , time = time
+                                , zone = zone
+                                , chosenZone = chosenZone
                                 , maturity = pool.maturity
                                 }
                             , images

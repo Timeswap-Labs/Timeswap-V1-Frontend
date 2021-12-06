@@ -1,4 +1,53 @@
-module Utility.Fade exposing (cut)
+module Utility.Fade exposing (view)
+
+import Data.Token exposing (Token)
+import Data.Uint as Uint exposing (Uint)
+import Element
+    exposing
+        ( Element
+        , el
+        , height
+        , none
+        , row
+        , shrink
+        , text
+        , width
+        )
+import Element.Font as Font
+import Utility.Color as Color
+
+
+view : Token -> Uint -> Element msg
+view token amount =
+    if amount |> Uint.isZero then
+        none
+
+    else
+        row
+            [ width shrink
+            , height shrink
+            ]
+            (amount
+                |> Uint.toAmount token
+                |> cut
+                |> (\( unFaded, faded ) ->
+                        [ el
+                            [ width shrink
+                            , height shrink
+                            , Font.color Color.light100
+                            , Font.size 16
+                            ]
+                            (text unFaded)
+                        , el
+                            [ width shrink
+                            , height shrink
+                            , Font.color Color.transparent300
+                            , Font.size 16
+                            ]
+                            (text faded)
+                        ]
+                   )
+            )
 
 
 cut : String -> ( String, String )

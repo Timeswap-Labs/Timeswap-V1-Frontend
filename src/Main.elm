@@ -491,6 +491,11 @@ pageEffect blockchain effect model =
                     )
                     (Cmd.map ModalMsg)
 
+        Page.OpenChooseMaturity pair ->
+            ( { model | modal = Modal.initChooseMaturity pair |> Just }
+            , Cmd.none
+            )
+
         Page.OpenSettings ->
             ( { model | modal = Modal.initSettings model |> Just }
             , Cmd.none
@@ -734,7 +739,7 @@ header ({ device } as model) =
         row
             [ Region.navigation
             , width fill
-            , height <| px 76
+            , height <| px 80
             , spacing 76
             , paddingXY 16 0
             ]
@@ -760,36 +765,43 @@ logo { device, images } =
     row
         [ Region.description "logo"
         , spacing 6
+        , centerY
         ]
         [ case device of
             Phone ->
                 images
                     |> Image.logoPure
-                        [ height <| px 36 ]
+                        [ height <| px 32 ]
 
             Tablet ->
                 images
                     |> Image.logo
-                        [ height <| px 36 ]
+                        [ height <| px 32 ]
 
             _ ->
                 images
                     |> Image.logo
-                        [ height <| px 36 ]
+                        [ height <| px 32 ]
         , el
             [ width shrink
-            , height shrink
+            , height <| px 22
             , padding 5
             , alignLeft
             , centerY
             , Background.color Color.primary500
             , Border.rounded 4
-            , Font.bold
-            , Font.size 12
-            , Font.color Color.light100
-            , Font.letterSpacing 1.28
             ]
-            (text "ALPHA")
+            (el
+                [ width shrink
+                , height shrink
+                , centerY
+                , Font.bold
+                , Font.size 12
+                , Font.color Color.light100
+                , Font.letterSpacing 1.28
+                ]
+                (text "ALPHA")
+            )
         ]
 
 
@@ -804,7 +816,7 @@ tabs ({ device } as model) =
     row
         [ Region.description "tabs"
         , width shrink
-        , height <| px 36
+        , height <| px 44
         , alignLeft
         , padding 4
         , spacing 4
@@ -830,7 +842,7 @@ tab { device, page } givenTab =
                 [ centerX
                 , centerY
                 , Font.color Color.light100
-                , Font.size 14
+                , Font.size 16
                 ]
                 (givenTab
                     |> Tab.toString
@@ -853,7 +865,7 @@ tab { device, page } givenTab =
                     [ centerX
                     , centerY
                     , Font.color Color.light100
-                    , Font.size 14
+                    , Font.size 16
                     ]
                     (givenTab
                         |> Tab.toString
@@ -873,7 +885,7 @@ chainListButton ({ images } as model) =
     Input.button
         [ Region.description "chains button"
         , width shrink
-        , height <| px 36
+        , height <| px 44
         , paddingXY 12 0
         , Background.color Color.primary100
         , Border.rounded 4
@@ -885,7 +897,7 @@ chainListButton ({ images } as model) =
                 , centerY
                 , paddingXY 0 3
                 , spacing 6
-                , Font.size 14
+                , Font.size 16
                 , Font.color Color.transparent400
                 ]
                 (case model.blockchain of
@@ -920,7 +932,7 @@ connectButton :
 connectButton model =
     Input.button
         ([ width shrink
-         , height <| px 36
+         , height <| px 44
          , paddingXY 12 0
          ]
             ++ (case model.blockchain of
@@ -952,7 +964,7 @@ connectButton model =
             el
                 [ centerX
                 , centerY
-                , Font.size 14
+                , Font.size 16
                 , Font.color Color.transparent400
                 ]
                 ((case model.blockchain of
@@ -984,7 +996,7 @@ zoneButton ({ zoneName, chosenZone } as model) =
     Input.button
         [ Region.description "zone button"
         , width shrink
-        , height <| px 36
+        , height <| px 44
         , paddingXY 12 0
         , Background.color Color.primary100
         , Border.rounded 4
@@ -994,7 +1006,7 @@ zoneButton ({ zoneName, chosenZone } as model) =
             el
                 [ centerX
                 , centerY
-                , Font.size 14
+                , Font.size 16
                 , Font.color Color.transparent400
                 ]
                 ((case chosenZone of
@@ -1004,21 +1016,18 @@ zoneButton ({ zoneName, chosenZone } as model) =
                     ChosenZone.Here ->
                         zoneName
                             |> ZoneName.toString
-
-                    ChosenZone.Unix ->
-                        "Unix"
                  )
                     |> text
                 )
         }
 
 
-themeButton : { model | backdrop : Backdrop, theme : Theme } -> Element Msg
-themeButton ({ theme } as model) =
+themeButton : { model | backdrop : Backdrop, theme : Theme, images : Images } -> Element Msg
+themeButton ({ theme, images } as model) =
     Input.button
         [ Region.description "theme button"
-        , width <| px 36
-        , height <| px 36
+        , width <| px 44
+        , height <| px 44
         , Background.color Color.primary100
         , Border.rounded 4
         ]
@@ -1027,17 +1036,23 @@ themeButton ({ theme } as model) =
             el
                 [ centerX
                 , centerY
-                , Font.size 14
+                , Font.size 16
                 , Font.color Color.transparent400
                 ]
-                ((case theme of
+                (case theme of
                     Theme.Light ->
-                        "L"
+                        images
+                            |> Image.blackSun
+                                [ width <| px 24
+                                , height <| px 24
+                                ]
 
                     Theme.Dark ->
-                        "D"
-                 )
-                    |> text
+                        images
+                            |> Image.whiteSun
+                                [ width <| px 24
+                                , height <| px 24
+                                ]
                 )
         }
 

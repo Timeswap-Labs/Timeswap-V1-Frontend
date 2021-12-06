@@ -68,14 +68,13 @@ import Page.Transaction.Lend.Error exposing (Error)
 import Page.Transaction.Lend.Query as Query
 import Page.Transaction.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.Lend.Write as Write
+import Page.Transaction.Output as Output
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Slider as Slider
 import Page.Transaction.Switch as Switch exposing (Mode)
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
-import Utility.Direction as Direction
-import Utility.FontStyle as FontStyle
 import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Truncate as Truncate
@@ -104,7 +103,7 @@ type alias SliderInput =
 
 type alias BondInput =
     { percent : Percent
-    , bond : String
+    , bondOut : String
     , claims : Remote Error ClaimsGivenBond
     }
 
@@ -112,7 +111,7 @@ type alias BondInput =
 type alias InsuranceInput =
     { percent : Percent
     , claims : Remote Error ClaimsGivenInsurance
-    , insurance : String
+    , insuranceOut : String
     }
 
 
@@ -209,10 +208,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     |> query model blockchain pool poolInfo
 
             else
-                ( transaction |> Transaction
-                , Cmd.none
-                , Nothing
-                )
+                transaction |> noCmdAndEffect
 
         InputMax ->
             blockchain
@@ -240,25 +236,18 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         }
                             |> query model blockchain pool poolInfo
                     )
-                |> Maybe.withDefault
-                    ( transaction |> Transaction
-                    , Cmd.none
-                    , Nothing
-                    )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         SwitchMode Switch.Pro ->
-            ( { transaction
+            { transaction
                 | claimsOut =
                     if transaction.assetIn |> Input.isZero then
                         transaction.claimsOut |> switchToAdvanceZero
 
                     else
                         transaction.claimsOut |> switchToAdvance
-              }
-                |> Transaction
-            , Cmd.none
-            , Nothing
-            )
+            }
+                |> noCmdAndEffect
 
         SwitchMode Switch.Recommended ->
             { transaction
@@ -273,19 +262,13 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         case transaction.claimsOut of
                             Slider { percent } ->
                                 if (percent |> Percent.toFloat) == 64 then
-                                    ( updated |> Transaction
-                                    , Cmd.none
-                                    , Nothing
-                                    )
+                                    updated |> noCmdAndEffect
 
                                 else
                                     query model blockchain pool poolInfo updated
 
                             Default _ ->
-                                ( updated |> Transaction
-                                , Cmd.none
-                                , Nothing
-                                )
+                                updated |> noCmdAndEffect
 
                             _ ->
                                 query model blockchain pool poolInfo updated
@@ -318,19 +301,12 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         }
                             |> query model blockchain pool poolInfo
                     )
-                |> Maybe.withDefault
-                    ( transaction |> Transaction
-                    , Cmd.none
-                    , Nothing
-                    )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         Slide float ->
             case transaction.claimsOut of
                 Default _ ->
-                    ( transaction |> Transaction
-                    , Cmd.none
-                    , Nothing
-                    )
+                    transaction |> noCmdAndEffect
 
                 _ ->
                     { transaction
@@ -347,8 +323,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case transaction.claimsOut of
                 Slider { claims } ->
                     case claims of
-                        Success { bond } ->
-                            bond
+                        Success { bondOut } ->
+                            bondOut
                                 |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 |> Just
 
@@ -357,8 +333,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
 
                 Insurance { claims } ->
                     case claims of
-                        Success { bond } ->
-                            bond
+                        Success { bondOut } ->
+                            bondOut
                                 |> Uint.toAmount (pool.pair |> Pair.toAsset)
                                 |> Just
 
@@ -382,11 +358,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         }
                             |> query model blockchain pool poolInfo
                     )
-                |> Maybe.withDefault
-                    ( transaction |> Transaction
-                    , Cmd.none
-                    , Nothing
-                    )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         InputBondOut bondOut ->
             if bondOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
@@ -403,17 +375,14 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     |> query model blockchain pool poolInfo
 
             else
-                ( transaction |> Transaction
-                , Cmd.none
-                , Nothing
-                )
+                transaction |> noCmdAndEffect
 
         ClickInsuranceOut ->
             (case transaction.claimsOut of
                 Slider { claims } ->
                     case claims of
-                        Success { insurance } ->
-                            insurance
+                        Success { insuranceOut } ->
+                            insuranceOut
                                 |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                                 |> Just
 
@@ -422,8 +391,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
 
                 Bond { claims } ->
                     case claims of
-                        Success { insurance } ->
-                            insurance
+                        Success { insuranceOut } ->
+                            insuranceOut
                                 |> Uint.toAmount (pool.pair |> Pair.toCollateral)
                                 |> Just
 
@@ -447,11 +416,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         }
                             |> query model blockchain pool poolInfo
                     )
-                |> Maybe.withDefault
-                    ( transaction |> Transaction
-                    , Cmd.none
-                    , Nothing
-                    )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         InputInsuranceOut insuranceOut ->
             if insuranceOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
@@ -468,10 +433,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     |> query model blockchain pool poolInfo
 
             else
-                ( transaction |> Transaction
-                , Cmd.none
-                , Nothing
-                )
+                transaction |> noCmdAndEffect
 
         QueryAgain _ ->
             transaction
@@ -480,13 +442,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
         ClickConnect ->
             blockchain
                 |> Blockchain.toUser
-                |> Maybe.map
-                    (\_ ->
-                        ( transaction |> Transaction
-                        , Cmd.none
-                        , Nothing
-                        )
-                    )
+                |> Maybe.map (\_ -> transaction |> noCmdAndEffect)
                 |> Maybe.withDefault
                     ( transaction |> Transaction
                     , Cmd.none
@@ -494,7 +450,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     )
 
         ClickApprove ->
-            case
+            (case
                 ( blockchain |> Blockchain.toUser
                 , transaction.assetIn
                     |> Uint.fromAmount
@@ -503,7 +459,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     |> Pair.toAsset
                     |> Token.toERC20
                 )
-            of
+             of
                 ( Just user, Just assetIn, Just erc20 ) ->
                     if
                         (user
@@ -521,32 +477,29 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         ( transaction |> Transaction
                         , erc20
                             |> Approve.encode blockchain user
-                            |> approve
+                            |> approveLend
                         , OpenConfirm |> Just
                         )
+                            |> Just
 
                     else
-                        ( transaction |> Transaction
-                        , Cmd.none
-                        , Nothing
-                        )
+                        Nothing
 
                 _ ->
-                    ( transaction |> Transaction
-                    , Cmd.none
-                    , Nothing
-                    )
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ClickLend ->
-            case
+            (case
                 ( blockchain |> Blockchain.toUser
                 , transaction.assetIn
                     |> Uint.fromAmount
                         (pool.pair |> Pair.toAsset)
                 )
-            of
+             of
                 ( Just user, Just assetIn ) ->
-                    (case
+                    case
                         ( transaction.claimsOut
                         , user
                             |> User.hasEnoughBalance
@@ -564,7 +517,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                 )
                             |> Maybe.withDefault True
                         )
-                     of
+                    of
                         ( Default (Success answer), True, True ) ->
                             ( { transaction
                                 | assetIn = ""
@@ -617,10 +570,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                     )
                                 |> Remote.withDefault Nothing
 
-                        ( Bond { bond, claims }, True, True ) ->
+                        ( Bond bond, True, True ) ->
                             case
-                                ( claims
-                                , bond
+                                ( bond.claims
+                                , bond.bondOut
                                     |> Uint.fromAmount (pool.pair |> Pair.toAsset)
                                 )
                             of
@@ -629,7 +582,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                         | assetIn = ""
                                         , claimsOut =
                                             { percent = Percent.init
-                                            , bond = ""
+                                            , bondOut = ""
                                             , claims =
                                                 Answer.initGivenBond
                                                     |> Success
@@ -652,10 +605,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                 _ ->
                                     Nothing
 
-                        ( Insurance { insurance, claims }, True, True ) ->
+                        ( Insurance insurance, True, True ) ->
                             case
-                                ( claims
-                                , insurance
+                                ( insurance.claims
+                                , insurance.insuranceOut
                                     |> Uint.fromAmount (pool.pair |> Pair.toCollateral)
                                 )
                             of
@@ -664,7 +617,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                         | assetIn = ""
                                         , claimsOut =
                                             { percent = Percent.init
-                                            , insurance = ""
+                                            , insuranceOut = ""
                                             , claims =
                                                 Answer.initGivenInsurance
                                                     |> Success
@@ -689,26 +642,19 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
 
                         _ ->
                             Nothing
-                    )
-                        |> Maybe.withDefault
-                            ( transaction |> Transaction
-                            , Cmd.none
-                            , Nothing
-                            )
 
                 _ ->
-                    ( transaction |> Transaction
-                    , Cmd.none
-                    , Nothing
-                    )
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ReceiveAnswer value ->
-            ( case
+            (case
                 ( value
                     |> Decode.decodeValue (Answer.decoder model)
                 , transaction.claimsOut
                 )
-              of
+             of
                 ( Ok (Answer.GivenPercent answer), Default _ ) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
@@ -729,10 +675,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                     |> Answer.toClaimsGivenPercent
                                     |> Default
                         }
-                            |> Transaction
+                            |> Just
 
                     else
-                        transaction |> Transaction
+                        Nothing
 
                 ( Ok (Answer.GivenPercent answer), Slider slider ) ->
                     if
@@ -757,10 +703,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                 }
                                     |> Slider
                         }
-                            |> Transaction
+                            |> Just
 
                     else
-                        transaction |> Transaction
+                        Nothing
 
                 ( Ok (Answer.GivenBond answer), Bond bond ) ->
                     if
@@ -774,7 +720,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                                )
                             && (Just answer.bondOut
-                                    == (bond.bond
+                                    == (bond.bondOut
                                             |> Uint.fromAmount
                                                 (pool.pair |> Pair.toAsset)
                                        )
@@ -794,10 +740,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                 }
                                     |> Bond
                         }
-                            |> Transaction
+                            |> Just
 
                     else
-                        transaction |> Transaction
+                        Nothing
 
                 ( Ok (Answer.GivenInsurance answer), Insurance insurance ) ->
                     if
@@ -811,7 +757,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                                )
                             && (Just answer.insuranceOut
-                                    == (insurance.insurance
+                                    == (insurance.insuranceOut
                                             |> Uint.fromAmount
                                                 (pool.pair |> Pair.toCollateral)
                                        )
@@ -831,16 +777,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                 }
                                     |> Insurance
                         }
-                            |> Transaction
+                            |> Just
 
                     else
-                        transaction |> Transaction
+                        Nothing
 
                 _ ->
-                    transaction |> Transaction
-            , Cmd.none
-            , Nothing
+                    Nothing
             )
+                |> Maybe.map noCmdAndEffect
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         OnMouseEnter tooltip ->
             ( { transaction | tooltip = Just tooltip }
@@ -900,7 +846,7 @@ updateGivenAssetIn claimsOut =
         Bond bond ->
             { bond
                 | claims =
-                    if bond.bond |> Input.isZero then
+                    if bond.bondOut |> Input.isZero then
                         Answer.initGivenBond |> Success
 
                     else
@@ -911,7 +857,7 @@ updateGivenAssetIn claimsOut =
         Insurance insurance ->
             { insurance
                 | claims =
-                    if insurance.insurance |> Input.isZero then
+                    if insurance.insuranceOut |> Input.isZero then
                         Answer.initGivenInsurance |> Success
 
                     else
@@ -1005,7 +951,7 @@ updateGivenBondOutZero input claimsOut =
         |> Maybe.map
             (\percent ->
                 { percent = percent
-                , bond = input
+                , bondOut = input
                 , claims = Answer.initGivenBond |> Success
                 }
                     |> Bond
@@ -1031,7 +977,7 @@ updateGivenBondOut input claimsOut =
         |> Maybe.map
             (\percent ->
                 { percent = percent
-                , bond = input
+                , bondOut = input
                 , claims =
                     if input |> Input.isZero then
                         Answer.initGivenBond |> Success
@@ -1062,7 +1008,7 @@ updateGivenInsuranceOutZero input claimsOut =
         |> Maybe.map
             (\percent ->
                 { percent = percent
-                , insurance = input
+                , insuranceOut = input
                 , claims = Answer.initGivenInsurance |> Success
                 }
                     |> Insurance
@@ -1088,7 +1034,7 @@ updateGivenInsuranceOut input claimsOut =
         |> Maybe.map
             (\percent ->
                 { percent = percent
-                , insurance = input
+                , insuranceOut = input
                 , claims =
                     if input |> Input.isZero then
                         Answer.initGivenInsurance |> Success
@@ -1099,6 +1045,19 @@ updateGivenInsuranceOut input claimsOut =
                     |> Insurance
             )
         |> Maybe.withDefault claimsOut
+
+
+noCmdAndEffect :
+    { assetIn : String
+    , claimsOut : ClaimsOut
+    , tooltip : Maybe Tooltip
+    }
+    -> ( Transaction, Cmd Msg, Maybe Effect )
+noCmdAndEffect transaction =
+    ( transaction |> Transaction
+    , Cmd.none
+    , Nothing
+    )
 
 
 query :
@@ -1178,12 +1137,12 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                         |> Query.givenPercent
                         |> Just
 
-                Bond { bond } ->
-                    if bond |> Input.isZero then
+                Bond bond ->
+                    if bond.bondOut |> Input.isZero then
                         Nothing
 
                     else
-                        bond
+                        bond.bondOut
                             |> Uint.fromAmount
                                 (pool.pair |> Pair.toAsset)
                             |> Maybe.map
@@ -1198,12 +1157,12 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                                         |> Query.givenBond
                                 )
 
-                Insurance { insurance } ->
-                    if insurance |> Input.isZero then
+                Insurance insurance ->
+                    if insurance.insuranceOut |> Input.isZero then
                         Nothing
 
                     else
-                        insurance
+                        insurance.insuranceOut
                             |> Uint.fromAmount
                                 (pool.pair |> Pair.toCollateral)
                             |> Maybe.map
@@ -1237,7 +1196,7 @@ port queryLend : Value -> Cmd msg
 port queryLendPerSecond : Value -> Cmd msg
 
 
-port approve : Value -> Cmd msg
+port approveLend : Value -> Cmd msg
 
 
 port lend : Value -> Cmd msg
@@ -1292,7 +1251,7 @@ viewAssetIn :
     -> Token
     -> { transaction | assetIn : String, tooltip : Maybe Tooltip }
     -> Element Msg
-viewAssetIn model blockchain asset transaction =
+viewAssetIn model blockchain asset ({ assetIn, tooltip } as transaction) =
     column
         [ Region.description "lend asset"
         , width <| px 343
@@ -1318,7 +1277,7 @@ viewAssetIn model blockchain asset transaction =
                         |> Blockchain.toUser
                         |> Maybe.map
                             (\user ->
-                                [ userBalance transaction user asset
+                                [ userBalance user asset transaction
                                 , maxButton
                                 ]
                             )
@@ -1327,30 +1286,24 @@ viewAssetIn model blockchain asset transaction =
                    )
             )
         , Textbox.view model
-            { tooltip =
-                { align = Direction.Left ()
-                , move = Direction.Left 0 |> Debug.log "move"
-                , onMouseEnterMsg = OnMouseEnter
-                , onMouseLeaveMsg = OnMouseLeave
-                , given = Tooltip.AssetInSymbol
-                , opened = transaction.tooltip
-                }
-            , main =
-                { onChange = InputAssetIn
-                , token = asset
-                , text = transaction.assetIn
-                , description = "lend asset textbox"
-                }
+            { onMouseEnter = OnMouseEnter
+            , onMouseLeave = OnMouseLeave
+            , tooltip = Tooltip.AssetInSymbol
+            , opened = tooltip
+            , token = asset
+            , onChange = InputAssetIn
+            , text = assetIn
+            , description = "asset in textbox"
             }
         ]
 
 
 userBalance :
-    { transaction | tooltip : Maybe Tooltip }
-    -> User
+    User
     -> Token
+    -> { transaction | tooltip : Maybe Tooltip }
     -> Element Msg
-userBalance { tooltip } user asset =
+userBalance user asset { tooltip } =
     user
         |> User.getBalance asset
         |> Maybe.map
@@ -1369,22 +1322,13 @@ userBalance { tooltip } user asset =
                         , Font.color Color.transparent300
                         ]
                         (text "Bal: ")
-                    , Truncate.view
-                        { tooltip =
-                            { align = Direction.Right ()
-                            , move = Direction.Right 0 |> Debug.log "add"
-                            , onMouseEnterMsg = OnMouseEnter
-                            , onMouseLeaveMsg = OnMouseLeave
-                            , given = Tooltip.Balance
-                            , opened = tooltip
-                            }
-                        , main =
-                            { fontSize = 12
-                            , fontPadding = 2
-                            , fontColor = Color.transparent300
-                            , texts =
-                                Truncate.fromBalance asset balance
-                            }
+                    , Truncate.viewBalance
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.Balance
+                        , opened = tooltip
+                        , token = asset
+                        , balance = balance
                         }
                     ]
             )
@@ -1525,31 +1469,17 @@ viewClaimsOut model pair ({ claimsOut } as transaction) =
                 , Background.color Color.primary100
                 , Border.rounded 8
                 ]
-                (case default of
-                    Success { bond, insurance } ->
-                        [ bond
-                            |> Just
-                            |> recommendedBondOut model
-                                (pair |> Pair.toAsset)
-                                transaction
-                        , insurance
-                            |> Just
-                            |> recommendedInsuranceOut model
-                                (pair |> Pair.toCollateral)
-                                transaction
-                        ]
-
-                    _ ->
-                        [ Nothing
-                            |> recommendedBondOut model
-                                (pair |> Pair.toAsset)
-                                transaction
-                        , Nothing
-                            |> recommendedInsuranceOut model
-                                (pair |> Pair.toCollateral)
-                                transaction
-                        ]
-                )
+                [ default
+                    |> Remote.map .bondOut
+                    |> recommendedBondOut model
+                        (pair |> Pair.toAsset)
+                        transaction
+                , default
+                    |> Remote.map .insuranceOut
+                    |> recommendedInsuranceOut model
+                        (pair |> Pair.toCollateral)
+                        transaction
+                ]
 
         _ ->
             none |> Debug.log "later"
@@ -1559,9 +1489,9 @@ recommendedBondOut :
     { model | images : Images }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
-    -> Maybe Uint
+    -> Remote Error Uint
     -> Element Msg
-recommendedBondOut { images } asset { tooltip } uint =
+recommendedBondOut model asset { tooltip } output =
     column
         [ width fill
         , height shrink
@@ -1574,49 +1504,15 @@ recommendedBondOut { images } asset { tooltip } uint =
             , Font.color Color.primary400
             ]
             (text "Amount to Receive")
-        , row
-            [ width fill
-            , height shrink
-            , spacing 6
-            , centerY
-            ]
-            [ images
-                |> Image.viewToken
-                    [ width <| px 24
-                    , height <| px 24
-                    ]
-                    asset
-            , Truncate.view
-                { tooltip =
-                    { align = Direction.Left ()
-                    , move = Direction.Left 0 |> Debug.log "later"
-                    , onMouseEnterMsg = OnMouseEnter
-                    , onMouseLeaveMsg = OnMouseLeave
-                    , given = Tooltip.BondOutSymbol
-                    , opened = tooltip
-                    }
-                , main =
-                    { fontSize = 18
-                    , fontPadding = 3
-                    , fontColor = Color.light100
-                    , texts =
-                        asset
-                            |> Truncate.fromSymbol
-                    }
-                }
-            , el
-                [ width fill
-                , height shrink
-                , Font.size 18
-                , paddingXY 0 3
-                , Font.color Color.light100
-                ]
-                (uint
-                    |> Maybe.map (Uint.toAmount asset)
-                    |> Maybe.withDefault ""
-                    |> text
-                )
-            ]
+        , Output.view model
+            { onMouseEnter = OnMouseEnter
+            , onMouseLeave = OnMouseLeave
+            , tooltip = Tooltip.BondOutSymbol
+            , opened = tooltip
+            , token = asset
+            , output = output
+            , description = "bond output"
+            }
         ]
 
 
@@ -1624,9 +1520,9 @@ recommendedInsuranceOut :
     { model | images : Images }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
-    -> Maybe Uint
+    -> Remote Error Uint
     -> Element Msg
-recommendedInsuranceOut { images } collateral { tooltip } uint =
+recommendedInsuranceOut model collateral { tooltip } output =
     column
         [ width fill
         , height shrink
@@ -1639,49 +1535,15 @@ recommendedInsuranceOut { images } collateral { tooltip } uint =
             , Font.color Color.primary400
             ]
             (text "Amount Protecting")
-        , row
-            [ width fill
-            , height shrink
-            , spacing 6
-            , centerY
-            ]
-            [ images
-                |> Image.viewToken
-                    [ width <| px 24
-                    , height <| px 24
-                    ]
-                    collateral
-            , Truncate.view
-                { tooltip =
-                    { align = Direction.Left ()
-                    , move = Direction.Left 0 |> Debug.log "later"
-                    , onMouseEnterMsg = OnMouseEnter
-                    , onMouseLeaveMsg = OnMouseLeave
-                    , given = Tooltip.BondOutSymbol
-                    , opened = tooltip
-                    }
-                , main =
-                    { fontSize = 18
-                    , fontPadding = 3
-                    , fontColor = Color.light100
-                    , texts =
-                        collateral
-                            |> Truncate.fromSymbol
-                    }
-                }
-            , el
-                [ width fill
-                , height shrink
-                , Font.size 18
-                , paddingXY 0 3
-                , Font.color Color.light100
-                ]
-                (uint
-                    |> Maybe.map (Uint.toAmount collateral)
-                    |> Maybe.withDefault ""
-                    |> text
-                )
-            ]
+        , Output.view model
+            { onMouseEnter = OnMouseEnter
+            , onMouseLeave = OnMouseLeave
+            , tooltip = Tooltip.BondOutSymbol
+            , opened = tooltip
+            , token = collateral
+            , output = output
+            , description = "insurance output"
+            }
         ]
 
 
@@ -1781,12 +1643,9 @@ disabledUserBalance user asset =
                         , Font.color Color.transparent300
                         ]
                         (text "Bal: ")
-                    , Truncate.disabled
-                        { fontSize = 12
-                        , fontPadding = 2
-                        , fontColor = Color.transparent300
-                        , texts =
-                            Truncate.fromBalance asset balance
+                    , Truncate.disabledBalance
+                        { token = asset
+                        , balance = balance
                         }
                     ]
             )
@@ -1948,13 +1807,13 @@ disabledClaimsOut model pair { claimsOut } =
                         (pair |> Pair.toCollateral)
                 ]
 
-        Bond { bond } ->
+        Bond { bondOut } ->
             column
                 [ width fill
                 , height shrink
                 , spacing 12
                 ]
-                [ bond
+                [ bondOut
                     |> Just
                     |> disabledBondOut model
                         (pair |> Pair.toAsset)
@@ -1963,7 +1822,7 @@ disabledClaimsOut model pair { claimsOut } =
                         (pair |> Pair.toCollateral)
                 ]
 
-        Insurance { insurance } ->
+        Insurance { insuranceOut } ->
             column
                 [ width fill
                 , height shrink
@@ -1972,7 +1831,7 @@ disabledClaimsOut model pair { claimsOut } =
                 [ Nothing
                     |> disabledBondOut model
                         (pair |> Pair.toAsset)
-                , insurance
+                , insuranceOut
                     |> Just
                     |> disabledInsuranceOut model
                         (pair |> Pair.toCollateral)
@@ -2113,10 +1972,17 @@ emptyAssetIn model token =
             , Font.color Color.primary400
             ]
             (text "Amount to Lend")
-        , Textbox.empty model
-            { token = token
-            , description = "lend asset textbox"
-            }
+        , token
+            |> Maybe.map
+                (\asset ->
+                    Textbox.disabled model
+                        { token = asset
+                        , text = ""
+                        , description = "asset in textbox"
+                        }
+                )
+            |> Maybe.withDefault
+                (Textbox.empty "asset in textbox")
         ]
 
 
@@ -2172,7 +2038,7 @@ emptyBondOut :
     { model | images : Images }
     -> Maybe Token
     -> Element Never
-emptyBondOut { images } asset =
+emptyBondOut model asset =
     column
         [ width fill
         , height shrink
@@ -2188,27 +2054,10 @@ emptyBondOut { images } asset =
         , asset
             |> Maybe.map
                 (\token ->
-                    row
-                        [ width fill
-                        , height shrink
-                        , spacing 6
-                        , centerY
-                        ]
-                        [ images
-                            |> Image.viewToken
-                                [ width <| px 24
-                                , height <| px 24
-                                ]
-                                token
-                        , Truncate.disabled
-                            { fontSize = 18
-                            , fontPadding = 3
-                            , fontColor = Color.light100
-                            , texts =
-                                token
-                                    |> Truncate.fromSymbol
-                            }
-                        ]
+                    Output.disabled model
+                        { token = token
+                        , description = "bond output"
+                        }
                 )
             |> Maybe.withDefault
                 (el
@@ -2224,7 +2073,7 @@ emptyInsuranceOut :
     { model | images : Images }
     -> Maybe Token
     -> Element Never
-emptyInsuranceOut { images } collateral =
+emptyInsuranceOut model collateral =
     column
         [ width fill
         , height shrink
@@ -2240,27 +2089,10 @@ emptyInsuranceOut { images } collateral =
         , collateral
             |> Maybe.map
                 (\token ->
-                    row
-                        [ width fill
-                        , height shrink
-                        , spacing 6
-                        , centerY
-                        ]
-                        [ images
-                            |> Image.viewToken
-                                [ width <| px 24
-                                , height <| px 24
-                                ]
-                                token
-                        , Truncate.disabled
-                            { fontSize = 18
-                            , fontPadding = 3
-                            , fontColor = Color.light100
-                            , texts =
-                                token
-                                    |> Truncate.fromSymbol
-                            }
-                        ]
+                    Output.disabled model
+                        { token = token
+                        , description = "insurance output"
+                        }
                 )
             |> Maybe.withDefault
                 (el
