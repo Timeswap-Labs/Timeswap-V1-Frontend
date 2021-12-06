@@ -24,7 +24,7 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
-import Data.Show as Show exposing (Show)
+import Data.ShowCreate as ShowCreate exposing (ShowCreate)
 import Data.Slippage exposing (Slippage)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
@@ -683,7 +683,7 @@ toPoolInfo (Section section) =
 view :
     { title : String
     , createTitle : String
-    , showCreate : Show
+    , showCreate : ShowCreate
     , transaction :
         Pool
         -> transaction
@@ -742,7 +742,7 @@ view views model (Section section) =
                 }
                 |> (\{ first, second } ->
                         { title = views.title
-                        , showCreate = Show.DoNot
+                        , showCreate = ShowCreate.DoNot
                         , first = first |> map never
                         , second = second |> map never
                         , buttons =
@@ -758,7 +758,7 @@ view views model (Section section) =
                 }
                 |> (\{ first, second } ->
                         { title = views.title
-                        , showCreate = Show.DoNot
+                        , showCreate = ShowCreate.DoNot
                         , first = first |> map never
                         , second = second |> map never
                         , buttons =
@@ -774,7 +774,7 @@ view views model (Section section) =
                 }
                 |> (\{ first, second } ->
                         { title = views.title
-                        , showCreate = Show.DoNot
+                        , showCreate = ShowCreate.DoNot
                         , first = first |> map never
                         , second = second |> map never
                         , buttons =
@@ -935,10 +935,10 @@ view views model (Section section) =
                             ]
                             (text title)
                         , case showCreate of
-                            Show.Create ->
+                            ShowCreate.Do ->
                                 createButton model
 
-                            Show.DoNot ->
+                            ShowCreate.DoNot ->
                                 none
                         , settingsButton model
                         ]

@@ -25,6 +25,7 @@ import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)
+import Data.ShowCreate exposing (ShowCreate)
 import Data.Slippage exposing (Slippage)
 import Data.Spot exposing (Spot)
 import Data.Support exposing (Support(..))
@@ -105,9 +106,14 @@ initConfirm =
         |> Confirm
 
 
-initMaturityList : { model | chains : Chains } -> Blockchain -> Pair -> ( Modal, Cmd Msg )
-initMaturityList model blockchain pair =
-    MaturityList.init model blockchain pair
+initMaturityList :
+    { model | chains : Chains }
+    -> Blockchain
+    -> Pair
+    -> ShowCreate
+    -> ( Modal, Cmd Msg )
+initMaturityList model blockchain pair showCreate =
+    MaturityList.init model blockchain pair showCreate
         |> Tuple.mapBoth
             MaturityList
             (Cmd.map MaturityListMsg)

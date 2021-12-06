@@ -20,7 +20,7 @@ import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
 import Data.Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
-import Data.Show as Show
+import Data.ShowCreate as ShowCreate exposing (ShowCreate)
 import Data.Slippage exposing (Slippage)
 import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
@@ -60,7 +60,7 @@ type Msg
 
 type Effect
     = OpenTokenList TokenParam
-    | OpenMaturityList Pair
+    | OpenMaturityList Pair ShowCreate
     | OpenChooseMaturity Pair
     | OpenSettings
     | OpenConnect
@@ -233,7 +233,7 @@ transactionLendEffect effect =
             OpenTokenList tokenParam |> Just
 
         Transaction.OpenMaturityList pair ->
-            OpenMaturityList pair |> Just
+            OpenMaturityList pair ShowCreate.DoNot |> Just
 
         Transaction.OpenSettings ->
             OpenSettings |> Just
@@ -260,7 +260,7 @@ transactionLiquidityEffect effect =
             OpenTokenList tokenParam
 
         Transaction.OpenMaturityList pair ->
-            OpenMaturityList pair
+            OpenMaturityList pair ShowCreate.Do
 
         Transaction.OpenChooseMaturity pair ->
             OpenChooseMaturity pair
@@ -367,7 +367,7 @@ view model blockchain page =
                     |> Transaction.view
                         { title = "Lend"
                         , createTitle = "Lend"
-                        , showCreate = Show.DoNot
+                        , showCreate = ShowCreate.DoNot
                         , transaction = Lend.view model blockchain
                         , disabledTransaction = Lend.disabled model blockchain
                         , create = Lend.doesNotExist model

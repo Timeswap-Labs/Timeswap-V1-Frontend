@@ -480,8 +480,8 @@ pageEffect blockchain effect model =
             , Cmd.none
             )
 
-        Page.OpenMaturityList pair ->
-            Modal.initMaturityList model blockchain pair
+        Page.OpenMaturityList pair showCreate ->
+            Modal.initMaturityList model blockchain pair showCreate
                 |> Tuple.mapBoth
                     (\maturityList ->
                         { model

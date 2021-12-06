@@ -16,6 +16,7 @@ import Data.Maturity exposing (Maturity)
 import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
+import Data.ShowCreate exposing (ShowCreate)
 import Data.Web exposing (Web)
 import Element
     exposing
@@ -63,6 +64,7 @@ import Utility.Image as Image
 type Modal
     = Modal
         { pair : Pair
+        , showCreate : ShowCreate
         , sorting : Sorting
         , pools : Web Pools
         , tooltip : Maybe Tooltip
@@ -88,9 +90,11 @@ init :
     { model | chains : Chains }
     -> Blockchain
     -> Pair
+    -> ShowCreate
     -> ( Modal, Cmd Msg )
-init model blockchain pair =
+init model blockchain pair showCreate =
     ( { pair = pair
+      , showCreate = showCreate
       , sorting = Sorting.Liquidity
       , pools = Loading
       , tooltip = Nothing
