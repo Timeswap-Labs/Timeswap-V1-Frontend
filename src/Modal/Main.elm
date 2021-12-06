@@ -64,6 +64,7 @@ type Msg
     | ChainListMsg ChainList.Msg
     | TokenListMsg TokenList.Msg
     | MaturityListMsg MaturityList.Msg
+    | ChooseMaturityMsg ChooseMaturity.Msg
     | ConfirmMsg Confirm.Msg
 
 
@@ -189,6 +190,16 @@ update model msg modal =
                         )
                    )
 
+        ( ChooseMaturityMsg chooseMaturityMsg, ChooseMaturity chooseMaturity, Supported _ ) ->
+            chooseMaturity
+                |> ChooseMaturity.update chooseMaturityMsg
+                |> (\updated ->
+                        ( updated |> Maybe.map ChooseMaturity
+                        , Cmd.none
+                        , Nothing
+                        )
+                   )
+
         ( ConfirmMsg confirmMsg, Confirm confirm, Supported _ ) ->
             confirm
                 |> Confirm.update confirmMsg
@@ -301,6 +312,15 @@ view model modal =
                 Supported _ ->
                     MaturityList.view model maturityList
                         |> map MaturityListMsg
+
+                _ ->
+                    none
+
+        ChooseMaturity chooseMaturity ->
+            case model.blockchain of
+                Supported _ ->
+                    ChooseMaturity.view model chooseMaturity
+                        |> map ChooseMaturityMsg
 
                 _ ->
                     none

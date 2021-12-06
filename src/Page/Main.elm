@@ -378,6 +378,22 @@ view model blockchain page =
                     |> map TransactionLendMsg
                 ]
 
+            Liquidity { transaction } ->
+                [ transaction
+                    |> Transaction.view
+                        { title = "Add Liquidity"
+                        , createTitle = "Create Pool"
+                        , showCreate = ShowCreate.Do
+                        , transaction = Liquidity.view model blockchain
+                        , disabledTransaction = Liquidity.disabled model blockchain
+                        , create = Liquidity.createPool model blockchain
+                        , disabledCreate = Liquidity.disabledCreate model blockchain
+                        , empty = Liquidity.empty model
+                        }
+                        model
+                    |> map TransactionLiquidityMsg
+                ]
+
             _ ->
                 []
         )

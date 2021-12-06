@@ -4,27 +4,59 @@ port module Page.Transaction.Liquidity.Main exposing
     , Effect(..)
     , Transaction
     , TransactionMsg
+    , createPool
+    , disabled
+    , disabledCreate
+    , empty
     , init
     , initCreate
     , refresh
     , refreshCreate
     , update
     , updateCreate
+    , view
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User
+import Blockchain.User.Main as User exposing (User)
 import Data.Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
+import Data.Images exposing (Images)
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Token as Token
+import Data.Token as Token exposing (Token)
 import Data.Uint as Uint
+import Element
+    exposing
+        ( Element
+        , alignRight
+        , alpha
+        , centerY
+        , column
+        , el
+        , fill
+        , height
+        , none
+        , padding
+        , paddingXY
+        , px
+        , row
+        , shrink
+        , spacing
+        , text
+        , width
+        )
+import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
+import Element.Input as Input
+import Element.Region as Region
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Page.Approve as Approve
+import Page.Transaction.Info as Info
 import Page.Transaction.Liquidity.Answer as Answer
     exposing
         ( LiquidityGivenNew
@@ -38,10 +70,14 @@ import Page.Transaction.Liquidity.Error
         , TransactionError
         )
 import Page.Transaction.Liquidity.Query as Query
-import Page.Transaction.Liquidity.Tooltip exposing (Tooltip)
+import Page.Transaction.Liquidity.Tooltip as Tooltip exposing (Tooltip)
+import Page.Transaction.Output as Output
 import Page.Transaction.PoolInfo exposing (PoolInfo)
+import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
+import Utility.Color as Color
 import Utility.Input as Input
+import Utility.Truncate as Truncate
 
 
 type Transaction
@@ -1139,3 +1175,590 @@ port queryLiquidityPerSecond : Value -> Cmd msg
 
 
 port approveLiquidity : Value -> Cmd msg
+
+
+view :
+    { model | images : Images }
+    -> Blockchain
+    -> Pool
+    -> Transaction
+    ->
+        { first : Element TransactionMsg
+        , second : Element TransactionMsg
+        , buttons : Element TransactionMsg
+        }
+view model blockchain pool (Transaction transaction) =
+    { first =
+        transaction
+            |> viewAssetIn model
+                blockchain
+                (pool.pair |> Pair.toAsset)
+    , second =
+        el
+            [ width <| px 335
+            , height <| px 392
+            , Background.color Color.light500
+            , Border.rounded 8
+            ]
+            none
+    , buttons = none
+    }
+
+
+viewAssetIn :
+    { model | images : Images }
+    -> Blockchain
+    -> Token
+    -> { transaction | state : State, tooltip : Maybe Tooltip }
+    -> Element TransactionMsg
+viewAssetIn model blockchain asset ({ state, tooltip } as transaction) =
+    column
+        [ Region.description "lend asset"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 10
+        , Background.color Color.light500
+        , Border.rounded 8
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            (el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                ]
+                (text "Amount to Lend")
+                :: (blockchain
+                        |> Blockchain.toUser
+                        |> Maybe.map
+                            (\user ->
+                                [ userBalance user asset transaction
+                                , maxButton
+                                ]
+                            )
+                        |> Maybe.withDefault
+                            []
+                   )
+            )
+        , Textbox.view model
+            { onMouseEnter = OnMouseEnter
+            , onMouseLeave = OnMouseLeave
+            , tooltip = Tooltip.AssetInSymbol
+            , opened = tooltip
+            , token = asset
+            , onChange = InputAssetIn
+            , text = "" |> Debug.log "later"
+            , description = "asset in textbox"
+            }
+        ]
+
+
+userBalance :
+    User
+    -> Token
+    -> { transaction | tooltip : Maybe Tooltip }
+    -> Element (Msg otherMsg)
+userBalance user asset { tooltip } =
+    user
+        |> User.getBalance asset
+        |> Maybe.map
+            (\balance ->
+                row
+                    [ width shrink
+                    , height shrink
+                    , alignRight
+                    , centerY
+                    ]
+                    [ el
+                        [ width shrink
+                        , height shrink
+                        , Font.size 12
+                        , paddingXY 0 2
+                        , Font.color Color.transparent300
+                        ]
+                        (text "Bal: ")
+                    , Truncate.viewBalance
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.AssetBalance
+                        , opened = tooltip
+                        , token = asset
+                        , balance = balance
+                        }
+                    ]
+            )
+        |> Maybe.withDefault none
+
+
+maxButton : Element (Msg otherMsg)
+maxButton =
+    Input.button
+        [ Region.description "max asset lend"
+        , width shrink
+        , height shrink
+        , alignRight
+        , centerY
+        , Font.size 12
+        , paddingXY 0 2
+        , Font.color Color.warning400
+        , Font.bold
+        ]
+        { onPress = Just InputMaxAsset
+        , label = text "MAX"
+        }
+
+
+disabled :
+    { model | images : Images }
+    -> Blockchain
+    -> Pool
+    -> Transaction
+    ->
+        { first : Element Never
+        , second : Element Never
+        }
+disabled model blockchain pool (Transaction transaction) =
+    { first =
+        transaction
+            |> disabledAssetIn
+                model
+                blockchain
+                (pool.pair |> Pair.toAsset)
+    , second =
+        transaction
+            |> disabledClaims model pool
+    }
+
+
+disabledAssetIn :
+    { model | images : Images }
+    -> Blockchain
+    -> Token
+    -> { transaction | state : State }
+    -> Element Never
+disabledAssetIn model blockchain asset transaction =
+    column
+        [ Region.description "lend asset"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 10
+        , alpha 0.2
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            (el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "Amount to Lend")
+                :: (blockchain
+                        |> Blockchain.toUser
+                        |> Maybe.map
+                            (\user ->
+                                [ disabledUserBalance user asset
+                                , disabledMaxButton
+                                ]
+                            )
+                        |> Maybe.withDefault
+                            []
+                   )
+            )
+        , Textbox.disabled model
+            { token = asset
+            , text =
+                case transaction.state of
+                    Asset { assetIn } ->
+                        assetIn
+
+                    _ ->
+                        ""
+            , description = "lend asset textbox"
+            }
+        ]
+
+
+disabledUserBalance :
+    User
+    -> Token
+    -> Element Never
+disabledUserBalance user asset =
+    user
+        |> User.getBalance asset
+        |> Maybe.map
+            (\balance ->
+                row
+                    [ width shrink
+                    , height shrink
+                    , alignRight
+                    , centerY
+                    ]
+                    [ el
+                        [ width shrink
+                        , height shrink
+                        , Font.size 12
+                        , paddingXY 0 2
+                        , Font.color Color.transparent300
+                        ]
+                        (text "Bal: ")
+                    , Truncate.disabledBalance
+                        { token = asset
+                        , balance = balance
+                        }
+                    ]
+            )
+        |> Maybe.withDefault none
+
+
+disabledMaxButton : Element Never
+disabledMaxButton =
+    el
+        [ Region.description "max asset lend"
+        , width shrink
+        , height shrink
+        , alignRight
+        , centerY
+        , Font.size 12
+        , paddingXY 0 2
+        , Font.color Color.warning400
+        , Font.bold
+        ]
+        (text "MAX")
+
+
+disabledClaims :
+    { model | images : Images }
+    -> Pool
+    -> { transaction | state : State }
+    -> Element Never
+disabledClaims model pool transaction =
+    column
+        [ Region.description "claims"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 12
+        , alpha 0.2
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        []
+
+
+createPool :
+    { model | images : Images }
+    -> Blockchain
+    -> Pool
+    -> Create
+    ->
+        { first : Element CreateMsg
+        , second : Element CreateMsg
+        , buttons : Element CreateMsg
+        }
+createPool model blockchain pool (Create create) =
+    { first =
+        create
+            |> createAssetIn model blockchain (pool.pair |> Pair.toAsset)
+    , second = none |> Debug.log "later"
+    , buttons = none |> Debug.log "later"
+    }
+
+
+createAssetIn :
+    { model | images : Images }
+    -> Blockchain
+    -> Token
+    -> { create | tooltip : Maybe Tooltip }
+    -> Element CreateMsg
+createAssetIn model blockchain asset ({ tooltip } as transaction) =
+    column
+        [ Region.description "lend asset"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 10
+        , Background.color Color.light500
+        , Border.rounded 8
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            (el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                ]
+                (text "Amount to Lend")
+                :: (blockchain
+                        |> Blockchain.toUser
+                        |> Maybe.map
+                            (\user ->
+                                [ userBalance user asset transaction
+                                , maxButton
+                                ]
+                            )
+                        |> Maybe.withDefault
+                            []
+                   )
+            )
+        , Textbox.view model
+            { onMouseEnter = OnMouseEnter
+            , onMouseLeave = OnMouseLeave
+            , tooltip = Tooltip.AssetInSymbol
+            , opened = tooltip
+            , token = asset
+            , onChange = InputAssetIn
+            , text = "" |> Debug.log "later"
+            , description = "asset in textbox"
+            }
+        ]
+
+
+disabledCreate :
+    { model | images : Images }
+    -> Blockchain
+    -> Pool
+    -> Create
+    ->
+        { first : Element Never
+        , second : Element Never
+        }
+disabledCreate model blockchain pool (Create create) =
+    { first =
+        create
+            |> disabledCreateAssetIn
+                model
+                blockchain
+                (pool.pair |> Pair.toAsset)
+    , second = none |> Debug.log "later"
+    }
+
+
+disabledCreateAssetIn :
+    { model | images : Images }
+    -> Blockchain
+    -> Token
+    -> { create | assetIn : String }
+    -> Element Never
+disabledCreateAssetIn model blockchain asset create =
+    column
+        [ Region.description "lend asset"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 10
+        , alpha 0.2
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            (el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "Amount to Lend")
+                :: (blockchain
+                        |> Blockchain.toUser
+                        |> Maybe.map
+                            (\user ->
+                                [ disabledUserBalance user asset
+                                , disabledMaxButton
+                                ]
+                            )
+                        |> Maybe.withDefault
+                            []
+                   )
+            )
+        , Textbox.disabled model
+            { token = asset
+            , text = create.assetIn
+            , description = "lend asset textbox"
+            }
+        ]
+
+
+empty :
+    { model | images : Images }
+    ->
+        { asset : Maybe Token
+        , collateral : Maybe Token
+        }
+    ->
+        { first : Element Never
+        , second : Element Never
+        }
+empty model { asset, collateral } =
+    { first = emptyAssetIn model asset
+    , second = emptyClaims model asset collateral
+    }
+
+
+emptyAssetIn :
+    { model | images : Images }
+    -> Maybe Token
+    -> Element Never
+emptyAssetIn model token =
+    column
+        [ Region.description "lend asset"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 10
+        , alpha 0.2
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , paddingXY 0 3
+            , Font.color Color.primary400
+            ]
+            (text "Amount to Lend")
+        , token
+            |> Maybe.map
+                (\asset ->
+                    Textbox.disabled model
+                        { token = asset
+                        , text = ""
+                        , description = "asset in textbox"
+                        }
+                )
+            |> Maybe.withDefault
+                (Textbox.empty "asset in textbox")
+        ]
+
+
+emptyClaims :
+    { model | images : Images }
+    -> Maybe Token
+    -> Maybe Token
+    -> Element Never
+emptyClaims model asset collateral =
+    column
+        [ Region.description "claims"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 12
+        , alpha 0.2
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 16
+            ]
+            [ Info.emptyAPR
+            , Info.emptyCDP
+            ]
+        , emptyClaimsOut model asset collateral
+        ]
+
+
+emptyClaimsOut :
+    { model | images : Images }
+    -> Maybe Token
+    -> Maybe Token
+    -> Element Never
+emptyClaimsOut model asset collateral =
+    column
+        [ width fill
+        , height shrink
+        , padding 12
+        , spacing 12
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ emptyBondOut model asset
+        , emptyInsuranceOut model collateral
+        ]
+
+
+emptyBondOut :
+    { model | images : Images }
+    -> Maybe Token
+    -> Element Never
+emptyBondOut model asset =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , Font.color Color.primary400
+            ]
+            (text "Amount to Receive")
+        , asset
+            |> Maybe.map
+                (\token ->
+                    Textbox.disabled model
+                        { token = token
+                        , text = ""
+                        , description = "bond output"
+                        }
+                )
+            |> Maybe.withDefault
+                (Textbox.empty "bond output")
+        ]
+
+
+emptyInsuranceOut :
+    { model | images : Images }
+    -> Maybe Token
+    -> Element Never
+emptyInsuranceOut model collateral =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , Font.color Color.primary400
+            ]
+            (text "Amount Protecting")
+        , collateral
+            |> Maybe.map
+                (\token ->
+                    Textbox.disabled model
+                        { token = token
+                        , text = ""
+                        , description = "insurance output"
+                        }
+                )
+            |> Maybe.withDefault
+                (Textbox.empty "insurance output")
+        ]

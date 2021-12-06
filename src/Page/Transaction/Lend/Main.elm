@@ -1891,7 +1891,7 @@ disabledInsuranceOut model collateral input =
 
 
 doesNotExist :
-    { model | backdrop : Backdrop, images : Images }
+    { model | images : Images }
     -> Pool
     -> ()
     ->
