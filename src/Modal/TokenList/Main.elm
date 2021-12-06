@@ -52,6 +52,7 @@ import Http
 import Modal.TokenList.Answer as Answer exposing (Answer)
 import Modal.TokenList.Error as Error exposing (Error)
 import Modal.TokenList.Query as Query
+import Modal.TokenList.Tooltip as Tooltip exposing (Tooltip)
 import Process
 import Task
 import Utility.Color as Color
@@ -63,6 +64,7 @@ type Modal
     = Modal
         { tokenParam : TokenParam
         , state : State
+        , tooltip : Maybe Tooltip
         }
 
 
@@ -86,6 +88,8 @@ type Msg
     | ImportERC20
     | ClearERC20 ERC20
     | ClearAll
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
     | Exit
 
 
@@ -97,6 +101,7 @@ init tokenParam =
         , erc20 = Error.NoResult |> Err |> Success
         }
             |> AllTokens
+    , tooltip = Nothing
     }
         |> Modal
 
@@ -369,6 +374,22 @@ update ({ chains } as model) blockchain msg (Modal modal) =
 
         ( Exit, _ ) ->
             ( Nothing
+            , Cmd.none
+            , Nothing
+            )
+
+        ( OnMouseEnter tooltip, _ ) ->
+            ( { modal | tooltip = Just tooltip }
+                |> Modal
+                |> Just
+            , Cmd.none
+            , Nothing
+            )
+
+        ( OnMouseLeave, _ ) ->
+            ( { modal | tooltip = Nothing }
+                |> Modal
+                |> Just
             , Cmd.none
             , Nothing
             )

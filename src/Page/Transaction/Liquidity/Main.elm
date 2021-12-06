@@ -1331,7 +1331,7 @@ disabled model blockchain pool (Transaction transaction) =
                 (pool.pair |> Pair.toAsset)
     , second =
         transaction
-            |> disabledClaims model pool
+            |> disabledDues model pool
     }
 
 
@@ -1440,14 +1440,14 @@ disabledMaxButton =
         (text "MAX")
 
 
-disabledClaims :
+disabledDues :
     { model | images : Images }
     -> Pool
     -> { transaction | state : State }
     -> Element Never
-disabledClaims model pool transaction =
+disabledDues model pool transaction =
     column
-        [ Region.description "claims"
+        [ Region.description "dues"
         , width <| px 343
         , height shrink
         , padding 16
@@ -1614,7 +1614,7 @@ empty :
         }
 empty model { asset, collateral } =
     { first = emptyAssetIn model asset
-    , second = emptyClaims model asset collateral
+    , second = emptyDues model asset collateral
     }
 
 
@@ -1655,14 +1655,14 @@ emptyAssetIn model token =
         ]
 
 
-emptyClaims :
+emptyDues :
     { model | images : Images }
     -> Maybe Token
     -> Maybe Token
     -> Element Never
-emptyClaims model asset collateral =
+emptyDues model asset collateral =
     column
-        [ Region.description "claims"
+        [ Region.description "dues"
         , width <| px 343
         , height shrink
         , padding 16
@@ -1679,16 +1679,16 @@ emptyClaims model asset collateral =
             [ Info.emptyAPR
             , Info.emptyCDP
             ]
-        , emptyClaimsOut model asset collateral
+        , emptyDuesIn model asset collateral
         ]
 
 
-emptyClaimsOut :
+emptyDuesIn :
     { model | images : Images }
     -> Maybe Token
     -> Maybe Token
     -> Element Never
-emptyClaimsOut model asset collateral =
+emptyDuesIn model asset collateral =
     column
         [ width fill
         , height shrink
@@ -1697,16 +1697,16 @@ emptyClaimsOut model asset collateral =
         , Background.color Color.primary100
         , Border.rounded 8
         ]
-        [ emptyBondOut model asset
-        , emptyInsuranceOut model collateral
+        [ emptyDebtOut model asset
+        , emptyCollateralOut model collateral
         ]
 
 
-emptyBondOut :
+emptyDebtOut :
     { model | images : Images }
     -> Maybe Token
     -> Element Never
-emptyBondOut model asset =
+emptyDebtOut model asset =
     column
         [ width fill
         , height shrink
@@ -1718,26 +1718,26 @@ emptyBondOut model asset =
             , Font.size 14
             , Font.color Color.primary400
             ]
-            (text "Amount to Receive")
+            (text "Debt to Repay")
         , asset
             |> Maybe.map
                 (\token ->
                     Textbox.disabled model
                         { token = token
                         , text = ""
-                        , description = "bond output"
+                        , description = "debt output"
                         }
                 )
             |> Maybe.withDefault
-                (Textbox.empty "bond output")
+                (Textbox.empty "debt output")
         ]
 
 
-emptyInsuranceOut :
+emptyCollateralOut :
     { model | images : Images }
     -> Maybe Token
     -> Element Never
-emptyInsuranceOut model collateral =
+emptyCollateralOut model collateral =
     column
         [ width fill
         , height shrink
@@ -1749,16 +1749,16 @@ emptyInsuranceOut model collateral =
             , Font.size 14
             , Font.color Color.primary400
             ]
-            (text "Amount Protecting")
+            (text "Collateral to Lock")
         , collateral
             |> Maybe.map
                 (\token ->
                     Textbox.disabled model
                         { token = token
                         , text = ""
-                        , description = "insurance output"
+                        , description = "collateral output"
                         }
                 )
             |> Maybe.withDefault
-                (Textbox.empty "insurance output")
+                (Textbox.empty "collateral output")
         ]

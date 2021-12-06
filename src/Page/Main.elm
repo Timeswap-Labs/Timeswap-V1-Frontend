@@ -381,8 +381,8 @@ view model blockchain page =
             Liquidity { transaction } ->
                 [ transaction
                     |> Transaction.view
-                        { title = "Add Liquidity"
-                        , createTitle = "Create Pool"
+                        { title = "Liquidity"
+                        , createTitle = "Create"
                         , showCreate = ShowCreate.Do
                         , transaction = Liquidity.view model blockchain
                         , disabledTransaction = Liquidity.disabled model blockchain
