@@ -285,6 +285,7 @@ viewWallets ({ images } as model) =
                             [ width shrink
                             , height shrink
                             , centerY
+                            , spacing 16
                             ]
                             { onPress = Just GoToWallets
                             , label =
@@ -298,7 +299,6 @@ viewWallets ({ images } as model) =
                         , el
                             [ width shrink
                             , height shrink
-                            , centerX
                             , centerY
                             , Font.size 18
                             , paddingXY 0 3
@@ -529,7 +529,6 @@ viewInitializing ({ images } as model) waiting =
             , el
                 [ width shrink
                 , height shrink
-                , centerX
                 , centerY
                 , Font.size 18
                 , paddingXY 0 3
