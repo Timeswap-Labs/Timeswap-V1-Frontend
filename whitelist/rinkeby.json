@@ -26,18 +26,6 @@
       "name": "TS Ethereum",
       "symbol": "TS-ETH",
       "decimals": 18
-    },
-    {
-      "address": "0x076eed43eb6c93650054507ad280ff308a8375af",
-      "name": "TS Axie Infinity",
-      "symbol": "TS-AXS",
-      "decimals": 18
-    },
-    {
-      "address": "0x50020427cc0e65aa902dd82bdc1ca0b030dc16b2",
-      "name": "TS Matic",
-      "symbol": "TS-MATIC",
-      "decimals": 18
     }
   ],
   "pairs": [
