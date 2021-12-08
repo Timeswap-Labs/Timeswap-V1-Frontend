@@ -4,19 +4,19 @@
   "convenience": "0xef7d805cda3bccb3516d582f6ef9554d3e1edee5",
   "erc20s": [
     {
-      "address": "0x51f6919f5a453b4192d5fc3f184eab1fd4012b33",
+      "address": "0x9DA86FD6D2f3678eE9971A3a18F3cD5d8083D802",
       "name": "TS Dogecoin",
       "symbol": "TS-DOGE",
       "decimals": 18
     },
     {
-      "address": "0x97f025acdbd9934cb2b938f8a9963f8488b0715a",
+      "address": "0xB444e85803cEa46Bbad49150f501267Dc7eDeF11",
       "name": "TS Shiba-Inu",
       "symbol": "TS-SHIB",
       "decimals": 18
     },
     {
-      "address": "0x54ec587961bccbc2e25c41960cd920fab9a8569a",
+      "address": "0x06501B0A9398f03dE8344F048ac9897240f1a424",
       "name": "TS USDC",
       "symbol": "TS-USDC",
       "decimals": 18
@@ -28,7 +28,7 @@
       "decimals": 18
     },
     {
-      "address": "0xbdf20b7ffa652e3a74b8aa29035db0a147e2d671",
+      "address": "0x1Be652661aE08c910Bd780901888CEDF4F1D7dcc",
       "name": "TS Ethereum",
       "symbol": "TS-ETH",
       "decimals": 18

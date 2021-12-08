@@ -11,17 +11,17 @@ type Address
 
 shiba : Address
 shiba =
-    Address "0xCb0DfB7f2375BDBAA2E02A39BD55fda918b53c54"
+    Address "0xB444e85803cEa46Bbad49150f501267Dc7eDeF11"
 
 
 doge : Address
 doge =
-    Address "0x1A416eE7Cb46DF23c8e2beD192b491c37dDE9Da7"
+    Address "0x9DA86FD6D2f3678eE9971A3a18F3cD5d8083D802"
 
 
 usdc : Address
 usdc =
-    Address "0x4d86d74cfcdd70897a6d0bf10698aefe7df9d49e"
+    Address "0x06501B0A9398f03dE8344F048ac9897240f1a424"
 
 
 axie : Address
@@ -36,7 +36,7 @@ matic =
 
 eth : Address
 eth =
-    Address "0x95f8eCE5EC5838a78Df7CF60211F2Ee7764Aa7d9"
+    Address "0x1Be652661aE08c910Bd780901888CEDF4F1D7dcc"
 
 
 participantAddresses : List Address
