@@ -56,19 +56,19 @@ usdc =
     { id = 2, address = Address.usdc, name = "USDC", symbol = "TS-USDC", decimals = 18 } |> ERC20
 
 
+eth : ERC20
+eth =
+    { id = 3, address = Address.eth, name = "Ethereum", symbol = "TS-ETH", decimals = 18 } |> ERC20
+
+
 axie : ERC20
 axie =
-    { id = 3, address = Address.axie, name = "Axie Infinity", symbol = "TS-AXS", decimals = 18 } |> ERC20
+    { id = 4, address = Address.axie, name = "Axie Infinity", symbol = "TS-AXS", decimals = 18 } |> ERC20
 
 
 matic : ERC20
 matic =
-    { id = 4, address = Address.matic, name = "Polygon", symbol = "TS-MATIC", decimals = 18 } |> ERC20
-
-
-eth : ERC20
-eth =
-    { id = 5, address = Address.eth, name = "Ethereum", symbol = "TS-ETH", decimals = 18 } |> ERC20
+    { id = 5, address = Address.matic, name = "Polygon", symbol = "TS-MATIC", decimals = 18 } |> ERC20
 
 
 fromString : Set ERC20 -> String -> Maybe ERC20
