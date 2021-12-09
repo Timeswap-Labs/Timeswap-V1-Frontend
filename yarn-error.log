@@ -1,0 +1,63 @@
+Arguments: 
+  /Users/dsukhani/.nvm/versions/node/v14.17.0/bin/node /Users/dsukhani/.nvm/versions/node/v14.17.0/bin/yarn
+
+PATH: 
+  /opt/homebrew/opt/python@3.10/bin:/Users/dsukhani/.pyenv/bin:/Users/dsukhani/.nvm/versions/node/v14.17.0/bin:/Library/Frameworks/Python.framework/Versions/3.10/bin:/opt/homebrew/bin:/opt/homebrew/sbin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:/Users/dsukhani/.cargo/bin:/Users/dsukhani/.local/bin:/Users/dsukhani/Library/Python/3.8/bin:/Users/dsukhani/.local/bin:/Users/dsukhani/Library/Python/3.8/bin
+
+Yarn version: 
+  1.22.10
+
+Node version: 
+  14.17.0
+
+Platform: 
+  darwin arm64
+
+Trace: 
+  Error: https://npm.pkg.github.com/@timeswap-labs%2ftimeswap-v1-sdk: Your request could not be authenticated by the GitHub Packages service. Please ensure your access token is valid and has the appropriate scopes configured.
+      at Request.params.callback [as _callback] (/Users/dsukhani/.nvm/versions/node/v14.17.0/lib/node_modules/yarn/lib/cli.js:66988:18)
+      at Request.self.callback (/Users/dsukhani/.nvm/versions/node/v14.17.0/lib/node_modules/yarn/lib/cli.js:140662:22)
+      at Request.emit (events.js:376:20)
+      at Request.<anonymous> (/Users/dsukhani/.nvm/versions/node/v14.17.0/lib/node_modules/yarn/lib/cli.js:141634:10)
+      at Request.emit (events.js:376:20)
+      at IncomingMessage.<anonymous> (/Users/dsukhani/.nvm/versions/node/v14.17.0/lib/node_modules/yarn/lib/cli.js:141556:12)
+      at Object.onceWrapper (events.js:482:28)
+      at IncomingMessage.emit (events.js:388:22)
+      at endReadableNT (internal/streams/readable.js:1336:12)
+      at processTicksAndRejections (internal/process/task_queues.js:82:21)
+
+npm manifest: 
+  {
+    "scripts": {
+      "start": "parcel index.html",
+      "build": "parcel build index.html",
+      "check": "tsc --noEmit"
+    },
+    "dependencies": {
+      "@0xsequence/multicall": "^0.29.0",
+      "@ethersproject/abstract-signer": "^5.5.0",
+      "@ethersproject/contracts": "^5.5.0",
+      "@ethersproject/providers": "^5.5.0",
+      "@sentry/browser": "^6.14.3",
+      "@sentry/tracing": "^6.14.3",
+      "@timeswap-labs/timeswap-v1-sdk": "^0.1.44",
+      "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.21"
+    },
+    "devDependencies": {
+      "@parcel/resolver-glob": "^2.0.0",
+      "@parcel/transformer-elm": "2.0.0",
+      "@parcel/transformer-typescript-tsc": "^2.0.0",
+      "@types/elm": "^0.19.1",
+      "elm": "^0.19.1-5",
+      "elm-hot": "^1.1.6",
+      "node-elm-compiler": "^5.0.6",
+      "parcel": "^2.0.0",
+      "typescript": "^4.4.4"
+    }
+  }
+
+yarn manifest: 
+  No manifest
+
+Lockfile: 
+  No lockfile
