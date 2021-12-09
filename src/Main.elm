@@ -244,7 +244,7 @@ update msg model =
                                 , cmd |> Cmd.map ModalMsg
                                 )
 
-                            Route.Service ( service, cmd ) ->
+                            Route.Service service ->
                                 ( { model
                                     | device = model.device |> Device.closeAside
                                     , service =
@@ -259,7 +259,7 @@ update msg model =
                                                 )
                                             |> Maybe.withDefault (Just service)
                                   }
-                                , cmd |> Cmd.map ServiceMsg
+                                , Cmd.none
                                 )
 
                             Route.Aside ->
@@ -427,11 +427,7 @@ update msg model =
 
         ServiceMsg serviceMsg ->
             model.service
-                |> Maybe.map
-                    (Service.update
-                        model
-                        serviceMsg
-                    )
+                |> Maybe.map (Service.update model serviceMsg)
                 |> Maybe.map
                     (\( service, cmd ) ->
                         ( { model | service = Just service }
@@ -574,7 +570,7 @@ subscriptions ({ modal, service } as model) =
         , sdkBalancesMsg SdkBalancesMsg
         , sdkAllowancesMsg SdkAllowancesMsg
         , service
-            |> Maybe.map (Service.subscriptions >> Sub.map ServiceMsg)
+            |> Maybe.map (\_ -> Sub.none)
             |> Maybe.withDefault
                 (modal
                     |> Maybe.map (Modal.subscriptions model)
