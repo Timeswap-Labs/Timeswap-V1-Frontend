@@ -114,7 +114,7 @@ init =
       , cache = Loading
       }
         |> Service
-    , fetchPrice { inToken = GameToken.Doge, outToken = GameToken.Shiba }
+    , fetchPrice { inToken = GameToken.USDC, outToken = GameToken.Shiba }
     )
 
 
