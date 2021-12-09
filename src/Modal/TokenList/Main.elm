@@ -12,10 +12,10 @@ import Blockchain.User.Main exposing (User, getBalance)
 import Data.Address as Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chains as Chains exposing (Chains)
-import Data.ERC20 exposing (ERC20)
+import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Token as Token exposing (Token)
+import Data.Token as Token exposing (Token(..))
 import Data.TokenParam exposing (TokenParam)
 import Data.Uint as Uint exposing (Uint)
 import Data.Web exposing (Web)
@@ -33,11 +33,13 @@ import Element
         , el
         , fill
         , height
+        , minimum
         , none
         , padding
         , paddingEach
         , paddingXY
         , px
+        , rotate
         , row
         , shrink
         , spacing
@@ -50,15 +52,19 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input exposing (Placeholder)
 import Http
+import Json.Decode
 import Modal.TokenList.Answer as Answer exposing (Answer)
 import Modal.TokenList.Error as Error exposing (Error)
 import Modal.TokenList.Query as Query
 import Modal.TokenList.Tooltip as Tooltip exposing (Tooltip)
 import Process
+import Sort.Set as Set exposing (Set)
+import String
 import Task
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
+import Utility.Truncate as Truncate
 
 
 type Modal
@@ -423,7 +429,7 @@ view :
     -> Blockchain
     -> Modal
     -> Element Msg
-view ({ backdrop, images, chains } as model) blockchain modal =
+view ({ backdrop, images, chains } as model) blockchain ((Modal { state }) as modal) =
     Glass.outsideModal backdrop
         Exit
         (column
@@ -438,8 +444,13 @@ view ({ backdrop, images, chains } as model) blockchain modal =
             , Border.rounded 8
             ]
             [ modalHeader model modal
-            , tokenList model blockchain
-            , manageTokensBtn model
+            , tokenList model blockchain modal
+            , case state of
+                AllTokens a ->
+                    manageTokensBtn model
+
+                _ ->
+                    none
             ]
         )
 
@@ -472,7 +483,31 @@ modalHeader { images } (Modal { state }) =
             [ el
                 [ alignLeft
                 ]
-                (text "Select Token")
+                (case state of
+                    AllTokens a ->
+                        text "Select Token"
+
+                    _ ->
+                        row
+                            [ width fill
+                            , spacing 12
+                            ]
+                            [ Input.button
+                                [ width shrink
+                                , alignRight
+                                ]
+                                { onPress = Just GoToAllTokens
+                                , label =
+                                    images
+                                        |> Image.arrowDown
+                                            [ width <| px 16
+                                            , height <| px 15
+                                            , rotate (pi / 2)
+                                            ]
+                                }
+                            , text "Manage Tokens"
+                            ]
+                )
             , Input.button
                 [ width shrink
                 , alignRight
@@ -522,24 +557,46 @@ modalHeader { images } (Modal { state }) =
 tokenList :
     { model | backdrop : Backdrop, images : Images, chains : Chains }
     -> Blockchain
+    -> Modal
     -> Element Msg
-tokenList ({ backdrop, chains } as model) blockchain =
+tokenList ({ backdrop, chains } as model) blockchain ((Modal { state }) as modal) =
     column
         [ width fill
+        , height (shrink |> minimum 250)
         , paddingXY 24 6
         ]
-        (chains
-            |> Chains.toList (blockchain |> Blockchain.toChain)
-            |> List.map (tokenButton model blockchain)
+        (case state of
+            AllTokens { erc20 } ->
+                case erc20 of
+                    Success (Ok erc20Value) ->
+                        if erc20Value |> ERC20.toAddress |> Chains.isMemberOf (blockchain |> Blockchain.toChain) chains then
+                            [ tokenButton model blockchain modal (Token.ERC20 erc20Value) ]
+
+                        else
+                            [ customToken model blockchain modal (Token.ERC20 erc20Value) ]
+
+                    _ ->
+                        chains
+                            |> Chains.toList (blockchain |> Blockchain.toChain)
+                            |> List.map (tokenButton model blockchain modal)
+
+            CustomERC20s ->
+                chains
+                    |> Chains.toCustomTokenList (blockchain |> Blockchain.toChain)
+                    |> List.map (customToken model blockchain modal)
+
+            _ ->
+                [ none ]
         )
 
 
 tokenButton :
     { model | images : Images }
     -> Blockchain
+    -> Modal
     -> Token
     -> Element Msg
-tokenButton { images } blockchain token =
+tokenButton ({ images } as model) blockchain modal token =
     Input.button
         [ width fill
         , height shrink
@@ -553,48 +610,10 @@ tokenButton { images } blockchain token =
                 , paddingXY 0 10
                 , centerY
                 ]
-                [ images
-                    |> Image.viewToken
-                        [ width <| px 24
-                        , alignLeft
-                        , centerY
-                        ]
-                        token
-                , el
-                    [ alignLeft
-                    , centerY
-                    , paddingEach
-                        { top = 0
-                        , right = 0
-                        , bottom = 0
-                        , left = 8
-                        }
-                    , Font.size 16
-                    , Font.bold
-                    ]
-                    (token
-                        |> Token.toSymbol
-                        |> text
-                    )
-                , el
-                    [ height <| px 23
-                    , paddingXY 5 0
-                    , Font.size 22
-                    , Font.color Color.transparent300
-                    ]
-                    (text (String.fromChar (Char.fromCode 0x2022)))
-                , el
-                    [ Font.size 12
-                    , Font.color Color.transparent300
-                    , Font.regular
-                    ]
-                    (token
-                        |> Token.toName
-                        |> text
-                    )
+                [ tokenSymbolAndName model modal token
                 , case blockchain |> Blockchain.toUser of
                     Just user ->
-                        tokenBalance user token
+                        tokenBalance user token modal
 
                     _ ->
                         none
@@ -602,8 +621,132 @@ tokenButton { images } blockchain token =
         }
 
 
-tokenBalance : User -> Token -> Element Msg
-tokenBalance user token =
+customToken :
+    { model | images : Images }
+    -> Blockchain
+    -> Modal
+    -> Token
+    -> Element Msg
+customToken model blockchain ((Modal { state }) as modal) token =
+    row
+        [ width fill
+        , height shrink
+        , paddingXY 0 10
+        , Font.color Color.transparent500
+        ]
+        [ tokenSymbolAndName model modal token
+        , case state of
+            ImportingERC20 erc20 ->
+                row
+                    [ width shrink
+                    , alignRight
+                    , spacing 15
+                    , Font.regular
+                    , Font.size 16
+                    ]
+                    [ Input.button
+                        []
+                        { onPress = Nothing
+                        , label =
+                            model.images
+                                |> Image.minus
+                                    [ width <| px 16
+                                    , height <| px 16
+                                    , alpha 0.64
+                                    , Font.color Color.negative300
+                                    ]
+                        }
+                    , Input.button
+                        []
+                        { onPress = Nothing
+                        , label =
+                            model.images
+                                |> Image.link
+                                    [ width <| px 16
+                                    , height <| px 16
+                                    ]
+                        }
+                    ]
+
+            _ ->
+                Input.button
+                    [ width shrink
+                    , height shrink
+                    , Font.size 12
+                    , Font.bold
+                    , paddingXY 9 4
+                    ]
+                    { onPress = Nothing
+                    , label =
+                        el [ centerX, centerY ] (text "Import")
+                    }
+        ]
+
+
+tokenSymbolAndName :
+    { model | images : Images }
+    -> Modal
+    -> Token
+    -> Element Msg
+tokenSymbolAndName { images } (Modal { tooltip }) token =
+    row
+        [ width fill
+        , height fill
+        , paddingXY 0 10
+        , centerY
+        ]
+        [ images
+            |> Image.viewToken
+                [ width <| px 24
+                , alignLeft
+                , centerY
+                ]
+                token
+        , el
+            [ alignLeft
+            , centerY
+            , paddingEach
+                { top = 0
+                , right = 0
+                , bottom = 0
+                , left = 8
+                }
+            , Font.size 16
+            , Font.bold
+            ]
+            (Truncate.viewSymbol
+                { onMouseEnter = OnMouseEnter
+                , onMouseLeave = OnMouseLeave
+                , tooltip = Tooltip.Symbol token
+                , opened = tooltip
+                , token = token
+                }
+            )
+        , el
+            [ height <| px 23
+            , paddingXY 5 0
+            , Font.size 22
+            , Font.color Color.transparent300
+            ]
+            (text (String.fromChar (Char.fromCode 0x2022)))
+        , el
+            [ Font.size 12
+            , Font.color Color.transparent300
+            , Font.regular
+            ]
+            (Truncate.viewName
+                { onMouseEnter = OnMouseEnter
+                , onMouseLeave = OnMouseLeave
+                , tooltip = Tooltip.Name token
+                , opened = tooltip
+                , token = token
+                }
+            )
+        ]
+
+
+tokenBalance : User -> Token -> Modal -> Element Msg
+tokenBalance user token (Modal { tooltip }) =
     let
         balances =
             user |> getBalance token
@@ -615,7 +758,15 @@ tokenBalance user token =
                 , Font.regular
                 , Font.size 16
                 ]
-                (balance |> Uint.toString |> text)
+                (Truncate.viewAmount
+                    { onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Amount token
+                    , opened = tooltip
+                    , token = token
+                    , amount = balance
+                    }
+                )
 
         _ ->
             none
@@ -673,3 +824,87 @@ manageTokensBtn { images } =
                     ]
             }
         )
+
+
+
+-- importTokenWarning : { model | images : Images } -> Token -> Tooltip -> Element Msg
+-- importTokenWarning model token tooltip =
+--     column
+--         [ width fill
+--         , height shrink
+--         , padding 24
+--         , spacing 24
+--         , centerX
+--         ]
+--         [ column
+--             [ width fill
+--             , height shrink
+--             , padding 16
+--             , spacing 12
+--             , centerX
+--             , Background.color Color.primary100
+--             , Border.rounded 8
+--             ]
+--             [ images
+--                 |> Image.info
+--                     [ width <| px 30
+--                     , height <| px 30
+--                     , centerY
+--                     ]
+--             , text "You’re importing this token on your own risk. make sure you want to trade this token"
+--             ]
+--         , column
+--             [ spacing 4 ]
+--             [ images
+--                 |> Image.viewToken
+--                     [ width <| px 24
+--                     , alignLeft
+--                     , centerY
+--                     ]
+--                     token
+--             , el
+--                 [ alignLeft
+--                 , centerY
+--                 , paddingEach
+--                     { top = 0
+--                     , right = 0
+--                     , bottom = 0
+--                     , left = 8
+--                     }
+--                 , Font.size 16
+--                 , Font.bold
+--                 ]
+--                 (Truncate.viewSymbol
+--                     { onMouseEnter = OnMouseEnter
+--                     , onMouseLeave = OnMouseLeave
+--                     , tooltip = Tooltip.Symbol token
+--                     , opened = tooltip
+--                     , token = token
+--                     }
+--                 )
+--             , el
+--                 [ height <| px 23
+--                 , paddingXY 5 0
+--                 , Font.size 22
+--                 , Font.color Color.transparent300
+--                 ]
+--                 (text (String.fromChar (Char.fromCode 0x2022)))
+--             , el
+--                 [ Font.size 12
+--                 , Font.color Color.transparent300
+--                 , Font.regular
+--                 ]
+--                 (Truncate.viewName
+--                     { onMouseEnter = OnMouseEnter
+--                     , onMouseLeave = OnMouseLeave
+--                     , tooltip = Tooltip.Name token
+--                     , opened = tooltip
+--                     , token = token
+--                     }
+--                 )
+--             ]
+--         , Input.button [ width fill, height <| px 44, Background.color Color.primary500 ]
+--             { onPress = Nothing
+--             , label = text "Import"
+--             }
+--         ]

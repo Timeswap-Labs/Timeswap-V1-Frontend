@@ -11,6 +11,7 @@ module Data.Tokens exposing
     , remove
     , removeAll
     , toCustom
+    , toCustomList
     , toList
     )
 
@@ -208,6 +209,13 @@ toList ((Tokens { native }) as tokens) =
         |> Set.toList
         |> List.map Token.ERC20
         |> (::) (Token.Native native)
+
+
+toCustomList : Tokens -> List Token
+toCustomList (Tokens { custom }) =
+    custom
+        |> Set.toList
+        |> List.map Token.ERC20
 
 
 getGivenAddress : Address -> Tokens -> Maybe ERC20

@@ -23,6 +23,7 @@ module Utility.Image exposing
     , matured
     , medium
     , metamask
+    , minus
     , openSea
     , option
     , plus
@@ -203,6 +204,11 @@ hourglassPrimarySmall =
 plus : List (Attribute msg) -> Images -> Element msg
 plus =
     view "Plus"
+
+
+minus : List (Attribute msg) -> Images -> Element msg
+minus =
+    view "Minus"
 
 
 arrow : List (Attribute msg) -> Images -> Element msg

@@ -58,7 +58,14 @@ async function elmInit() {
               "decimals": 18
             }
           ],
-          custom: []
+          custom: [
+            {
+              "address": "0xec23daeab1deeb3587eeb3453d4e95db128b0e62",
+              "name": "Matic TEST TOKEN with a long name",
+              "symbol": "MATIC",
+              "decimals": 18
+            }
+          ]
         },
         others: []
       },
