@@ -105,7 +105,7 @@ type ErrorDetailed
 
 init : ( Service, Cmd Msg )
 init =
-    ( { inToken = GameToken.Doge
+    ( { inToken = GameToken.USDC
       , outToken = GameToken.Shiba
       , dropdown = Nothing
       , options = [ GameToken.ETH, GameToken.Shiba, GameToken.Doge, GameToken.USDC ]
