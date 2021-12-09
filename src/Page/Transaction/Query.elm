@@ -1,7 +1,6 @@
 module Page.Transaction.Query exposing (toUrlString)
 
-import Blockchain.Main as Blockchain exposing (Blockchain)
-import Data.Chain as Chain
+import Data.Chain as Chain exposing (Chain)
 import Data.Maturity as Maturity
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
@@ -10,13 +9,11 @@ import Data.TokenParam as TokenParam
 import Url.Builder as Builder
 
 
-toUrlString : Blockchain -> Pool -> String
-toUrlString blockchain { pair, maturity } =
+toUrlString : Chain -> Pool -> String
+toUrlString chain { pair, maturity } =
     Builder.crossOrigin "https://api.timeswap.io"
         []
-        [ blockchain
-            |> Blockchain.toChain
-            |> Chain.toQueryParameter
+        [ chain |> Chain.toQueryParameter
         , pair
             |> Pair.toAsset
             |> Token.toQueryParameter TokenParam.Asset

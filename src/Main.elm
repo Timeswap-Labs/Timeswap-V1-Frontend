@@ -13,6 +13,7 @@ import Data.ChosenZone as ChosenZone exposing (ChosenZone)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device(..))
 import Data.Images as Images exposing (Images)
+import Data.Offset as Offset exposing (Offset)
 import Data.Parameter as Parameter
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.Spot as Spot exposing (Spot)
@@ -22,6 +23,7 @@ import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token
 import Data.Wallet as Wallet
 import Data.Wallets as Wallets exposing (Wallets)
+import Data.ZoneName as ZoneName exposing (ZoneName)
 import Element
     exposing
         ( Element
@@ -62,12 +64,11 @@ import Page.Main as Page exposing (Page)
 import Page.Route as Route
 import Sort.Set as Set
 import Task
-import Time exposing (Posix, Zone, ZoneName)
+import Time exposing (Posix, Zone)
 import Url exposing (Url)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
-import Utility.ZoneName as ZoneName
 
 
 main : Program Flags Model Msg
@@ -86,8 +87,8 @@ type alias Model =
     { key : Key
     , url : Url
     , time : Posix
-    , zone : Zone
-    , zoneName : ZoneName
+    , offset : Offset
+    , zoneName : Maybe ZoneName
     , chosenZone : ChosenZone
     , device : Device
     , visibility : Visibility
@@ -107,8 +108,8 @@ type alias Model =
 
 type alias Flags =
     { time : Int
-    , offset : Int
-    , zoneName : Maybe String
+    , offset : Offset.Flag
+    , zoneName : ZoneName.Flag
     , chosenZone : ChosenZone.Flag
     , width : Int
     , hasBackdropSupport : Backdrop.Flag
@@ -130,8 +131,6 @@ type Msg
     = RequestUrl UrlRequest
     | ChangeUrl Url
     | ReceiveTime Posix
-    | ReceiveZone Zone
-    | ReceiveZoneName ZoneName
     | SwitchZone
     | ResizeWindow Int Int
     | VisibilityChange Visibility
@@ -214,11 +213,8 @@ init flags url key =
                 ( { key = key
                   , url = url
                   , time = flags.time |> Time.millisToPosix
-                  , zone = Time.customZone flags.offset []
-                  , zoneName =
-                        flags.zoneName
-                            |> Maybe.map Time.Name
-                            |> Maybe.withDefault (Time.Offset flags.offset)
+                  , offset = flags.offset |> Offset.init
+                  , zoneName = flags.zoneName |> ZoneName.init
                   , chosenZone = flags.chosenZone |> ChosenZone.init
                   , device = flags.width |> Device.fromWidth
                   , visibility = Browser.Events.Visible
@@ -241,8 +237,6 @@ init flags url key =
                   , modal = Nothing
                   }
                 , [ Time.now |> Task.perform ReceiveTime
-                  , Time.here |> Task.perform ReceiveZone
-                  , Time.getZoneName |> Task.perform ReceiveZoneName
                   , cmd
                   ]
                     |> Cmd.batch
@@ -280,16 +274,6 @@ update msg model =
 
         ReceiveTime posix ->
             ( { model | time = posix }
-            , Cmd.none
-            )
-
-        ReceiveZone zone ->
-            ( { model | zone = zone }
-            , Cmd.none
-            )
-
-        ReceiveZoneName zoneName ->
-            ( { model | zoneName = zoneName }
             , Cmd.none
             )
 
@@ -480,8 +464,8 @@ pageEffect blockchain effect model =
             , Cmd.none
             )
 
-        Page.OpenMaturityList pair showCreate ->
-            Modal.initMaturityList model blockchain pair showCreate
+        Page.OpenMaturityList pair ->
+            Modal.initMaturityList blockchain pair
                 |> Tuple.mapBoth
                     (\maturityList ->
                         { model
@@ -705,7 +689,8 @@ options =
 
 header :
     { model
-        | zoneName : ZoneName
+        | offset : Offset
+        , zoneName : Maybe ZoneName
         , chosenZone : ChosenZone
         , device : Device
         , backdrop : Backdrop
@@ -987,12 +972,13 @@ connectButton model =
 
 zoneButton :
     { model
-        | zoneName : ZoneName
+        | offset : Offset
+        , zoneName : Maybe ZoneName
         , chosenZone : ChosenZone
         , backdrop : Backdrop
     }
     -> Element Msg
-zoneButton ({ zoneName, chosenZone } as model) =
+zoneButton ({ offset, zoneName, chosenZone } as model) =
     Input.button
         [ Region.description "zone button"
         , width shrink
@@ -1015,7 +1001,7 @@ zoneButton ({ zoneName, chosenZone } as model) =
 
                     ChosenZone.Here ->
                         zoneName
-                            |> ZoneName.toString
+                            |> ZoneName.toString offset
                  )
                     |> text
                 )
@@ -1060,7 +1046,7 @@ themeButton ({ theme, images } as model) =
 body :
     { model
         | time : Posix
-        , zone : Zone
+        , offset : Offset
         , chosenZone : ChosenZone
         , backdrop : Backdrop
         , images : Images

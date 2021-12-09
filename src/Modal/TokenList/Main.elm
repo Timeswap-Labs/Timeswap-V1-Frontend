@@ -19,6 +19,7 @@ import Data.Token as Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
 import Data.Uint as Uint exposing (Uint)
 import Data.Web exposing (Web)
+import Data.WebError as WebError
 import Element
     exposing
         ( Element
@@ -320,13 +321,19 @@ update ({ chains } as model) blockchain msg (Modal modal) =
             )
 
         ( ReceiveAnswer (Err error), AllTokens allTokens ) ->
-            ( { modal
-                | state =
-                    { allTokens
-                        | erc20 = Failure error
-                    }
-                        |> AllTokens
-              }
+            ( error
+                |> WebError.fromHttpError
+                |> Maybe.map
+                    (\webError ->
+                        { modal
+                            | state =
+                                { allTokens
+                                    | erc20 = Failure webError
+                                }
+                                    |> AllTokens
+                        }
+                    )
+                |> Maybe.withDefault modal
                 |> Modal
                 |> Just
             , Process.sleep 5000

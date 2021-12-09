@@ -1,4 +1,4 @@
-module Page.Transaction.Lend.Tooltip exposing (Tooltip(..))
+module Page.Transaction.Lend.Lend.Tooltip exposing (Tooltip(..))
 
 
 type Tooltip

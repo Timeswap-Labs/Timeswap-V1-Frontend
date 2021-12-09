@@ -23,7 +23,7 @@ type Maturity
     = Maturity Posix
 
 
-type Status active matured
+type Status matured active
     = Active active
     | Matured matured
 

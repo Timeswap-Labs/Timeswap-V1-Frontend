@@ -1,47 +1,49 @@
-port module Page.Transaction.Liquidity.Main exposing
-    ( Create
-    , CreateMsg
-    , Effect(..)
+module Page.Transaction.Liquidity.Main exposing
+    ( Effect(..)
+    , Msg
     , Transaction
-    , TransactionMsg
-    , createPool
-    , disabled
-    , disabledCreate
-    , empty
     , init
-    , initCreate
-    , refresh
-    , refreshCreate
+    , initGivenPoolInfo
+    , subscriptions
+    , toParameter
+    , toPoolInfo
     , update
-    , updateCreate
     , view
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User exposing (User)
+import Data.Backdrop exposing (Backdrop)
+import Data.Chain exposing (Chain)
 import Data.Chains exposing (Chains)
+import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
-import Data.Pair as Pair
+import Data.Maturity as Maturity
+import Data.Offset exposing (Offset)
+import Data.Pair as Pair exposing (Pair)
+import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Token as Token exposing (Token)
-import Data.Uint as Uint
+import Data.Token exposing (Token)
+import Data.TokenParam as TokenParam exposing (TokenParam)
+import Data.WebError as WebError exposing (WebError)
 import Element
     exposing
         ( Element
+        , alignLeft
         , alignRight
-        , alpha
         , centerY
         , column
         , el
         , fill
         , height
+        , map
         , none
         , padding
         , paddingXY
         , px
+        , rotate
         , row
         , shrink
         , spacing
@@ -53,31 +55,24 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
-import Json.Decode as Decode
-import Json.Encode exposing (Value)
-import Page.Approve as Approve
-import Page.Transaction.Info as Info
-import Page.Transaction.Liquidity.Answer as Answer
-    exposing
-        ( LiquidityGivenNew
-        , OutGivenAsset
-        , OutGivenCollateral
-        , OutGivenDebt
-        )
-import Page.Transaction.Liquidity.Error
-    exposing
-        ( CreateError
-        , TransactionError
-        )
-import Page.Transaction.Liquidity.Query as Query
-import Page.Transaction.Liquidity.Tooltip as Tooltip exposing (Tooltip)
-import Page.Transaction.Output as Output
+import Http
+import Page.Transaction.Answer as Answer exposing (Answer)
+import Page.Transaction.Liquidity.Add.Main as Add
+import Page.Transaction.Liquidity.AddError as AddError
+import Page.Transaction.Liquidity.New.Main as New
+import Page.Transaction.Liquidity.NewError as NewError
+import Page.Transaction.MaturityButton as MaturityButton
 import Page.Transaction.PoolInfo exposing (PoolInfo)
-import Page.Transaction.Textbox as Textbox
+import Page.Transaction.Query as Query
+import Page.Transaction.TokenButton as TokenButton
+import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
+import Process
+import Task
 import Time exposing (Posix)
 import Utility.Color as Color
+import Utility.Glass as Glass
+import Utility.Image as Image
 import Utility.Input as Input
-import Utility.Truncate as Truncate
 
 
 type Transaction
@@ -88,133 +83,147 @@ type Transaction
 
 
 type State
-    = Asset AssetInput
-    | Debt DebtInput
-    | Collateral CollateralInput
+    = Add (PoolParam (Status AddError (PoolState Add.Transaction ())))
+    | New (PoolParam (Status NewError (PoolState () New.Transaction)))
 
 
-type alias AssetInput =
-    { assetIn : String
-    , out : Remote TransactionError OutGivenAsset
+type PoolParam status
+    = None
+    | Asset Token
+    | Collateral Token
+    | Pair Pair
+    | Pool Pool status
+
+
+type Status error poolState
+    = Active (Remote error poolState)
+    | Matured
+
+
+type alias AddError =
+    { web : WebError
+    , add : AddError.Transaction
     }
 
 
-type alias DebtInput =
-    { debtOut : String
-    , out : Remote TransactionError OutGivenDebt
+type alias NewError =
+    { web : WebError
+    , new : NewError.Transaction
     }
 
 
-type alias CollateralInput =
-    { collateralOut : String
-    , out : Remote TransactionError OutGivenCollateral
-    }
+type PoolState exist doesNotExist
+    = Exist PoolInfo exist
+    | DoesNotExist doesNotExist
 
 
-type Create
-    = Create
-        { assetIn : String
-        , debtOut : String
-        , collateralOut : String
-        , liquidity : Remote CreateError LiquidityGivenNew
-        , tooltip : Maybe Tooltip
-        }
-
-
-type Msg otherMsg
-    = InputAssetIn String
-    | InputMaxAsset
-    | InputDebtOut String
-    | InputCollateralOut String
-    | InputMaxCollateral
-    | OtherMsg otherMsg
-    | ClickConnect
-    | ClickApproveAsset
-    | ClickApproveCollateral
+type Msg
+    = GoToNew
+    | GoToAdd
+    | SelectToken TokenParam
+    | SelectMaturity
+    | QueryAgain
+    | ReceiveAnswer Chain Pool (Result Http.Error Answer)
+    | CheckMaturity Posix
+    | AddMsg Add.Msg
+    | NewMsg New.Msg
+    | ClickSettings
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
 
-type OnlyTransaction
-    = ReceiveTransactionAnswer Value
-    | ClickAssetIn
-    | ClickDebtOut
-    | ClickCollateralOut
-    | QueryAgain Posix
-
-
-type OnlyCreate
-    = ReceiveCreateAnswer Value
-
-
-type alias TransactionMsg =
-    Msg OnlyTransaction
-
-
-type alias CreateMsg =
-    Msg OnlyCreate
-
-
 type Effect
-    = OpenConnect
+    = OpenTokenList TokenParam
+    | OpenMaturityList Pair
+    | OpenChooseMaturity Pair
+    | OpenConnect
+    | OpenSettings
     | OpenConfirm
 
 
-init : Transaction
-init =
-    { state =
-        { assetIn = ""
-        , out =
-            Answer.initGivenAsset
+init :
+    { model | time : Posix, chains : Chains }
+    -> Blockchain
+    -> Maybe Parameter
+    -> ( Transaction, Cmd Msg )
+init ({ time } as model) blockchain parameter =
+    case parameter of
+        Nothing ->
+            ( { state = Add None
+              , tooltip = Nothing
+              }
+                |> Transaction
+            , Cmd.none
+            )
+
+        Just (Parameter.Asset asset) ->
+            ( { state = Asset asset |> Add
+              , tooltip = Nothing
+              }
+                |> Transaction
+            , Cmd.none
+            )
+
+        Just (Parameter.Collateral collateral) ->
+            ( { state = Collateral collateral |> Add
+              , tooltip = Nothing
+              }
+                |> Transaction
+            , Cmd.none
+            )
+
+        Just (Parameter.Pair pair) ->
+            ( { state = Pair pair |> Add
+              , tooltip = Nothing
+              }
+                |> Transaction
+            , Cmd.none
+            )
+
+        Just (Parameter.Pool pool) ->
+            if pool.maturity |> Maturity.isActive time then
+                ( { state =
+                        Loading
+                            |> Active
+                            |> Pool pool
+                            |> Add
+                  , tooltip = Nothing
+                  }
+                    |> Transaction
+                , get model blockchain pool
+                )
+
+            else
+                ( { state =
+                        Matured
+                            |> Pool pool
+                            |> Add
+                  , tooltip = Nothing
+                  }
+                    |> Transaction
+                , Cmd.none
+                )
+
+
+initGivenPoolInfo :
+    { model | time : Posix, chains : Chains }
+    -> Blockchain
+    -> Pool
+    -> PoolInfo
+    -> ( Transaction, Cmd Msg )
+initGivenPoolInfo model blockchain pool poolInfo =
+    ( { state =
+            Add.init
+                |> Exist poolInfo
                 |> Success
-        }
-            |> Asset
-    , tooltip = Nothing
-    }
+                |> Active
+                |> Pool pool
+                |> Add
+      , tooltip = Nothing
+      }
         |> Transaction
-
-
-initCreate : Create
-initCreate =
-    { assetIn = ""
-    , debtOut = ""
-    , collateralOut = ""
-    , liquidity =
-        Answer.initGivenNew
-            |> Success
-    , tooltip = Nothing
-    }
-        |> Create
-
-
-refresh : Transaction -> Transaction
-refresh (Transaction transaction) =
-    { transaction
-        | state =
-            case transaction.state of
-                Asset asset ->
-                    { asset | out = Loading }
-                        |> Asset
-
-                Debt debt ->
-                    { debt | out = Loading }
-                        |> Debt
-
-                Collateral collateral ->
-                    { collateral | out = Loading }
-                        |> Collateral
-        , tooltip = Nothing
-    }
-        |> Transaction
-
-
-refreshCreate : Create -> Create
-refreshCreate (Create create) =
-    { create
-        | liquidity = Loading
-        , tooltip = Nothing
-    }
-        |> Create
+    , get model blockchain pool
+    )
 
 
 update :
@@ -225,453 +234,492 @@ update :
         , deadline : Deadline
     }
     -> Blockchain
-    -> Pool
-    -> PoolInfo
-    -> TransactionMsg
+    -> Msg
     -> Transaction
-    -> ( Transaction, Cmd TransactionMsg, Maybe Effect )
-update model blockchain pool poolInfo msg (Transaction transaction) =
-    case msg of
-        InputAssetIn assetIn ->
-            if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
-                { transaction | state = assetIn |> updateGivenAssetIn }
-                    |> query model blockchain pool poolInfo
+    -> ( Transaction, Cmd Msg, Maybe Effect )
+update model blockchain msg (Transaction transaction) =
+    case ( msg, transaction.state ) of
+        ( GoToNew, Add None ) ->
+            { transaction | state = New None }
+                |> noCmdAndEffect
 
-            else
-                transaction |> noCmdAndEffect
+        ( GoToNew, Add (Asset asset) ) ->
+            { transaction | state = Asset asset |> New }
+                |> noCmdAndEffect
 
-        InputMaxAsset ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen
-                    (\user ->
-                        user
-                            |> User.getBalance
-                                (pool.pair |> Pair.toAsset)
-                            |> Maybe.map
-                                (Uint.toAmount
-                                    (pool.pair |> Pair.toAsset)
-                                )
+        ( GoToNew, Add (Collateral collateral) ) ->
+            { transaction | state = Collateral collateral |> New }
+                |> noCmdAndEffect
+
+        ( GoToNew, Add (Pair pair) ) ->
+            { transaction | state = Pair pair |> New }
+                |> noCmdAndEffect
+
+        ( GoToNew, Add (Pool pool (Active (Success (Exist poolInfo _)))) ) ->
+            { transaction
+                | state =
+                    ()
+                        |> Exist poolInfo
+                        |> Success
+                        |> Active
+                        |> Pool pool
+                        |> New
+            }
+                |> noCmdAndEffect
+
+        ( GoToNew, Add (Pool pool (Active (Success (DoesNotExist ())))) ) ->
+            { transaction
+                | state =
+                    New.init
+                        |> DoesNotExist
+                        |> Success
+                        |> Active
+                        |> Pool pool
+                        |> New
+            }
+                |> noCmdAndEffect
+
+        ( GoToNew, Add (Pool pool (Active (Failure error))) ) ->
+            { transaction
+                | state =
+                    { web = error.web
+                    , new = NewError.init
+                    }
+                        |> Failure
+                        |> Active
+                        |> Pool pool
+                        |> New
+            }
+                |> noCmdAndEffect
+
+        ( GoToNew, Add (Pool pool (Active Loading)) ) ->
+            { transaction
+                | state =
+                    Loading
+                        |> Active
+                        |> Pool pool
+                        |> New
+            }
+                |> noCmdAndEffect
+
+        ( GoToNew, Add (Pool pool Matured) ) ->
+            { transaction
+                | state =
+                    Matured
+                        |> Pool pool
+                        |> New
+            }
+                |> noCmdAndEffect
+
+        ( GoToAdd, New None ) ->
+            { transaction | state = Add None }
+                |> noCmdAndEffect
+
+        ( GoToAdd, New (Asset asset) ) ->
+            { transaction | state = Asset asset |> Add }
+                |> noCmdAndEffect
+
+        ( GoToAdd, New (Collateral collateral) ) ->
+            { transaction | state = Collateral collateral |> Add }
+                |> noCmdAndEffect
+
+        ( GoToAdd, New (Pair pair) ) ->
+            { transaction | state = Pair pair |> Add }
+                |> noCmdAndEffect
+
+        ( GoToAdd, New (Pool pool (Active (Success (Exist poolInfo ())))) ) ->
+            { transaction
+                | state =
+                    Add.init
+                        |> Exist poolInfo
+                        |> Success
+                        |> Active
+                        |> Pool pool
+                        |> Add
+            }
+                |> noCmdAndEffect
+
+        ( GoToAdd, New (Pool pool (Active (Success (DoesNotExist _)))) ) ->
+            { transaction
+                | state =
+                    ()
+                        |> DoesNotExist
+                        |> Success
+                        |> Active
+                        |> Pool pool
+                        |> Add
+            }
+                |> noCmdAndEffect
+
+        ( GoToAdd, New (Pool pool (Active (Failure error))) ) ->
+            { transaction
+                | state =
+                    { web = error.web
+                    , add = AddError.init
+                    }
+                        |> Failure
+                        |> Active
+                        |> Pool pool
+                        |> Add
+            }
+                |> noCmdAndEffect
+
+        ( GoToAdd, New (Pool pool (Active Loading)) ) ->
+            { transaction
+                | state =
+                    Loading
+                        |> Active
+                        |> Pool pool
+                        |> Add
+            }
+                |> noCmdAndEffect
+
+        ( GoToAdd, New (Pool pool Matured) ) ->
+            { transaction
+                | state =
+                    Matured
+                        |> Pool pool
+                        |> Add
+            }
+                |> noCmdAndEffect
+
+        ( SelectToken tokenParam, _ ) ->
+            ( transaction |> Transaction
+            , Cmd.none
+            , tokenParam
+                |> OpenTokenList
+                |> Just
+            )
+
+        ( SelectMaturity, Add (Pair pair) ) ->
+            ( transaction |> Transaction
+            , Cmd.none
+            , pair
+                |> OpenMaturityList
+                |> Just
+            )
+
+        ( SelectMaturity, Add (Pool pool _) ) ->
+            ( transaction |> Transaction
+            , Cmd.none
+            , pool.pair
+                |> OpenMaturityList
+                |> Just
+            )
+
+        ( SelectMaturity, New (Pair pair) ) ->
+            ( transaction |> Transaction
+            , Cmd.none
+            , pair
+                |> OpenChooseMaturity
+                |> Just
+            )
+
+        ( SelectMaturity, New (Pool pool _) ) ->
+            ( transaction |> Transaction
+            , Cmd.none
+            , pool.pair
+                |> OpenChooseMaturity
+                |> Just
+            )
+
+        ( QueryAgain, Add (Pool pool (Active (Success _))) ) ->
+            ( transaction |> Transaction
+            , get model blockchain pool
+            , Nothing
+            )
+
+        ( QueryAgain, Add (Pool pool (Active (Failure _))) ) ->
+            ( transaction |> Transaction
+            , get model blockchain pool
+            , Nothing
+            )
+
+        ( QueryAgain, New (Pool pool (Active (Success _))) ) ->
+            ( transaction |> Transaction
+            , get model blockchain pool
+            , Nothing
+            )
+
+        ( QueryAgain, New (Pool pool (Active (Failure _))) ) ->
+            ( transaction |> Transaction
+            , get model blockchain pool
+            , Nothing
+            )
+
+        ( ReceiveAnswer chain pool result, Add (Pool currentPool (Active remote)) ) ->
+            ( (if
+                (chain == (blockchain |> Blockchain.toChain))
+                    && (pool == currentPool)
+               then
+                case
+                    ( result |> WebError.toResult
+                    , remote
                     )
+                of
+                    ( Just (Ok (Just poolInfo)), Success (Exist _ add) ) ->
+                        add
+                            |> Exist poolInfo
+                            |> Success
+                            |> Just
+
+                    ( Just (Ok (Just poolInfo)), Success (DoesNotExist ()) ) ->
+                        Add.init
+                            |> Exist poolInfo
+                            |> Success
+                            |> Just
+
+                    ( Just (Ok (Just poolInfo)), Failure error ) ->
+                        error.add
+                            |> Add.fromAddError
+                            |> Exist poolInfo
+                            |> Success
+                            |> Just
+
+                    ( Just (Ok (Just poolInfo)), Loading ) ->
+                        Add.init
+                            |> Exist poolInfo
+                            |> Success
+                            |> Just
+
+                    ( Just (Ok Nothing), _ ) ->
+                        DoesNotExist ()
+                            |> Success
+                            |> Just
+
+                    ( Just (Err webError), Success (Exist _ add) ) ->
+                        { web = webError
+                        , add = add |> Add.toAddError
+                        }
+                            |> Failure
+                            |> Just
+
+                    ( Just (Err webError), Success (DoesNotExist ()) ) ->
+                        { web = webError
+                        , add = AddError.init
+                        }
+                            |> Failure
+                            |> Just
+
+                    ( Just (Err webError), Failure failure ) ->
+                        { failure | web = webError }
+                            |> Failure
+                            |> Just
+
+                    ( Just (Err webError), Loading ) ->
+                        { web = webError
+                        , add = AddError.init
+                        }
+                            |> Failure
+                            |> Just
+
+                    ( Nothing, _ ) ->
+                        Nothing
+
+               else
+                Nothing
+              )
                 |> Maybe.map
-                    (\assetIn ->
-                        { transaction | state = assetIn |> updateGivenAssetIn }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        InputDebtOut debtOut ->
-            if debtOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
-                { transaction | state = debtOut |> updateGivenDebtOut }
-                    |> query model blockchain pool poolInfo
-
-            else
-                transaction |> noCmdAndEffect
-
-        InputCollateralOut collateralOut ->
-            if collateralOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
-                { transaction | state = collateralOut |> updateGivenCollateralOut }
-                    |> query model blockchain pool poolInfo
-
-            else
-                transaction |> noCmdAndEffect
-
-        InputMaxCollateral ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen
-                    (\user ->
-                        user
-                            |> User.getBalance
-                                (pool.pair |> Pair.toCollateral)
-                            |> Maybe.map
-                                (Uint.toAmount
-                                    (pool.pair |> Pair.toCollateral)
-                                )
-                    )
-                |> Maybe.map
-                    (\collateralOut ->
-                        { transaction | state = collateralOut |> updateGivenCollateralOut }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        OtherMsg (ReceiveTransactionAnswer value) ->
-            (case
-                ( value
-                    |> Decode.decodeValue (Answer.decoder model)
-                , transaction.state
-                )
-             of
-                ( Ok (Answer.GivenAsset answer), Asset asset ) ->
-                    if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
-                            && (answer.pool == pool)
-                            && (answer.poolInfo == poolInfo)
-                            && (Just answer.assetIn
-                                    == (asset.assetIn
-                                            |> Uint.fromAmount
-                                                (pool.pair |> Pair.toAsset)
-                                       )
-                               )
-                            && (answer.slippage == model.slippage)
-                    then
+                    (\state ->
                         { transaction
                             | state =
-                                { asset
-                                    | out =
-                                        answer.result
-                                            |> Answer.toOutGivenAsset
-                                }
-                                    |> Asset
+                                state
+                                    |> Active
+                                    |> Pool pool
+                                    |> Add
                         }
+                    )
+                |> Maybe.withDefault transaction
+                |> Transaction
+            , Process.sleep 5000
+                |> Task.perform (\_ -> QueryAgain)
+            , Nothing
+            )
+
+        ( ReceiveAnswer chain pool result, New (Pool currentPool (Active remote)) ) ->
+            ( (if
+                (chain == (blockchain |> Blockchain.toChain))
+                    && (pool == currentPool)
+               then
+                case
+                    ( result |> WebError.toResult
+                    , remote
+                    )
+                of
+                    ( Just (Ok (Just poolInfo)), _ ) ->
+                        Exist poolInfo ()
+                            |> Success
                             |> Just
 
-                    else
+                    ( Just (Ok Nothing), Success (Exist _ ()) ) ->
+                        New.init
+                            |> DoesNotExist
+                            |> Success
+                            |> Just
+
+                    ( Just (Ok Nothing), Failure error ) ->
+                        error.new
+                            |> New.fromNewError
+                            |> DoesNotExist
+                            |> Success
+                            |> Just
+
+                    ( Just (Ok Nothing), Loading ) ->
+                        New.init
+                            |> DoesNotExist
+                            |> Success
+                            |> Just
+
+                    ( Just (Err webError), Success (Exist _ ()) ) ->
+                        { web = webError
+                        , new = NewError.init
+                        }
+                            |> Failure
+                            |> Just
+
+                    ( Just (Err webError), Success (DoesNotExist new) ) ->
+                        { web = webError
+                        , new = new |> New.toNewError
+                        }
+                            |> Failure
+                            |> Just
+
+                    ( Just (Err webError), Failure failure ) ->
+                        { failure | web = webError }
+                            |> Failure
+                            |> Just
+
+                    ( Just (Err webError), Loading ) ->
+                        { web = webError
+                        , new = NewError.init
+                        }
+                            |> Failure
+                            |> Just
+
+                    _ ->
                         Nothing
 
-                ( Ok (Answer.GivenDebt answer), Debt debt ) ->
-                    if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
-                            && (answer.pool == pool)
-                            && (answer.poolInfo == poolInfo)
-                            && (Just answer.debtOut
-                                    == (debt.debtOut
-                                            |> Uint.fromAmount
-                                                (pool.pair |> Pair.toAsset)
-                                       )
-                               )
-                            && (answer.slippage == model.slippage)
-                    then
+               else
+                Nothing
+              )
+                |> Maybe.map
+                    (\state ->
                         { transaction
                             | state =
-                                { debt
-                                    | out =
-                                        answer.result
-                                            |> Answer.toOutGivenDebt
-                                }
-                                    |> Debt
+                                state
+                                    |> Active
+                                    |> Pool pool
+                                    |> New
                         }
-                            |> Just
+                    )
+                |> Maybe.withDefault transaction
+                |> Transaction
+            , Process.sleep 5000
+                |> Task.perform (\_ -> QueryAgain)
+            , Nothing
+            )
 
-                    else
-                        Nothing
+        ( CheckMaturity posix, Add (Pool pool (Active _)) ) ->
+            (if pool.maturity |> Maturity.isActive posix then
+                transaction
 
-                ( Ok (Answer.GivenCollateral answer), Collateral collateral ) ->
-                    if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
-                            && (answer.pool == pool)
-                            && (answer.poolInfo == poolInfo)
-                            && (Just answer.collateralOut
-                                    == (collateral.collateralOut
-                                            |> Uint.fromAmount
-                                                (pool.pair |> Pair.toCollateral)
-                                       )
-                               )
-                            && (answer.slippage == model.slippage)
-                    then
-                        { transaction
+             else
+                { transaction
+                    | state =
+                        Matured
+                            |> Pool pool
+                            |> Add
+                }
+            )
+                |> noCmdAndEffect
+
+        ( CheckMaturity posix, New (Pool pool (Active _)) ) ->
+            (if pool.maturity |> Maturity.isActive posix then
+                transaction
+
+             else
+                { transaction
+                    | state =
+                        Matured
+                            |> Pool pool
+                            |> New
+                }
+            )
+                |> noCmdAndEffect
+
+        ( AddMsg addMsg, Add (Pool pool (Active (Success (Exist poolInfo add)))) ) ->
+            add
+                |> Add.update model blockchain pool poolInfo addMsg
+                |> (\( updated, cmd, maybeEffect ) ->
+                        ( { transaction
                             | state =
-                                { collateral
-                                    | out =
-                                        answer.result
-                                            |> Answer.toOutGivenCollateral
-                                }
-                                    |> Collateral
-                        }
-                            |> Just
-
-                    else
-                        Nothing
-
-                _ ->
-                    Nothing
-            )
-                |> Maybe.map noCmdAndEffect
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        OtherMsg ClickAssetIn ->
-            (case transaction.state of
-                Debt { out } ->
-                    case out of
-                        Success { assetIn } ->
-                            assetIn
-                                |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
-
-                Collateral { out } ->
-                    case out of
-                        Success { assetIn } ->
-                            assetIn
-                                |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
-
-                _ ->
-                    Nothing
-            )
-                |> Maybe.map
-                    (\assetIn ->
-                        { transaction | state = assetIn |> updateGivenAssetIn }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        OtherMsg ClickDebtOut ->
-            (case transaction.state of
-                Asset { out } ->
-                    case out of
-                        Success { debtOut } ->
-                            debtOut
-                                |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
-
-                Collateral { out } ->
-                    case out of
-                        Success { debtOut } ->
-                            debtOut
-                                |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
-
-                _ ->
-                    Nothing
-            )
-                |> Maybe.map
-                    (\debtOut ->
-                        { transaction | state = debtOut |> updateGivenDebtOut }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        OtherMsg ClickCollateralOut ->
-            (case transaction.state of
-                Asset { out } ->
-                    case out of
-                        Success { collateralOut } ->
-                            collateralOut
-                                |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
-
-                Debt { out } ->
-                    case out of
-                        Success { collateralOut } ->
-                            collateralOut
-                                |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
-
-                _ ->
-                    Nothing
-            )
-                |> Maybe.map
-                    (\collateralOut ->
-                        { transaction | state = collateralOut |> updateGivenCollateralOut }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        OtherMsg (QueryAgain _) ->
-            transaction
-                |> queryPerSecond model blockchain pool poolInfo
-
-        ClickConnect ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.map (\_ -> transaction |> noCmdAndEffect)
-                |> Maybe.withDefault
-                    ( transaction |> Transaction
-                    , Cmd.none
-                    , OpenConnect |> Just
-                    )
-
-        ClickApproveAsset ->
-            (case
-                ( blockchain |> Blockchain.toUser
-                , case transaction.state of
-                    Asset { assetIn } ->
-                        assetIn
-                            |> Uint.fromAmount
-                                (pool.pair |> Pair.toAsset)
-
-                    Debt { out } ->
-                        case out of
-                            Success { assetIn } ->
-                                assetIn |> Just
-
-                            _ ->
-                                Nothing
-
-                    Collateral { out } ->
-                        case out of
-                            Success { assetIn } ->
-                                assetIn |> Just
-
-                            _ ->
-                                Nothing
-                , pool.pair
-                    |> Pair.toAsset
-                    |> Token.toERC20
-                )
-             of
-                ( Just user, Just assetIn, Just erc20 ) ->
-                    if
-                        (user
-                            |> User.hasEnoughBalance
-                                (pool.pair |> Pair.toAsset)
-                                assetIn
+                                updated
+                                    |> Exist poolInfo
+                                    |> Success
+                                    |> Active
+                                    |> Pool pool
+                                    |> Add
+                          }
+                            |> Transaction
+                        , cmd |> Cmd.map AddMsg
+                        , maybeEffect |> Maybe.map addEffects
                         )
-                            && (user
-                                    |> User.hasEnoughAllowance
-                                        erc20
-                                        assetIn
-                                    |> not
-                               )
-                    then
-                        ( transaction |> Transaction
-                        , erc20
-                            |> Approve.encode blockchain user
-                            |> approveLiquidity
-                        , OpenConfirm |> Just
+                   )
+
+        ( NewMsg newMsg, New (Pool pool (Active (Success (DoesNotExist new)))) ) ->
+            new
+                |> New.update model blockchain pool newMsg
+                |> (\( updated, cmd, maybeEffect ) ->
+                        ( { transaction
+                            | state =
+                                updated
+                                    |> DoesNotExist
+                                    |> Success
+                                    |> Active
+                                    |> Pool pool
+                                    |> New
+                          }
+                            |> Transaction
+                        , cmd |> Cmd.map NewMsg
+                        , maybeEffect |> Maybe.map newEffects
                         )
-                            |> Just
+                   )
 
-                    else
-                        Nothing
-
-                _ ->
-                    Nothing
-            )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        ClickApproveCollateral ->
-            (case
-                ( blockchain |> Blockchain.toUser
-                , case transaction.state of
-                    Asset { out } ->
-                        case out of
-                            Success { collateralOut } ->
-                                collateralOut |> Just
-
-                            _ ->
-                                Nothing
-
-                    Debt { out } ->
-                        case out of
-                            Success { collateralOut } ->
-                                collateralOut |> Just
-
-                            _ ->
-                                Nothing
-
-                    Collateral { collateralOut } ->
-                        collateralOut
-                            |> Uint.fromAmount
-                                (pool.pair |> Pair.toCollateral)
-                , pool.pair
-                    |> Pair.toCollateral
-                    |> Token.toERC20
-                )
-             of
-                ( Just user, Just collateralOut, Just erc20 ) ->
-                    if
-                        (user
-                            |> User.hasEnoughBalance
-                                (pool.pair |> Pair.toCollateral)
-                                collateralOut
-                        )
-                            && (user
-                                    |> User.hasEnoughAllowance
-                                        erc20
-                                        collateralOut
-                                    |> not
-                               )
-                    then
-                        ( transaction |> Transaction
-                        , erc20
-                            |> Approve.encode blockchain user
-                            |> approveLiquidity
-                        , OpenConfirm |> Just
-                        )
-                            |> Just
-
-                    else
-                        Nothing
-
-                _ ->
-                    Nothing
-            )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        OnMouseEnter tooltip ->
+        ( OnMouseEnter tooltip, _ ) ->
             { transaction | tooltip = Just tooltip }
                 |> noCmdAndEffect
 
-        OnMouseLeave ->
+        ( OnMouseLeave, _ ) ->
             { transaction | tooltip = Nothing }
                 |> noCmdAndEffect
 
-
-updateGivenAssetIn : String -> State
-updateGivenAssetIn assetIn =
-    { assetIn = assetIn
-    , out =
-        if assetIn |> Input.isZero then
-            Answer.initGivenAsset
-                |> Success
-
-        else
-            Loading
-    }
-        |> Asset
+        _ ->
+            transaction |> noCmdAndEffect
 
 
-updateGivenDebtOut : String -> State
-updateGivenDebtOut debtOut =
-    { debtOut = debtOut
-    , out =
-        if debtOut |> Input.isZero then
-            Answer.initGivenDebt
-                |> Success
+addEffects : Add.Effect -> Effect
+addEffects effect =
+    case effect of
+        Add.OpenConnect ->
+            OpenConnect
 
-        else
-            Loading
-    }
-        |> Debt
+        Add.OpenConfirm ->
+            OpenConfirm
 
 
-updateGivenCollateralOut : String -> State
-updateGivenCollateralOut collateralOut =
-    { collateralOut = collateralOut
-    , out =
-        if collateralOut |> Input.isZero then
-            Answer.initGivenCollateral
-                |> Success
+newEffects : New.Effect -> Effect
+newEffects effect =
+    case effect of
+        New.OpenConnect ->
+            OpenConnect
 
-        else
-            Loading
-    }
-        |> Collateral
+        New.OpenConfirm ->
+            OpenConfirm
 
 
 noCmdAndEffect :
     { state : State, tooltip : Maybe Tooltip }
-    -> ( Transaction, Cmd TransactionMsg, Maybe Effect )
+    -> ( Transaction, Cmd Msg, Maybe Effect )
 noCmdAndEffect transaction =
     ( transaction |> Transaction
     , Cmd.none
@@ -679,1086 +727,474 @@ noCmdAndEffect transaction =
     )
 
 
-query :
-    { model | slippage : Slippage }
-    -> Blockchain
-    -> Pool
-    -> PoolInfo
-    ->
-        { state : State
-        , tooltip : Maybe Tooltip
-        }
-    -> ( Transaction, Cmd TransactionMsg, Maybe Effect )
-query =
-    constructQuery queryLiquidity
-
-
-queryPerSecond :
-    { model | slippage : Slippage }
-    -> Blockchain
-    -> Pool
-    -> PoolInfo
-    ->
-        { state : State
-        , tooltip : Maybe Tooltip
-        }
-    -> ( Transaction, Cmd TransactionMsg, Maybe Effect )
-queryPerSecond =
-    constructQuery queryLiquidityPerSecond
-
-
-constructQuery :
-    (Value -> Cmd TransactionMsg)
-    -> { model | slippage : Slippage }
-    -> Blockchain
-    -> Pool
-    -> PoolInfo
-    ->
-        { state : State
-        , tooltip : Maybe Tooltip
-        }
-    -> ( Transaction, Cmd TransactionMsg, Maybe Effect )
-constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
-    (case transaction.state of
-        Asset asset ->
-            case
-                ( asset.assetIn |> Input.isZero
-                , asset.assetIn
-                    |> Uint.fromAmount
-                        (pool.pair |> Pair.toAsset)
-                )
-            of
-                ( True, _ ) ->
-                    Nothing
-
-                ( False, Just assetIn ) ->
-                    { chainId = blockchain |> Blockchain.toChain
-                    , pool = pool
-                    , poolInfo = poolInfo
-                    , assetIn = assetIn
-                    , slippage = slippage
-                    }
-                        |> Query.givenAsset
-                        |> Just
-
-                _ ->
-                    Nothing
-
-        Debt debt ->
-            case
-                ( debt.debtOut |> Input.isZero
-                , debt.debtOut
-                    |> Uint.fromAmount
-                        (pool.pair |> Pair.toAsset)
-                )
-            of
-                ( True, _ ) ->
-                    Nothing
-
-                ( False, Just debtOut ) ->
-                    { chainId = blockchain |> Blockchain.toChain
-                    , pool = pool
-                    , poolInfo = poolInfo
-                    , debtOut = debtOut
-                    , slippage = slippage
-                    }
-                        |> Query.givenDebt
-                        |> Just
-
-                _ ->
-                    Nothing
-
-        Collateral collateral ->
-            case
-                ( collateral.collateralOut |> Input.isZero
-                , collateral.collateralOut
-                    |> Uint.fromAmount
-                        (pool.pair |> Pair.toCollateral)
-                )
-            of
-                ( True, _ ) ->
-                    Nothing
-
-                ( False, Just collateralOut ) ->
-                    { chainId = blockchain |> Blockchain.toChain
-                    , pool = pool
-                    , poolInfo = poolInfo
-                    , collateralOut = collateralOut
-                    , slippage = slippage
-                    }
-                        |> Query.givenCollateral
-                        |> Just
-
-                _ ->
-                    Nothing
-    )
-        |> Maybe.map givenCmd
-        |> Maybe.withDefault Cmd.none
-        |> (\cmd ->
-                ( transaction |> Transaction
-                , cmd
-                , Nothing
-                )
-           )
-
-
-updateCreate :
+get :
     { model | chains : Chains }
     -> Blockchain
     -> Pool
-    -> CreateMsg
-    -> Create
-    -> ( Create, Cmd CreateMsg, Maybe Effect )
-updateCreate model blockchain pool msg (Create create) =
-    case msg of
-        InputAssetIn assetIn ->
-            if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
-                { create
-                    | assetIn = assetIn
-                    , liquidity =
-                        if
-                            (assetIn |> Input.isZero)
-                                || (create.debtOut |> Input.isZero)
-                                || (create.collateralOut |> Input.isZero)
-                        then
-                            Answer.initGivenNew
-                                |> Success
-
-                        else
-                            Loading
-                }
-                    |> queryNew blockchain pool
-
-            else
-                create |> noCreateCmdAndEffect
-
-        InputMaxAsset ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen
-                    (\user ->
-                        user
-                            |> User.getBalance
-                                (pool.pair |> Pair.toAsset)
-                            |> Maybe.map
-                                (Uint.toAmount
-                                    (pool.pair |> Pair.toAsset)
-                                )
-                    )
-                |> Maybe.map
-                    (\assetIn ->
-                        { create
-                            | assetIn = assetIn
-                            , liquidity =
-                                if
-                                    (assetIn |> Input.isZero)
-                                        || (create.debtOut |> Input.isZero)
-                                        || (create.collateralOut |> Input.isZero)
-                                then
-                                    Answer.initGivenNew
-                                        |> Success
-
-                                else
-                                    Loading
-                        }
-                            |> queryNew blockchain pool
-                    )
-                |> Maybe.withDefault (create |> noCreateCmdAndEffect)
-
-        InputDebtOut debtOut ->
-            if debtOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
-                { create
-                    | debtOut = debtOut
-                    , liquidity =
-                        if
-                            (create.assetIn |> Input.isZero)
-                                || (debtOut |> Input.isZero)
-                                || (create.collateralOut |> Input.isZero)
-                        then
-                            Answer.initGivenNew
-                                |> Success
-
-                        else
-                            Loading
-                }
-                    |> queryNew blockchain pool
-
-            else
-                create |> noCreateCmdAndEffect
-
-        InputCollateralOut collateralOut ->
-            if collateralOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
-                { create
-                    | collateralOut = collateralOut
-                    , liquidity =
-                        if
-                            (create.assetIn |> Input.isZero)
-                                || (create.debtOut |> Input.isZero)
-                                || (collateralOut |> Input.isZero)
-                        then
-                            Answer.initGivenNew
-                                |> Success
-
-                        else
-                            Loading
-                }
-                    |> queryNew blockchain pool
-
-            else
-                create |> noCreateCmdAndEffect
-
-        InputMaxCollateral ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen
-                    (\user ->
-                        user
-                            |> User.getBalance
-                                (pool.pair |> Pair.toCollateral)
-                            |> Maybe.map
-                                (Uint.toAmount
-                                    (pool.pair |> Pair.toCollateral)
-                                )
-                    )
-                |> Maybe.map
-                    (\collateralOut ->
-                        { create
-                            | collateralOut = collateralOut
-                            , liquidity =
-                                if
-                                    (create.assetIn |> Input.isZero)
-                                        || (create.debtOut |> Input.isZero)
-                                        || (collateralOut |> Input.isZero)
-                                then
-                                    Answer.initGivenNew
-                                        |> Success
-
-                                else
-                                    Loading
-                        }
-                            |> queryNew blockchain pool
-                    )
-                |> Maybe.withDefault (create |> noCreateCmdAndEffect)
-
-        OtherMsg (ReceiveCreateAnswer value) ->
-            (case value |> Decode.decodeValue (Answer.decoderCreate model) of
-                Ok answer ->
-                    if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
-                            && (answer.pool == pool)
-                            && (Just answer.assetIn
-                                    == (create.assetIn
-                                            |> Uint.fromAmount
-                                                (pool.pair |> Pair.toAsset)
-                                       )
-                               )
-                            && (Just answer.debtOut
-                                    == (create.debtOut
-                                            |> Uint.fromAmount
-                                                (pool.pair |> Pair.toAsset)
-                                       )
-                               )
-                            && (Just answer.collateralOut
-                                    == (create.collateralOut
-                                            |> Uint.fromAmount
-                                                (pool.pair |> Pair.toCollateral)
-                                       )
-                               )
-                    then
-                        { create
-                            | liquidity =
-                                answer.result
-                                    |> Answer.toLiquidityGivenNew
-                        }
-                            |> Just
-
-                    else
-                        Nothing
-
-                Err _ ->
-                    Nothing
-            )
-                |> Maybe.map noCreateCmdAndEffect
-                |> Maybe.withDefault (create |> noCreateCmdAndEffect)
-
-        ClickConnect ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.map (\_ -> create |> noCreateCmdAndEffect)
-                |> Maybe.withDefault
-                    ( create |> Create
-                    , Cmd.none
-                    , OpenConnect |> Just
-                    )
-
-        ClickApproveAsset ->
-            (case
-                ( blockchain |> Blockchain.toUser
-                , create.assetIn
-                    |> Uint.fromAmount
-                        (pool.pair |> Pair.toAsset)
-                , pool.pair
-                    |> Pair.toAsset
-                    |> Token.toERC20
-                )
-             of
-                ( Just user, Just assetIn, Just erc20 ) ->
-                    if
-                        (user
-                            |> User.hasEnoughBalance
-                                (pool.pair |> Pair.toAsset)
-                                assetIn
-                        )
-                            && (user
-                                    |> User.hasEnoughAllowance
-                                        erc20
-                                        assetIn
-                                    |> not
-                               )
-                    then
-                        ( create |> Create
-                        , erc20
-                            |> Approve.encode blockchain user
-                            |> approveLiquidity
-                        , OpenConfirm |> Just
-                        )
-                            |> Just
-
-                    else
-                        Nothing
-
-                _ ->
-                    Nothing
-            )
-                |> Maybe.withDefault (create |> noCreateCmdAndEffect)
-
-        ClickApproveCollateral ->
-            (case
-                ( blockchain |> Blockchain.toUser
-                , create.collateralOut
-                    |> Uint.fromAmount
-                        (pool.pair |> Pair.toCollateral)
-                , pool.pair
-                    |> Pair.toCollateral
-                    |> Token.toERC20
-                )
-             of
-                ( Just user, Just collateralOut, Just erc20 ) ->
-                    if
-                        (user
-                            |> User.hasEnoughBalance
-                                (pool.pair |> Pair.toCollateral)
-                                collateralOut
-                        )
-                            && (user
-                                    |> User.hasEnoughAllowance
-                                        erc20
-                                        collateralOut
-                                    |> not
-                               )
-                    then
-                        ( create |> Create
-                        , erc20
-                            |> Approve.encode blockchain user
-                            |> approveLiquidity
-                        , OpenConfirm |> Just
-                        )
-                            |> Just
-
-                    else
-                        Nothing
-
-                _ ->
-                    Nothing
-            )
-                |> Maybe.withDefault (create |> noCreateCmdAndEffect)
-
-        OnMouseEnter tooltip ->
-            { create | tooltip = Just tooltip }
-                |> noCreateCmdAndEffect
-
-        OnMouseLeave ->
-            { create | tooltip = Nothing }
-                |> noCreateCmdAndEffect
-
-
-noCreateCmdAndEffect :
-    { assetIn : String
-    , debtOut : String
-    , collateralOut : String
-    , liquidity : Remote CreateError LiquidityGivenNew
-    , tooltip : Maybe Tooltip
-    }
-    -> ( Create, Cmd CreateMsg, Maybe Effect )
-noCreateCmdAndEffect create =
-    ( create |> Create
-    , Cmd.none
-    , Nothing
-    )
-
-
-queryNew :
-    Blockchain
-    -> Pool
-    ->
-        { assetIn : String
-        , debtOut : String
-        , collateralOut : String
-        , liquidity : Remote CreateError LiquidityGivenNew
-        , tooltip : Maybe Tooltip
-        }
-    -> ( Create, Cmd CreateMsg, Maybe Effect )
-queryNew =
-    constructQueryNew queryLiquidity
-
-
-constructQueryNew :
-    (Value -> Cmd CreateMsg)
-    -> Blockchain
-    -> Pool
-    ->
-        { assetIn : String
-        , debtOut : String
-        , collateralOut : String
-        , liquidity : Remote CreateError LiquidityGivenNew
-        , tooltip : Maybe Tooltip
-        }
-    -> ( Create, Cmd CreateMsg, Maybe Effect )
-constructQueryNew givenCmd blockchain pool create =
-    (if
-        (create.assetIn |> Input.isZero)
-            || (create.debtOut |> Input.isZero)
-            || (create.collateralOut |> Input.isZero)
-     then
-        Nothing
-
-     else
-        case
-            ( create.assetIn
-                |> Uint.fromAmount
-                    (pool.pair |> Pair.toAsset)
-            , create.debtOut
-                |> Uint.fromAmount
-                    (pool.pair |> Pair.toAsset)
-            , create.collateralOut
-                |> Uint.fromAmount
-                    (pool.pair |> Pair.toCollateral)
-            )
-        of
-            ( Just assetIn, Just debtIn, Just collateralIn ) ->
-                { chainId = blockchain |> Blockchain.toChain
-                , pool = pool
-                , assetIn = assetIn
-                , debtOut = debtIn
-                , collateralOut = collateralIn
-                }
-                    |> Query.givenNew
-                    |> Just
-
-            _ ->
-                Nothing
-    )
-        |> Maybe.map givenCmd
-        |> Maybe.withDefault Cmd.none
-        |> (\cmd ->
-                ( create |> Create
-                , cmd
-                , Nothing
-                )
+    -> Cmd Msg
+get model blockchain pool =
+    blockchain
+        |> Blockchain.toChain
+        |> (\chain ->
+                Http.get
+                    { url =
+                        pool
+                            |> Query.toUrlString chain
+                    , expect =
+                        pool
+                            |> Answer.decoder model chain
+                            |> Http.expectJson
+                                (ReceiveAnswer chain pool)
+                    }
            )
 
 
-port queryLiquidity : Value -> Cmd msg
+subscriptions : Transaction -> Sub Msg
+subscriptions (Transaction { state }) =
+    [ Time.every 1000 CheckMaturity
+    , case state of
+        Add (Pool _ (Active (Success (Exist _ add)))) ->
+            add
+                |> Add.subscriptions
+                |> Sub.map AddMsg
+
+        _ ->
+            Sub.none
+    ]
+        |> Sub.batch
 
 
-port queryLiquidityPerSecond : Value -> Cmd msg
+toParameter : Transaction -> Maybe Parameter
+toParameter (Transaction { state }) =
+    case state of
+        Add None ->
+            Nothing
+
+        New None ->
+            Nothing
+
+        Add (Asset asset) ->
+            Parameter.Asset asset
+                |> Just
+
+        New (Asset asset) ->
+            Parameter.Asset asset
+                |> Just
+
+        Add (Collateral collateral) ->
+            Parameter.Collateral collateral
+                |> Just
+
+        New (Collateral collateral) ->
+            Parameter.Collateral collateral
+                |> Just
+
+        Add (Pair pair) ->
+            Parameter.Pair pair
+                |> Just
+
+        New (Pair pair) ->
+            Parameter.Pair pair
+                |> Just
+
+        Add (Pool pool _) ->
+            Parameter.Pool pool
+                |> Just
+
+        New (Pool pool _) ->
+            Parameter.Pool pool
+                |> Just
 
 
-port approveLiquidity : Value -> Cmd msg
+toPoolInfo : Transaction -> Maybe PoolInfo
+toPoolInfo (Transaction { state }) =
+    case state of
+        Add (Pool _ (Active (Success (Exist poolInfo _)))) ->
+            poolInfo |> Just
+
+        New (Pool _ (Active (Success (Exist poolInfo ())))) ->
+            poolInfo |> Just
+
+        _ ->
+            Nothing
 
 
 view :
-    { model | images : Images }
-    -> Blockchain
-    -> Pool
-    -> Transaction
-    ->
-        { first : Element TransactionMsg
-        , second : Element TransactionMsg
-        , buttons : Element TransactionMsg
-        }
-view model blockchain pool (Transaction transaction) =
-    { first =
-        transaction
-            |> viewAssetIn model
-                blockchain
-                (pool.pair |> Pair.toAsset)
-    , second =
-        el
-            [ width <| px 335
-            , height <| px 392
-            , Background.color Color.light500
-            , Border.rounded 8
-            ]
-            none
-    , buttons = none
+    { model
+        | time : Posix
+        , offset : Offset
+        , chosenZone : ChosenZone
+        , backdrop : Backdrop
+        , images : Images
     }
-
-
-viewAssetIn :
-    { model | images : Images }
-    -> Blockchain
-    -> Token
-    -> { transaction | state : State, tooltip : Maybe Tooltip }
-    -> Element TransactionMsg
-viewAssetIn model blockchain asset ({ state, tooltip } as transaction) =
+    -> Transaction
+    -> Element Msg
+view ({ backdrop } as model) (Transaction transaction) =
     column
-        [ Region.description "lend asset"
-        , width <| px 343
+        [ (case transaction.state of
+            Add _ ->
+                "liquidity"
+
+            New _ ->
+                "create pool"
+          )
+            |> Region.description
+        , width shrink
         , height shrink
-        , padding 16
-        , spacing 10
-        , Background.color Color.light500
+        , padding 24
+        , spacing 24
         , Border.rounded 8
+        , Glass.background backdrop
+        , Border.width 1
+        , Border.color Color.transparent100
         ]
         [ row
             [ width fill
             , height shrink
-            , spacing 6
-            , centerY
+            , spacing 24
             ]
-            (el
+            [ case transaction.state of
+                Add _ ->
+                    none
+
+                New _ ->
+                    backButton model
+            , el
                 [ width shrink
                 , height shrink
-                , Font.size 14
+                , paddingXY 0 4
+                , Font.size 24
+                , Font.color Color.light100
+                , Font.bold
                 ]
-                (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ userBalance user asset transaction
-                                , maxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
-        , Textbox.view model
-            { onMouseEnter = OnMouseEnter
-            , onMouseLeave = OnMouseLeave
-            , tooltip = Tooltip.AssetInSymbol
-            , opened = tooltip
-            , token = asset
-            , onChange = InputAssetIn
-            , text = "" |> Debug.log "later"
-            , description = "asset in textbox"
-            }
+                ((case transaction.state of
+                    Add _ ->
+                        "Liquidity"
+
+                    New _ ->
+                        "Create Pool"
+                 )
+                    |> text
+                )
+            , case transaction.state of
+                Add _ ->
+                    createPoolButton model
+
+                New _ ->
+                    none
+            , settingsButton model
+            ]
         ]
 
 
-userBalance :
-    User
-    -> Token
-    -> { transaction | tooltip : Maybe Tooltip }
-    -> Element (Msg otherMsg)
-userBalance user asset { tooltip } =
-    user
-        |> User.getBalance asset
-        |> Maybe.map
-            (\balance ->
-                row
-                    [ width shrink
-                    , height shrink
-                    , alignRight
-                    , centerY
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 12
-                        , paddingXY 0 2
-                        , Font.color Color.transparent300
-                        ]
-                        (text "Bal: ")
-                    , Truncate.viewBalance
-                        { onMouseEnter = OnMouseEnter
-                        , onMouseLeave = OnMouseLeave
-                        , tooltip = Tooltip.AssetBalance
-                        , opened = tooltip
-                        , token = asset
-                        , balance = balance
-                        }
-                    ]
-            )
-        |> Maybe.withDefault none
-
-
-maxButton : Element (Msg otherMsg)
-maxButton =
+backButton :
+    { model | images : Images }
+    -> Element Msg
+backButton { images } =
     Input.button
-        [ Region.description "max asset lend"
-        , width shrink
+        [ width shrink
+        , height shrink
+        , alignLeft
+        , centerY
+        ]
+        { onPress = Just GoToAdd
+        , label =
+            images
+                |> Image.arrowDown
+                    [ width <| px 18
+                    , height <| px 18
+                    , rotate (pi / 2)
+                    ]
+        }
+
+
+createPoolButton :
+    { model | images : Images }
+    -> Element Msg
+createPoolButton { images } =
+    Input.button
+        [ width shrink
         , height shrink
         , alignRight
         , centerY
-        , Font.size 12
-        , paddingXY 0 2
-        , Font.color Color.warning400
-        , Font.bold
         ]
-        { onPress = Just InputMaxAsset
-        , label = text "MAX"
-        }
-
-
-disabled :
-    { model | images : Images }
-    -> Blockchain
-    -> Pool
-    -> Transaction
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-disabled model blockchain pool (Transaction transaction) =
-    { first =
-        transaction
-            |> disabledAssetIn
-                model
-                blockchain
-                (pool.pair |> Pair.toAsset)
-    , second =
-        transaction
-            |> disabledDues model pool
-    }
-
-
-disabledAssetIn :
-    { model | images : Images }
-    -> Blockchain
-    -> Token
-    -> { transaction | state : State }
-    -> Element Never
-disabledAssetIn model blockchain asset transaction =
-    column
-        [ Region.description "lend asset"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 10
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 6
-            , centerY
-            ]
-            (el
+        { onPress = Just GoToNew
+        , label =
+            row
                 [ width shrink
                 , height shrink
-                , Font.size 14
-                , paddingXY 0 3
-                , Font.color Color.primary400
+                , spacing 4
                 ]
-                (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ disabledUserBalance user asset
-                                , disabledMaxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
-        , Textbox.disabled model
-            { token = asset
-            , text =
-                case transaction.state of
-                    Asset { assetIn } ->
-                        assetIn
-
-                    _ ->
-                        ""
-            , description = "lend asset textbox"
-            }
-        ]
-
-
-disabledUserBalance :
-    User
-    -> Token
-    -> Element Never
-disabledUserBalance user asset =
-    user
-        |> User.getBalance asset
-        |> Maybe.map
-            (\balance ->
-                row
+                [ images
+                    |> Image.plusPositive
+                        [ width <| px 12
+                        , height <| px 12
+                        , centerY
+                        ]
+                , el
                     [ width shrink
                     , height shrink
-                    , alignRight
-                    , centerY
+                    , Font.size 16
+                    , paddingXY 0 4
+                    , Font.bold
+                    , Font.color Color.positive400
                     ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 12
-                        , paddingXY 0 2
-                        , Font.color Color.transparent300
-                        ]
-                        (text "Bal: ")
-                    , Truncate.disabledBalance
-                        { token = asset
-                        , balance = balance
-                        }
-                    ]
-            )
-        |> Maybe.withDefault none
+                    (text "Create Pool")
+                ]
+        }
 
 
-disabledMaxButton : Element Never
-disabledMaxButton =
-    el
-        [ Region.description "max asset lend"
-        , width shrink
+settingsButton :
+    { model | images : Images }
+    -> Element Msg
+settingsButton { images } =
+    Input.button
+        [ width shrink
         , height shrink
         , alignRight
         , centerY
-        , Font.size 12
-        , paddingXY 0 2
-        , Font.color Color.warning400
-        , Font.bold
         ]
-        (text "MAX")
+        { onPress = Just ClickSettings
+        , label =
+            images
+                |> Image.option
+                    [ width <| px 20
+                    , height <| px 20
+                    ]
+        }
 
 
-disabledDues :
-    { model | images : Images }
-    -> Pool
-    -> { transaction | state : State }
-    -> Element Never
-disabledDues model pool transaction =
+parameters :
+    { model
+        | time : Posix
+        , offset : Offset
+        , chosenZone : ChosenZone
+        , backdrop : Backdrop
+        , images : Images
+    }
+    ->
+        { transaction
+            | state : State
+            , tooltip : Maybe Tooltip
+        }
+    -> Element Msg
+parameters model transaction =
     column
-        [ Region.description "dues"
+        [ Region.description "pool parameters"
         , width <| px 343
         , height shrink
         , padding 16
         , spacing 12
-        , alpha 0.2
         , Background.color Color.primary100
         , Border.rounded 8
         ]
-        []
+        [ pairParameters model transaction
+        , maturityParameter model transaction
+        ]
 
 
-createPool :
+pairParameters :
     { model | images : Images }
-    -> Blockchain
-    -> Pool
-    -> Create
     ->
-        { first : Element CreateMsg
-        , second : Element CreateMsg
-        , buttons : Element CreateMsg
+        { transaction
+            | state : State
+            , tooltip : Maybe Tooltip
         }
-createPool model blockchain pool (Create create) =
-    { first =
-        create
-            |> createAssetIn model blockchain (pool.pair |> Pair.toAsset)
-    , second = none |> Debug.log "later"
-    , buttons = none |> Debug.log "later"
-    }
-
-
-createAssetIn :
-    { model | images : Images }
-    -> Blockchain
-    -> Token
-    -> { create | tooltip : Maybe Tooltip }
-    -> Element CreateMsg
-createAssetIn model blockchain asset ({ tooltip } as transaction) =
-    column
-        [ Region.description "lend asset"
-        , width <| px 343
+    -> Element Msg
+pairParameters model transaction =
+    row
+        [ width fill
         , height shrink
-        , padding 16
-        , spacing 10
-        , Background.color Color.light500
-        , Border.rounded 8
+        , spacing 16
         ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 6
-            , centerY
-            ]
-            (el
-                [ width shrink
-                , height shrink
-                , Font.size 14
-                ]
-                (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ userBalance user asset transaction
-                                , maxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
-        , Textbox.view model
-            { onMouseEnter = OnMouseEnter
-            , onMouseLeave = OnMouseLeave
-            , tooltip = Tooltip.AssetInSymbol
-            , opened = tooltip
-            , token = asset
-            , onChange = InputAssetIn
-            , text = "" |> Debug.log "later"
-            , description = "asset in textbox"
-            }
+        [ tokenParameter model transaction TokenParam.Asset
+        , tokenParameter model transaction TokenParam.Collateral
         ]
 
 
-disabledCreate :
+tokenParameter :
     { model | images : Images }
-    -> Blockchain
-    -> Pool
-    -> Create
     ->
-        { first : Element Never
-        , second : Element Never
+        { transaction
+            | state : State
+            , tooltip : Maybe Tooltip
         }
-disabledCreate model blockchain pool (Create create) =
-    { first =
-        create
-            |> disabledCreateAssetIn
-                model
-                blockchain
-                (pool.pair |> Pair.toAsset)
-    , second = none |> Debug.log "later"
-    }
-
-
-disabledCreateAssetIn :
-    { model | images : Images }
-    -> Blockchain
-    -> Token
-    -> { create | assetIn : String }
-    -> Element Never
-disabledCreateAssetIn model blockchain asset create =
+    -> TokenParam
+    -> Element Msg
+tokenParameter model transaction tokenParam =
     column
-        [ Region.description "lend asset"
-        , width <| px 343
+        [ width fill
         , height shrink
-        , padding 16
-        , spacing 10
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 6
-            , centerY
-            ]
-            (el
-                [ width shrink
-                , height shrink
-                , Font.size 14
-                , paddingXY 0 3
-                , Font.color Color.primary400
-                ]
-                (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ disabledUserBalance user asset
-                                , disabledMaxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
-        , Textbox.disabled model
-            { token = asset
-            , text = create.assetIn
-            , description = "lend asset textbox"
-            }
-        ]
-
-
-empty :
-    { model | images : Images }
-    ->
-        { asset : Maybe Token
-        , collateral : Maybe Token
-        }
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-empty model { asset, collateral } =
-    { first = emptyAssetIn model asset
-    , second = emptyDues model asset collateral
-    }
-
-
-emptyAssetIn :
-    { model | images : Images }
-    -> Maybe Token
-    -> Element Never
-emptyAssetIn model token =
-    column
-        [ Region.description "lend asset"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 10
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
+        , spacing 8
         ]
         [ el
             [ width shrink
             , height shrink
-            , Font.size 14
             , paddingXY 0 3
+            , Font.size 14
             , Font.color Color.primary400
             ]
-            (text "Amount to Lend")
-        , token
-            |> Maybe.map
-                (\asset ->
-                    Textbox.disabled model
-                        { token = asset
-                        , text = ""
-                        , description = "asset in textbox"
-                        }
-                )
-            |> Maybe.withDefault
-                (Textbox.empty "asset in textbox")
+            ((case tokenParam of
+                TokenParam.Asset ->
+                    "Asset"
+
+                TokenParam.Collateral ->
+                    "Collateral"
+             )
+                |> text
+            )
+        , tokenButton model transaction tokenParam
         ]
 
 
-emptyDues :
+tokenButton :
     { model | images : Images }
-    -> Maybe Token
-    -> Maybe Token
-    -> Element Never
-emptyDues model asset collateral =
-    column
-        [ Region.description "dues"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 12
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 16
-            ]
-            [ Info.emptyAPR
-            , Info.emptyCDP
-            ]
-        , emptyDuesIn model asset collateral
-        ]
+    ->
+        { transaction
+            | state : State
+            , tooltip : Maybe Tooltip
+        }
+    -> TokenParam
+    -> Element Msg
+tokenButton model { state, tooltip } tokenParam =
+    (case ( state, tokenParam ) of
+        ( Add (Asset asset), TokenParam.Asset ) ->
+            Just asset
+
+        ( New (Asset asset), TokenParam.Asset ) ->
+            Just asset
+
+        ( Add (Collateral collateral), TokenParam.Collateral ) ->
+            Just collateral
+
+        ( New (Collateral collateral), TokenParam.Collateral ) ->
+            Just collateral
+
+        ( Add (Pair pair), TokenParam.Asset ) ->
+            pair
+                |> Pair.toAsset
+                |> Just
+
+        ( New (Pair pair), TokenParam.Asset ) ->
+            pair
+                |> Pair.toAsset
+                |> Just
+
+        ( Add (Pair pair), TokenParam.Collateral ) ->
+            pair
+                |> Pair.toCollateral
+                |> Just
+
+        ( New (Pair pair), TokenParam.Collateral ) ->
+            pair
+                |> Pair.toCollateral
+                |> Just
+
+        ( Add (Pool pool _), TokenParam.Asset ) ->
+            pool.pair
+                |> Pair.toAsset
+                |> Just
+
+        ( New (Pool pool _), TokenParam.Asset ) ->
+            pool.pair
+                |> Pair.toAsset
+                |> Just
+
+        ( Add (Pool pool _), TokenParam.Collateral ) ->
+            pool.pair
+                |> Pair.toCollateral
+                |> Just
+
+        ( New (Pool pool _), TokenParam.Collateral ) ->
+            pool.pair
+                |> Pair.toCollateral
+                |> Just
+
+        _ ->
+            Nothing
+    )
+        |> (\token ->
+                TokenButton.view model
+                    { onPress = SelectToken
+                    , onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Token
+                    , opened = tooltip
+                    , tokenParam = tokenParam
+                    , token = token
+                    }
+           )
 
 
-emptyDuesIn :
-    { model | images : Images }
-    -> Maybe Token
-    -> Maybe Token
-    -> Element Never
-emptyDuesIn model asset collateral =
+maturityParameter :
+    { model
+        | time : Posix
+        , offset : Offset
+        , chosenZone : ChosenZone
+        , images : Images
+    }
+    ->
+        { transaction
+            | state : State
+            , tooltip : Maybe Tooltip
+        }
+    -> Element Msg
+maturityParameter model { state, tooltip } =
     column
         [ width fill
         , height shrink
-        , padding 12
-        , spacing 12
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ emptyDebtOut model asset
-        , emptyCollateralOut model collateral
-        ]
-
-
-emptyDebtOut :
-    { model | images : Images }
-    -> Maybe Token
-    -> Element Never
-emptyDebtOut model asset =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
+        , spacing 8
         ]
         [ el
             [ width shrink
             , height shrink
+            , paddingXY 0 3
             , Font.size 14
             , Font.color Color.primary400
             ]
-            (text "Debt to Repay")
-        , asset
-            |> Maybe.map
-                (\token ->
-                    Textbox.disabled model
-                        { token = token
-                        , text = ""
-                        , description = "debt output"
-                        }
-                )
-            |> Maybe.withDefault
-                (Textbox.empty "debt output")
-        ]
+            (text "Maturity")
+        , case state of
+            Add (Pool pool _) ->
+                MaturityButton.view model
+                    { onPress = SelectMaturity
+                    , onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Maturity
+                    , opened = tooltip
+                    , maturity = Just pool.maturity
+                    }
 
+            New (Pool pool _) ->
+                MaturityButton.view model
+                    { onPress = SelectMaturity
+                    , onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Maturity
+                    , opened = tooltip
+                    , maturity = Just pool.maturity
+                    }
 
-emptyCollateralOut :
-    { model | images : Images }
-    -> Maybe Token
-    -> Element Never
-emptyCollateralOut model collateral =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , Font.color Color.primary400
-            ]
-            (text "Collateral to Lock")
-        , collateral
-            |> Maybe.map
-                (\token ->
-                    Textbox.disabled model
-                        { token = token
-                        , text = ""
-                        , description = "collateral output"
-                        }
-                )
-            |> Maybe.withDefault
-                (Textbox.empty "collateral output")
+            Add (Pair _) ->
+                MaturityButton.view model
+                    { onPress = SelectMaturity
+                    , onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Maturity
+                    , opened = tooltip
+                    , maturity = Nothing
+                    }
+
+            New (Pair _) ->
+                MaturityButton.view model
+                    { onPress = SelectMaturity
+                    , onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Maturity
+                    , opened = tooltip
+                    , maturity = Nothing
+                    }
+
+            _ ->
+                MaturityButton.disabled
+                    |> map never
         ]

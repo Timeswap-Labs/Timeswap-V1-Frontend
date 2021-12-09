@@ -1,15 +1,9 @@
-module Page.Transaction.Lend.Answer exposing
+module Page.Transaction.Lend.Lend.Answer exposing
     ( Answer(..)
-    , ClaimsGivenBond
-    , ClaimsGivenInsurance
-    , ClaimsGivenPercent
+    , ResultBond
+    , ResultInsurance
+    , ResultPercent
     , decoder
-    , initGivenBond
-    , initGivenInsurance
-    , initGivenPercent
-    , toClaimsGivenBond
-    , toClaimsGivenInsurance
-    , toClaimsGivenPercent
     )
 
 import Data.CDP as CDP exposing (CDP)
@@ -22,7 +16,7 @@ import Data.Slippage as Slippage exposing (Slippage)
 import Data.Uint as Uint exposing (Uint)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
-import Page.Transaction.Lend.Error as Error exposing (Error)
+import Page.Transaction.Lend.Lend.Error as Error exposing (Error)
 import Page.Transaction.PoolInfo as PoolInfo exposing (PoolInfo)
 
 
@@ -90,55 +84,6 @@ type alias ResultInsurance =
     , minBond : Uint
     , apr : Float
     , cdp : CDP
-    }
-
-
-type alias ClaimsGivenPercent =
-    ResultPercent
-
-
-type alias ClaimsGivenBond =
-    { insuranceOut : Uint
-    , minInsurance : Uint
-    , apr : Float
-    , cdp : CDP
-    }
-
-
-type alias ClaimsGivenInsurance =
-    { bondOut : Uint
-    , minBond : Uint
-    , apr : Float
-    , cdp : CDP
-    }
-
-
-initGivenPercent : ClaimsGivenPercent
-initGivenPercent =
-    { bondOut = Uint.zero
-    , insuranceOut = Uint.zero
-    , minBond = Uint.zero
-    , minInsurance = Uint.zero
-    , apr = 0
-    , cdp = CDP.init
-    }
-
-
-initGivenBond : ClaimsGivenBond
-initGivenBond =
-    { insuranceOut = Uint.zero
-    , minInsurance = Uint.zero
-    , apr = 0
-    , cdp = CDP.init
-    }
-
-
-initGivenInsurance : ClaimsGivenInsurance
-initGivenInsurance =
-    { bondOut = Uint.zero
-    , minBond = Uint.zero
-    , apr = 0
-    , cdp = CDP.init
     }
 
 
@@ -252,49 +197,3 @@ decoderResultInsurance =
         |> Pipeline.required "minBond" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
-
-
-toClaimsGivenPercent :
-    Result Error ResultPercent
-    -> Remote Error ClaimsGivenPercent
-toClaimsGivenPercent result =
-    case result of
-        Ok claims ->
-            Success claims
-
-        Err error ->
-            Failure error
-
-
-toClaimsGivenBond :
-    Result Error ResultBond
-    -> Remote Error ClaimsGivenBond
-toClaimsGivenBond result =
-    case result of
-        Ok { insuranceOut, minInsurance, apr, cdp } ->
-            { insuranceOut = insuranceOut
-            , minInsurance = minInsurance
-            , apr = apr
-            , cdp = cdp
-            }
-                |> Success
-
-        Err error ->
-            Failure error
-
-
-toClaimsGivenInsurance :
-    Result Error ResultInsurance
-    -> Remote Error ClaimsGivenInsurance
-toClaimsGivenInsurance result =
-    case result of
-        Ok { bondOut, minBond, apr, cdp } ->
-            { bondOut = bondOut
-            , minBond = minBond
-            , apr = apr
-            , cdp = cdp
-            }
-                |> Success
-
-        Err error ->
-            Failure error

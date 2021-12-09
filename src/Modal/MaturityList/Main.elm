@@ -9,15 +9,17 @@ module Modal.MaturityList.Main exposing
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Backdrop exposing (Backdrop)
+import Data.Chain exposing (Chain)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Images exposing (Images)
 import Data.Maturity exposing (Maturity)
+import Data.Offset exposing (Offset)
 import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
-import Data.ShowCreate exposing (ShowCreate)
 import Data.Web exposing (Web)
+import Data.WebError as WebError
 import Element
     exposing
         ( Element
@@ -54,7 +56,7 @@ import Modal.MaturityList.Tooltip as Tooltip exposing (Tooltip)
 import Process
 import Sort.Dict as Dict
 import Task
-import Time exposing (Posix, Zone)
+import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
@@ -64,7 +66,6 @@ import Utility.Image as Image
 type Modal
     = Modal
         { pair : Pair
-        , showCreate : ShowCreate
         , sorting : Sorting
         , pools : Web Pools
         , tooltip : Maybe Tooltip
@@ -76,7 +77,7 @@ type Msg
     | GoToSortLiquidity
     | SelectMaturity Maturity
     | QueryAgain
-    | ReceiveAnswer (Result Http.Error Answer)
+    | ReceiveAnswer Chain Pair (Result Http.Error Answer)
     | OnMouseEnter Tooltip
     | OnMouseLeave
     | Exit
@@ -87,30 +88,26 @@ type Effect
 
 
 init :
-    { model | chains : Chains }
-    -> Blockchain
+    Blockchain
     -> Pair
-    -> ShowCreate
     -> ( Modal, Cmd Msg )
-init model blockchain pair showCreate =
+init blockchain pair =
     ( { pair = pair
-      , showCreate = showCreate
       , sorting = Sorting.Liquidity
       , pools = Loading
       , tooltip = Nothing
       }
         |> Modal
-    , get model blockchain pair
+    , get blockchain pair
     )
 
 
 update :
-    { model | chains : Chains }
-    -> Blockchain
+    Blockchain
     -> Msg
     -> Modal
     -> ( Maybe Modal, Cmd Msg, Maybe Effect )
-update model blockchain msg (Modal modal) =
+update blockchain msg (Modal modal) =
     case ( msg, modal.sorting ) of
         ( GoToSortMaturity, Sorting.Liquidity ) ->
             ( { modal | sorting = Sorting.Maturity }
@@ -155,16 +152,16 @@ update model blockchain msg (Modal modal) =
 
         ( QueryAgain, _ ) ->
             ( modal |> Modal |> Just
-            , get model blockchain modal.pair
+            , get blockchain modal.pair
             , Nothing
             )
 
-        ( ReceiveAnswer (Ok answer), _ ) ->
+        ( ReceiveAnswer chain pair (Ok answer), _ ) ->
             ( (if
-                (answer.chainId == (blockchain |> Blockchain.toChain))
-                    && (answer.pair == modal.pair)
+                (chain == (blockchain |> Blockchain.toChain))
+                    && (pair == modal.pair)
                then
-                { modal | pools = answer.result |> Success }
+                { modal | pools = answer |> Success }
 
                else
                 modal
@@ -176,14 +173,34 @@ update model blockchain msg (Modal modal) =
             , Nothing
             )
 
-        ( ReceiveAnswer (Err error), _ ) ->
-            ( { modal | pools = Failure error }
-                |> Modal
-                |> Just
-            , Process.sleep 5000
-                |> Task.perform (\_ -> QueryAgain)
-            , Nothing
-            )
+        ( ReceiveAnswer chain pair (Err error), _ ) ->
+            if
+                (chain == (blockchain |> Blockchain.toChain))
+                    && (pair == modal.pair)
+            then
+                error
+                    |> WebError.fromHttpError
+                    |> Maybe.map
+                        (\webError ->
+                            ( { modal | pools = Failure webError }
+                                |> Modal
+                                |> Just
+                            , Process.sleep 5000
+                                |> Task.perform (\_ -> QueryAgain)
+                            , Nothing
+                            )
+                        )
+                    |> Maybe.withDefault
+                        ( modal |> Modal |> Just
+                        , Cmd.none
+                        , Nothing
+                        )
+
+            else
+                ( modal |> Modal |> Just
+                , Cmd.none
+                , Nothing
+                )
 
         ( OnMouseEnter tooltip, _ ) ->
             ( { modal | tooltip = Just tooltip }
@@ -214,27 +231,34 @@ update model blockchain msg (Modal modal) =
             )
 
 
-get : { model | chains : Chains } -> Blockchain -> Pair -> Cmd Msg
-get model blockchain pair =
-    Http.get
-        { url = pair |> Query.toUrlString blockchain
-        , expect =
-            Answer.decoder model
-                |> Http.expectJson ReceiveAnswer
-        }
+get :
+    Blockchain
+    -> Pair
+    -> Cmd Msg
+get blockchain pair =
+    blockchain
+        |> Blockchain.toChain
+        |> (\chain ->
+                Http.get
+                    { url = pair |> Query.toUrlString chain
+                    , expect =
+                        Answer.decoder
+                            |> Http.expectJson (ReceiveAnswer chain pair)
+                    }
+           )
 
 
 view :
     { model
         | time : Posix
-        , zone : Zone
+        , offset : Offset
         , chosenZone : ChosenZone
         , backdrop : Backdrop
         , images : Images
     }
     -> Modal
     -> Element Msg
-view ({ time, zone, chosenZone, backdrop, images } as model) (Modal ({ tooltip } as modal)) =
+view ({ time, offset, chosenZone, backdrop, images } as model) (Modal ({ tooltip } as modal)) =
     Glass.outsideModal backdrop
         Exit
         (column
@@ -293,7 +317,7 @@ view ({ time, zone, chosenZone, backdrop, images } as model) (Modal ({ tooltip }
                                             , tooltip = Tooltip.Maturity maturity
                                             , opened = tooltip
                                             , time = time
-                                            , zone = zone
+                                            , offset = offset
                                             , chosenZone = chosenZone
                                             , maturity = maturity
                                             }

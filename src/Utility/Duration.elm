@@ -2,6 +2,7 @@ module Utility.Duration exposing (viewMaturity)
 
 import Data.ChosenZone as ChosenZone exposing (ChosenZone)
 import Data.Maturity as Maturity exposing (Maturity)
+import Data.Offset as Offset exposing (Offset)
 import Element
     exposing
         ( Element
@@ -17,7 +18,7 @@ import Element
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
-import Time exposing (Posix, Zone)
+import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Tooltip as Tooltip
 
@@ -28,7 +29,7 @@ viewMaturity :
     , tooltip : tooltip
     , opened : Maybe tooltip
     , time : Posix
-    , zone : Zone
+    , offset : Offset
     , chosenZone : ChosenZone
     , maturity : Maturity
     }
@@ -91,7 +92,8 @@ viewMaturity param =
             |> Maturity.toString
                 (case param.chosenZone of
                     ChosenZone.Here ->
-                        param.zone
+                        param.offset
+                            |> Offset.toZone
 
                     ChosenZone.UTC ->
                         Time.utc

@@ -23,9 +23,9 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
+import Data.Offset exposing (Offset)
 import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)
-import Data.ShowCreate exposing (ShowCreate)
 import Data.Slippage exposing (Slippage)
 import Data.Spot exposing (Spot)
 import Data.Support exposing (Support(..))
@@ -39,13 +39,13 @@ import Element
         , none
         )
 import Modal.ChainList.Main as ChainList
-import Modal.ChooseMaturity.Main as ChooseMaturity
 import Modal.Confirm.Main as Confirm
 import Modal.Connect.Main as Connect
+import Modal.InputMaturity.Main as InputMaturity
 import Modal.MaturityList.Main as MaturityList
 import Modal.Settings.Main as Settings
 import Modal.TokenList.Main as TokenList
-import Time exposing (Posix, Zone)
+import Time exposing (Posix)
 
 
 type Modal
@@ -54,7 +54,7 @@ type Modal
     | ChainList
     | TokenList TokenList.Modal
     | MaturityList MaturityList.Modal
-    | ChooseMaturity ChooseMaturity.Modal
+    | InputMaturity InputMaturity.Modal
     | Confirm Confirm.Modal
 
 
@@ -64,7 +64,7 @@ type Msg
     | ChainListMsg ChainList.Msg
     | TokenListMsg TokenList.Msg
     | MaturityListMsg MaturityList.Msg
-    | ChooseMaturityMsg ChooseMaturity.Msg
+    | InputMaturityMsg InputMaturity.Msg
     | ConfirmMsg Confirm.Msg
 
 
@@ -108,13 +108,11 @@ initConfirm =
 
 
 initMaturityList :
-    { model | chains : Chains }
-    -> Blockchain
+    Blockchain
     -> Pair
-    -> ShowCreate
     -> ( Modal, Cmd Msg )
-initMaturityList model blockchain pair showCreate =
-    MaturityList.init model blockchain pair showCreate
+initMaturityList blockchain pair =
+    MaturityList.init blockchain pair
         |> Tuple.mapBoth
             MaturityList
             (Cmd.map MaturityListMsg)
@@ -122,8 +120,8 @@ initMaturityList model blockchain pair showCreate =
 
 initChooseMaturity : Pair -> Modal
 initChooseMaturity pair =
-    ChooseMaturity.init pair
-        |> ChooseMaturity
+    InputMaturity.init pair
+        |> InputMaturity
 
 
 initChainList : Modal
@@ -182,7 +180,7 @@ update model msg modal =
 
         ( MaturityListMsg maturityListMsg, MaturityList maturityList, Supported blockchain ) ->
             maturityList
-                |> MaturityList.update model blockchain maturityListMsg
+                |> MaturityList.update blockchain maturityListMsg
                 |> (\( updated, cmd, maybeEffect ) ->
                         ( updated |> Maybe.map MaturityList
                         , cmd |> Cmd.map MaturityListMsg
@@ -190,11 +188,11 @@ update model msg modal =
                         )
                    )
 
-        ( ChooseMaturityMsg chooseMaturityMsg, ChooseMaturity chooseMaturity, Supported _ ) ->
-            chooseMaturity
-                |> ChooseMaturity.update chooseMaturityMsg
+        ( InputMaturityMsg inputMaturityMsg, InputMaturity inputMaturity, Supported _ ) ->
+            inputMaturity
+                |> InputMaturity.update inputMaturityMsg
                 |> (\updated ->
-                        ( updated |> Maybe.map ChooseMaturity
+                        ( updated |> Maybe.map InputMaturity
                         , Cmd.none
                         , Nothing
                         )
@@ -274,7 +272,7 @@ subscriptions modal =
 view :
     { model
         | time : Posix
-        , zone : Zone
+        , offset : Offset
         , chosenZone : ChosenZone
         , backdrop : Backdrop
         , images : Images
@@ -316,11 +314,11 @@ view model modal =
                 _ ->
                     none
 
-        ChooseMaturity chooseMaturity ->
+        InputMaturity inputMaturity ->
             case model.blockchain of
                 Supported _ ->
-                    ChooseMaturity.view model chooseMaturity
-                        |> map ChooseMaturityMsg
+                    InputMaturity.view model inputMaturity
+                        |> map InputMaturityMsg
 
                 _ ->
                     none

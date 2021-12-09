@@ -1,4 +1,4 @@
-module Page.Transaction.Lend.Write exposing (Write(..), encode)
+module Page.Transaction.Lend.Lend.Write exposing (Write(..), encode)
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User exposing (User)

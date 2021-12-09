@@ -1,4 +1,10 @@
-module Modal.ChooseMaturity.Main exposing (Modal, Msg, init, update, view)
+module Modal.InputMaturity.Main exposing
+    ( Modal
+    , Msg
+    , init
+    , update
+    , view
+    )
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Pair exposing (Pair)

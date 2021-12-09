@@ -1,4 +1,4 @@
-module Page.Transaction.Lend.Error exposing (Error, decoder)
+module Page.Transaction.Lend.Lend.Error exposing (Error(..), decoder)
 
 import Json.Decode as Decode exposing (Decoder)
 
