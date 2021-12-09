@@ -1,4 +1,4 @@
-module Data.Address exposing (Address, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, encode, fromString, maticRinkeby, sorter, toString, toStringShort, wethDaiRinkeby, wethRinkeby)
+module Data.Address exposing (Address, axie, compare, daiMaticRinkeby, daiRinkeby, daiWethRinkeby, decoder, doge, encode, eth, fromString, matic, maticRinkeby, participantAddresses, shiba, sorter, toString, toStringShort, usdc, wethDaiRinkeby, wethRinkeby)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
