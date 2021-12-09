@@ -44,9 +44,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
-import Html exposing (address)
 import Html.Attributes
-import List exposing (member)
 import Page as Page exposing (Page)
 import User
 import Utility.Color as Color
@@ -401,20 +399,7 @@ buttons msgs ({ user } as model) =
                             []
 
                         Rinkeby ->
-                            [ case user of
-                                Success { address } ->
-                                    if
-                                        Address.participantAddresses
-                                            |> List.member address
-                                    then
-                                        swapButton model
-
-                                    else
-                                        none
-
-                                _ ->
-                                    none
-                            ]
+                            [ faucetButton model ]
                )
          )
             ++ [ case user of
@@ -429,10 +414,10 @@ buttons msgs ({ user } as model) =
         )
 
 
-swapButton :
+faucetButton :
     { model | device : Device, images : Images }
     -> Element msg
-swapButton { device, images } =
+faucetButton { device, images } =
     link
         ([ width shrink
          , paddingEach
@@ -468,7 +453,7 @@ swapButton { device, images } =
                     ]
                )
         )
-        { url = Router.toSwap
+        { url = Router.toFaucet
         , label =
             row
                 [ width shrink
@@ -479,17 +464,17 @@ swapButton { device, images } =
                     [ centerY
                     ]
                     (if Device.isPhone device then
-                        Image.swap images
+                        Image.faucet images
                             [ width <| px 19
                             , centerX
                             , centerY
                             ]
 
                      else if Device.isTablet device then
-                        text "Swap"
+                        text "Faucet"
 
                      else
-                        text "Swap"
+                        text "Test Faucet"
                     )
                 ]
         }

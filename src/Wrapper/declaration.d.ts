@@ -36,8 +36,7 @@ declare interface Ports {
 
   withdraw: PortFromElm<Withdraw>;
 
-  signSwapTxn: PortFromElm;
-  swapSignatureMsg: PortToElm<String>;
+  faucetMint: PortFromElm<Faucet>;
 }
 
 interface MetamaskMsg {
