@@ -12,6 +12,7 @@ import Data.Token exposing (Token(..))
 import Data.TokenImages exposing (TokenImages)
 import Data.Tokens exposing (Tokens)
 import Data.Uint as Uint
+import Dict
 import Element
     exposing
         ( Element
@@ -72,7 +73,7 @@ type Service
         , dropdown : Maybe Dropdown
         , options : List GameToken
         , input : String
-        , notification : Maybe (Remote Http.Error Notification)
+        , notification : Maybe (Remote ErrorDetailed String)
         , cache : Remote Error PriceCache
         }
 
@@ -88,15 +89,18 @@ type alias PriceCache =
     }
 
 
-type Notification
-    = Successful
-    | Failed
-
-
 type alias Error =
     { httpError : Http.Error
     , timeToQuery : Posix
     }
+
+
+type ErrorDetailed
+    = BadUrl String
+    | Timeout
+    | NetworkError
+    | BadStatus Http.Metadata String
+    | BadBody String
 
 
 init : ( Service, Cmd Msg )
@@ -124,7 +128,7 @@ type Msg
     | SignMsg
     | SwapSignatureMsg Value
     | ReceivePrice (Result Http.Error Return)
-    | ReceiveTxnNotification (Result Http.Error String)
+    | ReceiveTxnNotification (Result ErrorDetailed String)
     | ReceiveTime Posix
 
 
@@ -288,7 +292,7 @@ update { time, user } msg (Service service) =
         ReceivePrice (Err error) ->
             ( { service
                 | cache = Failure { httpError = error, timeToQuery = time |> Millis.add 10000 }
-                , notification = Just (Failure error)
+                , notification = Just (Failure (error |> convertHttpError))
               }
                 |> Service
             , Cmd.none
@@ -297,7 +301,7 @@ update { time, user } msg (Service service) =
         ReceiveTxnNotification (Ok txn) ->
             ( { service
                 | input = ""
-                , notification = Just (Success Successful)
+                , notification = Just (Success "Swap successful")
               }
                 |> Service
             , Cmd.none
@@ -390,7 +394,7 @@ swapApi service user signature =
                     }
                         |> Transaction.encode
                         |> Http.jsonBody
-                , expect = Http.expectString ReceiveTxnNotification
+                , expect = expectStringDetailed ReceiveTxnNotification
                 }
 
         _ ->
@@ -1060,22 +1064,20 @@ notificationInfo (Service { notification }) =
                     case notif of
                         Failure error ->
                             case error of
-                                Http.BadStatus statusCode ->
-                                    statusCode
-                                        |> String.fromInt
-                                        |> String.append "API Error "
+                                BadStatus metadata body ->
+                                    body
 
-                                Http.Timeout ->
-                                    "Price fetch timeout"
+                                Timeout ->
+                                    "API Timeout"
 
-                                Http.NetworkError ->
-                                    "Price fetch : Network Error"
+                                NetworkError ->
+                                    "Network Error"
 
                                 _ ->
                                     "Error occured"
 
-                        Success a ->
-                            "Swap successful"
+                        Success successMsg ->
+                            successMsg
 
                         _ ->
                             ""
@@ -1084,3 +1086,46 @@ notificationInfo (Service { notification }) =
                     ""
             )
         )
+
+
+expectStringDetailed : (Result ErrorDetailed String -> msg) -> Http.Expect msg
+expectStringDetailed msg =
+    Http.expectStringResponse msg convertResponseString
+
+
+convertResponseString : Http.Response String -> Result ErrorDetailed String
+convertResponseString httpResponse =
+    case httpResponse of
+        Http.BadUrl_ url ->
+            Err (BadUrl url)
+
+        Http.Timeout_ ->
+            Err Timeout
+
+        Http.NetworkError_ ->
+            Err NetworkError
+
+        Http.BadStatus_ metadata body ->
+            Err (BadStatus metadata body)
+
+        Http.GoodStatus_ metadata body ->
+            Ok body
+
+
+convertHttpError : Http.Error -> ErrorDetailed
+convertHttpError httpError =
+    case httpError of
+        Http.BadUrl url ->
+            BadUrl url
+
+        Http.Timeout ->
+            Timeout
+
+        Http.NetworkError ->
+            NetworkError
+
+        Http.BadStatus int ->
+            BadStatus { statusCode = int, url = "", statusText = "", headers = Dict.empty } "Error in fetching the price!"
+
+        Http.BadBody decodeError ->
+            BadBody decodeError
