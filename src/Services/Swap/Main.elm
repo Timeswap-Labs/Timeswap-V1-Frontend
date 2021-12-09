@@ -384,11 +384,7 @@ swapApi service user signature =
                 , body =
                     { incomingTokenId = service.inToken
                     , outgoingTokenId = service.outToken
-                    , incomingTokenQty =
-                        service.input
-                            |> String.toFloat
-                            |> Maybe.map (\float -> float)
-                            |> Maybe.withDefault 0
+                    , incomingTokenQty = service.input
                     , userAddress = userData.address |> toString
                     , signature = signature
                     }
