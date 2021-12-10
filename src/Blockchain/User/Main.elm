@@ -77,7 +77,7 @@ init flag =
               , allowances = Loading
               }
                 |> User
-            , Debug.todo "cmd"
+            , Cmd.none |> Debug.log "Later"
             )
                 |> Just
 
@@ -145,7 +145,7 @@ receiveUserInit value =
     case value |> Decode.decodeValue decoder of
         Ok (Just decodedUser) ->
             ( decodedUser
-            , Debug.todo "cmd"
+            , Cmd.none |> Debug.log "Later"
             )
                 |> Just
 
@@ -165,7 +165,7 @@ receiveUser value user =
 
             else
                 ( decodedUser
-                , Debug.todo "cmd"
+                , Cmd.none |> Debug.log "Later"
                 )
                     |> Just
 

@@ -10,7 +10,6 @@ import { elmUser, init } from "./init";
 
 export declare let window: any;
 
-
 async function elmInit() {
   const { gp, user } = await elmUser();
 
@@ -18,7 +17,7 @@ async function elmInit() {
     node: document.getElementById("elm")!,
     flags: {
       time: Date.now(),
-      offset: (new Date()).getTimezoneOffset(),
+      offset: new Date().getTimezoneOffset(),
       zoneName: Intl.DateTimeFormat().resolvedOptions().timeZone,
       chosenZone: null,
       width: window.innerWidth,
@@ -42,34 +41,34 @@ async function elmInit() {
           native: {
             name: "Ether",
             symbol: "ETH",
-            decimals: 18
+            decimals: 18,
           },
           whitelist: [
             {
-              "address": "0xb83a6d7f5dc224e241989511ea3e2b7f4f263ede",
-              "name": "DAI TEST TOKEN",
-              "symbol": "DAI",
-              "decimals": 18
+              address: "0xb83a6d7f5dc224e241989511ea3e2b7f4f263ede",
+              name: "DAI TEST TOKEN",
+              symbol: "DAI",
+              decimals: 18,
             },
             {
-              "address": "0xec23daeab1deeb3587eeb3453d4e95db128b0e62",
-              "name": "Matic TEST TOKEN",
-              "symbol": "MATIC",
-              "decimals": 18
-            }
+              address: "0xec23daeab1deeb3587eeb3453d4e95db128b0e62",
+              name: "Matic TEST TOKEN",
+              symbol: "MATIC",
+              decimals: 18,
+            },
           ],
           custom: [
             {
-              "address": "0xec23daeab1deeb3587eeb3453d4e95db128b0e62",
-              "name": "Matic TEST TOKEN with a long name",
-              "symbol": "MATIC",
-              "decimals": 18
-            }
-          ]
+              address: "0xec23daeab1deeb3587eeb3453d4e95db128b0e62",
+              name: "Matic TEST TOKEN with a long name",
+              symbol: "MATIC",
+              decimals: 18,
+            },
+          ],
         },
-        others: []
+        others: [],
       },
-      user: null
+      user: null,
     },
   });
 

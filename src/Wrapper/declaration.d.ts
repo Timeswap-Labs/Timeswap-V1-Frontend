@@ -9,6 +9,7 @@ declare module "*.elm" {
 declare interface Ports {
   connect: PortFromElm<string>;
   receiveUser: PortToElm<ReceiveUser | null>;
+  receiveNoConnect: PortToElm<string>;
   noMetamask: PortToElm;
   disconnect: PortFromElm;
 
@@ -42,7 +43,56 @@ declare interface Ports {
 interface ReceiveUser {
   chainId: int;
   wallet: string;
-  address: string
+  address: string;
+}
+
+type Uint = string;
+
+// interface LendGivenPercent {
+//   chainId: Chain;
+//   pool: Pool;
+//   poolInfo: PoolInfo;
+//   assetIn: Uint;
+//   percent: number;
+//   slippage: number;
+// }
+
+interface Chain {
+  chainId: number;
+  name: string;
+  etherscan: string;
+}
+
+interface Pool {
+  asset: NativeToken | ERC20Token;
+  collateral: NativeToken | ERC20Token;
+  maturity: number;
+}
+
+interface NativeToken {
+  name: string;
+  symbol: string;
+  decimals: number;
+}
+
+interface ERC20Token {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+}
+
+interface PoolInfo {
+  x: Uint;
+  y: Uint;
+  z: Uint;
+  assetReserve: Uint;
+  collateralReserve: Uint;
+  totalLiquidity: Uint;
+  totalBond: Uint;
+  totalInsurance: Uint;
+  totalDebtCreated: Uint;
+  spot: Uint | null;
 }
 
 interface SdkPoolsMsg {
