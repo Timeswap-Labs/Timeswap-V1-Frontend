@@ -331,6 +331,9 @@ update msg model =
                             ( { model
                                 | blockchain =
                                     block |> Supported
+                                , modal =
+                                    model.modal
+                                        |> Maybe.andThen Modal.receiveUser
                               }
                             , cmd |> Cmd.map BlockchainMsg
                             )
@@ -339,6 +342,9 @@ update msg model =
                             ( { model
                                 | blockchain =
                                     userNotSupported |> NotSupported
+                                , modal =
+                                    model.modal
+                                        |> Maybe.andThen Modal.receiveUser
                               }
                             , Cmd.none
                             )
@@ -358,6 +364,9 @@ update msg model =
                             ( { model
                                 | blockchain =
                                     block |> Supported
+                                , modal =
+                                    model.modal
+                                        |> Maybe.andThen Modal.receiveUser
                               }
                             , cmd |> Cmd.map BlockchainMsg
                             )
@@ -366,6 +375,9 @@ update msg model =
                             ( { model
                                 | blockchain =
                                     userNotSupported |> NotSupported
+                                , modal =
+                                    model.modal
+                                        |> Maybe.andThen Modal.receiveUser
                               }
                             , Cmd.none
                             )
