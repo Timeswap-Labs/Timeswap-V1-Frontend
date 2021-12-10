@@ -157,11 +157,11 @@ update msg modal =
 receiveUser : Modal -> Maybe Modal
 receiveUser modal =
     case modal of
-        Connected ->
-            Just modal
+        Waiting _ ->
+            Nothing
 
         _ ->
-            Nothing
+            Just modal
 
 
 port connect : Value -> Cmd msg
