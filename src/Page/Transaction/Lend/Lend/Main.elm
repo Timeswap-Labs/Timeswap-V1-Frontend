@@ -2,10 +2,6 @@ port module Page.Transaction.Lend.Lend.Main exposing
     ( Effect(..)
     , Msg
     , Transaction
-    , disabled
-    , disabledDoesNotExist
-    , doesNotExist
-    , empty
     , fromLendError
     , init
     , subscriptions
@@ -15,12 +11,12 @@ port module Page.Transaction.Lend.Lend.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User exposing (User)
+import Blockchain.User.Main as User
 import Data.CDP as CDP exposing (CDP)
-import Data.Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
-import Data.Pair as Pair exposing (Pair)
+import Data.Or exposing (Or(..))
+import Data.Pair as Pair
 import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
@@ -32,7 +28,6 @@ import Element
         ( Element
         , alignLeft
         , alignRight
-        , alpha
         , centerY
         , column
         , el
@@ -64,6 +59,7 @@ import Page.Transaction.Lend.Lend.Error exposing (Error)
 import Page.Transaction.Lend.Lend.Query as Query
 import Page.Transaction.Lend.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.Lend.Lend.Write as Write
+import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Slider as Slider
@@ -72,7 +68,6 @@ import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Input as Input
-import Utility.Truncate as Truncate
 
 
 type Transaction
@@ -1363,28 +1358,23 @@ view :
 view model blockchain pool (Transaction transaction) =
     { first =
         transaction
-            |> viewAssetIn model
+            |> assetInSection model
                 blockchain
                 (pool.pair |> Pair.toAsset)
     , second =
-        el
-            [ width <| px 335
-            , height <| px 392
-            , Background.color Color.light500
-            , Border.rounded 8
-            ]
-            none
+        transaction
+            |> claimsOutSection model pool
     , buttons = none
     }
 
 
-viewAssetIn :
+assetInSection :
     { model | images : Images }
     -> Blockchain
     -> Token
     -> { transaction | assetIn : String, tooltip : Maybe Tooltip }
     -> Element Msg
-viewAssetIn model blockchain asset ({ assetIn, tooltip } as transaction) =
+assetInSection model blockchain asset { assetIn, tooltip } =
     column
         [ Region.description "lend asset"
         , width <| px 343
@@ -1400,98 +1390,49 @@ viewAssetIn model blockchain asset ({ assetIn, tooltip } as transaction) =
             , spacing 6
             , centerY
             ]
-            (el
+            [ el
                 [ width shrink
                 , height shrink
                 , Font.size 14
                 ]
                 (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ userBalance user asset transaction
-                                , maxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
+            , blockchain
+                |> Blockchain.toUser
+                |> Maybe.andThen (User.getBalance asset)
+                |> Maybe.map
+                    (\balance ->
+                        MaxButton.view
+                            { onPress = InputMax
+                            , onMouseEnter = OnMouseEnter
+                            , onMouseLeave = OnMouseLeave
+                            , tooltip = Tooltip.Balance
+                            , opened = tooltip
+                            , token = asset
+                            , balance = balance
+                            }
+                    )
+                |> Maybe.withDefault none
+            ]
         , Textbox.view model
             { onMouseEnter = OnMouseEnter
             , onMouseLeave = OnMouseLeave
             , tooltip = Tooltip.AssetInSymbol
             , opened = tooltip
             , token = asset
+            , onClick = Nothing
             , onChange = InputAssetIn
-            , text = assetIn
+            , text = Left assetIn
             , description = "asset in textbox"
             }
         ]
 
 
-userBalance :
-    User
-    -> Token
-    -> { transaction | tooltip : Maybe Tooltip }
-    -> Element Msg
-userBalance user asset { tooltip } =
-    user
-        |> User.getBalance asset
-        |> Maybe.map
-            (\balance ->
-                row
-                    [ width shrink
-                    , height shrink
-                    , alignRight
-                    , centerY
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 12
-                        , paddingXY 0 2
-                        , Font.color Color.transparent300
-                        ]
-                        (text "Bal: ")
-                    , Truncate.viewBalance
-                        { onMouseEnter = OnMouseEnter
-                        , onMouseLeave = OnMouseLeave
-                        , tooltip = Tooltip.Balance
-                        , opened = tooltip
-                        , token = asset
-                        , balance = balance
-                        }
-                    ]
-            )
-        |> Maybe.withDefault none
-
-
-maxButton : Element Msg
-maxButton =
-    Input.button
-        [ Region.description "max asset lend"
-        , width shrink
-        , height shrink
-        , alignRight
-        , centerY
-        , Font.size 12
-        , paddingXY 0 2
-        , Font.color Color.warning400
-        , Font.bold
-        ]
-        { onPress = Just InputMax
-        , label = text "MAX"
-        }
-
-
-viewClaims :
+claimsOutSection :
     { model | images : Images }
     -> Pool
     -> { transaction | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element Msg
-viewClaims model pool ({ claimsOut } as transaction) =
+claimsOutSection model pool ({ claimsOut } as transaction) =
     column
         [ Region.description "claims"
         , width <| px 343
@@ -1527,15 +1468,101 @@ viewClaims model pool ({ claimsOut } as transaction) =
             Insurance { percent } ->
                 Just percent
           )
-            |> Maybe.map viewSlider
+            |> Maybe.map sliderSection
             |> Maybe.withDefault none
-        , transaction
-            |> viewClaimsOut model pool.pair
+        , case claimsOut of
+            Default default ->
+                column
+                    [ width fill
+                    , height shrink
+                    , padding 12
+                    , spacing 12
+                    , Background.color Color.primary100
+                    , Border.rounded 8
+                    ]
+                    [ default
+                        |> Remote.map .bondOut
+                        |> bondOutSection model
+                            (pool.pair |> Pair.toAsset)
+                            transaction
+                    , default
+                        |> Remote.map .insuranceOut
+                        |> insuranceOutSection model
+                            (pool.pair |> Pair.toCollateral)
+                            transaction
+                    ]
+
+            Slider { claims } ->
+                column
+                    [ width fill
+                    , height shrink
+                    , padding 12
+                    , spacing 12
+                    , Background.color Color.primary100
+                    , Border.rounded 8
+                    ]
+                    [ claims
+                        |> Remote.map .bondOut
+                        |> Right
+                        |> advancedBondOutSection model
+                            (pool.pair |> Pair.toAsset)
+                            transaction
+                    , claims
+                        |> Remote.map .insuranceOut
+                        |> Right
+                        |> advancedInsuranceOutSection model
+                            (pool.pair |> Pair.toCollateral)
+                            transaction
+                    ]
+
+            Bond { bondOut, claims } ->
+                column
+                    [ width fill
+                    , height shrink
+                    , padding 12
+                    , spacing 12
+                    , Background.color Color.primary100
+                    , Border.rounded 8
+                    ]
+                    [ bondOut
+                        |> Left
+                        |> advancedBondOutSection model
+                            (pool.pair |> Pair.toAsset)
+                            transaction
+                    , claims
+                        |> Remote.map .insuranceOut
+                        |> Right
+                        |> advancedInsuranceOutSection model
+                            (pool.pair |> Pair.toCollateral)
+                            transaction
+                    ]
+
+            Insurance { insuranceOut, claims } ->
+                column
+                    [ width fill
+                    , height shrink
+                    , padding 12
+                    , spacing 12
+                    , Background.color Color.primary100
+                    , Border.rounded 8
+                    ]
+                    [ claims
+                        |> Remote.map .bondOut
+                        |> Right
+                        |> advancedBondOutSection model
+                            (pool.pair |> Pair.toAsset)
+                            transaction
+                    , insuranceOut
+                        |> Left
+                        |> advancedInsuranceOutSection model
+                            (pool.pair |> Pair.toCollateral)
+                            transaction
+                    ]
         ]
 
 
-viewSlider : Percent -> Element Msg
-viewSlider percent =
+sliderSection : Percent -> Element Msg
+sliderSection percent =
     column
         [ width fill
         , height shrink
@@ -1586,45 +1613,13 @@ viewSlider percent =
         ]
 
 
-viewClaimsOut :
-    { model | images : Images }
-    -> Pair
-    -> { transaction | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
-    -> Element Msg
-viewClaimsOut model pair ({ claimsOut } as transaction) =
-    case claimsOut of
-        Default default ->
-            column
-                [ width fill
-                , height shrink
-                , padding 12
-                , spacing 12
-                , Background.color Color.primary100
-                , Border.rounded 8
-                ]
-                [ default
-                    |> Remote.map .bondOut
-                    |> recommendedBondOut model
-                        (pair |> Pair.toAsset)
-                        transaction
-                , default
-                    |> Remote.map .insuranceOut
-                    |> recommendedInsuranceOut model
-                        (pair |> Pair.toCollateral)
-                        transaction
-                ]
-
-        _ ->
-            none |> Debug.log "later"
-
-
-recommendedBondOut :
+bondOutSection :
     { model | images : Images }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Remote Error Uint
     -> Element Msg
-recommendedBondOut model asset { tooltip } output =
+bondOutSection model asset { tooltip } output =
     column
         [ width fill
         , height shrink
@@ -1649,13 +1644,13 @@ recommendedBondOut model asset { tooltip } output =
         ]
 
 
-recommendedInsuranceOut :
+insuranceOutSection :
     { model | images : Images }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Remote Error Uint
     -> Element Msg
-recommendedInsuranceOut model collateral { tooltip } output =
+insuranceOutSection model collateral { tooltip } output =
     column
         [ width fill
         , height shrink
@@ -1680,303 +1675,13 @@ recommendedInsuranceOut model collateral { tooltip } output =
         ]
 
 
-disabled :
-    { model | images : Images }
-    -> Blockchain
-    -> Pool
-    -> Transaction
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-disabled model blockchain pool (Transaction transaction) =
-    { first =
-        transaction
-            |> disabledAssetIn
-                model
-                blockchain
-                (pool.pair |> Pair.toAsset)
-    , second =
-        transaction
-            |> disabledClaims model pool
-    }
-
-
-disabledAssetIn :
-    { model | images : Images }
-    -> Blockchain
-    -> Token
-    -> { transaction | assetIn : String }
-    -> Element Never
-disabledAssetIn model blockchain asset transaction =
-    column
-        [ Region.description "lend asset"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 10
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 6
-            , centerY
-            ]
-            (el
-                [ width shrink
-                , height shrink
-                , Font.size 14
-                , paddingXY 0 3
-                , Font.color Color.primary400
-                ]
-                (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ disabledUserBalance user asset
-                                , disabledMaxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
-        , Textbox.disabled model
-            { token = asset
-            , text = transaction.assetIn
-            , description = "lend asset textbox"
-            }
-        ]
-
-
-disabledUserBalance :
-    User
-    -> Token
-    -> Element Never
-disabledUserBalance user asset =
-    user
-        |> User.getBalance asset
-        |> Maybe.map
-            (\balance ->
-                row
-                    [ width shrink
-                    , height shrink
-                    , alignRight
-                    , centerY
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 12
-                        , paddingXY 0 2
-                        , Font.color Color.transparent300
-                        ]
-                        (text "Bal: ")
-                    , Truncate.disabledBalance
-                        { token = asset
-                        , balance = balance
-                        }
-                    ]
-            )
-        |> Maybe.withDefault none
-
-
-disabledMaxButton : Element Never
-disabledMaxButton =
-    el
-        [ Region.description "max asset lend"
-        , width shrink
-        , height shrink
-        , alignRight
-        , centerY
-        , Font.size 12
-        , paddingXY 0 2
-        , Font.color Color.warning400
-        , Font.bold
-        ]
-        (text "MAX")
-
-
-disabledClaims :
-    { model | images : Images }
-    -> Pool
-    -> { transaction | claimsOut : ClaimsOut }
-    -> Element Never
-disabledClaims model pool ({ claimsOut } as transaction) =
-    column
-        [ Region.description "claims"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 12
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ (case claimsOut of
-            Default _ ->
-                Switch.Recommended
-
-            _ ->
-                Switch.Advanced
-          )
-            |> Switch.disabled
-        , (case claimsOut of
-            Default _ ->
-                Nothing
-
-            Slider { percent } ->
-                Just percent
-
-            Bond { percent } ->
-                Just percent
-
-            Insurance { percent } ->
-                Just percent
-          )
-            |> Maybe.map disabledSlider
-            |> Maybe.withDefault none
-        , row
-            [ width fill
-            , height shrink
-            , spacing 16
-            ]
-            [ Info.emptyAPR
-            , Info.emptyCDP
-            ]
-        , disabledClaimsOut model pool.pair transaction
-        ]
-
-
-disabledSlider : Percent -> Element Never
-disabledSlider percent =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , paddingXY 0 3
-            , Font.size 14
-            ]
-            [ el
-                [ alignLeft
-                , Font.regular
-                , Font.color Color.transparent500
-                ]
-                (text "Adjust your APR")
-            ]
-        , column
-            [ width fill
-            , height shrink
-            , spacing 6
-            ]
-            [ Slider.disabled percent
-            , row
-                [ width fill
-                , height shrink
-                , paddingXY 0 2
-                , Font.size 12
-                , Font.color Color.transparent300
-                ]
-                [ el
-                    [ alignLeft
-                    , Font.regular
-                    ]
-                    (text "Low")
-                , el
-                    [ alignRight
-                    , Font.regular
-                    ]
-                    (text "High")
-                ]
-            ]
-        ]
-
-
-disabledClaimsOut :
-    { model | images : Images }
-    -> Pair
-    -> { transaction | claimsOut : ClaimsOut }
-    -> Element Never
-disabledClaimsOut model pair { claimsOut } =
-    case claimsOut of
-        Default _ ->
-            column
-                [ width fill
-                , height shrink
-                , padding 12
-                , spacing 12
-                , Background.color Color.primary100
-                , Border.rounded 8
-                ]
-                [ pair
-                    |> Pair.toAsset
-                    |> Just
-                    |> emptyBondOut model
-                , pair
-                    |> Pair.toCollateral
-                    |> Just
-                    |> emptyInsuranceOut model
-                ]
-
-        Slider _ ->
-            column
-                [ width fill
-                , height shrink
-                , spacing 12
-                ]
-                [ Nothing
-                    |> disabledBondOut model
-                        (pair |> Pair.toAsset)
-                , Nothing
-                    |> disabledInsuranceOut model
-                        (pair |> Pair.toCollateral)
-                ]
-
-        Bond { bondOut } ->
-            column
-                [ width fill
-                , height shrink
-                , spacing 12
-                ]
-                [ bondOut
-                    |> Just
-                    |> disabledBondOut model
-                        (pair |> Pair.toAsset)
-                , Nothing
-                    |> disabledInsuranceOut model
-                        (pair |> Pair.toCollateral)
-                ]
-
-        Insurance { insuranceOut } ->
-            column
-                [ width fill
-                , height shrink
-                , spacing 12
-                ]
-                [ Nothing
-                    |> disabledBondOut model
-                        (pair |> Pair.toAsset)
-                , insuranceOut
-                    |> Just
-                    |> disabledInsuranceOut model
-                        (pair |> Pair.toCollateral)
-                ]
-
-
-disabledBondOut :
+advancedBondOutSection :
     { model | images : Images }
     -> Token
-    -> Maybe String
-    -> Element Never
-disabledBondOut model asset input =
+    -> { transaction | tooltip : Maybe Tooltip }
+    -> Or String (Remote Error Uint)
+    -> Element Msg
+advancedBondOutSection model asset { tooltip } or =
     column
         [ width fill
         , height shrink
@@ -1989,20 +1694,36 @@ disabledBondOut model asset input =
             , Font.color Color.primary400
             ]
             (text "Amount to Receive")
-        , Textbox.disabled model
-            { token = asset
-            , text = input |> Maybe.withDefault ""
-            , description = "bond out input"
+        , Textbox.view model
+            { onMouseEnter = OnMouseEnter
+            , onMouseLeave = OnMouseLeave
+            , tooltip = Tooltip.BondOutSymbol
+            , opened = tooltip
+            , token = asset
+            , onClick = Just ClickBondOut
+            , onChange = InputBondOut
+            , text =
+                case or of
+                    Left string ->
+                        Left string
+
+                    Right (Success uint) ->
+                        Right uint
+
+                    Right _ ->
+                        Left ""
+            , description = "bond output"
             }
         ]
 
 
-disabledInsuranceOut :
+advancedInsuranceOutSection :
     { model | images : Images }
     -> Token
-    -> Maybe String
-    -> Element Never
-disabledInsuranceOut model collateral input =
+    -> { transaction | tooltip : Maybe Tooltip }
+    -> Or String (Remote Error Uint)
+    -> Element Msg
+advancedInsuranceOutSection model collateral { tooltip } or =
     column
         [ width fill
         , height shrink
@@ -2015,223 +1736,24 @@ disabledInsuranceOut model collateral input =
             , Font.color Color.primary400
             ]
             (text "Amount Protecting")
-        , Textbox.disabled model
-            { token = collateral
-            , text = input |> Maybe.withDefault ""
-            , description = "insurance out input"
+        , Textbox.view model
+            { onMouseEnter = OnMouseEnter
+            , onMouseLeave = OnMouseLeave
+            , tooltip = Tooltip.BondOutSymbol
+            , opened = tooltip
+            , token = collateral
+            , onClick = Just ClickInsuranceOut
+            , onChange = InputInsuranceOut
+            , text =
+                case or of
+                    Left string ->
+                        Left string
+
+                    Right (Success uint) ->
+                        Right uint
+
+                    Right _ ->
+                        Left ""
+            , description = "insurance output"
             }
-        ]
-
-
-doesNotExist :
-    { model | images : Images }
-    -> Pool
-    -> ()
-    ->
-        { first : Element Never
-        , second : Element Never
-        , buttons : Element Never
-        }
-doesNotExist model pool () =
-    empty model
-        { asset = pool.pair |> Pair.toAsset |> Just
-        , collateral = pool.pair |> Pair.toCollateral |> Just
-        }
-        |> (\{ first, second } ->
-                { first = first
-                , second = second
-                , buttons = Button.error "Pool Does Not Exist"
-                }
-           )
-
-
-disabledDoesNotExist :
-    { model | images : Images }
-    -> Pool
-    -> ()
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-disabledDoesNotExist model { pair } () =
-    empty model
-        { asset =
-            pair
-                |> Pair.toAsset
-                |> Just
-        , collateral =
-            pair
-                |> Pair.toCollateral
-                |> Just
-        }
-
-
-empty :
-    { model | images : Images }
-    ->
-        { asset : Maybe Token
-        , collateral : Maybe Token
-        }
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-empty model { asset, collateral } =
-    { first = emptyAssetIn model asset
-    , second = emptyClaims model asset collateral
-    }
-
-
-emptyAssetIn :
-    { model | images : Images }
-    -> Maybe Token
-    -> Element Never
-emptyAssetIn model token =
-    column
-        [ Region.description "lend asset"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 10
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.primary400
-            ]
-            (text "Amount to Lend")
-        , token
-            |> Maybe.map
-                (\asset ->
-                    Textbox.disabled model
-                        { token = asset
-                        , text = ""
-                        , description = "asset in textbox"
-                        }
-                )
-            |> Maybe.withDefault
-                (Textbox.empty "asset in textbox")
-        ]
-
-
-emptyClaims :
-    { model | images : Images }
-    -> Maybe Token
-    -> Maybe Token
-    -> Element Never
-emptyClaims model asset collateral =
-    column
-        [ Region.description "claims"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 12
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ Switch.empty
-        , row
-            [ width fill
-            , height shrink
-            , spacing 16
-            ]
-            [ Info.emptyAPR
-            , Info.emptyCDP
-            ]
-        , emptyClaimsOut model asset collateral
-        ]
-
-
-emptyClaimsOut :
-    { model | images : Images }
-    -> Maybe Token
-    -> Maybe Token
-    -> Element Never
-emptyClaimsOut model asset collateral =
-    column
-        [ width fill
-        , height shrink
-        , padding 12
-        , spacing 12
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ emptyBondOut model asset
-        , emptyInsuranceOut model collateral
-        ]
-
-
-emptyBondOut :
-    { model | images : Images }
-    -> Maybe Token
-    -> Element Never
-emptyBondOut model asset =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , Font.color Color.primary400
-            ]
-            (text "Amount to Receive")
-        , asset
-            |> Maybe.map
-                (\token ->
-                    Output.disabled model
-                        { token = token
-                        , description = "bond output"
-                        }
-                )
-            |> Maybe.withDefault
-                (el
-                    [ width fill
-                    , height <| px 24
-                    ]
-                    none
-                )
-        ]
-
-
-emptyInsuranceOut :
-    { model | images : Images }
-    -> Maybe Token
-    -> Element Never
-emptyInsuranceOut model collateral =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , Font.color Color.primary400
-            ]
-            (text "Amount Protecting")
-        , collateral
-            |> Maybe.map
-                (\token ->
-                    Output.disabled model
-                        { token = token
-                        , description = "insurance output"
-                        }
-                )
-            |> Maybe.withDefault
-                (el
-                    [ width fill
-                    , height <| px 24
-                    ]
-                    none
-                )
         ]

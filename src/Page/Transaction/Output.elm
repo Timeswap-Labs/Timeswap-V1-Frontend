@@ -1,4 +1,4 @@
-module Page.Transaction.Output exposing (disabled, disabledLiquidity, view)
+module Page.Transaction.Output exposing (disabledLiquidity, empty, view)
 
 import Data.Images exposing (Images)
 import Data.Remote exposing (Remote(..))
@@ -86,14 +86,14 @@ view { images } param =
         ]
 
 
-disabled :
+empty :
     { model | images : Images }
     ->
         { token : Token
         , description : String
         }
     -> Element Never
-disabled { images } param =
+empty { images } param =
     el
         [ Region.description param.description
         , width fill

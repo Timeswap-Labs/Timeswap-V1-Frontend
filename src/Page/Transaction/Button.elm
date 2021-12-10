@@ -1,4 +1,10 @@
-module Page.Transaction.Button exposing (disabled, error, view)
+module Page.Transaction.Button exposing
+    ( approveAsset
+    , approveCollateral
+    , connect
+    , disabled
+    , error
+    )
 
 import Element
     exposing
@@ -19,15 +25,10 @@ import Element.Region as Region
 import Utility.Color as Color
 
 
-view :
-    { msg : msg
-    , label : String
-    , description : String
-    }
-    -> Element msg
-view { msg, label, description } =
+connect : msg -> Element msg
+connect msg =
     Input.button
-        [ Region.description description
+        [ Region.description "connect wallet"
         , width <| px 335
         , height <| px 44
         , Background.color Color.primary500
@@ -41,7 +42,49 @@ view { msg, label, description } =
                 , Font.size 14
                 , Font.color Color.light100
                 ]
-                (text label)
+                (text "Connect Wallet")
+        }
+
+
+approveAsset : msg -> Element msg
+approveAsset msg =
+    Input.button
+        [ Region.description "approve asset"
+        , width <| px 335
+        , height <| px 44
+        , Background.color Color.primary500
+        , Border.rounded 8
+        ]
+        { onPress = Just msg
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.size 14
+                , Font.color Color.light100
+                ]
+                (text "Approve Asset")
+        }
+
+
+approveCollateral : msg -> Element msg
+approveCollateral msg =
+    Input.button
+        [ Region.description "approve collateral"
+        , width <| px 335
+        , height <| px 44
+        , Background.color Color.primary500
+        , Border.rounded 8
+        ]
+        { onPress = Just msg
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.size 14
+                , Font.color Color.light100
+                ]
+                (text "Approve Collateral")
         }
 
 

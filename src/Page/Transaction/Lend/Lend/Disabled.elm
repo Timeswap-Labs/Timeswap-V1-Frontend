@@ -4,12 +4,13 @@ module Page.Transaction.Lend.Lend.Disabled exposing
     , InsuranceInput
     , Transaction
     , init
+    , view
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User exposing (User)
+import Blockchain.User.Main as User
 import Data.Images exposing (Images)
-import Data.Pair as Pair exposing (Pair)
+import Data.Pair as Pair
 import Data.Percent exposing (Percent)
 import Data.Pool exposing (Pool)
 import Data.Token exposing (Token)
@@ -39,12 +40,12 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Region as Region
 import Page.Transaction.Info as Info
+import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.Slider as Slider
 import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Utility.Color as Color
-import Utility.Truncate as Truncate
 
 
 type alias Transaction =
@@ -97,7 +98,7 @@ view model blockchain pool transaction =
                 (pool.pair |> Pair.toAsset)
     , second =
         transaction
-            |> disabledClaims model pool
+            |> claimsOutSection model pool
     }
 
 
@@ -124,7 +125,7 @@ assetInSection model blockchain asset transaction =
             , spacing 6
             , centerY
             ]
-            (el
+            [ el
                 [ width shrink
                 , height shrink
                 , Font.size 14
@@ -132,18 +133,18 @@ assetInSection model blockchain asset transaction =
                 , Font.color Color.primary400
                 ]
                 (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ userBalance user asset
-                                , maxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
+            , blockchain
+                |> Blockchain.toUser
+                |> Maybe.andThen (User.getBalance asset)
+                |> Maybe.map
+                    (\balance ->
+                        MaxButton.disabled
+                            { token = asset
+                            , balance = balance
+                            }
+                    )
+                |> Maybe.withDefault none
+            ]
         , Textbox.disabled model
             { token = asset
             , text = transaction.assetIn
@@ -152,60 +153,12 @@ assetInSection model blockchain asset transaction =
         ]
 
 
-userBalance :
-    User
-    -> Token
-    -> Element Never
-userBalance user asset =
-    user
-        |> User.getBalance asset
-        |> Maybe.map
-            (\balance ->
-                row
-                    [ width shrink
-                    , height shrink
-                    , alignRight
-                    , centerY
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 12
-                        , paddingXY 0 2
-                        , Font.color Color.transparent300
-                        ]
-                        (text "Bal: ")
-                    , Truncate.disabledBalance
-                        { token = asset
-                        , balance = balance
-                        }
-                    ]
-            )
-        |> Maybe.withDefault none
-
-
-maxButton : Element Never
-maxButton =
-    el
-        [ Region.description "max asset lend"
-        , width shrink
-        , height shrink
-        , alignRight
-        , centerY
-        , Font.size 12
-        , paddingXY 0 2
-        , Font.color Color.warning400
-        , Font.bold
-        ]
-        (text "MAX")
-
-
-disabledClaims :
+claimsOutSection :
     { model | images : Images }
     -> Pool
     -> { transaction | claimsOut : ClaimsOut }
     -> Element Never
-disabledClaims model pool ({ claimsOut } as transaction) =
+claimsOutSection model pool { claimsOut } =
     column
         [ Region.description "claims"
         , width <| px 343
@@ -237,7 +190,7 @@ disabledClaims model pool ({ claimsOut } as transaction) =
             Insurance { percent } ->
                 Just percent
           )
-            |> Maybe.map disabledSlider
+            |> Maybe.map sliderSection
             |> Maybe.withDefault none
         , row
             [ width fill
@@ -247,12 +200,74 @@ disabledClaims model pool ({ claimsOut } as transaction) =
             [ Info.emptyAPR
             , Info.emptyCDP
             ]
-        , disabledClaimsOut model pool.pair transaction
+        , case claimsOut of
+            Default ->
+                column
+                    [ width fill
+                    , height shrink
+                    , padding 12
+                    , spacing 12
+                    , Background.color Color.primary100
+                    , Border.rounded 8
+                    ]
+                    [ pool.pair
+                        |> Pair.toAsset
+                        |> Just
+                        |> bondOutSection model
+                    , pool.pair
+                        |> Pair.toCollateral
+                        |> Just
+                        |> insuranceOutSection model
+                    ]
+
+            Slider _ ->
+                column
+                    [ width fill
+                    , height shrink
+                    , spacing 12
+                    ]
+                    [ Nothing
+                        |> advancedBondOutSection model
+                            (pool.pair |> Pair.toAsset)
+                    , Nothing
+                        |> advancedInsuranceOutSection model
+                            (pool.pair |> Pair.toCollateral)
+                    ]
+
+            Bond { bondOut } ->
+                column
+                    [ width fill
+                    , height shrink
+                    , spacing 12
+                    ]
+                    [ bondOut
+                        |> Just
+                        |> advancedBondOutSection model
+                            (pool.pair |> Pair.toAsset)
+                    , Nothing
+                        |> advancedInsuranceOutSection model
+                            (pool.pair |> Pair.toCollateral)
+                    ]
+
+            Insurance { insuranceOut } ->
+                column
+                    [ width fill
+                    , height shrink
+                    , spacing 12
+                    ]
+                    [ Nothing
+                        |> advancedBondOutSection model
+                            (pool.pair |> Pair.toAsset)
+                    , insuranceOut
+                        |> Just
+                        |> advancedInsuranceOutSection model
+                            (pool.pair |> Pair.toCollateral)
+                    ]
         ]
 
 
-disabledSlider : Percent -> Element Never
-disabledSlider percent =
+sliderSection : Percent -> Element Never
+sliderSection percent =
     column
         [ width fill
         , height shrink
@@ -299,77 +314,6 @@ disabledSlider percent =
         ]
 
 
-disabledClaimsOut :
-    { model | images : Images }
-    -> Pair
-    -> { transaction | claimsOut : ClaimsOut }
-    -> Element Never
-disabledClaimsOut model pair { claimsOut } =
-    case claimsOut of
-        Default ->
-            column
-                [ width fill
-                , height shrink
-                , padding 12
-                , spacing 12
-                , Background.color Color.primary100
-                , Border.rounded 8
-                ]
-                [ pair
-                    |> Pair.toAsset
-                    |> Just
-                    |> bondOutSection model
-                , pair
-                    |> Pair.toCollateral
-                    |> Just
-                    |> insuranceOutSection model
-                ]
-
-        Slider _ ->
-            column
-                [ width fill
-                , height shrink
-                , spacing 12
-                ]
-                [ Nothing
-                    |> disabledBondOut model
-                        (pair |> Pair.toAsset)
-                , Nothing
-                    |> disabledInsuranceOut model
-                        (pair |> Pair.toCollateral)
-                ]
-
-        Bond { bondOut } ->
-            column
-                [ width fill
-                , height shrink
-                , spacing 12
-                ]
-                [ bondOut
-                    |> Just
-                    |> disabledBondOut model
-                        (pair |> Pair.toAsset)
-                , Nothing
-                    |> disabledInsuranceOut model
-                        (pair |> Pair.toCollateral)
-                ]
-
-        Insurance { insuranceOut } ->
-            column
-                [ width fill
-                , height shrink
-                , spacing 12
-                ]
-                [ Nothing
-                    |> disabledBondOut model
-                        (pair |> Pair.toAsset)
-                , insuranceOut
-                    |> Just
-                    |> disabledInsuranceOut model
-                        (pair |> Pair.toCollateral)
-                ]
-
-
 bondOutSection :
     { model | images : Images }
     -> Maybe Token
@@ -390,7 +334,7 @@ bondOutSection model asset =
         , asset
             |> Maybe.map
                 (\token ->
-                    Output.disabled model
+                    Output.empty model
                         { token = token
                         , description = "bond output"
                         }
@@ -425,7 +369,7 @@ insuranceOutSection model collateral =
         , collateral
             |> Maybe.map
                 (\token ->
-                    Output.disabled model
+                    Output.empty model
                         { token = token
                         , description = "insurance output"
                         }
@@ -440,12 +384,12 @@ insuranceOutSection model collateral =
         ]
 
 
-disabledBondOut :
+advancedBondOutSection :
     { model | images : Images }
     -> Token
     -> Maybe String
     -> Element Never
-disabledBondOut model asset input =
+advancedBondOutSection model asset input =
     column
         [ width fill
         , height shrink
@@ -466,12 +410,12 @@ disabledBondOut model asset input =
         ]
 
 
-disabledInsuranceOut :
+advancedInsuranceOutSection :
     { model | images : Images }
     -> Token
     -> Maybe String
     -> Element Never
-disabledInsuranceOut model collateral input =
+advancedInsuranceOutSection model collateral input =
     column
         [ width fill
         , height shrink

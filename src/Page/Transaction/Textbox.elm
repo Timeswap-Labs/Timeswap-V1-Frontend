@@ -1,11 +1,14 @@
 module Page.Transaction.Textbox exposing (disabled, empty, view)
 
 import Data.Images exposing (Images)
+import Data.Or exposing (Or(..))
 import Data.Token exposing (Token)
+import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
         , alignLeft
+        , behindContent
         , centerY
         , el
         , fill
@@ -22,6 +25,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
@@ -38,8 +42,9 @@ view :
         , tooltip : tooltip
         , opened : Maybe tooltip
         , token : Token
+        , onClick : Maybe msg
         , onChange : String -> msg
-        , text : String
+        , text : Or String Uint
         , description : String
         }
     -> Element msg
@@ -51,16 +56,44 @@ view { images } param =
         , paddingXY 12 0
         , Background.color Color.primary100
         , Border.rounded 8
+        , (case param.text of
+            Left _ ->
+                none
+
+            Right uint ->
+                el
+                    [ width fill
+                    , height fill
+                    , paddingXY 12 0
+                    ]
+                    (uint
+                        |> Uint.toAmount param.token
+                        |> text
+                    )
+          )
+            |> behindContent
         ]
         (Input.text
-            [ width fill
-            , height fill
-            , paddingXY 0 14
-            , spacing 12
-            , Font.size 16
-            ]
+            ([ width fill
+             , height fill
+             , paddingXY 0 14
+             , spacing 12
+             , Font.size 16
+             ]
+                ++ (param.onClick
+                        |> Maybe.map Events.onClick
+                        |> Maybe.map List.singleton
+                        |> Maybe.withDefault []
+                   )
+            )
             { onChange = param.onChange
-            , text = param.text
+            , text =
+                case param.text of
+                    Left string ->
+                        string
+
+                    Right _ ->
+                        ""
             , placeholder = Nothing
             , label =
                 Input.labelLeft
@@ -145,7 +178,8 @@ empty description =
         , height <| px 44
         , spacing 6
         , paddingXY 12 0
-        , Background.color Color.primary100
+        , Border.width 1
+        , Border.color Color.primary100
         , Border.rounded 8
         ]
         none

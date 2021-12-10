@@ -14,6 +14,7 @@ import Data.CDP as CDP exposing (CDP)
 import Data.Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
+import Data.Or exposing (Or(..))
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
@@ -53,6 +54,7 @@ import Page.Transaction.Liquidity.New.Disabled as Disabled
 import Page.Transaction.Liquidity.New.Error exposing (Error)
 import Page.Transaction.Liquidity.New.Query as Query
 import Page.Transaction.Liquidity.New.Tooltip as Tooltip exposing (Tooltip)
+import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -533,19 +535,19 @@ view :
 view model blockchain pool (Transaction transaction) =
     { first =
         transaction
-            |> createAssetIn model blockchain (pool.pair |> Pair.toAsset)
+            |> assetInSection model blockchain (pool.pair |> Pair.toAsset)
     , second = none |> Debug.log "later"
     , buttons = none |> Debug.log "later"
     }
 
 
-createAssetIn :
+assetInSection :
     { model | images : Images }
     -> Blockchain
     -> Token
-    -> { transaction | tooltip : Maybe Tooltip }
+    -> { transaction | assetIn : String, tooltip : Maybe Tooltip }
     -> Element Msg
-createAssetIn model blockchain asset ({ tooltip } as transaction) =
+assetInSection model blockchain asset { assetIn, tooltip } =
     column
         [ Region.description "lend asset"
         , width <| px 343
@@ -561,32 +563,38 @@ createAssetIn model blockchain asset ({ tooltip } as transaction) =
             , spacing 6
             , centerY
             ]
-            (el
+            [ el
                 [ width shrink
                 , height shrink
                 , Font.size 14
                 ]
                 (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ userBalance user asset transaction
-                                , maxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
+            , blockchain
+                |> Blockchain.toUser
+                |> Maybe.andThen (User.getBalance asset)
+                |> Maybe.map
+                    (\balance ->
+                        MaxButton.view
+                            { onPress = InputMaxAsset
+                            , onMouseEnter = OnMouseEnter
+                            , onMouseLeave = OnMouseLeave
+                            , tooltip = Tooltip.AssetBalance
+                            , opened = tooltip
+                            , token = asset
+                            , balance = balance
+                            }
+                    )
+                |> Maybe.withDefault none
+            ]
         , Textbox.view model
             { onMouseEnter = OnMouseEnter
             , onMouseLeave = OnMouseLeave
             , tooltip = Tooltip.AssetInSymbol
             , opened = tooltip
             , token = asset
+            , onClick = Nothing
             , onChange = InputAssetIn
-            , text = "" |> Debug.log "later"
+            , text = Left assetIn
             , description = "asset in textbox"
             }
         ]

@@ -140,7 +140,7 @@ bondOutSection model asset =
         , asset
             |> Maybe.map
                 (\token ->
-                    Output.disabled model
+                    Output.empty model
                         { token = token
                         , description = "bond output"
                         }
@@ -175,7 +175,7 @@ insuranceOutSection model collateral =
         , collateral
             |> Maybe.map
                 (\token ->
-                    Output.disabled model
+                    Output.empty model
                         { token = token
                         , description = "insurance output"
                         }
