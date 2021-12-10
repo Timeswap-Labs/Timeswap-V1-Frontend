@@ -112,10 +112,7 @@ claimsOutSection model asset collateral =
         , column
             [ width fill
             , height shrink
-            , padding 12
-            , spacing 12
-            , Background.color Color.primary100
-            , Border.rounded 8
+            , spacing 16
             ]
             [ bondOutSection model asset
             , insuranceOutSection model collateral
