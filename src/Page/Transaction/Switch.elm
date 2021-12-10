@@ -35,7 +35,7 @@ view :
 view { onChange, mode } =
     Input.radioRow
         [ width fill
-        , height <| px 36
+        , height <| px 44
         , padding 4
         , spacing 16
         , Background.color Color.primary100
@@ -45,7 +45,7 @@ view { onChange, mode } =
         , options =
             [ viewRecommended
                 |> Input.optionWith Recommended
-            , viewPro
+            , viewAdvanced
                 |> Input.optionWith Pro
             ]
         , selected = Just mode
@@ -57,14 +57,14 @@ disabled : Mode -> Element Never
 disabled mode =
     row
         [ width fill
-        , height <| px 36
+        , height <| px 44
         , padding 4
         , spacing 16
         , Background.color Color.primary100
         , Border.rounded 8
         ]
         [ disabledRecommended mode
-        , disabledPro mode
+        , disabledAdvanced mode
         ]
 
 
@@ -72,14 +72,14 @@ empty : Element Never
 empty =
     row
         [ width fill
-        , height <| px 36
+        , height <| px 44
         , padding 4
         , spacing 16
         , Background.color Color.primary100
         , Border.rounded 8
         ]
         [ emptyRecommended
-        , emptyPro
+        , emptyAdvanced
         ]
 
 
@@ -153,8 +153,8 @@ emptyRecommended =
         )
 
 
-viewPro : OptionState -> Element msg
-viewPro optionState =
+viewAdvanced : OptionState -> Element msg
+viewAdvanced optionState =
     el
         ([ width fill
          , height fill
@@ -175,12 +175,12 @@ viewPro optionState =
             , Font.color Color.light100
             , Font.size 14
             ]
-            (text "Pro")
+            (text "Advanced")
         )
 
 
-disabledPro : Mode -> Element Never
-disabledPro mode =
+disabledAdvanced : Mode -> Element Never
+disabledAdvanced mode =
     el
         ([ width fill
          , height fill
@@ -201,12 +201,12 @@ disabledPro mode =
             , Font.color Color.light100
             , Font.size 14
             ]
-            (text "Pro")
+            (text "Advanced")
         )
 
 
-emptyPro : Element Never
-emptyPro =
+emptyAdvanced : Element Never
+emptyAdvanced =
     el
         [ width fill
         , height fill
@@ -217,5 +217,5 @@ emptyPro =
             , Font.color Color.light100
             , Font.size 14
             ]
-            (text "Pro")
+            (text "Advanced")
         )

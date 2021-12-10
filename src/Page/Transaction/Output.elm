@@ -1,4 +1,4 @@
-module Page.Transaction.Output exposing (disabled, view)
+module Page.Transaction.Output exposing (disabled, disabledLiquidity, view)
 
 import Data.Images exposing (Images)
 import Data.Remote exposing (Remote(..))
@@ -12,6 +12,8 @@ import Element
         , el
         , fill
         , height
+        , moveLeft
+        , moveRight
         , none
         , paddingXY
         , px
@@ -113,5 +115,50 @@ disabled { images } param =
                     ]
                     param.token
             , Truncate.disabledSymbol param.token
+            ]
+        )
+
+
+disabledLiquidity :
+    { model | images : Images }
+    ->
+        { asset : Token
+        , collateral : Token
+        , description : String
+        }
+    -> Element Never
+disabledLiquidity { images } param =
+    el
+        [ Region.description param.description
+        , width fill
+        , height <| px 24
+        , spacing 12
+        , clip
+        ]
+        (row
+            [ width <| px 80
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            [ row
+                [ width <| px 36
+                , height <| px 24
+                ]
+                [ images
+                    |> Image.viewToken
+                        [ width <| px 24
+                        , height <| px 24
+                        , moveRight 12
+                        ]
+                        param.collateral
+                , images
+                    |> Image.viewToken
+                        [ width <| px 24
+                        , height <| px 24
+                        , moveLeft 24
+                        ]
+                        param.asset
+                ]
             ]
         )

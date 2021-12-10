@@ -27,12 +27,13 @@ import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
-import Data.WebError as WebError exposing (WebError)
+import Data.Web as Web
 import Element
     exposing
         ( Element
         , alignLeft
         , alignRight
+        , alignTop
         , centerY
         , column
         , el
@@ -59,6 +60,7 @@ import Http
 import Page.Transaction.Answer as Answer exposing (Answer)
 import Page.Transaction.Liquidity.Add.Main as Add
 import Page.Transaction.Liquidity.AddError as AddError
+import Page.Transaction.Liquidity.Empty as Empty
 import Page.Transaction.Liquidity.New.Main as New
 import Page.Transaction.Liquidity.NewError as NewError
 import Page.Transaction.MaturityButton as MaturityButton
@@ -101,13 +103,13 @@ type Status error poolState
 
 
 type alias AddError =
-    { web : WebError
+    { http : Http.Error
     , add : AddError.Transaction
     }
 
 
 type alias NewError =
-    { web : WebError
+    { http : Http.Error
     , new : NewError.Transaction
     }
 
@@ -282,7 +284,7 @@ update model blockchain msg (Transaction transaction) =
         ( GoToNew, Add (Pool pool (Active (Failure error))) ) ->
             { transaction
                 | state =
-                    { web = error.web
+                    { http = error.http
                     , new = NewError.init
                     }
                         |> Failure
@@ -354,7 +356,7 @@ update model blockchain msg (Transaction transaction) =
         ( GoToAdd, New (Pool pool (Active (Failure error))) ) ->
             { transaction
                 | state =
-                    { web = error.web
+                    { http = error.http
                     , add = AddError.init
                     }
                         |> Failure
@@ -453,68 +455,65 @@ update model blockchain msg (Transaction transaction) =
                     && (pool == currentPool)
                then
                 case
-                    ( result |> WebError.toResult
+                    ( result
                     , remote
                     )
                 of
-                    ( Just (Ok (Just poolInfo)), Success (Exist _ add) ) ->
+                    ( Ok (Just poolInfo), Success (Exist _ add) ) ->
                         add
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Just (Ok (Just poolInfo)), Success (DoesNotExist ()) ) ->
+                    ( Ok (Just poolInfo), Success (DoesNotExist ()) ) ->
                         Add.init
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Just (Ok (Just poolInfo)), Failure error ) ->
+                    ( Ok (Just poolInfo), Failure error ) ->
                         error.add
                             |> Add.fromAddError
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Just (Ok (Just poolInfo)), Loading ) ->
+                    ( Ok (Just poolInfo), Loading ) ->
                         Add.init
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Just (Ok Nothing), _ ) ->
+                    ( Ok Nothing, _ ) ->
                         DoesNotExist ()
                             |> Success
                             |> Just
 
-                    ( Just (Err webError), Success (Exist _ add) ) ->
-                        { web = webError
+                    ( Err error, Success (Exist _ add) ) ->
+                        { http = error
                         , add = add |> Add.toAddError
                         }
                             |> Failure
                             |> Just
 
-                    ( Just (Err webError), Success (DoesNotExist ()) ) ->
-                        { web = webError
+                    ( Err error, Success (DoesNotExist ()) ) ->
+                        { http = error
                         , add = AddError.init
                         }
                             |> Failure
                             |> Just
 
-                    ( Just (Err webError), Failure failure ) ->
-                        { failure | web = webError }
+                    ( Err error, Failure failure ) ->
+                        { failure | http = error }
                             |> Failure
                             |> Just
 
-                    ( Just (Err webError), Loading ) ->
-                        { web = webError
+                    ( Err error, Loading ) ->
+                        { http = error
                         , add = AddError.init
                         }
                             |> Failure
                             |> Just
-
-                    ( Nothing, _ ) ->
-                        Nothing
 
                else
                 Nothing
@@ -542,62 +541,62 @@ update model blockchain msg (Transaction transaction) =
                     && (pool == currentPool)
                then
                 case
-                    ( result |> WebError.toResult
+                    ( result
                     , remote
                     )
                 of
-                    ( Just (Ok (Just poolInfo)), _ ) ->
+                    ( Ok (Just poolInfo), _ ) ->
                         Exist poolInfo ()
                             |> Success
                             |> Just
 
-                    ( Just (Ok Nothing), Success (Exist _ ()) ) ->
+                    ( Ok Nothing, Success (Exist _ ()) ) ->
                         New.init
                             |> DoesNotExist
                             |> Success
                             |> Just
 
-                    ( Just (Ok Nothing), Failure error ) ->
+                    ( Ok Nothing, Success (DoesNotExist _) ) ->
+                        Nothing
+
+                    ( Ok Nothing, Failure error ) ->
                         error.new
                             |> New.fromNewError
                             |> DoesNotExist
                             |> Success
                             |> Just
 
-                    ( Just (Ok Nothing), Loading ) ->
+                    ( Ok Nothing, Loading ) ->
                         New.init
                             |> DoesNotExist
                             |> Success
                             |> Just
 
-                    ( Just (Err webError), Success (Exist _ ()) ) ->
-                        { web = webError
+                    ( Err error, Success (Exist _ ()) ) ->
+                        { http = error
                         , new = NewError.init
                         }
                             |> Failure
                             |> Just
 
-                    ( Just (Err webError), Success (DoesNotExist new) ) ->
-                        { web = webError
+                    ( Err error, Success (DoesNotExist new) ) ->
+                        { http = error
                         , new = new |> New.toNewError
                         }
                             |> Failure
                             |> Just
 
-                    ( Just (Err webError), Failure failure ) ->
-                        { failure | web = webError }
+                    ( Err error, Failure failure ) ->
+                        { failure | http = error }
                             |> Failure
                             |> Just
 
-                    ( Just (Err webError), Loading ) ->
-                        { web = webError
+                    ( Err error, Loading ) ->
+                        { http = error
                         , new = NewError.init
                         }
                             |> Failure
                             |> Just
-
-                    _ ->
-                        Nothing
 
                else
                 Nothing
@@ -830,61 +829,221 @@ view :
     -> Transaction
     -> Element Msg
 view ({ backdrop } as model) (Transaction transaction) =
-    column
-        [ (case transaction.state of
-            Add _ ->
-                "liquidity"
+    (case transaction.state of
+        Add None ->
+            { asset = Nothing
+            , collateral = Nothing
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
 
-            New _ ->
-                "create pool"
-          )
-            |> Region.description
-        , width shrink
-        , height shrink
-        , padding 24
-        , spacing 24
-        , Border.rounded 8
-        , Glass.background backdrop
-        , Border.width 1
-        , Border.color Color.transparent100
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 24
-            ]
-            [ case transaction.state of
-                Add _ ->
-                    none
+        New None ->
+            { asset = Nothing
+            , collateral = Nothing
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
 
-                New _ ->
-                    backButton model
-            , el
-                [ width shrink
-                , height shrink
-                , paddingXY 0 4
-                , Font.size 24
-                , Font.color Color.light100
-                , Font.bold
-                ]
-                ((case transaction.state of
-                    Add _ ->
-                        "Liquidity"
+        Add (Asset asset) ->
+            { asset = Just asset
+            , collateral = Nothing
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
 
-                    New _ ->
-                        "Create Pool"
-                 )
-                    |> text
-                )
-            , case transaction.state of
-                Add _ ->
-                    createPoolButton model
+        New (Asset asset) ->
+            { asset = Just asset
+            , collateral = Nothing
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
 
-                New _ ->
-                    none
-            , settingsButton model
-            ]
-        ]
+        Add (Collateral collateral) ->
+            { asset = Nothing
+            , collateral = Just collateral
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        New (Collateral collateral) ->
+            { asset = Nothing
+            , collateral = Just collateral
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Add (Pair pair) ->
+            { asset =
+                pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pair
+                    |> Pair.toCollateral
+                    |> Just
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        New (Pair pair) ->
+            { asset =
+                pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pair
+                    |> Pair.toCollateral
+                    |> Just
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Add (Pool pool _) ->
+            { first = none
+            , second = none
+            , third = none
+            , buttons = none
+            }
+                |> Debug.log "later"
+
+        New (Pool pool _) ->
+            { first = none
+            , second = none
+            , third = none
+            , buttons = none
+            }
+                |> Debug.log "later"
+    )
+        |> (\{ first, second, third, buttons } ->
+                column
+                    [ (case transaction.state of
+                        Add _ ->
+                            "liquidity"
+
+                        New _ ->
+                            "create pool"
+                      )
+                        |> Region.description
+                    , width shrink
+                    , height shrink
+                    , padding 24
+                    , spacing 16
+                    , Border.rounded 8
+                    , Glass.background backdrop
+                    , Border.width 1
+                    , Border.color Color.transparent100
+                    ]
+                    [ row
+                        [ width fill
+                        , height shrink
+                        , spacing 24
+                        ]
+                        [ case transaction.state of
+                            Add _ ->
+                                none
+
+                            New _ ->
+                                backButton model
+                        , el
+                            [ width shrink
+                            , height shrink
+                            , paddingXY 0 4
+                            , Font.size 24
+                            , Font.color Color.light100
+                            , Font.bold
+                            ]
+                            ((case transaction.state of
+                                Add _ ->
+                                    "Liquidity"
+
+                                New _ ->
+                                    "Create Pool"
+                             )
+                                |> text
+                            )
+                        , case transaction.state of
+                            Add _ ->
+                                createPoolButton model
+
+                            New _ ->
+                                none
+                        , settingsButton model
+                        ]
+                    , row
+                        [ width shrink
+                        , height shrink
+                        , spacing 24
+                        ]
+                        [ column
+                            [ width shrink
+                            , height shrink
+                            , spacing 16
+                            , alignTop
+                            ]
+                            [ parameters model transaction
+                            , first
+                            ]
+                        , column
+                            [ width shrink
+                            , height shrink
+                            , spacing 16
+                            , alignTop
+                            ]
+                            [ second
+                            , third
+                            , buttons
+                            ]
+                        ]
+                    ]
+           )
 
 
 backButton :

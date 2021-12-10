@@ -26,10 +26,7 @@ emptyAPR =
     column
         [ width fill
         , height shrink
-        , padding 12
         , spacing 5
-        , Background.color Color.transparent100
-        , Border.rounded 8
         ]
         [ el
             [ width shrink
@@ -51,10 +48,7 @@ emptyCDP =
     column
         [ width fill
         , height shrink
-        , padding 12
         , spacing 5
-        , Background.color Color.transparent100
-        , Border.rounded 8
         ]
         [ el
             [ width shrink

@@ -18,8 +18,7 @@ import Data.Offset exposing (Offset)
 import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
-import Data.Web exposing (Web)
-import Data.WebError as WebError
+import Data.Web as Web exposing (Web)
 import Element
     exposing
         ( Element
@@ -156,45 +155,18 @@ update blockchain msg (Modal modal) =
             , Nothing
             )
 
-        ( ReceiveAnswer chain pair (Ok answer), _ ) ->
-            ( (if
-                (chain == (blockchain |> Blockchain.toChain))
-                    && (pair == modal.pair)
-               then
-                { modal | pools = answer |> Success }
-
-               else
-                modal
-              )
-                |> Modal
-                |> Just
-            , Process.sleep 5000
-                |> Task.perform (\_ -> QueryAgain)
-            , Nothing
-            )
-
-        ( ReceiveAnswer chain pair (Err error), _ ) ->
+        ( ReceiveAnswer chain pair result, _ ) ->
             if
                 (chain == (blockchain |> Blockchain.toChain))
                     && (pair == modal.pair)
             then
-                error
-                    |> WebError.fromHttpError
-                    |> Maybe.map
-                        (\webError ->
-                            ( { modal | pools = Failure webError }
-                                |> Modal
-                                |> Just
-                            , Process.sleep 5000
-                                |> Task.perform (\_ -> QueryAgain)
-                            , Nothing
-                            )
-                        )
-                    |> Maybe.withDefault
-                        ( modal |> Modal |> Just
-                        , Cmd.none
-                        , Nothing
-                        )
+                ( { modal | pools = result |> Web.fromResult }
+                    |> Modal
+                    |> Just
+                , Process.sleep 5000
+                    |> Task.perform (\_ -> QueryAgain)
+                , Nothing
+                )
 
             else
                 ( modal |> Modal |> Just

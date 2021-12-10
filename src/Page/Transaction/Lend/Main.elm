@@ -28,17 +28,19 @@ import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
-import Data.WebError as WebError exposing (WebError)
+import Data.Web as Web
 import Element
     exposing
         ( Element
         , alignRight
+        , alignTop
         , centerY
         , column
         , el
         , fill
         , height
         , map
+        , none
         , padding
         , paddingXY
         , px
@@ -55,6 +57,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Http
 import Page.Transaction.Answer as Answer exposing (Answer)
+import Page.Transaction.Lend.Empty as Empty
 import Page.Transaction.Lend.Lend.Main as Lend
 import Page.Transaction.Lend.LendError as LendError
 import Page.Transaction.MaturityButton as MaturityButton
@@ -91,7 +94,7 @@ type Status
 
 
 type alias Error =
-    { web : WebError
+    { http : Http.Error
     , lend : LendError.Transaction
     }
 
@@ -268,68 +271,65 @@ update model blockchain msg (Transaction transaction) =
                     && (pool == currentPool)
                then
                 case
-                    ( result |> WebError.toResult
+                    ( result
                     , remote
                     )
                 of
-                    ( Just (Ok (Just poolInfo)), Success (Exist _ lend) ) ->
+                    ( Ok (Just poolInfo), Success (Exist _ lend) ) ->
                         lend
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Just (Ok (Just poolInfo)), Success DoesNotExist ) ->
+                    ( Ok (Just poolInfo), Success DoesNotExist ) ->
                         Lend.init
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Just (Ok (Just poolInfo)), Failure error ) ->
+                    ( Ok (Just poolInfo), Failure error ) ->
                         error.lend
                             |> Lend.fromLendError
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Just (Ok (Just poolInfo)), Loading ) ->
+                    ( Ok (Just poolInfo), Loading ) ->
                         Lend.init
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Just (Ok Nothing), _ ) ->
+                    ( Ok Nothing, _ ) ->
                         DoesNotExist
                             |> Success
                             |> Just
 
-                    ( Just (Err webError), Success (Exist _ lend) ) ->
-                        { web = webError
+                    ( Err error, Success (Exist _ lend) ) ->
+                        { http = error
                         , lend = lend |> Lend.toLendError
                         }
                             |> Failure
                             |> Just
 
-                    ( Just (Err webError), Success DoesNotExist ) ->
-                        { web = webError
+                    ( Err error, Success DoesNotExist ) ->
+                        { http = error
                         , lend = LendError.init
                         }
                             |> Failure
                             |> Just
 
-                    ( Just (Err webError), Failure failure ) ->
-                        { failure | web = webError }
+                    ( Err error, Failure failure ) ->
+                        { failure | http = error }
                             |> Failure
                             |> Just
 
-                    ( Just (Err webError), Loading ) ->
-                        { web = webError
+                    ( Err error, Loading ) ->
+                        { http = error
                         , lend = LendError.init
                         }
                             |> Failure
                             |> Just
-
-                    ( Nothing, _ ) ->
-                        Nothing
 
                else
                 Nothing
@@ -502,33 +502,121 @@ view :
     -> Transaction
     -> Element Msg
 view ({ backdrop } as model) (Transaction transaction) =
-    column
-        [ Region.description "lend transaction"
-        , width shrink
-        , height shrink
-        , padding 24
-        , spacing 24
-        , Border.rounded 8
-        , Glass.background backdrop
-        , Border.width 1
-        , Border.color Color.transparent100
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            ]
-            [ el
-                [ width shrink
-                , height shrink
-                , paddingXY 0 4
-                , Font.size 24
-                , Font.color Color.light100
-                , Font.bold
-                ]
-                (text "Lend")
-            , settingsButton model
-            ]
-        ]
+    (case transaction.state of
+        None ->
+            { asset = Nothing
+            , collateral = Nothing
+            }
+                |> Empty.view model
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Asset asset ->
+            { asset = Just asset
+            , collateral = Nothing
+            }
+                |> Empty.view model
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Collateral collateral ->
+            { asset = Nothing
+            , collateral = Just collateral
+            }
+                |> Empty.view model
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Pair pair ->
+            { asset =
+                pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pair
+                    |> Pair.toCollateral
+                    |> Just
+            }
+                |> Empty.view model
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Pool pool _ ->
+            { first = none
+            , second = none
+            , buttons = none
+            }
+                |> Debug.log "later"
+    )
+        |> (\{ first, second, buttons } ->
+                column
+                    [ Region.description "lend transaction"
+                    , width shrink
+                    , height shrink
+                    , padding 24
+                    , spacing 16
+                    , Border.rounded 8
+                    , Glass.background backdrop
+                    , Border.width 1
+                    , Border.color Color.transparent100
+                    ]
+                    [ row
+                        [ width fill
+                        , height shrink
+                        ]
+                        [ el
+                            [ width shrink
+                            , height shrink
+                            , paddingXY 0 4
+                            , Font.size 24
+                            , Font.color Color.light100
+                            , Font.bold
+                            ]
+                            (text "Lend")
+                        , settingsButton model
+                        ]
+                    , row
+                        [ width shrink
+                        , height shrink
+                        , spacing 24
+                        ]
+                        [ column
+                            [ width shrink
+                            , height shrink
+                            , spacing 16
+                            , alignTop
+                            ]
+                            [ parameters model transaction
+                            , first
+                            ]
+                        , column
+                            [ width shrink
+                            , height shrink
+                            , spacing 16
+                            , alignTop
+                            ]
+                            [ second
+                            , buttons
+                            ]
+                        ]
+                    ]
+           )
 
 
 settingsButton :

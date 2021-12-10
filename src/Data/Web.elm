@@ -1,26 +1,18 @@
-module Data.Web exposing (Web, fromHttpRemote)
+module Data.Web exposing (Web, fromResult)
 
 import Data.Remote exposing (Remote(..))
-import Data.WebError as WebError exposing (WebError)
 import Http
 
 
 type alias Web a =
-    Remote WebError a
+    Remote Http.Error a
 
 
-fromHttpRemote : Remote Http.Error a -> Maybe (Web a)
-fromHttpRemote remote =
-    case remote of
-        Loading ->
-            Loading
-                |> Just
+fromResult : Result Http.Error a -> Web a
+fromResult result =
+    case result of
+        Ok a ->
+            Success a
 
-        Failure httpError ->
-            httpError
-                |> WebError.fromHttpError
-                |> Maybe.map Failure
-
-        Success success ->
-            Success success
-                |> Just
+        Err error ->
+            Failure error
