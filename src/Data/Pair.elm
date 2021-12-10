@@ -10,8 +10,6 @@ module Data.Pair exposing
     , toString
     )
 
-import Data.Chain exposing (Chain)
-import Data.Chains as Chains exposing (Chains)
 import Data.Token as Token exposing (Token)
 import Data.TokenParam as TokenParam
 import Json.Decode as Decode exposing (Decoder)
@@ -40,8 +38,8 @@ init asset collateral =
             |> Just
 
 
-decoder : Chain -> Chains -> Decoder Pair
-decoder chain chains =
+decoder : Decoder Pair
+decoder =
     Decode.succeed
         (\asset collateral ->
             if asset == collateral then
@@ -54,10 +52,8 @@ decoder chain chains =
                     |> Pair
                     |> Decode.succeed
         )
-        |> Pipeline.required "asset"
-            (Chains.decoderToken chain chains)
-        |> Pipeline.required "collateral"
-            (Chains.decoderToken chain chains)
+        |> Pipeline.required "asset" Token.decoder
+        |> Pipeline.required "collateral" Token.decoder
         |> Decode.andThen identity
 
 

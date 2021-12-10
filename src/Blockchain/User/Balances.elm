@@ -1,7 +1,5 @@
-module Blockchain.User.Balances exposing (Balances, hasEnough)
+module Blockchain.User.Balances exposing (Balances, decoder, hasEnough)
 
-import Data.Chain exposing (Chain)
-import Data.Chains as Chains exposing (Chains)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Json.Decode as Decode exposing (Decoder)
@@ -13,10 +11,10 @@ type alias Balances =
     Dict Token Uint
 
 
-decoder : Chain -> Chains -> Decoder Balances
-decoder chain chains =
+decoder : Decoder Balances
+decoder =
     Decode.succeed Tuple.pair
-        |> Pipeline.required "token" (Chains.decoderToken chain chains)
+        |> Pipeline.required "token" Token.decoder
         |> Pipeline.required "balance" Uint.decoder
         |> Decode.list
         |> Decode.map (Dict.fromList Token.sorter)

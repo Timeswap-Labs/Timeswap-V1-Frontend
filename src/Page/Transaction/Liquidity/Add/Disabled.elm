@@ -1,4 +1,4 @@
-module Page.Transaction.Liquidity.AddError exposing (Transaction(..), init)
+module Page.Transaction.Liquidity.Add.Disabled exposing (Transaction(..), init)
 
 
 type Transaction

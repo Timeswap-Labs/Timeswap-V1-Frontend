@@ -27,7 +27,6 @@ import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
-import Data.Web as Web
 import Element
     exposing
         ( Element
@@ -58,11 +57,11 @@ import Element.Input as Input
 import Element.Region as Region
 import Http
 import Page.Transaction.Answer as Answer exposing (Answer)
+import Page.Transaction.Liquidity.Add.Disabled as AddDisabled
 import Page.Transaction.Liquidity.Add.Main as Add
-import Page.Transaction.Liquidity.AddError as AddError
 import Page.Transaction.Liquidity.Empty as Empty
+import Page.Transaction.Liquidity.New.Disabled as NewDisabled
 import Page.Transaction.Liquidity.New.Main as New
-import Page.Transaction.Liquidity.NewError as NewError
 import Page.Transaction.MaturityButton as MaturityButton
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Query as Query
@@ -85,8 +84,8 @@ type Transaction
 
 
 type State
-    = Add (PoolParam (Status AddError (PoolState Add.Transaction ())))
-    | New (PoolParam (Status NewError (PoolState () New.Transaction)))
+    = Add (PoolParam (Status AddDisabled (PoolState Add.Transaction ())))
+    | New (PoolParam (Status NewDisabled (PoolState () New.Transaction)))
 
 
 type PoolParam status
@@ -102,15 +101,15 @@ type Status error poolState
     | Matured
 
 
-type alias AddError =
+type alias AddDisabled =
     { http : Http.Error
-    , add : AddError.Transaction
+    , add : AddDisabled.Transaction
     }
 
 
-type alias NewError =
+type alias NewDisabled =
     { http : Http.Error
-    , new : NewError.Transaction
+    , new : NewDisabled.Transaction
     }
 
 
@@ -192,7 +191,7 @@ init ({ time } as model) blockchain parameter =
                   , tooltip = Nothing
                   }
                     |> Transaction
-                , get model blockchain pool
+                , get blockchain pool
                 )
 
             else
@@ -224,14 +223,13 @@ initGivenPoolInfo model blockchain pool poolInfo =
       , tooltip = Nothing
       }
         |> Transaction
-    , get model blockchain pool
+    , get blockchain pool
     )
 
 
 update :
     { model
         | time : Posix
-        , chains : Chains
         , slippage : Slippage
         , deadline : Deadline
     }
@@ -285,7 +283,7 @@ update model blockchain msg (Transaction transaction) =
             { transaction
                 | state =
                     { http = error.http
-                    , new = NewError.init
+                    , new = NewDisabled.init
                     }
                         |> Failure
                         |> Active
@@ -357,7 +355,7 @@ update model blockchain msg (Transaction transaction) =
             { transaction
                 | state =
                     { http = error.http
-                    , add = AddError.init
+                    , add = AddDisabled.init
                     }
                         |> Failure
                         |> Active
@@ -427,25 +425,25 @@ update model blockchain msg (Transaction transaction) =
 
         ( QueryAgain, Add (Pool pool (Active (Success _))) ) ->
             ( transaction |> Transaction
-            , get model blockchain pool
+            , get blockchain pool
             , Nothing
             )
 
         ( QueryAgain, Add (Pool pool (Active (Failure _))) ) ->
             ( transaction |> Transaction
-            , get model blockchain pool
+            , get blockchain pool
             , Nothing
             )
 
         ( QueryAgain, New (Pool pool (Active (Success _))) ) ->
             ( transaction |> Transaction
-            , get model blockchain pool
+            , get blockchain pool
             , Nothing
             )
 
         ( QueryAgain, New (Pool pool (Active (Failure _))) ) ->
             ( transaction |> Transaction
-            , get model blockchain pool
+            , get blockchain pool
             , Nothing
             )
 
@@ -498,7 +496,7 @@ update model blockchain msg (Transaction transaction) =
 
                     ( Err error, Success (DoesNotExist ()) ) ->
                         { http = error
-                        , add = AddError.init
+                        , add = AddDisabled.init
                         }
                             |> Failure
                             |> Just
@@ -510,7 +508,7 @@ update model blockchain msg (Transaction transaction) =
 
                     ( Err error, Loading ) ->
                         { http = error
-                        , add = AddError.init
+                        , add = AddDisabled.init
                         }
                             |> Failure
                             |> Just
@@ -574,7 +572,7 @@ update model blockchain msg (Transaction transaction) =
 
                     ( Err error, Success (Exist _ ()) ) ->
                         { http = error
-                        , new = NewError.init
+                        , new = NewDisabled.init
                         }
                             |> Failure
                             |> Just
@@ -593,7 +591,7 @@ update model blockchain msg (Transaction transaction) =
 
                     ( Err error, Loading ) ->
                         { http = error
-                        , new = NewError.init
+                        , new = NewDisabled.init
                         }
                             |> Failure
                             |> Just
@@ -727,11 +725,10 @@ noCmdAndEffect transaction =
 
 
 get :
-    { model | chains : Chains }
-    -> Blockchain
+    Blockchain
     -> Pool
     -> Cmd Msg
-get model blockchain pool =
+get blockchain pool =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
@@ -740,8 +737,7 @@ get model blockchain pool =
                         pool
                             |> Query.toUrlString chain
                     , expect =
-                        pool
-                            |> Answer.decoder model chain
+                        Answer.decoder
                             |> Http.expectJson
                                 (ReceiveAnswer chain pool)
                     }

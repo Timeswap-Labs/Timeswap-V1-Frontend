@@ -9,8 +9,7 @@ module Page.Transaction.Liquidity.Add.Answer exposing
     )
 
 import Data.CDP as CDP exposing (CDP)
-import Data.Chain exposing (Chain)
-import Data.Chains as Chains exposing (Chains)
+import Data.Chain as Chain exposing (Chain)
 import Data.Pool as Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage as Slippage exposing (Slippage)
@@ -93,81 +92,63 @@ type alias ResultCollateral =
     }
 
 
-decoder : { model | chains : Chains } -> Decoder Answer
-decoder model =
-    [ decoderAnswerAsset model
+decoder : Decoder Answer
+decoder =
+    [ decoderAnswerAsset
         |> Decode.map GivenAsset
-    , decoderAnswerDebt model
+    , decoderAnswerDebt
         |> Decode.map GivenDebt
-    , decoderAnswerCollateral model
+    , decoderAnswerCollateral
         |> Decode.map GivenCollateral
     ]
         |> Decode.oneOf
 
 
-decoderAnswerAsset :
-    { model | chains : Chains }
-    -> Decoder AnswerAsset
-decoderAnswerAsset { chains } =
-    Chains.decoderChain chains
-        |> Decode.field "chainId"
-        |> Decode.andThen
-            (\chain ->
-                Decode.succeed (AnswerAsset chain)
-                    |> Pipeline.required "pool" (Pool.decoder chain chains)
-                    |> Pipeline.required "poolInfo" PoolInfo.decoder
-                    |> Pipeline.required "assetIn" Uint.decoder
-                    |> Pipeline.required "slippage" Slippage.decoder
-                    |> Pipeline.required "result"
-                        ([ decoderResultAsset |> Decode.map Ok
-                         , Error.decoder |> Decode.map Err
-                         ]
-                            |> Decode.oneOf
-                        )
+decoderAnswerAsset : Decoder AnswerAsset
+decoderAnswerAsset =
+    Decode.succeed AnswerAsset
+        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "poolInfo" PoolInfo.decoder
+        |> Pipeline.required "assetIn" Uint.decoder
+        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "result"
+            ([ decoderResultAsset |> Decode.map Ok
+             , Error.decoder |> Decode.map Err
+             ]
+                |> Decode.oneOf
             )
 
 
-decoderAnswerDebt :
-    { model | chains : Chains }
-    -> Decoder AnswerDebt
-decoderAnswerDebt { chains } =
-    Chains.decoderChain chains
-        |> Decode.field "chainId"
-        |> Decode.andThen
-            (\chain ->
-                Decode.succeed (AnswerDebt chain)
-                    |> Pipeline.required "pool" (Pool.decoder chain chains)
-                    |> Pipeline.required "poolInfo" PoolInfo.decoder
-                    |> Pipeline.required "debtOut" Uint.decoder
-                    |> Pipeline.required "slippage" Slippage.decoder
-                    |> Pipeline.required "result"
-                        ([ decoderResultDebt |> Decode.map Ok
-                         , Error.decoder |> Decode.map Err
-                         ]
-                            |> Decode.oneOf
-                        )
+decoderAnswerDebt : Decoder AnswerDebt
+decoderAnswerDebt =
+    Decode.succeed AnswerDebt
+        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "poolInfo" PoolInfo.decoder
+        |> Pipeline.required "debtOut" Uint.decoder
+        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "result"
+            ([ decoderResultDebt |> Decode.map Ok
+             , Error.decoder |> Decode.map Err
+             ]
+                |> Decode.oneOf
             )
 
 
-decoderAnswerCollateral :
-    { model | chains : Chains }
-    -> Decoder AnswerCollateral
-decoderAnswerCollateral { chains } =
-    Chains.decoderChain chains
-        |> Decode.field "chainId"
-        |> Decode.andThen
-            (\chain ->
-                Decode.succeed (AnswerCollateral chain)
-                    |> Pipeline.required "pool" (Pool.decoder chain chains)
-                    |> Pipeline.required "poolInfo" PoolInfo.decoder
-                    |> Pipeline.required "collateralOut" Uint.decoder
-                    |> Pipeline.required "slippage" Slippage.decoder
-                    |> Pipeline.required "result"
-                        ([ decoderResultCollateral |> Decode.map Ok
-                         , Error.decoder |> Decode.map Err
-                         ]
-                            |> Decode.oneOf
-                        )
+decoderAnswerCollateral : Decoder AnswerCollateral
+decoderAnswerCollateral =
+    Decode.succeed AnswerCollateral
+        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "poolInfo" PoolInfo.decoder
+        |> Pipeline.required "collateralOut" Uint.decoder
+        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "result"
+            ([ decoderResultCollateral |> Decode.map Ok
+             , Error.decoder |> Decode.map Err
+             ]
+                |> Decode.oneOf
             )
 
 

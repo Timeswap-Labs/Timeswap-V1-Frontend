@@ -8,15 +8,12 @@ import Element
         , fill
         , height
         , none
-        , padding
         , px
         , shrink
         , spacing
         , text
         , width
         )
-import Element.Background as Background
-import Element.Border as Border
 import Element.Font as Font
 import Utility.Color as Color
 

@@ -24,7 +24,7 @@ import Utility.Color as Color
 
 type Mode
     = Recommended
-    | Pro
+    | Advanced
 
 
 view :
@@ -46,7 +46,7 @@ view { onChange, mode } =
             [ viewRecommended
                 |> Input.optionWith Recommended
             , viewAdvanced
-                |> Input.optionWith Pro
+                |> Input.optionWith Advanced
             ]
         , selected = Just mode
         , label = Input.labelHidden "switch mode"
@@ -121,7 +121,7 @@ disabledRecommended mode =
                         , Border.rounded 4
                         ]
 
-                    Pro ->
+                    Advanced ->
                         []
                )
         )
@@ -189,7 +189,7 @@ disabledAdvanced mode =
                     Recommended ->
                         []
 
-                    Pro ->
+                    Advanced ->
                         [ Background.color Color.primary500
                         , Border.rounded 4
                         ]

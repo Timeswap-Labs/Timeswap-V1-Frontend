@@ -6,8 +6,6 @@ module Data.Pool exposing
     , toQueryParameters
     )
 
-import Data.Chain exposing (Chain)
-import Data.Chains exposing (Chains)
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Token as Token
@@ -24,10 +22,10 @@ type alias Pool =
     }
 
 
-decoder : Chain -> Chains -> Decoder Pool
-decoder chain chains =
+decoder : Decoder Pool
+decoder =
     Decode.succeed Pool
-        |> Pipeline.custom (Pair.decoder chain chains)
+        |> Pipeline.custom Pair.decoder
         |> Pipeline.required "maturity" Maturity.decoder
 
 

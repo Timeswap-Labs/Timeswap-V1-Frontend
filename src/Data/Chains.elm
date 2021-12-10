@@ -2,8 +2,6 @@ module Data.Chains exposing
     ( Chains
     , Flags
     , decoderChain
-    , decoderERC20
-    , decoderToken
     , encodeCustom
     , fromFragment
     , getGivenAddress
@@ -113,26 +111,6 @@ toDict : Chains -> Dict Chain Tokens
 toDict (Chains { defaultChain, defaultTokens, others }) =
     others
         |> Dict.insert defaultChain defaultTokens
-
-
-decoderToken : Chain -> Chains -> Decoder Token
-decoderToken chain chains =
-    chains
-        |> toDict
-        |> Dict.get chain
-        |> Maybe.map Decode.succeed
-        |> Maybe.withDefault (Decode.fail "Not a chain")
-        |> Decode.andThen Tokens.decoderToken
-
-
-decoderERC20 : Chain -> Chains -> Decoder ERC20
-decoderERC20 chain chains =
-    chains
-        |> toDict
-        |> Dict.get chain
-        |> Maybe.map Decode.succeed
-        |> Maybe.withDefault (Decode.fail "Not a chain")
-        |> Decode.andThen Tokens.decoderERC20
 
 
 decoderChain : Chains -> Decoder Chain

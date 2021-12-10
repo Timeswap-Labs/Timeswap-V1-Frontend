@@ -1,5 +1,16 @@
-module Data.Native exposing (Flag, Native, encode, init, toDecimals, toName, toSymbol)
+module Data.Native exposing
+    ( Flag
+    , Native
+    , decoder
+    , encode
+    , init
+    , toDecimals
+    , toName
+    , toSymbol
+    )
 
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode exposing (Value)
 
 
@@ -23,9 +34,28 @@ init native =
     native |> Native
 
 
+decoder : Decoder Native
+decoder =
+    Decode.succeed
+        (\name symbol decimals ->
+            { name = name
+            , symbol = symbol
+            , decimals = decimals
+            }
+                |> Native
+        )
+        |> Pipeline.required "name" Decode.string
+        |> Pipeline.required "symbol" Decode.string
+        |> Pipeline.required "decimals" Decode.int
+
+
 encode : Native -> Value
-encode (Native { symbol }) =
-    symbol |> Encode.string
+encode (Native { name, symbol, decimals }) =
+    [ ( "name", name |> Encode.string )
+    , ( "symbol", symbol |> Encode.string )
+    , ( "decimals", decimals |> Encode.int )
+    ]
+        |> Encode.object
 
 
 toName : Native -> String

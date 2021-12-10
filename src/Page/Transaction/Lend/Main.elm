@@ -15,7 +15,6 @@ module Page.Transaction.Lend.Main exposing
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
-import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
@@ -28,7 +27,6 @@ import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
-import Data.Web as Web
 import Element
     exposing
         ( Element
@@ -58,8 +56,8 @@ import Element.Region as Region
 import Http
 import Page.Transaction.Answer as Answer exposing (Answer)
 import Page.Transaction.Lend.Empty as Empty
+import Page.Transaction.Lend.Lend.Disabled as Disabled
 import Page.Transaction.Lend.Lend.Main as Lend
-import Page.Transaction.Lend.LendError as LendError
 import Page.Transaction.MaturityButton as MaturityButton
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Query as Query
@@ -95,7 +93,7 @@ type Status
 
 type alias Error =
     { http : Http.Error
-    , lend : LendError.Transaction
+    , lend : Disabled.Transaction
     }
 
 
@@ -125,11 +123,11 @@ type Effect
 
 
 init :
-    { model | time : Posix, chains : Chains }
+    { model | time : Posix }
     -> Blockchain
     -> Maybe Parameter
     -> ( Transaction, Cmd Msg )
-init ({ time } as model) blockchain parameter =
+init { time } blockchain parameter =
     case parameter of
         Nothing ->
             ( { state = None
@@ -172,7 +170,7 @@ init ({ time } as model) blockchain parameter =
                   , tooltip = Nothing
                   }
                     |> Transaction
-                , get model blockchain pool
+                , get blockchain pool
                 )
 
             else
@@ -185,23 +183,32 @@ init ({ time } as model) blockchain parameter =
 
 
 initGivenPoolInfo :
-    { model | time : Posix, chains : Chains }
+    { model | time : Posix }
     -> Blockchain
     -> Pool
     -> PoolInfo
     -> ( Transaction, Cmd Msg )
-initGivenPoolInfo model blockchain pool poolInfo =
-    ( { state =
-            Lend.init
-                |> Exist poolInfo
-                |> Success
-                |> Active
-                |> Pool pool
-      , tooltip = Nothing
-      }
-        |> Transaction
-    , get model blockchain pool
-    )
+initGivenPoolInfo { time } blockchain pool poolInfo =
+    if pool.maturity |> Maturity.isActive time then
+        ( { state =
+                Lend.init
+                    |> Exist poolInfo
+                    |> Success
+                    |> Active
+                    |> Pool pool
+          , tooltip = Nothing
+          }
+            |> Transaction
+        , get blockchain pool
+        )
+
+    else
+        ( { state = Matured |> Pool pool
+          , tooltip = Nothing
+          }
+            |> Transaction
+        , Cmd.none
+        )
 
 
 notSupported : Transaction
@@ -215,7 +222,6 @@ notSupported =
 update :
     { model
         | time : Posix
-        , chains : Chains
         , slippage : Slippage
         , deadline : Deadline
     }
@@ -255,13 +261,13 @@ update model blockchain msg (Transaction transaction) =
 
         ( QueryAgain, Pool pool (Active (Success _)) ) ->
             ( transaction |> Transaction
-            , get model blockchain pool
+            , get blockchain pool
             , Nothing
             )
 
         ( QueryAgain, Pool pool (Active (Failure _)) ) ->
             ( transaction |> Transaction
-            , get model blockchain pool
+            , get blockchain pool
             , Nothing
             )
 
@@ -314,7 +320,7 @@ update model blockchain msg (Transaction transaction) =
 
                     ( Err error, Success DoesNotExist ) ->
                         { http = error
-                        , lend = LendError.init
+                        , lend = Disabled.init
                         }
                             |> Failure
                             |> Just
@@ -326,7 +332,7 @@ update model blockchain msg (Transaction transaction) =
 
                     ( Err error, Loading ) ->
                         { http = error
-                        , lend = LendError.init
+                        , lend = Disabled.init
                         }
                             |> Failure
                             |> Just
@@ -422,11 +428,10 @@ noCmdAndEffect transaction =
 
 
 get :
-    { model | chains : Chains }
-    -> Blockchain
+    Blockchain
     -> Pool
     -> Cmd Msg
-get model blockchain pool =
+get blockchain pool =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
@@ -435,8 +440,7 @@ get model blockchain pool =
                         pool
                             |> Query.toUrlString chain
                     , expect =
-                        pool
-                            |> Answer.decoder model chain
+                        Answer.decoder
                             |> Http.expectJson
                                 (ReceiveAnswer chain pool)
                     }

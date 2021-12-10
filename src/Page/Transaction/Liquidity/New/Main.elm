@@ -49,10 +49,10 @@ import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Page.Approve as Approve
 import Page.Transaction.Liquidity.New.Answer as Answer
+import Page.Transaction.Liquidity.New.Disabled as Disabled
 import Page.Transaction.Liquidity.New.Error exposing (Error)
 import Page.Transaction.Liquidity.New.Query as Query
 import Page.Transaction.Liquidity.New.Tooltip as Tooltip exposing (Tooltip)
-import Page.Transaction.Liquidity.NewError as NewError
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -117,7 +117,7 @@ initGivenNew =
     }
 
 
-fromNewError : NewError.Transaction -> Transaction
+fromNewError : Disabled.Transaction -> Transaction
 fromNewError transaction =
     { assetIn = transaction.assetIn
     , debtOut = transaction.debtOut
@@ -128,7 +128,7 @@ fromNewError transaction =
         |> Transaction
 
 
-toNewError : Transaction -> NewError.Transaction
+toNewError : Transaction -> Disabled.Transaction
 toNewError (Transaction { assetIn, debtOut, collateralOut }) =
     { assetIn = assetIn
     , debtOut = debtOut
@@ -139,7 +139,6 @@ toNewError (Transaction { assetIn, debtOut, collateralOut }) =
 update :
     { model
         | time : Posix
-        , chains : Chains
         , slippage : Slippage
         , deadline : Deadline
     }
@@ -372,7 +371,7 @@ update model blockchain pool msg (Transaction transaction) =
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ReceiveAnswer value ->
-            (case value |> Decode.decodeValue (Answer.decoder model) of
+            (case value |> Decode.decodeValue Answer.decoder of
                 Ok answer ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))

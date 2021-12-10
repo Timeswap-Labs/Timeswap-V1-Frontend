@@ -1,4 +1,4 @@
-module Page.Transaction.Liquidity.NewError exposing (Transaction, init)
+module Page.Transaction.Liquidity.New.Disabled exposing (Transaction, init)
 
 
 type alias Transaction =

@@ -59,11 +59,11 @@ import Page.Approve as Approve
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.Lend.Lend.Answer as Answer
+import Page.Transaction.Lend.Lend.Disabled as Disabled
 import Page.Transaction.Lend.Lend.Error exposing (Error)
 import Page.Transaction.Lend.Lend.Query as Query
 import Page.Transaction.Lend.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.Lend.Lend.Write as Write
-import Page.Transaction.Lend.LendError as LendError
 import Page.Transaction.Output as Output
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Slider as Slider
@@ -201,28 +201,28 @@ initGivenInsurance =
     }
 
 
-fromLendError : LendError.Transaction -> Transaction
+fromLendError : Disabled.Transaction -> Transaction
 fromLendError { assetIn, claimsOut } =
     { assetIn = assetIn
     , claimsOut =
         case claimsOut of
-            LendError.Default ->
+            Disabled.Default ->
                 Default Loading
 
-            LendError.Slider percent ->
+            Disabled.Slider percent ->
                 { percent = percent
                 , claims = Loading
                 }
                     |> Slider
 
-            LendError.Bond { percent, bondOut } ->
+            Disabled.Bond { percent, bondOut } ->
                 { percent = percent
                 , bondOut = bondOut
                 , claims = Loading
                 }
                     |> Bond
 
-            LendError.Insurance { percent, insuranceOut } ->
+            Disabled.Insurance { percent, insuranceOut } ->
                 { percent = percent
                 , insuranceOut = insuranceOut
                 , claims = Loading
@@ -233,35 +233,34 @@ fromLendError { assetIn, claimsOut } =
         |> Transaction
 
 
-toLendError : Transaction -> LendError.Transaction
+toLendError : Transaction -> Disabled.Transaction
 toLendError (Transaction { assetIn, claimsOut }) =
     { assetIn = assetIn
     , claimsOut =
         case claimsOut of
             Default _ ->
-                LendError.Default
+                Disabled.Default
 
             Slider { percent } ->
-                LendError.Slider percent
+                Disabled.Slider percent
 
             Bond { percent, bondOut } ->
                 { percent = percent
                 , bondOut = bondOut
                 }
-                    |> LendError.Bond
+                    |> Disabled.Bond
 
             Insurance { percent, insuranceOut } ->
                 { percent = percent
                 , insuranceOut = insuranceOut
                 }
-                    |> LendError.Insurance
+                    |> Disabled.Insurance
     }
 
 
 update :
     { model
         | time : Posix
-        , chains : Chains
         , slippage : Slippage
         , deadline : Deadline
     }
@@ -317,7 +316,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
-        SwitchMode Switch.Pro ->
+        SwitchMode Switch.Advanced ->
             { transaction
                 | claimsOut =
                     if transaction.assetIn |> Input.isZero then
@@ -726,7 +725,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
         ReceiveAnswer value ->
             (case
                 ( value
-                    |> Decode.decodeValue (Answer.decoder model)
+                    |> Decode.decodeValue Answer.decoder
                 , transaction.claimsOut
                 )
              of
@@ -1507,7 +1506,7 @@ viewClaims model pool ({ claimsOut } as transaction) =
                 Switch.Recommended
 
             _ ->
-                Switch.Pro
+                Switch.Advanced
           )
             |> (\mode ->
                     Switch.view
@@ -1823,7 +1822,7 @@ disabledClaims model pool ({ claimsOut } as transaction) =
                 Switch.Recommended
 
             _ ->
-                Switch.Pro
+                Switch.Advanced
           )
             |> Switch.disabled
         , (case claimsOut of

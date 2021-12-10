@@ -165,7 +165,6 @@ construct ({ chains } as model) url maybePage =
 update :
     { model
         | time : Posix
-        , chains : Chains
         , slippage : Slippage
         , deadline : Deadline
     }

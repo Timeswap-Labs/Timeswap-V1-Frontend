@@ -15,7 +15,6 @@ import Element
         , moveLeft
         , moveRight
         , none
-        , paddingXY
         , px
         , row
         , shrink

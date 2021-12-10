@@ -4,8 +4,7 @@ module Page.Transaction.Liquidity.New.Answer exposing
     )
 
 import Data.CDP as CDP exposing (CDP)
-import Data.Chain exposing (Chain)
-import Data.Chains as Chains exposing (Chains)
+import Data.Chain as Chain exposing (Chain)
 import Data.Pool as Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Uint as Uint exposing (Uint)
@@ -31,23 +30,19 @@ type alias ResultNew =
     }
 
 
-decoder : { model | chains : Chains } -> Decoder Answer
-decoder { chains } =
-    Chains.decoderChain chains
-        |> Decode.field "chainId"
-        |> Decode.andThen
-            (\chain ->
-                Decode.succeed (Answer chain)
-                    |> Pipeline.required "pool" (Pool.decoder chain chains)
-                    |> Pipeline.required "assetIn" Uint.decoder
-                    |> Pipeline.required "debtOut" Uint.decoder
-                    |> Pipeline.required "collateralOut" Uint.decoder
-                    |> Pipeline.required "result"
-                        ([ decoderResultNew |> Decode.map Ok
-                         , Error.decoder |> Decode.map Err
-                         ]
-                            |> Decode.oneOf
-                        )
+decoder : Decoder Answer
+decoder =
+    Decode.succeed Answer
+        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "assetIn" Uint.decoder
+        |> Pipeline.required "debtOut" Uint.decoder
+        |> Pipeline.required "collateralOut" Uint.decoder
+        |> Pipeline.required "result"
+            ([ decoderResultNew |> Decode.map Ok
+             , Error.decoder |> Decode.map Err
+             ]
+                |> Decode.oneOf
             )
 
 

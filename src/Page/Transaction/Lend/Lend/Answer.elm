@@ -7,8 +7,7 @@ module Page.Transaction.Lend.Lend.Answer exposing
     )
 
 import Data.CDP as CDP exposing (CDP)
-import Data.Chain exposing (Chain)
-import Data.Chains as Chains exposing (Chains)
+import Data.Chain as Chain exposing (Chain)
 import Data.Percent as Percent exposing (Percent)
 import Data.Pool as Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
@@ -87,84 +86,66 @@ type alias ResultInsurance =
     }
 
 
-decoder : { model | chains : Chains } -> Decoder Answer
-decoder model =
-    [ decoderAnswerPercent model
+decoder : Decoder Answer
+decoder =
+    [ decoderAnswerPercent
         |> Decode.map GivenPercent
-    , decoderAnswerBond model
+    , decoderAnswerBond
         |> Decode.map GivenBond
-    , decoderAnswerInsurance model
+    , decoderAnswerInsurance
         |> Decode.map GivenInsurance
     ]
         |> Decode.oneOf
 
 
-decoderAnswerPercent :
-    { model | chains : Chains }
-    -> Decoder AnswerPercent
-decoderAnswerPercent { chains } =
-    Chains.decoderChain chains
-        |> Decode.field "chainId"
-        |> Decode.andThen
-            (\chain ->
-                Decode.succeed (AnswerPercent chain)
-                    |> Pipeline.required "pool" (Pool.decoder chain chains)
-                    |> Pipeline.required "poolInfo" PoolInfo.decoder
-                    |> Pipeline.required "assetIn" Uint.decoder
-                    |> Pipeline.required "percent" Percent.decoder
-                    |> Pipeline.required "slippage" Slippage.decoder
-                    |> Pipeline.required "result"
-                        ([ decoderResultPercent |> Decode.map Ok
-                         , Error.decoder |> Decode.map Err
-                         ]
-                            |> Decode.oneOf
-                        )
+decoderAnswerPercent : Decoder AnswerPercent
+decoderAnswerPercent =
+    Decode.succeed AnswerPercent
+        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "poolInfo" PoolInfo.decoder
+        |> Pipeline.required "assetIn" Uint.decoder
+        |> Pipeline.required "percent" Percent.decoder
+        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "result"
+            ([ decoderResultPercent |> Decode.map Ok
+             , Error.decoder |> Decode.map Err
+             ]
+                |> Decode.oneOf
             )
 
 
-decoderAnswerBond :
-    { model | chains : Chains }
-    -> Decoder AnswerBond
-decoderAnswerBond { chains } =
-    Chains.decoderChain chains
-        |> Decode.field "chainId"
-        |> Decode.andThen
-            (\chain ->
-                Decode.succeed (AnswerBond chain)
-                    |> Pipeline.required "pool" (Pool.decoder chain chains)
-                    |> Pipeline.required "poolInfo" PoolInfo.decoder
-                    |> Pipeline.required "assetIn" Uint.decoder
-                    |> Pipeline.required "bondOut" Uint.decoder
-                    |> Pipeline.required "slippage" Slippage.decoder
-                    |> Pipeline.required "result"
-                        ([ decoderResultBond |> Decode.map Ok
-                         , Error.decoder |> Decode.map Err
-                         ]
-                            |> Decode.oneOf
-                        )
+decoderAnswerBond : Decoder AnswerBond
+decoderAnswerBond =
+    Decode.succeed AnswerBond
+        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "poolInfo" PoolInfo.decoder
+        |> Pipeline.required "assetIn" Uint.decoder
+        |> Pipeline.required "bondOut" Uint.decoder
+        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "result"
+            ([ decoderResultBond |> Decode.map Ok
+             , Error.decoder |> Decode.map Err
+             ]
+                |> Decode.oneOf
             )
 
 
-decoderAnswerInsurance :
-    { model | chains : Chains }
-    -> Decoder AnswerInsurance
-decoderAnswerInsurance { chains } =
-    Chains.decoderChain chains
-        |> Decode.field "chainId"
-        |> Decode.andThen
-            (\chain ->
-                Decode.succeed (AnswerInsurance chain)
-                    |> Pipeline.required "pool" (Pool.decoder chain chains)
-                    |> Pipeline.required "poolInfo" PoolInfo.decoder
-                    |> Pipeline.required "assetIn" Uint.decoder
-                    |> Pipeline.required "insuranceOut" Uint.decoder
-                    |> Pipeline.required "slippage" Slippage.decoder
-                    |> Pipeline.required "result"
-                        ([ decoderResultInsurance |> Decode.map Ok
-                         , Error.decoder |> Decode.map Err
-                         ]
-                            |> Decode.oneOf
-                        )
+decoderAnswerInsurance : Decoder AnswerInsurance
+decoderAnswerInsurance =
+    Decode.succeed AnswerInsurance
+        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "poolInfo" PoolInfo.decoder
+        |> Pipeline.required "assetIn" Uint.decoder
+        |> Pipeline.required "insuranceOut" Uint.decoder
+        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "result"
+            ([ decoderResultInsurance |> Decode.map Ok
+             , Error.decoder |> Decode.map Err
+             ]
+                |> Decode.oneOf
             )
 
 

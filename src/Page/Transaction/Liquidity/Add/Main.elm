@@ -51,10 +51,10 @@ import Json.Encode exposing (Value)
 import Page.Approve as Approve
 import Page.Transaction.Info as Info
 import Page.Transaction.Liquidity.Add.Answer as Answer
+import Page.Transaction.Liquidity.Add.Disabled as Disabled
 import Page.Transaction.Liquidity.Add.Error exposing (Error)
 import Page.Transaction.Liquidity.Add.Query as Query
 import Page.Transaction.Liquidity.Add.Tooltip as Tooltip exposing (Tooltip)
-import Page.Transaction.Liquidity.AddError as AddError
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
@@ -206,23 +206,23 @@ initGivenCollateral =
     }
 
 
-fromAddError : AddError.Transaction -> Transaction
+fromAddError : Disabled.Transaction -> Transaction
 fromAddError transaction =
     { state =
         case transaction of
-            AddError.Asset assetIn ->
+            Disabled.Asset assetIn ->
                 { assetIn = assetIn
                 , out = Loading
                 }
                     |> Asset
 
-            AddError.Debt debtOut ->
+            Disabled.Debt debtOut ->
                 { debtOut = debtOut
                 , out = Loading
                 }
                     |> Debt
 
-            AddError.Collateral collateralOut ->
+            Disabled.Collateral collateralOut ->
                 { collateralOut = collateralOut
                 , out = Loading
                 }
@@ -232,23 +232,22 @@ fromAddError transaction =
         |> Transaction
 
 
-toAddError : Transaction -> AddError.Transaction
+toAddError : Transaction -> Disabled.Transaction
 toAddError (Transaction { state }) =
     case state of
         Asset { assetIn } ->
-            AddError.Asset assetIn
+            Disabled.Asset assetIn
 
         Debt { debtOut } ->
-            AddError.Debt debtOut
+            Disabled.Debt debtOut
 
         Collateral { collateralOut } ->
-            AddError.Collateral collateralOut
+            Disabled.Collateral collateralOut
 
 
 update :
     { model
         | time : Posix
-        , chains : Chains
         , slippage : Slippage
         , deadline : Deadline
     }
@@ -555,7 +554,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
         ReceiveAnswer value ->
             (case
                 ( value
-                    |> Decode.decodeValue (Answer.decoder model)
+                    |> Decode.decodeValue Answer.decoder
                 , transaction.state
                 )
              of

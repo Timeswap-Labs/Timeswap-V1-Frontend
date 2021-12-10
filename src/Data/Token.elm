@@ -1,5 +1,6 @@
 module Data.Token exposing
     ( Token(..)
+    , decoder
     , encode
     , sorter
     , toDecimals
@@ -13,6 +14,7 @@ module Data.Token exposing
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Native as Native exposing (Native)
 import Data.TokenParam as TokenParam exposing (TokenParam)
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Sort exposing (Sorter)
 import Url.Builder exposing (QueryParameter)
@@ -23,6 +25,14 @@ type Token
     | ERC20 ERC20
 
 
+decoder : Decoder Token
+decoder =
+    [ Native.decoder |> Decode.map Native
+    , ERC20.decoder |> Decode.map ERC20
+    ]
+        |> Decode.oneOf
+
+
 encode : Token -> Value
 encode token =
     case token of
@@ -30,7 +40,7 @@ encode token =
             native |> Native.encode
 
         ERC20 erc20 ->
-            erc20 |> ERC20.encodeAddress
+            erc20 |> ERC20.encode
 
 
 toString : Token -> String

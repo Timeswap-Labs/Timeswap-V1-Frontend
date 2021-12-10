@@ -1,5 +1,6 @@
 module Data.Chain exposing
     ( Chain(..)
+    , decoder
     , encode
     , sorter
     , toChainId
@@ -8,6 +9,8 @@ module Data.Chain exposing
     , toString
     )
 
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode exposing (Value)
 import Sort exposing (Sorter)
 import Url.Builder as Builder exposing (QueryParameter)
@@ -21,10 +24,28 @@ type Chain
         }
 
 
+decoder : Decoder Chain
+decoder =
+    Decode.succeed
+        (\chainId name etherscan ->
+            { chainId = chainId
+            , name = name
+            , etherscan = etherscan
+            }
+                |> Chain
+        )
+        |> Pipeline.required "chainId" Decode.int
+        |> Pipeline.required "name" Decode.string
+        |> Pipeline.required "etherscan" Decode.string
+
+
 encode : Chain -> Value
-encode (Chain { chainId }) =
-    chainId
-        |> Encode.int
+encode (Chain { chainId, name, etherscan }) =
+    [ ( "chainId", chainId |> Encode.int )
+    , ( "name", name |> Encode.string )
+    , ( "etherscan", etherscan |> Encode.string )
+    ]
+        |> Encode.object
 
 
 sorter : Sorter Chain
