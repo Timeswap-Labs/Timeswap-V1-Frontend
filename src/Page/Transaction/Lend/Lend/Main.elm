@@ -21,6 +21,7 @@ import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
+import Data.Spot exposing (Spot)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -33,6 +34,7 @@ import Element
         , el
         , fill
         , height
+        , map
         , none
         , padding
         , paddingXY
@@ -52,6 +54,7 @@ import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Page.Approve as Approve
 import Page.Transaction.Button as Button
+import Page.Transaction.Info as Info
 import Page.Transaction.Lend.Lend.Answer as Answer
 import Page.Transaction.Lend.Lend.Disabled as Disabled
 import Page.Transaction.Lend.Lend.Error exposing (Error)
@@ -1346,7 +1349,7 @@ hasInputZero claimsOut =
 
 
 view :
-    { model | images : Images }
+    { model | spot : Spot, images : Images }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -1428,11 +1431,11 @@ assetInSection model blockchain asset { assetIn, tooltip } =
 
 
 claimsOutSection :
-    { model | images : Images }
+    { model | spot : Spot, images : Images }
     -> Pool
     -> { transaction | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element Msg
-claimsOutSection model pool ({ claimsOut } as transaction) =
+claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
     column
         [ Region.description "claims"
         , width <| px 343
@@ -1470,15 +1473,69 @@ claimsOutSection model pool ({ claimsOut } as transaction) =
           )
             |> Maybe.map sliderSection
             |> Maybe.withDefault none
+        , row
+            [ width fill
+            , height shrink
+            , spacing 16
+            ]
+            ((case claimsOut of
+                Default default ->
+                    case default of
+                        Success { apr, cdp } ->
+                            ( apr, cdp ) |> Just
+
+                        _ ->
+                            Nothing
+
+                Slider { claims } ->
+                    case claims of
+                        Success { apr, cdp } ->
+                            ( apr, cdp ) |> Just
+
+                        _ ->
+                            Nothing
+
+                Bond { claims } ->
+                    case claims of
+                        Success { apr, cdp } ->
+                            ( apr, cdp ) |> Just
+
+                        _ ->
+                            Nothing
+
+                Insurance { claims } ->
+                    case claims of
+                        Success { apr, cdp } ->
+                            ( apr, cdp ) |> Just
+
+                        _ ->
+                            Nothing
+             )
+                |> Maybe.map
+                    (\( apr, cdp ) ->
+                        [ Info.lendAPR apr
+                        , Info.lendCDP model
+                            { onMouseEnter = OnMouseEnter
+                            , onMouseLeave = OnMouseLeave
+                            , cdpTooltip = Tooltip.CDP
+                            , symbolTooltip = Tooltip.CDPSymbol
+                            , opened = tooltip
+                            , pair = pool.pair
+                            , cdp = cdp
+                            }
+                        ]
+                    )
+                |> Maybe.withDefault
+                    [ Info.emptyAPR |> map never
+                    , Info.emptyCDP |> map never
+                    ]
+            )
         , case claimsOut of
             Default default ->
                 column
                     [ width fill
                     , height shrink
-                    , padding 12
                     , spacing 12
-                    , Background.color Color.primary100
-                    , Border.rounded 8
                     ]
                     [ default
                         |> Remote.map .bondOut
@@ -1496,10 +1553,7 @@ claimsOutSection model pool ({ claimsOut } as transaction) =
                 column
                     [ width fill
                     , height shrink
-                    , padding 12
                     , spacing 12
-                    , Background.color Color.primary100
-                    , Border.rounded 8
                     ]
                     [ claims
                         |> Remote.map .bondOut
@@ -1519,10 +1573,7 @@ claimsOutSection model pool ({ claimsOut } as transaction) =
                 column
                     [ width fill
                     , height shrink
-                    , padding 12
                     , spacing 12
-                    , Background.color Color.primary100
-                    , Border.rounded 8
                     ]
                     [ bondOut
                         |> Left
@@ -1541,10 +1592,7 @@ claimsOutSection model pool ({ claimsOut } as transaction) =
                 column
                     [ width fill
                     , height shrink
-                    , padding 12
                     , spacing 12
-                    , Background.color Color.primary100
-                    , Border.rounded 8
                     ]
                     [ claims
                         |> Remote.map .bondOut

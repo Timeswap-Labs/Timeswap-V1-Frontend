@@ -6,3 +6,5 @@ type Tooltip
     | AssetInSymbol
     | BondOutSymbol
     | InsuranceOutSymbol
+    | CDPSymbol
+    | CDP

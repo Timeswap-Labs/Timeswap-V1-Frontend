@@ -205,10 +205,7 @@ claimsOutSection model pool { claimsOut } =
                 column
                     [ width fill
                     , height shrink
-                    , padding 12
                     , spacing 12
-                    , Background.color Color.primary100
-                    , Border.rounded 8
                     ]
                     [ pool.pair
                         |> Pair.toAsset

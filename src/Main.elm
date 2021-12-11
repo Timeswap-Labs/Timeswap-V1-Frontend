@@ -1069,6 +1069,7 @@ body :
         , offset : Offset
         , chosenZone : ChosenZone
         , backdrop : Backdrop
+        , spot : Spot
         , images : Images
         , blockchain : Support User.NotSupported Blockchain
         , page : Page

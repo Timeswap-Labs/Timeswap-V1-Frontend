@@ -3,10 +3,13 @@ module Utility.Truncate exposing
     , disabledSymbol
     , viewAmount
     , viewBalance
+    , viewCDP
+    , viewCDPSymbol
     , viewName
     , viewSymbol
     )
 
+import Data.Pair as Pair exposing (Pair)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -203,6 +206,187 @@ viewName param =
                 , paddingXY 0 2
                 , Font.size 12
                 , Font.color Color.transparent300
+                ]
+                (text full)
+
+
+viewCDPSymbol :
+    { onMouseEnter : tooltip -> msg
+    , onMouseLeave : msg
+    , tooltip : tooltip
+    , opened : Maybe tooltip
+    , pair : Pair
+    }
+    -> Element msg
+viewCDPSymbol param =
+    case
+        ( fromCDPSymbol param.pair
+        , param.opened
+        )
+    of
+        ( ( full, Just short ), Just opened ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 2
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , (if opened == param.tooltip then
+                    el
+                        [ Font.size 14
+                        , Font.color Color.transparent300
+                        ]
+                        (text full)
+                        |> Tooltip.belowAlignLeft
+
+                   else
+                    none
+                  )
+                    |> below
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text short)
+
+        ( ( _, Just short ), Nothing ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 2
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text short)
+
+        ( ( full, Nothing ), _ ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 2
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                (text full)
+
+
+viewCDP :
+    { onMouseEnter : tooltip -> msg
+    , onMouseLeave : msg
+    , tooltip : tooltip
+    , opened : Maybe tooltip
+    , pair : Pair
+    , cdp : Uint
+    }
+    -> Element msg
+viewCDP param =
+    case
+        ( param.cdp
+            |> fromAmount
+                (param.pair |> Pair.toCollateral)
+        , param.opened
+        )
+    of
+        ( ( full, Just short ), Just opened ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 3
+                    , right = 0
+                    , bottom = 2
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , (if opened == param.tooltip then
+                    el
+                        [ Font.size 12
+                        , Font.color Color.transparent300
+                        ]
+                        (text full)
+                        |> Tooltip.belowAlignRight
+
+                   else
+                    none
+                  )
+                    |> below
+                , Font.size 18
+                , Font.color Color.warning400
+                ]
+                (text short)
+
+        ( ( _, Just short ), Nothing ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 3
+                    , right = 0
+                    , bottom = 2
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , Font.size 18
+                , Font.color Color.warning400
+                ]
+                (text short)
+
+        ( ( full, Nothing ), _ ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 3
+                , Font.size 18
+                , Font.color Color.warning400
                 ]
                 (text full)
 
@@ -668,6 +852,35 @@ fromSymbol token =
                     Nothing
                 )
            )
+
+
+fromCDPSymbol : Pair -> ( String, Maybe String )
+fromCDPSymbol pair =
+    (\collateral asset ->
+        ( [ collateral
+          , "per"
+          , asset
+          ]
+            |> String.join " "
+        , if
+            (collateral |> String.length)
+                > 5
+                || (asset |> String.length)
+                > 5
+          then
+            [ collateral |> String.left 5
+            , "per"
+            , asset |> String.left 5
+            ]
+                |> String.join " "
+                |> Just
+
+          else
+            Nothing
+        )
+    )
+        (pair |> Pair.toCollateral |> Token.toSymbol)
+        (pair |> Pair.toAsset |> Token.toSymbol)
 
 
 fromName : Token -> ( String, Maybe String )

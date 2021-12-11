@@ -4,6 +4,7 @@ module Page.Transaction.Lend.Main exposing
     , Transaction
     , init
     , initGivenPoolInfo
+    , initGivenSpot
     , notSupported
     , subscriptions
     , toParameter
@@ -20,13 +21,16 @@ import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
+import Data.Or exposing (Or(..))
 import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
+import Data.Spot exposing (Spot)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
+import Data.Uint exposing (Uint)
 import Element
     exposing
         ( Element
@@ -99,7 +103,7 @@ type alias Error =
 
 type PoolState
     = Exist PoolInfo Lend.Transaction
-    | DoesNotExist
+    | DoesNotExist (Maybe Uint)
 
 
 type Msg
@@ -211,6 +215,34 @@ initGivenPoolInfo { time } blockchain pool poolInfo =
         )
 
 
+initGivenSpot :
+    { model | time : Posix }
+    -> Blockchain
+    -> Pool
+    -> Maybe Uint
+    -> ( Transaction, Cmd Msg )
+initGivenSpot { time } blockchain pool spot =
+    if pool.maturity |> Maturity.isActive time then
+        ( { state =
+                DoesNotExist spot
+                    |> Success
+                    |> Active
+                    |> Pool pool
+          , tooltip = Nothing
+          }
+            |> Transaction
+        , get blockchain pool
+        )
+
+    else
+        ( { state = Matured |> Pool pool
+          , tooltip = Nothing
+          }
+            |> Transaction
+        , Cmd.none
+        )
+
+
 notSupported : Transaction
 notSupported =
     { state = None
@@ -281,33 +313,33 @@ update model blockchain msg (Transaction transaction) =
                     , remote
                     )
                 of
-                    ( Ok (Just poolInfo), Success (Exist _ lend) ) ->
+                    ( Ok (Right poolInfo), Success (Exist _ lend) ) ->
                         lend
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Ok (Just poolInfo), Success DoesNotExist ) ->
+                    ( Ok (Right poolInfo), Success (DoesNotExist _) ) ->
                         Lend.init
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Ok (Just poolInfo), Failure error ) ->
+                    ( Ok (Right poolInfo), Failure error ) ->
                         error.lend
                             |> Lend.fromLendError
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Ok (Just poolInfo), Loading ) ->
+                    ( Ok (Right poolInfo), Loading ) ->
                         Lend.init
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Ok Nothing, _ ) ->
-                        DoesNotExist
+                    ( Ok (Left spot), _ ) ->
+                        DoesNotExist spot
                             |> Success
                             |> Just
 
@@ -318,7 +350,7 @@ update model blockchain msg (Transaction transaction) =
                             |> Failure
                             |> Just
 
-                    ( Err error, Success DoesNotExist ) ->
+                    ( Err error, Success (DoesNotExist _) ) ->
                         { http = error
                         , lend = Disabled.init
                         }
@@ -485,11 +517,18 @@ toParameter (Transaction { state }) =
                 |> Just
 
 
-toPoolInfo : Transaction -> Maybe PoolInfo
+toPoolInfo : Transaction -> Maybe (Or (Maybe Uint) PoolInfo)
 toPoolInfo (Transaction { state }) =
     case state of
         Pool _ (Active (Success (Exist poolInfo _))) ->
-            poolInfo |> Just
+            poolInfo
+                |> Right
+                |> Just
+
+        Pool _ (Active (Success (DoesNotExist spot))) ->
+            spot
+                |> Left
+                |> Just
 
         _ ->
             Nothing
@@ -500,12 +539,14 @@ view :
         | time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
+        , spot : Spot
         , backdrop : Backdrop
         , images : Images
     }
+    -> Blockchain
     -> Transaction
     -> Element Msg
-view ({ backdrop } as model) (Transaction transaction) =
+view ({ backdrop } as model) blockchain (Transaction transaction) =
     (case transaction.state of
         None ->
             { asset = Nothing
@@ -561,12 +602,79 @@ view ({ backdrop } as model) (Transaction transaction) =
                         }
                    )
 
-        Pool pool _ ->
-            { first = none
-            , second = none
-            , buttons = none
+        Pool pool Matured ->
+            { asset =
+                pool.pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pool.pair
+                    |> Pair.toCollateral
+                    |> Just
             }
-                |> Debug.log "later"
+                |> Empty.view model
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Pool pool (Active Loading) ->
+            { asset =
+                pool.pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pool.pair
+                    |> Pair.toCollateral
+                    |> Just
+            }
+                |> Empty.view model
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Pool pool (Active (Failure { http, lend })) ->
+            lend
+                |> Disabled.view model blockchain pool
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Pool pool (Active (Success (DoesNotExist _))) ->
+            { asset =
+                pool.pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pool.pair
+                    |> Pair.toCollateral
+                    |> Just
+            }
+                |> Empty.view model
+                |> (\{ first, second } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Pool pool (Active (Success (Exist _ lend))) ->
+            lend
+                |> Lend.view model blockchain pool
+                |> (\{ first, second, buttons } ->
+                        { first = first |> map LendMsg
+                        , second = second |> map LendMsg
+                        , buttons = buttons |> map LendMsg
+                        }
+                   )
     )
         |> (\{ first, second, buttons } ->
                 column

@@ -90,6 +90,7 @@ isActive now (Maturity posix) =
 toString : Zone -> Maturity -> String
 toString zone maturity =
     [ maturity |> toDateString zone
+    , "|"
     , maturity |> toTimeString zone
     ]
         |> String.join " "

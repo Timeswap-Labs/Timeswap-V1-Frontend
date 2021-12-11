@@ -4,6 +4,7 @@ module Page.Transaction.Liquidity.Main exposing
     , Transaction
     , init
     , initGivenPoolInfo
+    , initGivenSpot
     , subscriptions
     , toParameter
     , toPoolInfo
@@ -14,12 +15,12 @@ module Page.Transaction.Liquidity.Main exposing
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
-import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
+import Data.Or exposing (Or(..))
 import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
@@ -27,6 +28,7 @@ import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
+import Data.Uint exposing (Uint)
 import Element
     exposing
         ( Element
@@ -114,7 +116,7 @@ type alias NewDisabled =
 
 type PoolState exist doesNotExist
     = Exist PoolInfo exist
-    | DoesNotExist doesNotExist
+    | DoesNotExist (Maybe Uint) doesNotExist
 
 
 type Msg
@@ -142,11 +144,11 @@ type Effect
 
 
 init :
-    { model | time : Posix, chains : Chains }
+    { model | time : Posix }
     -> Blockchain
     -> Maybe Parameter
     -> ( Transaction, Cmd Msg )
-init ({ time } as model) blockchain parameter =
+init { time } blockchain parameter =
     case parameter of
         Nothing ->
             ( { state = Add None
@@ -206,24 +208,69 @@ init ({ time } as model) blockchain parameter =
 
 
 initGivenPoolInfo :
-    { model | time : Posix, chains : Chains }
+    { model | time : Posix }
     -> Blockchain
     -> Pool
     -> PoolInfo
     -> ( Transaction, Cmd Msg )
-initGivenPoolInfo model blockchain pool poolInfo =
-    ( { state =
-            Add.init
-                |> Exist poolInfo
-                |> Success
-                |> Active
-                |> Pool pool
-                |> Add
-      , tooltip = Nothing
-      }
-        |> Transaction
-    , get blockchain pool
-    )
+initGivenPoolInfo { time } blockchain pool poolInfo =
+    if pool.maturity |> Maturity.isActive time then
+        ( { state =
+                Add.init
+                    |> Exist poolInfo
+                    |> Success
+                    |> Active
+                    |> Pool pool
+                    |> Add
+          , tooltip = Nothing
+          }
+            |> Transaction
+        , get blockchain pool
+        )
+
+    else
+        ( { state =
+                Matured
+                    |> Pool pool
+                    |> Add
+          , tooltip = Nothing
+          }
+            |> Transaction
+        , Cmd.none
+        )
+
+
+initGivenSpot :
+    { model | time : Posix }
+    -> Blockchain
+    -> Pool
+    -> Maybe Uint
+    -> ( Transaction, Cmd Msg )
+initGivenSpot { time } blockchain pool spot =
+    if pool.maturity |> Maturity.isActive time then
+        ( { state =
+                New.init
+                    |> DoesNotExist spot
+                    |> Success
+                    |> Active
+                    |> Pool pool
+                    |> New
+          , tooltip = Nothing
+          }
+            |> Transaction
+        , get blockchain pool
+        )
+
+    else
+        ( { state =
+                Matured
+                    |> Pool pool
+                    |> Add
+          , tooltip = Nothing
+          }
+            |> Transaction
+        , Cmd.none
+        )
 
 
 update :
@@ -266,11 +313,11 @@ update model blockchain msg (Transaction transaction) =
             }
                 |> noCmdAndEffect
 
-        ( GoToNew, Add (Pool pool (Active (Success (DoesNotExist ())))) ) ->
+        ( GoToNew, Add (Pool pool (Active (Success (DoesNotExist spot ())))) ) ->
             { transaction
                 | state =
                     New.init
-                        |> DoesNotExist
+                        |> DoesNotExist spot
                         |> Success
                         |> Active
                         |> Pool pool
@@ -338,11 +385,11 @@ update model blockchain msg (Transaction transaction) =
             }
                 |> noCmdAndEffect
 
-        ( GoToAdd, New (Pool pool (Active (Success (DoesNotExist _)))) ) ->
+        ( GoToAdd, New (Pool pool (Active (Success (DoesNotExist spot _)))) ) ->
             { transaction
                 | state =
                     ()
-                        |> DoesNotExist
+                        |> DoesNotExist spot
                         |> Success
                         |> Active
                         |> Pool pool
@@ -456,33 +503,33 @@ update model blockchain msg (Transaction transaction) =
                     , remote
                     )
                 of
-                    ( Ok (Just poolInfo), Success (Exist _ add) ) ->
+                    ( Ok (Right poolInfo), Success (Exist _ add) ) ->
                         add
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Ok (Just poolInfo), Success (DoesNotExist ()) ) ->
+                    ( Ok (Right poolInfo), Success (DoesNotExist _ ()) ) ->
                         Add.init
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Ok (Just poolInfo), Failure error ) ->
+                    ( Ok (Right poolInfo), Failure error ) ->
                         error.add
                             |> Add.fromAddError
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Ok (Just poolInfo), Loading ) ->
+                    ( Ok (Right poolInfo), Loading ) ->
                         Add.init
                             |> Exist poolInfo
                             |> Success
                             |> Just
 
-                    ( Ok Nothing, _ ) ->
-                        DoesNotExist ()
+                    ( Ok (Left spot), _ ) ->
+                        DoesNotExist spot ()
                             |> Success
                             |> Just
 
@@ -493,7 +540,7 @@ update model blockchain msg (Transaction transaction) =
                             |> Failure
                             |> Just
 
-                    ( Err error, Success (DoesNotExist ()) ) ->
+                    ( Err error, Success (DoesNotExist _ ()) ) ->
                         { http = error
                         , add = AddDisabled.init
                         }
@@ -542,30 +589,33 @@ update model blockchain msg (Transaction transaction) =
                     , remote
                     )
                 of
-                    ( Ok (Just poolInfo), _ ) ->
+                    ( Ok (Right poolInfo), _ ) ->
                         Exist poolInfo ()
                             |> Success
                             |> Just
 
-                    ( Ok Nothing, Success (Exist _ ()) ) ->
+                    ( Ok (Left spot), Success (Exist _ ()) ) ->
                         New.init
-                            |> DoesNotExist
+                            |> DoesNotExist spot
                             |> Success
                             |> Just
 
-                    ( Ok Nothing, Success (DoesNotExist _) ) ->
-                        Nothing
+                    ( Ok (Left spot), Success (DoesNotExist _ new) ) ->
+                        new
+                            |> DoesNotExist spot
+                            |> Success
+                            |> Just
 
-                    ( Ok Nothing, Failure error ) ->
+                    ( Ok (Left spot), Failure error ) ->
                         error.new
                             |> New.fromNewError
-                            |> DoesNotExist
+                            |> DoesNotExist spot
                             |> Success
                             |> Just
 
-                    ( Ok Nothing, Loading ) ->
+                    ( Ok (Left spot), Loading ) ->
                         New.init
-                            |> DoesNotExist
+                            |> DoesNotExist spot
                             |> Success
                             |> Just
 
@@ -576,7 +626,7 @@ update model blockchain msg (Transaction transaction) =
                             |> Failure
                             |> Just
 
-                    ( Err error, Success (DoesNotExist new) ) ->
+                    ( Err error, Success (DoesNotExist _ new) ) ->
                         { http = error
                         , new = new |> New.toNewError
                         }
@@ -662,14 +712,14 @@ update model blockchain msg (Transaction transaction) =
                         )
                    )
 
-        ( NewMsg newMsg, New (Pool pool (Active (Success (DoesNotExist new)))) ) ->
+        ( NewMsg newMsg, New (Pool pool (Active (Success (DoesNotExist spot new)))) ) ->
             new
-                |> New.update model blockchain pool newMsg
+                |> New.update model blockchain pool spot newMsg
                 |> (\( updated, cmd, maybeEffect ) ->
                         ( { transaction
                             | state =
                                 updated
-                                    |> DoesNotExist
+                                    |> DoesNotExist spot
                                     |> Success
                                     |> Active
                                     |> Pool pool
@@ -800,14 +850,28 @@ toParameter (Transaction { state }) =
                 |> Just
 
 
-toPoolInfo : Transaction -> Maybe PoolInfo
+toPoolInfo : Transaction -> Maybe (Or (Maybe Uint) PoolInfo)
 toPoolInfo (Transaction { state }) =
     case state of
         Add (Pool _ (Active (Success (Exist poolInfo _)))) ->
-            poolInfo |> Just
+            poolInfo
+                |> Right
+                |> Just
 
         New (Pool _ (Active (Success (Exist poolInfo ())))) ->
-            poolInfo |> Just
+            poolInfo
+                |> Right
+                |> Just
+
+        Add (Pool _ (Active (Success (DoesNotExist spot _)))) ->
+            spot
+                |> Left
+                |> Just
+
+        New (Pool _ (Active (Success (DoesNotExist spot _)))) ->
+            spot
+                |> Left
+                |> Just
 
         _ ->
             Nothing

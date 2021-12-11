@@ -19,12 +19,15 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
 import Data.Offset exposing (Offset)
+import Data.Or exposing (Or(..))
 import Data.Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Slippage exposing (Slippage)
+import Data.Spot exposing (Spot)
 import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
 import Data.TokenParam exposing (TokenParam)
+import Data.Uint exposing (Uint)
 import Element
     exposing
         ( Element
@@ -109,9 +112,19 @@ construct ({ chains } as model) url maybePage =
         , maybePage |> Maybe.andThen toPoolInfo
         )
     of
-        ( Just (Route.Lend (Just (Parameter.Pool pool))), Supported blockchain, Just poolInfo ) ->
+        ( Just (Route.Lend (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
             poolInfo
                 |> Lend.initGivenPoolInfo model blockchain pool
+                |> Tuple.mapBoth
+                    (\transaction ->
+                        { transaction = transaction }
+                            |> Lend
+                    )
+                    (Cmd.map LendMsg)
+
+        ( Just (Route.Lend (Just (Parameter.Pool pool))), Supported blockchain, Just (Left spot) ) ->
+            spot
+                |> Lend.initGivenSpot model blockchain pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
@@ -135,9 +148,19 @@ construct ({ chains } as model) url maybePage =
             , Cmd.none
             )
 
-        ( Just (Route.Liquidity (Just (Parameter.Pool pool))), Supported blockchain, Just poolInfo ) ->
+        ( Just (Route.Liquidity (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
             poolInfo
                 |> Liquidity.initGivenPoolInfo model blockchain pool
+                |> Tuple.mapBoth
+                    (\transaction ->
+                        { transaction = transaction }
+                            |> Liquidity
+                    )
+                    (Cmd.map LiquidityMsg)
+
+        ( Just (Route.Liquidity (Just (Parameter.Pool pool))), Supported blockchain, Just (Left spot) ) ->
+            spot
+                |> Liquidity.initGivenSpot model blockchain pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
@@ -303,7 +326,7 @@ toParameter page =
                 |> Liquidity.toParameter
 
 
-toPoolInfo : Page -> Maybe PoolInfo
+toPoolInfo : Page -> Maybe (Or (Maybe Uint) PoolInfo)
 toPoolInfo page =
     case page of
         Lend { transaction } ->
@@ -319,6 +342,7 @@ view :
         | time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
+        , spot : Spot
         , backdrop : Backdrop
         , images : Images
     }
@@ -336,7 +360,7 @@ view model blockchain page =
         (case page of
             Lend { transaction } ->
                 [ transaction
-                    |> Lend.view model
+                    |> Lend.view model blockchain
                     |> map LendMsg
                 ]
 

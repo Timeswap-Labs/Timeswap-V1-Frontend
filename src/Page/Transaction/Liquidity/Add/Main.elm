@@ -980,3 +980,45 @@ viewAssetIn model blockchain asset { state, tooltip } =
             , description = "asset in textbox"
             }
         ]
+
+
+duesOutSection :
+    { model | images : Images }
+    -> Blockchain
+    -> Pool
+    -> Transaction
+    -> Element Never
+duesOutSection model blockchain pool transaction =
+    column
+        [ Region.description "dues"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 12
+        , alpha 0.2
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 16
+            ]
+            [ Info.emptyAPR
+            , Info.emptyCDP
+            ]
+
+        -- , column
+        --     [ width fill
+        --     , height shrink
+        --     , spacing 12
+        --     ]
+        --     [ debtOutSection model
+        --         (pool.pair |> Pair.toAsset)
+        --         transaction
+        --     , collateralOutSection model
+        --         blockchain
+        --         (pool.pair |> Pair.toCollateral)
+        --         transaction
+        --     ]
+        ]

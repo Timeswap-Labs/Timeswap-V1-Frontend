@@ -147,10 +147,11 @@ update :
     }
     -> Blockchain
     -> Pool
+    -> Maybe Uint
     -> Msg
     -> Transaction
     -> ( Transaction, Cmd Msg, Maybe Effect )
-update model blockchain pool msg (Transaction transaction) =
+update model blockchain pool spot msg (Transaction transaction) =
     case msg of
         InputAssetIn assetIn ->
             if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
@@ -168,7 +169,7 @@ update model blockchain pool msg (Transaction transaction) =
                         else
                             Loading
                 }
-                    |> query blockchain pool
+                    |> query blockchain pool spot
 
             else
                 transaction |> noCmdAndEffect
@@ -203,7 +204,7 @@ update model blockchain pool msg (Transaction transaction) =
                                 else
                                     Loading
                         }
-                            |> query blockchain pool
+                            |> query blockchain pool spot
                     )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
@@ -223,7 +224,7 @@ update model blockchain pool msg (Transaction transaction) =
                         else
                             Loading
                 }
-                    |> query blockchain pool
+                    |> query blockchain pool spot
 
             else
                 transaction |> noCmdAndEffect
@@ -244,7 +245,7 @@ update model blockchain pool msg (Transaction transaction) =
                         else
                             Loading
                 }
-                    |> query blockchain pool
+                    |> query blockchain pool spot
 
             else
                 transaction |> noCmdAndEffect
@@ -279,7 +280,7 @@ update model blockchain pool msg (Transaction transaction) =
                                 else
                                     Loading
                         }
-                            |> query blockchain pool
+                            |> query blockchain pool spot
                     )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
@@ -451,6 +452,7 @@ noCmdAndEffect transaction =
 query :
     Blockchain
     -> Pool
+    -> Maybe Uint
     ->
         { assetIn : String
         , debtOut : String
@@ -467,6 +469,7 @@ constructQueryNew :
     (Value -> Cmd Msg)
     -> Blockchain
     -> Pool
+    -> Maybe Uint
     ->
         { assetIn : String
         , debtOut : String
@@ -475,7 +478,7 @@ constructQueryNew :
         , tooltip : Maybe Tooltip
         }
     -> ( Transaction, Cmd Msg, Maybe Effect )
-constructQueryNew givenCmd blockchain pool transaction =
+constructQueryNew givenCmd blockchain pool spot transaction =
     (if
         (transaction.assetIn |> Input.isZero)
             || (transaction.debtOut |> Input.isZero)
@@ -499,6 +502,7 @@ constructQueryNew givenCmd blockchain pool transaction =
             ( Just assetIn, Just debtIn, Just collateralIn ) ->
                 { chainId = blockchain |> Blockchain.toChain
                 , pool = pool
+                , spot = spot
                 , assetIn = assetIn
                 , debtOut = debtIn
                 , collateralOut = collateralIn

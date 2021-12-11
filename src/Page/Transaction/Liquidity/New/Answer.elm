@@ -16,6 +16,7 @@ import Page.Transaction.Liquidity.New.Error as Error exposing (Error)
 type alias Answer =
     { chainId : Chain
     , pool : Pool
+    , spot : Maybe Uint
     , assetIn : Uint
     , debtOut : Uint
     , collateralOut : Uint
@@ -35,6 +36,7 @@ decoder =
     Decode.succeed Answer
         |> Pipeline.required "chainId" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "spot" (Uint.decoder |> Decode.nullable)
         |> Pipeline.required "assetIn" Uint.decoder
         |> Pipeline.required "debtOut" Uint.decoder
         |> Pipeline.required "collateralOut" Uint.decoder
