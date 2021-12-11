@@ -17,6 +17,7 @@ module Utility.Image exposing
     , hourglassPrimary
     , hourglassPrimarySmall
     , info
+    , infoYellow
     , link
     , logo
     , logoPure
@@ -234,6 +235,11 @@ hourglass =
 info : List (Attribute msg) -> Images -> Element msg
 info =
     view "Info"
+
+
+infoYellow : List (Attribute msg) -> Images -> Element msg
+infoYellow =
+    view "InfoYellow"
 
 
 matured : List (Attribute msg) -> Images -> Element msg

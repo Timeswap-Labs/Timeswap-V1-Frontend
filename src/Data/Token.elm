@@ -1,5 +1,6 @@
 module Data.Token exposing
     ( Token(..)
+    , containsString
     , decoder
     , encode
     , sorter
@@ -11,6 +12,7 @@ module Data.Token exposing
     , toSymbol
     )
 
+import Data.Address as Address exposing (Address)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Native as Native exposing (Native)
 import Data.TokenParam as TokenParam exposing (TokenParam)
@@ -126,3 +128,31 @@ compare token1 token2 =
 sorter : Sorter Token
 sorter =
     Sort.custom compare
+
+
+containsString : Token -> String -> Bool
+containsString token input =
+    case token of
+        ERC20 erc20 ->
+            (erc20
+                |> ERC20.toName
+                |> String.toLower
+                |> String.contains (input |> String.toLower)
+            )
+                || (erc20
+                        |> ERC20.toSymbol
+                        |> String.toLower
+                        |> String.contains (input |> String.toLower)
+                   )
+
+        Native native ->
+            (native
+                |> Native.toName
+                |> String.toLower
+                |> String.contains (input |> String.toLower)
+            )
+                || (native
+                        |> Native.toSymbol
+                        |> String.toLower
+                        |> String.contains (input |> String.toLower)
+                   )

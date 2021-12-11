@@ -26,7 +26,6 @@ import Element
         , alignLeft
         , alignRight
         , alpha
-        , behindContent
         , centerX
         , centerY
         , column
@@ -38,6 +37,7 @@ import Element
         , padding
         , paddingEach
         , paddingXY
+        , paragraph
         , px
         , rotate
         , row
@@ -48,9 +48,8 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
-import Element.Events as Events
-import Element.Font as Font
-import Element.Input as Input exposing (Placeholder)
+import Element.Font as Font exposing (center)
+import Element.Input as Input
 import Http
 import Modal.TokenList.Answer as Answer exposing (Answer)
 import Modal.TokenList.Error as Error exposing (Error)
@@ -188,42 +187,33 @@ update { chains } blockchain msg (Modal modal) =
                     |> Address.fromString
                     |> Maybe.map
                         (\address ->
-                            chains
-                                |> Chains.getGivenAddress
-                                    (blockchain |> Blockchain.toChain)
-                                    address
-                                |> Maybe.map
-                                    (\erc20 ->
-                                        ( { modal
-                                            | state =
-                                                { input = string
-                                                , erc20 =
-                                                    erc20
-                                                        |> Ok
-                                                        |> Success
-                                                        |> Just
-                                                }
-                                                    |> AllTokens
-                                          }
-                                            |> Modal
-                                            |> Just
-                                        , Cmd.none
-                                        , Nothing
-                                        )
-                                    )
-                                |> Maybe.withDefault
-                                    ( { modal
-                                        | state =
-                                            { input = string
-                                            , erc20 = Just Loading
-                                            }
-                                                |> AllTokens
-                                      }
-                                        |> Modal
-                                        |> Just
-                                    , get blockchain address
-                                    , Nothing
-                                    )
+                            if address |> Chains.isMemberOf (blockchain |> Blockchain.toChain) chains then
+                                ( { modal
+                                    | state =
+                                        { input = string
+                                        , erc20 = Nothing
+                                        }
+                                            |> AllTokens
+                                  }
+                                    |> Modal
+                                    |> Just
+                                , Cmd.none
+                                , Nothing
+                                )
+
+                            else
+                                ( { modal
+                                    | state =
+                                        { input = string
+                                        , erc20 = Just Loading
+                                        }
+                                            |> AllTokens
+                                  }
+                                    |> Modal
+                                    |> Just
+                                , get blockchain address
+                                , Nothing
+                                )
                         )
                     |> Maybe.withDefault
                         ( { modal
@@ -334,6 +324,22 @@ update { chains } blockchain msg (Modal modal) =
             , InputToken modal.tokenParam token |> Just
             )
 
+        ( GoToImportERC20, AllTokens { erc20 } ) ->
+            case erc20 of
+                Just (Success (Ok erc20Value)) ->
+                    ( { modal | state = ImportingERC20 erc20Value }
+                        |> Modal
+                        |> Just
+                    , Cmd.none
+                    , Nothing
+                    )
+
+                _ ->
+                    ( modal |> Modal |> Just
+                    , Cmd.none
+                    , Nothing
+                    )
+
         ( ImportERC20, ImportingERC20 erc20 ) ->
             ( Nothing
             , Cmd.none
@@ -418,7 +424,7 @@ view ({ backdrop, images, chains } as model) blockchain ((Modal { state, tooltip
                 [ modalHeader model modal
                 , case state of
                     ImportingERC20 erc20 ->
-                        importTokenWarning model (erc20 |> Token.ERC20) tooltip
+                        importTokenWarning model erc20 tooltip
 
                     _ ->
                         tokenList model blockchain modal
@@ -523,22 +529,37 @@ tokenList ({ backdrop, chains } as model) blockchain ((Modal { state }) as modal
     column
         [ width fill
         , height fill
-        , paddingXY 24 6
+        , paddingXY 24 16
+        , spacing 20
         ]
         (case state of
-            AllTokens { erc20 } ->
+            AllTokens { input, erc20 } ->
                 case erc20 of
                     Just (Success (Ok erc20Value)) ->
-                        if erc20Value |> ERC20.toAddress |> Chains.isMemberOf (blockchain |> Blockchain.toChain) chains then
-                            [ tokenButton model blockchain modal (Token.ERC20 erc20Value) ]
-
-                        else
-                            [ customToken model blockchain modal (Token.ERC20 erc20Value) ]
+                        [ customToken model blockchain modal (Token.ERC20 erc20Value) ]
 
                     _ ->
-                        chains
-                            |> Chains.toList (blockchain |> Blockchain.toChain)
-                            |> List.map (tokenButton model blockchain modal)
+                        input
+                            |> Address.fromString
+                            |> Maybe.map
+                                (\address ->
+                                    chains
+                                        |> Chains.getGivenAddress
+                                            (blockchain |> Blockchain.toChain)
+                                            address
+                                        |> Maybe.map
+                                            (\erc20Found ->
+                                                [ tokenButton model blockchain modal (Token.ERC20 erc20Found) ]
+                                            )
+                                        |> Maybe.withDefault
+                                            [ none ]
+                                )
+                            |> Maybe.withDefault
+                                (chains
+                                    |> Chains.toList (blockchain |> Blockchain.toChain)
+                                    |> List.filter (\token -> input |> Token.containsString token)
+                                    |> List.map (tokenButton model blockchain modal)
+                                )
 
             CustomERC20s ->
                 chains
@@ -556,7 +577,7 @@ tokenButton :
     -> Modal
     -> Token
     -> Element Msg
-tokenButton { images } blockchain modal token =
+tokenButton ({ images } as model) blockchain modal token =
     Input.button
         [ width fill
         , height shrink
@@ -567,48 +588,9 @@ tokenButton { images } blockchain modal token =
             row
                 [ width fill
                 , height fill
-                , paddingXY 0 10
                 , centerY
                 ]
-                [ images
-                    |> Image.viewToken
-                        [ width <| px 24
-                        , alignLeft
-                        , centerY
-                        ]
-                        token
-                , el
-                    [ alignLeft
-                    , centerY
-                    , paddingEach
-                        { top = 0
-                        , right = 0
-                        , bottom = 0
-                        , left = 8
-                        }
-                    , Font.size 16
-                    , Font.bold
-                    ]
-                    (token
-                        |> Token.toSymbol
-                        |> text
-                    )
-                , el
-                    [ height <| px 23
-                    , paddingXY 5 0
-                    , Font.size 22
-                    , Font.color Color.transparent300
-                    ]
-                    (text (String.fromChar (Char.fromCode 0x2022)))
-                , el
-                    [ Font.size 12
-                    , Font.color Color.transparent300
-                    , Font.regular
-                    ]
-                    (token
-                        |> Token.toName
-                        |> text
-                    )
+                [ tokenSymbolAndName model modal token
                 , case blockchain |> Blockchain.toUser of
                     Just user ->
                         tokenBalance user token modal
@@ -629,7 +611,6 @@ customToken model blockchain ((Modal { state }) as modal) token =
     row
         [ width fill
         , height shrink
-        , paddingXY 0 10
         , Font.color Color.transparent500
         ]
         [ tokenSymbolAndName model modal token
@@ -644,7 +625,13 @@ customToken model blockchain ((Modal { state }) as modal) token =
                     ]
                     [ Input.button
                         []
-                        { onPress = Nothing
+                        { onPress =
+                            case token of
+                                Token.ERC20 erc20 ->
+                                    Just (ClearERC20 erc20)
+
+                                _ ->
+                                    Nothing
                         , label =
                             model.images
                                 |> Image.minus
@@ -696,7 +683,6 @@ tokenSymbolAndName { images } (Modal { tooltip }) token =
     row
         [ width fill
         , height fill
-        , paddingXY 0 10
         , centerY
         ]
         [ images
@@ -811,7 +797,7 @@ manageTokensBtn { images } =
                         , centerY
                         , padding 0
                         ]
-                        ("Manage Token Lists" |> text)
+                        ("Manage Custom Tokens" |> text)
                     , images
                         |> Image.arrow
                             [ width <| px 16
@@ -823,8 +809,8 @@ manageTokensBtn { images } =
         )
 
 
-importTokenWarning : { model | images : Images } -> Token -> Maybe Tooltip -> Element Msg
-importTokenWarning { images } token tooltip =
+importTokenWarning : { model | images : Images } -> ERC20 -> Maybe Tooltip -> Element Msg
+importTokenWarning { images } erc20 tooltip =
     column
         [ width fill
         , height shrink
@@ -838,68 +824,93 @@ importTokenWarning { images } token tooltip =
             , padding 16
             , spacing 12
             , centerX
+            , Font.size 14
+            , Font.color Color.light500
             , Background.color Color.primary100
             , Border.rounded 8
             ]
             [ images
-                |> Image.info
+                |> Image.infoYellow
                     [ width <| px 30
                     , height <| px 30
+                    , centerX
                     , centerY
                     ]
-            , text "You’re importing this token on your own risk. Make sure you want to use this token"
+            , paragraph
+                [ width shrink
+                , center
+                ]
+                [ text "You're importing this token at your own risk. Make sure you want to use this token" ]
             ]
         , column
-            [ spacing 4 ]
+            [ width fill, spacing 4 ]
             [ images
                 |> Image.viewToken
-                    [ width <| px 24
+                    [ width <| px 36
+                    , height <| px 36
                     , alignLeft
+                    , centerX
                     , centerY
                     ]
-                    token
+                    (erc20 |> Token.ERC20)
             , el
                 [ alignLeft
+                , centerX
                 , centerY
-                , paddingEach
-                    { top = 0
-                    , right = 0
-                    , bottom = 0
-                    , left = 8
-                    }
                 , Font.size 16
                 , Font.bold
                 ]
                 (Truncate.viewSymbol
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Symbol token
+                    , tooltip = Tooltip.Symbol (erc20 |> Token.ERC20)
                     , opened = tooltip
-                    , token = token
+                    , token = erc20 |> Token.ERC20
                     }
                 )
             , el
-                [ height <| px 23
-                , paddingXY 5 0
-                , Font.size 22
-                , Font.color Color.transparent300
-                ]
-                (text (String.fromChar (Char.fromCode 0x2022)))
-            , el
-                [ Font.size 12
+                [ centerX
+                , Font.size 12
                 , Font.color Color.transparent300
                 , Font.regular
                 ]
                 (Truncate.viewName
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Name token
+                    , tooltip = Tooltip.Name (erc20 |> Token.ERC20)
                     , opened = tooltip
-                    , token = token
+                    , token = erc20 |> Token.ERC20
                     }
                 )
+            , el
+                [ centerX
+                , Font.size 12
+                , Font.color Color.primary400
+                , Font.regular
+                , paddingEach
+                    { top = 4
+                    , right = 0
+                    , bottom = 0
+                    , left = 0
+                    }
+                ]
+                (erc20
+                    |> ERC20.toAddress
+                    |> Address.toString
+                    |> text
+                )
             ]
-        , Input.button [ width fill, height <| px 44, Background.color Color.primary500 ]
+        , Input.button
+            [ width fill
+            , height <| px 44
+            , centerX
+            , center
+            , padding 10
+            , Font.size 16
+            , Font.color Color.light100
+            , Background.color Color.primary500
+            , Border.rounded 4
+            ]
             { onPress = Nothing
             , label = text "Import"
             }
