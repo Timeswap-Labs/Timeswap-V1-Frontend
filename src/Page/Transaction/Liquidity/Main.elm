@@ -26,6 +26,7 @@ import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
+import Data.Spot exposing (Spot)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
 import Data.Uint exposing (Uint)
@@ -883,11 +884,13 @@ view :
         , offset : Offset
         , chosenZone : ChosenZone
         , backdrop : Backdrop
+        , spot : Spot
         , images : Images
     }
+    -> Blockchain
     -> Transaction
     -> Element Msg
-view ({ backdrop } as model) (Transaction transaction) =
+view ({ backdrop } as model) blockchain (Transaction transaction) =
     (case transaction.state of
         Add None ->
             { asset = Nothing
@@ -1005,21 +1008,163 @@ view ({ backdrop } as model) (Transaction transaction) =
                         }
                    )
 
-        Add (Pool pool _) ->
-            { first = none
-            , second = none
-            , third = none
-            , buttons = none
+        Add (Pool pool Matured) ->
+            { asset =
+                pool.pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pool.pair
+                    |> Pair.toCollateral
+                    |> Just
             }
-                |> Debug.log "later"
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
 
-        New (Pool pool _) ->
-            { first = none
-            , second = none
-            , third = none
-            , buttons = none
+        New (Pool pool Matured) ->
+            { asset =
+                pool.pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pool.pair
+                    |> Pair.toCollateral
+                    |> Just
             }
-                |> Debug.log "later"
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Add (Pool pool (Active Loading)) ->
+            { asset =
+                pool.pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pool.pair
+                    |> Pair.toCollateral
+                    |> Just
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        New (Pool pool (Active Loading)) ->
+            { asset =
+                pool.pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pool.pair
+                    |> Pair.toCollateral
+                    |> Just
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Add (Pool pool (Active (Failure { http, add }))) ->
+            add
+                |> AddDisabled.view model blockchain pool
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        New (Pool pool (Active (Failure { http, new }))) ->
+            new
+                |> NewDisabled.view model blockchain pool
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        Add (Pool pool (Active (Success (DoesNotExist _ ())))) ->
+            { asset =
+                pool.pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pool.pair
+                    |> Pair.toCollateral
+                    |> Just
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
+
+        New (Pool pool (Active (Success (DoesNotExist _ new)))) ->
+            new
+                |> New.view model blockchain pool
+                |> (\{ first, second, third, buttons } ->
+                        { first = first |> map NewMsg
+                        , second = second |> map NewMsg
+                        , third = third |> map NewMsg
+                        , buttons = buttons |> map NewMsg
+                        }
+                   )
+
+        Add (Pool pool (Active (Success (Exist _ add)))) ->
+            add
+                |> Add.view model blockchain pool
+                |> (\{ first, second, third, buttons } ->
+                        { first = first |> map AddMsg
+                        , second = second |> map AddMsg
+                        , third = third |> map AddMsg
+                        , buttons = buttons |> map AddMsg
+                        }
+                   )
+
+        New (Pool pool (Active (Success (Exist _ ())))) ->
+            { asset =
+                pool.pair
+                    |> Pair.toAsset
+                    |> Just
+            , collateral =
+                pool.pair
+                    |> Pair.toCollateral
+                    |> Just
+            }
+                |> Empty.view model
+                |> (\{ first, second, third } ->
+                        { first = first |> map never
+                        , second = second |> map never
+                        , third = third |> map never
+                        , buttons = none |> Debug.log "later"
+                        }
+                   )
     )
         |> (\{ first, second, third, buttons } ->
                 column

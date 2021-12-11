@@ -1,4 +1,4 @@
-module Page.Transaction.Output exposing (disabledLiquidity, empty, view)
+module Page.Transaction.Output exposing (disabledLiquidity, empty, liquidity, view)
 
 import Data.Images exposing (Images)
 import Data.Remote exposing (Remote(..))
@@ -114,6 +114,68 @@ empty { images } param =
                     ]
                     param.token
             , Truncate.disabledSymbol param.token
+            ]
+        )
+
+
+liquidity :
+    { model | images : Images }
+    ->
+        { asset : Token
+        , collateral : Token
+        , output : Remote error Uint
+        , description : String
+        }
+    -> Element msg
+liquidity { images } param =
+    el
+        [ Region.description param.description
+        , width fill
+        , height <| px 24
+        , spacing 12
+        , clip
+        ]
+        (row
+            [ width <| px 80
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            [ row
+                [ width <| px 36
+                , height <| px 24
+                ]
+                [ images
+                    |> Image.viewToken
+                        [ width <| px 24
+                        , height <| px 24
+                        , moveRight 12
+                        ]
+                        param.collateral
+                , images
+                    |> Image.viewToken
+                        [ width <| px 24
+                        , height <| px 24
+                        , moveLeft 24
+                        ]
+                        param.asset
+                ]
+            , el
+                [ width shrink
+                , height shrink
+                , centerY
+                ]
+                (case param.output of
+                    Success output ->
+                        output
+                            |> Fade.viewLP
+
+                    Loading ->
+                        none |> Debug.log "loading animation"
+
+                    _ ->
+                        none
+                )
             ]
         )
 

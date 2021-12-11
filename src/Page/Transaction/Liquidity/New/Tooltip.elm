@@ -5,5 +5,7 @@ type Tooltip
     = AssetBalance
     | CollateralBalance
     | AssetInSymbol
-    | BondOutSymbol
-    | InsuranceOutSymbol
+    | DebtOutSymbol
+    | CollateralOutSymbol
+    | CDPSymbol
+    | CDP

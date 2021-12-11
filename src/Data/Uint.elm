@@ -9,6 +9,7 @@ module Data.Uint exposing
     , isZero
     , sorter
     , toAmount
+    , toLP
     , toString
     , zero
     )
@@ -140,6 +141,36 @@ toAmount token (Uint string) =
                             else
                                 formattedString
                        )
+           )
+
+
+toLP : Uint -> String
+toLP (Uint string) =
+    string
+        |> String.padLeft 19 '0'
+        |> (\paddedString ->
+                [ paddedString |> String.dropRight 18
+                , paddedString |> String.right 18
+                ]
+                    |> String.join "."
+           )
+        |> String.foldr
+            (\char accumulator ->
+                if char == '0' && accumulator == "" then
+                    accumulator
+
+                else
+                    accumulator
+                        |> String.cons char
+            )
+            ""
+        |> (\formattedString ->
+                if formattedString |> String.endsWith "." then
+                    formattedString
+                        |> String.dropRight 1
+
+                else
+                    formattedString
            )
 
 

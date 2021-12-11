@@ -893,7 +893,7 @@ chainListButton ({ images } as model) =
         , height <| px 44
         , paddingXY 12 0
         , Background.color Color.primary100
-        , Border.rounded 4
+        , Border.rounded 8
         ]
         { onPress = Just OpenChainList
         , label =
@@ -931,14 +931,16 @@ chainListButton ({ images } as model) =
 connectButton :
     { model
         | backdrop : Backdrop
+        , images : Images
         , blockchain : Support User.NotSupported Blockchain
     }
     -> Element Msg
-connectButton model =
+connectButton ({ images } as model) =
     Input.button
         ([ width shrink
          , height <| px 44
          , paddingXY 12 0
+         , Border.rounded 8
          ]
             ++ (case model.blockchain of
                     Supported blockchain ->
@@ -948,19 +950,16 @@ connectButton model =
                                 (\_ ->
                                     [ Region.description "account button"
                                     , Background.color Color.primary100
-                                    , Border.rounded 4
                                     ]
                                 )
                             |> Maybe.withDefault
                                 [ Region.description "connect button"
                                 , Background.color Color.primary500
-                                , Border.rounded 4
                                 ]
 
                     NotSupported _ ->
                         [ Region.description "account button"
                         , Background.color Color.primary100
-                        , Border.rounded 4
                         ]
                )
         )
@@ -969,23 +968,77 @@ connectButton model =
             el
                 [ centerX
                 , centerY
-                , Font.size 16
-                , Font.color Color.transparent400
                 ]
-                ((case model.blockchain of
+                (case model.blockchain of
                     Supported blockchain ->
                         blockchain
                             |> Blockchain.toUser
-                            |> Maybe.map User.toAddress
-                            |> Maybe.map Address.toStringShort
-                            |> Maybe.withDefault "Connect Wallet"
+                            |> Maybe.map
+                                (\user ->
+                                    row
+                                        [ centerX
+                                        , centerY
+                                        , spacing 6
+                                        ]
+                                        [ images
+                                            |> Image.viewWallet
+                                                [ width <| px 24
+                                                , height <| px 24
+                                                , centerY
+                                                ]
+                                                (user |> User.toWallet)
+                                        , el
+                                            [ width shrink
+                                            , height shrink
+                                            , Font.size 16
+                                            , Font.color Color.transparent400
+                                            ]
+                                            (user
+                                                |> User.toName
+                                                |> Maybe.withDefault
+                                                    (user
+                                                        |> User.toAddress
+                                                        |> Address.toStringShort
+                                                    )
+                                                |> text
+                                            )
+                                        ]
+                                )
+                            |> Maybe.withDefault
+                                (el
+                                    [ width shrink
+                                    , height shrink
+                                    , Font.size 16
+                                    , Font.color Color.transparent400
+                                    ]
+                                    (text "Connect Wallet")
+                                )
 
                     NotSupported user ->
-                        user
-                            |> User.toAddressNotSupported
-                            |> Address.toStringShort
-                 )
-                    |> text
+                        row
+                            [ centerX
+                            , centerY
+                            , spacing 6
+                            ]
+                            [ images
+                                |> Image.viewWallet
+                                    [ width <| px 24
+                                    , height <| px 24
+                                    , centerY
+                                    ]
+                                    (user |> User.toWalletNotSupported)
+                            , el
+                                [ width shrink
+                                , height shrink
+                                , Font.size 16
+                                , Font.color Color.transparent400
+                                ]
+                                (user
+                                    |> User.toAddressNotSupported
+                                    |> Address.toStringShort
+                                    |> text
+                                )
+                            ]
                 )
         }
 
@@ -1005,7 +1058,7 @@ zoneButton ({ offset, zoneName, chosenZone } as model) =
         , height <| px 44
         , paddingXY 12 0
         , Background.color Color.primary100
-        , Border.rounded 4
+        , Border.rounded 8
         ]
         { onPress = Just SwitchZone
         , label =
@@ -1035,7 +1088,7 @@ themeButton ({ theme, images } as model) =
         , width <| px 44
         , height <| px 44
         , Background.color Color.primary100
-        , Border.rounded 4
+        , Border.rounded 8
         ]
         { onPress = Just SwitchTheme
         , label =

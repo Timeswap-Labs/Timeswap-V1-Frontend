@@ -11,9 +11,8 @@ port module Page.Transaction.Liquidity.Add.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User exposing (User)
+import Blockchain.User.Main as User
 import Data.CDP as CDP exposing (CDP)
-import Data.Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
@@ -21,18 +20,19 @@ import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
+import Data.Spot exposing (Spot)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
-        , alignRight
         , alpha
         , centerY
         , column
         , el
         , fill
         , height
+        , map
         , none
         , padding
         , paddingXY
@@ -58,12 +58,12 @@ import Page.Transaction.Liquidity.Add.Error exposing (Error)
 import Page.Transaction.Liquidity.Add.Query as Query
 import Page.Transaction.Liquidity.Add.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.MaxButton as MaxButton
+import Page.Transaction.Output as Output
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Input as Input
-import Utility.Truncate as Truncate
 
 
 type Transaction
@@ -874,7 +874,7 @@ hasInputZero state =
 
 
 view :
-    { model | images : Images }
+    { model | spot : Spot, images : Images }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -887,30 +887,29 @@ view :
 view model blockchain pool (Transaction transaction) =
     { first =
         transaction
-            |> viewAssetIn model
+            |> assetInSection model
                 blockchain
                 (pool.pair |> Pair.toAsset)
     , second =
-        el
-            [ width <| px 335
-            , height <| px 392
-            , Background.color Color.light500
-            , Border.rounded 8
-            ]
-            none
-            |> Debug.log "later"
-    , third = none |> Debug.log "later"
+        transaction
+            |> duesOutSection model
+                blockchain
+                pool
+    , third =
+        transaction
+            |> liquidityOutSection model
+                pool
     , buttons = none |> Debug.log "later"
     }
 
 
-viewAssetIn :
+assetInSection :
     { model | images : Images }
     -> Blockchain
     -> Token
     -> { transaction | state : State, tooltip : Maybe Tooltip }
     -> Element Msg
-viewAssetIn model blockchain asset { state, tooltip } =
+assetInSection model blockchain asset { state, tooltip } =
     column
         [ Region.description "lend asset"
         , width <| px 343
@@ -983,42 +982,253 @@ viewAssetIn model blockchain asset { state, tooltip } =
 
 
 duesOutSection :
-    { model | images : Images }
+    { model | spot : Spot, images : Images }
     -> Blockchain
     -> Pool
-    -> Transaction
-    -> Element Never
-duesOutSection model blockchain pool transaction =
+    -> { transaction | state : State, tooltip : Maybe Tooltip }
+    -> Element Msg
+duesOutSection model blockchain pool ({ state, tooltip } as transaction) =
     column
         [ Region.description "dues"
         , width <| px 343
         , height shrink
         , padding 16
         , spacing 12
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
         ]
         [ row
             [ width fill
             , height shrink
             , spacing 16
             ]
-            [ Info.emptyAPR
-            , Info.emptyCDP
-            ]
+            ((case state of
+                Asset { out } ->
+                    case out of
+                        Success { apr, cdp } ->
+                            ( apr, cdp ) |> Just
 
-        -- , column
-        --     [ width fill
-        --     , height shrink
-        --     , spacing 12
-        --     ]
-        --     [ debtOutSection model
-        --         (pool.pair |> Pair.toAsset)
-        --         transaction
-        --     , collateralOutSection model
-        --         blockchain
-        --         (pool.pair |> Pair.toCollateral)
-        --         transaction
-        --     ]
+                        _ ->
+                            Nothing
+
+                Debt { out } ->
+                    case out of
+                        Success { apr, cdp } ->
+                            ( apr, cdp ) |> Just
+
+                        _ ->
+                            Nothing
+
+                Collateral { out } ->
+                    case out of
+                        Success { apr, cdp } ->
+                            ( apr, cdp ) |> Just
+
+                        _ ->
+                            Nothing
+             )
+                |> Maybe.map
+                    (\( apr, cdp ) ->
+                        [ Info.lendAPR apr
+                        , Info.lendCDP model
+                            { onMouseEnter = OnMouseEnter
+                            , onMouseLeave = OnMouseLeave
+                            , cdpTooltip = Tooltip.CDP
+                            , symbolTooltip = Tooltip.CDPSymbol
+                            , opened = tooltip
+                            , pair = pool.pair
+                            , cdp = cdp
+                            }
+                        ]
+                    )
+                |> Maybe.withDefault
+                    [ Info.emptyAPR |> map never
+                    , Info.emptyCDP |> map never
+                    ]
+            )
+        , column
+            [ width fill
+            , height shrink
+            , spacing 12
+            ]
+            [ (case state of
+                Asset { out } ->
+                    case out |> Remote.map .debtOut of
+                        Success uint ->
+                            Right uint
+
+                        _ ->
+                            Left ""
+
+                Debt { debtOut } ->
+                    Left debtOut
+
+                Collateral { out } ->
+                    case out |> Remote.map .debtOut of
+                        Success uint ->
+                            Right uint
+
+                        _ ->
+                            Left ""
+              )
+                |> debtOutSection model
+                    (pool.pair |> Pair.toAsset)
+                    transaction
+            , (case state of
+                Asset { out } ->
+                    case out |> Remote.map .collateralOut of
+                        Success uint ->
+                            Right uint
+
+                        _ ->
+                            Left ""
+
+                Debt { out } ->
+                    case out |> Remote.map .collateralOut of
+                        Success uint ->
+                            Right uint
+
+                        _ ->
+                            Left ""
+
+                Collateral { collateralOut } ->
+                    Left collateralOut
+              )
+                |> collateralOutSection model
+                    blockchain
+                    (pool.pair |> Pair.toCollateral)
+                    transaction
+            ]
+        ]
+
+
+debtOutSection :
+    { model | images : Images }
+    -> Token
+    -> { transaction | tooltip : Maybe Tooltip }
+    -> Or String Uint
+    -> Element Msg
+debtOutSection model asset { tooltip } out =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , Font.color Color.primary400
+            ]
+            (text "Debt to Repay")
+        , Textbox.view model
+            { onMouseEnter = OnMouseEnter
+            , onMouseLeave = OnMouseLeave
+            , tooltip = Tooltip.DebtOutSymbol
+            , opened = tooltip
+            , token = asset
+            , onClick = Just ClickDebtOut
+            , onChange = InputDebtOut
+            , text = out
+            , description = "debt out textbox"
+            }
+        ]
+
+
+collateralOutSection :
+    { model | images : Images }
+    -> Blockchain
+    -> Token
+    -> { transaction | tooltip : Maybe Tooltip }
+    -> Or String Uint
+    -> Element Msg
+collateralOutSection model blockchain collateral { tooltip } or =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , Font.color Color.primary400
+                ]
+                (text "Collateral to Lock")
+            , blockchain
+                |> Blockchain.toUser
+                |> Maybe.andThen (User.getBalance collateral)
+                |> Maybe.map
+                    (\balance ->
+                        MaxButton.view
+                            { onPress = InputMaxCollateral
+                            , onMouseEnter = OnMouseEnter
+                            , onMouseLeave = OnMouseLeave
+                            , tooltip = Tooltip.CollateralBalance
+                            , opened = tooltip
+                            , token = collateral
+                            , balance = balance
+                            }
+                    )
+                |> Maybe.withDefault none
+            ]
+        , Textbox.view model
+            { onMouseEnter = OnMouseEnter
+            , onMouseLeave = OnMouseLeave
+            , tooltip = Tooltip.CollateralOutSymbol
+            , opened = tooltip
+            , token = collateral
+            , onClick = Just ClickCollateralOut
+            , onChange = InputCollateralOut
+            , text = or
+            , description = "collateral out textbox"
+            }
+        ]
+
+
+liquidityOutSection :
+    { model | images : Images }
+    -> Pool
+    -> { transaction | state : State }
+    -> Element Msg
+liquidityOutSection model pool { state } =
+    column
+        [ Region.description "liquidity output"
+        , width <| px 343
+        , height shrink
+        , padding 16
+        , spacing 10
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , paddingXY 0 3
+            , Font.color Color.primary400
+            ]
+            (text "LP Tokens")
+        , Output.liquidity model
+            { asset = pool.pair |> Pair.toAsset
+            , collateral = pool.pair |> Pair.toCollateral
+            , output =
+                case state of
+                    Asset { out } ->
+                        out
+                            |> Remote.map .liquidityOut
+
+                    Debt { out } ->
+                        out
+                            |> Remote.map .liquidityOut
+
+                    Collateral { out } ->
+                        out
+                            |> Remote.map .liquidityOut
+            , description = "liquidity out"
+            }
         ]

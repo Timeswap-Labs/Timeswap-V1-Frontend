@@ -366,7 +366,7 @@ view model blockchain page =
 
             Liquidity { transaction } ->
                 [ transaction
-                    |> Liquidity.view model
+                    |> Liquidity.view model blockchain
                     |> map LiquidityMsg
                 ]
 

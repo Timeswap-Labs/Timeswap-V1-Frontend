@@ -1,4 +1,4 @@
-module Utility.Fade exposing (view)
+module Utility.Fade exposing (view, viewLP)
 
 import Data.Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
@@ -29,6 +29,39 @@ view token amount =
             ]
             (amount
                 |> Uint.toAmount token
+                |> cut
+                |> (\( unFaded, faded ) ->
+                        [ el
+                            [ width shrink
+                            , height shrink
+                            , Font.color Color.light100
+                            , Font.size 16
+                            ]
+                            (text unFaded)
+                        , el
+                            [ width shrink
+                            , height shrink
+                            , Font.color Color.transparent300
+                            , Font.size 16
+                            ]
+                            (text faded)
+                        ]
+                   )
+            )
+
+
+viewLP : Uint -> Element msg
+viewLP amount =
+    if amount |> Uint.isZero then
+        none
+
+    else
+        row
+            [ width shrink
+            , height shrink
+            ]
+            (amount
+                |> Uint.toLP
                 |> cut
                 |> (\( unFaded, faded ) ->
                         [ el
