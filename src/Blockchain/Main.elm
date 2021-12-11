@@ -39,7 +39,7 @@ init chains flag =
         |> Chains.getGivenChainId flag.chainId
         |> Maybe.map
             (\chain ->
-                User.init flag
+                User.init chains chain flag
                     |> Maybe.map
                         (\( user, cmd ) ->
                             ( { chain = chain
@@ -109,14 +109,14 @@ receiveUserInit :
     { model | key : Key, url : Url, chains : Chains }
     -> Value
     -> Maybe ( Blockchain, Cmd Msg )
-receiveUserInit { key, url, chains } value =
+receiveUserInit ({ key, url, chains } as model) value =
     case
         value
             |> Decode.decodeValue
                 (decoder chains)
     of
         Ok (Just chain) ->
-            User.receiveUserInit value
+            User.receiveUserInit model chain value
                 |> Maybe.map
                     (\( user, cmd ) ->
                         ( { chain = chain
@@ -171,7 +171,7 @@ receiveUser :
     -> Value
     -> Blockchain
     -> Maybe ( Blockchain, Cmd Msg )
-receiveUser { key, url, chains } value (Blockchain blockchain) =
+receiveUser ({ key, url, chains } as model) value (Blockchain blockchain) =
     case
         value
             |> Decode.decodeValue
@@ -180,9 +180,9 @@ receiveUser { key, url, chains } value (Blockchain blockchain) =
         Ok (Just chain) ->
             if chain == blockchain.chain then
                 blockchain.user
-                    |> Maybe.map (User.receiveUser value)
+                    |> Maybe.map (User.receiveUser model chain value)
                     |> Maybe.withDefault
-                        (User.receiveUserInit value)
+                        (User.receiveUserInit model chain value)
                     |> Maybe.map
                         (\( user, cmd ) ->
                             ( { blockchain | user = Just user }
@@ -192,7 +192,7 @@ receiveUser { key, url, chains } value (Blockchain blockchain) =
                         )
 
             else
-                User.receiveUserInit value
+                User.receiveUserInit model chain value
                     |> Maybe.map
                         (\( user, cmd ) ->
                             ( { chain = chain

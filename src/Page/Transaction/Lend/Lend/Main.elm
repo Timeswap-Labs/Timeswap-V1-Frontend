@@ -52,7 +52,6 @@ import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Page.Approve as Approve
 import Page.Transaction.Button as Button
-import Page.Transaction.Info as Info
 import Page.Transaction.Lend.Lend.Answer as Answer
 import Page.Transaction.Lend.Lend.Disabled as Disabled
 import Page.Transaction.Lend.Lend.Error exposing (Error)
@@ -291,10 +290,11 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         user
                             |> User.getBalance
                                 (pool.pair |> Pair.toAsset)
-                            |> Maybe.map
+                            |> (Maybe.map << Remote.map)
                                 (Uint.toAmount
                                     (pool.pair |> Pair.toAsset)
                                 )
+                            |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
                     (\assetIn ->

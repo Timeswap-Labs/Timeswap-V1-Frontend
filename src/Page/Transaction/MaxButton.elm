@@ -1,7 +1,9 @@
 module Page.Transaction.MaxButton exposing (disabled, view)
 
+import Data.Remote as Remote exposing (Remote(..))
 import Data.Token exposing (Token)
 import Data.Uint exposing (Uint)
+import Data.Web exposing (Web)
 import Element
     exposing
         ( Element
@@ -9,6 +11,7 @@ import Element
         , centerY
         , el
         , height
+        , none
         , paddingXY
         , row
         , shrink
@@ -30,7 +33,7 @@ view :
     , tooltip : tooltip
     , opened : Maybe tooltip
     , token : Token
-    , balance : Uint
+    , balance : Web Uint
     }
     -> Element msg
 view param =
@@ -42,7 +45,9 @@ view param =
         , centerY
         ]
         [ userBalance param
-        , maxButton param
+        , param.balance
+            |> Remote.map (\_ -> maxButton param)
+            |> Remote.withDefault none
         ]
 
 
@@ -53,7 +58,7 @@ userBalance :
         , tooltip : tooltip
         , opened : Maybe tooltip
         , token : Token
-        , balance : Uint
+        , balance : Web Uint
     }
     -> Element msg
 userBalance param =
@@ -71,14 +76,38 @@ userBalance param =
             , Font.color Color.transparent300
             ]
             (text "Bal: ")
-        , Truncate.viewBalance
-            { onMouseEnter = param.onMouseEnter
-            , onMouseLeave = param.onMouseLeave
-            , tooltip = param.tooltip
-            , opened = param.opened
-            , token = param.token
-            , balance = param.balance
-            }
+        , case param.balance of
+            Success balance ->
+                Truncate.viewBalance
+                    { onMouseEnter = param.onMouseEnter
+                    , onMouseLeave = param.onMouseLeave
+                    , tooltip = param.tooltip
+                    , opened = param.opened
+                    , token = param.token
+                    , balance = balance
+                    }
+
+            Loading ->
+                el
+                    [ width shrink
+                    , height shrink
+                    , Font.size 12
+                    , paddingXY 0 2
+                    , Font.color Color.transparent300
+                    ]
+                    (text "loading")
+                    |> Debug.log "implement loading animation"
+
+            Failure error ->
+                el
+                    [ width shrink
+                    , height shrink
+                    , Font.size 12
+                    , paddingXY 0 2
+                    , Font.color Color.transparent300
+                    ]
+                    (text "error")
+                    |> Debug.log "implement error view"
         ]
 
 
@@ -104,7 +133,7 @@ maxButton param =
 
 disabled :
     { token : Token
-    , balance : Uint
+    , balance : Web Uint
     }
     -> Element Never
 disabled param =
@@ -116,14 +145,16 @@ disabled param =
         , centerY
         ]
         [ disabledUserBalance param
-        , disabledMaxButton
+        , param.balance
+            |> Remote.map (\_ -> disabledMaxButton)
+            |> Remote.withDefault none
         ]
 
 
 disabledUserBalance :
     { param
         | token : Token
-        , balance : Uint
+        , balance : Web Uint
     }
     -> Element Never
 disabledUserBalance param =
@@ -141,10 +172,34 @@ disabledUserBalance param =
             , Font.color Color.transparent300
             ]
             (text "Bal: ")
-        , Truncate.disabledBalance
-            { token = param.token
-            , balance = param.balance
-            }
+        , case param.balance of
+            Success balance ->
+                Truncate.disabledBalance
+                    { token = param.token
+                    , balance = balance
+                    }
+
+            Loading ->
+                el
+                    [ width shrink
+                    , height shrink
+                    , Font.size 12
+                    , paddingXY 0 2
+                    , Font.color Color.transparent300
+                    ]
+                    (text "loading")
+                    |> Debug.log "implement loading animation"
+
+            Failure error ->
+                el
+                    [ width shrink
+                    , height shrink
+                    , Font.size 12
+                    , paddingXY 0 2
+                    , Font.color Color.transparent300
+                    ]
+                    (text "error")
+                    |> Debug.log "implement error view"
         ]
 
 

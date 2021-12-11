@@ -1,4 +1,8 @@
-module Page.Transaction.Liquidity.Add.Disabled exposing (Transaction(..), init, view)
+module Page.Transaction.Liquidity.Add.Disabled exposing
+    ( Transaction(..)
+    , init
+    , view
+    )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User

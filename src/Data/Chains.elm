@@ -14,6 +14,7 @@ module Data.Chains exposing
     , removeAll
     , toCustomTokenList
     , toList
+    , toListERC20
     )
 
 import Data.Address exposing (Address)
@@ -232,6 +233,15 @@ toList chain chains =
         |> toDict
         |> Dict.get chain
         |> Maybe.map Tokens.toList
+        |> Maybe.withDefault []
+
+
+toListERC20 : Chain -> Chains -> List ERC20
+toListERC20 chain chains =
+    chains
+        |> toDict
+        |> Dict.get chain
+        |> Maybe.map Tokens.toListERC20
         |> Maybe.withDefault []
 
 

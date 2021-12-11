@@ -6,6 +6,7 @@ port module Page.Transaction.Liquidity.New.Main exposing
     , init
     , toNewError
     , update
+    , view
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
@@ -17,7 +18,7 @@ import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
-import Data.Remote exposing (Remote(..))
+import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
@@ -180,10 +181,11 @@ update model blockchain pool msg (Transaction transaction) =
                         user
                             |> User.getBalance
                                 (pool.pair |> Pair.toAsset)
-                            |> Maybe.map
+                            |> (Maybe.map << Remote.map)
                                 (Uint.toAmount
                                     (pool.pair |> Pair.toAsset)
                                 )
+                            |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
                     (\assetIn ->
@@ -255,10 +257,11 @@ update model blockchain pool msg (Transaction transaction) =
                         user
                             |> User.getBalance
                                 (pool.pair |> Pair.toCollateral)
-                            |> Maybe.map
+                            |> (Maybe.map << Remote.map)
                                 (Uint.toAmount
                                     (pool.pair |> Pair.toCollateral)
                                 )
+                            |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
                     (\collateralOut ->
@@ -530,6 +533,7 @@ view :
     ->
         { first : Element Msg
         , second : Element Msg
+        , third : Element Msg
         , buttons : Element Msg
         }
 view model blockchain pool (Transaction transaction) =
@@ -537,6 +541,7 @@ view model blockchain pool (Transaction transaction) =
         transaction
             |> assetInSection model blockchain (pool.pair |> Pair.toAsset)
     , second = none |> Debug.log "later"
+    , third = none |> Debug.log "later"
     , buttons = none |> Debug.log "later"
     }
 
@@ -598,177 +603,3 @@ assetInSection model blockchain asset { assetIn, tooltip } =
             , description = "asset in textbox"
             }
         ]
-
-
-userBalance :
-    User
-    -> Token
-    -> { transaction | tooltip : Maybe Tooltip }
-    -> Element Msg
-userBalance user asset { tooltip } =
-    user
-        |> User.getBalance asset
-        |> Maybe.map
-            (\balance ->
-                row
-                    [ width shrink
-                    , height shrink
-                    , alignRight
-                    , centerY
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 12
-                        , paddingXY 0 2
-                        , Font.color Color.transparent300
-                        ]
-                        (text "Bal: ")
-                    , Truncate.viewBalance
-                        { onMouseEnter = OnMouseEnter
-                        , onMouseLeave = OnMouseLeave
-                        , tooltip = Tooltip.AssetBalance
-                        , opened = tooltip
-                        , token = asset
-                        , balance = balance
-                        }
-                    ]
-            )
-        |> Maybe.withDefault none
-
-
-maxButton : Element Msg
-maxButton =
-    Input.button
-        [ Region.description "max asset lend"
-        , width shrink
-        , height shrink
-        , alignRight
-        , centerY
-        , Font.size 12
-        , paddingXY 0 2
-        , Font.color Color.warning400
-        , Font.bold
-        ]
-        { onPress = Just InputMaxAsset
-        , label = text "MAX"
-        }
-
-
-disabledCreate :
-    { model | images : Images }
-    -> Blockchain
-    -> Pool
-    -> Transaction
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-disabledCreate model blockchain pool (Transaction transaction) =
-    { first =
-        transaction
-            |> disabledCreateAssetIn
-                model
-                blockchain
-                (pool.pair |> Pair.toAsset)
-    , second = none |> Debug.log "later"
-    }
-
-
-disabledCreateAssetIn :
-    { model | images : Images }
-    -> Blockchain
-    -> Token
-    -> { transaction | assetIn : String }
-    -> Element Never
-disabledCreateAssetIn model blockchain asset transaction =
-    column
-        [ Region.description "lend asset"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 10
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 6
-            , centerY
-            ]
-            (el
-                [ width shrink
-                , height shrink
-                , Font.size 14
-                , paddingXY 0 3
-                , Font.color Color.primary400
-                ]
-                (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ disabledUserBalance user asset
-                                , disabledMaxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
-        , Textbox.disabled model
-            { token = asset
-            , text = transaction.assetIn
-            , description = "lend asset textbox"
-            }
-        ]
-
-
-disabledUserBalance :
-    User
-    -> Token
-    -> Element Never
-disabledUserBalance user asset =
-    user
-        |> User.getBalance asset
-        |> Maybe.map
-            (\balance ->
-                row
-                    [ width shrink
-                    , height shrink
-                    , alignRight
-                    , centerY
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 12
-                        , paddingXY 0 2
-                        , Font.color Color.transparent300
-                        ]
-                        (text "Bal: ")
-                    , Truncate.disabledBalance
-                        { token = asset
-                        , balance = balance
-                        }
-                    ]
-            )
-        |> Maybe.withDefault none
-
-
-disabledMaxButton : Element Never
-disabledMaxButton =
-    el
-        [ Region.description "max asset lend"
-        , width shrink
-        , height shrink
-        , alignRight
-        , centerY
-        , Font.size 12
-        , paddingXY 0 2
-        , Font.color Color.warning400
-        , Font.bold
-        ]
-        (text "MAX")

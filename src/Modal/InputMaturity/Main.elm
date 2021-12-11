@@ -27,6 +27,7 @@ import Element
         , text
         , width
         )
+import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Utility.Color as Color
@@ -64,7 +65,7 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ backdrop } as model) (Modal modal) =
+view model (Modal modal) =
     Glass.outsideModal model
         { onClick = Exit
         , modal =
@@ -74,7 +75,7 @@ view ({ backdrop } as model) (Modal modal) =
                 , padding 24
                 , centerX
                 , centerY
-                , Glass.background backdrop
+                , Background.color Color.background
                 , Border.rounded 8
                 , Border.color Color.transparent100
                 , Border.width 1

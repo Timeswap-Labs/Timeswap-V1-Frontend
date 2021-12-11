@@ -22,6 +22,7 @@ import Element
         , el
         , fill
         , height
+        , padding
         , paddingXY
         , px
         , row
@@ -181,16 +182,17 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ backdrop } as model) modal =
+view model modal =
     Glass.outsideModal model
         { onClick = Exit
         , modal =
             column
                 [ width <| px 335
                 , height <| px 300
+                , padding 24
                 , centerX
                 , centerY
-                , Glass.background backdrop
+                , Background.color Color.background
                 , Border.rounded 8
                 , Border.color Color.transparent100
                 , Border.width 1

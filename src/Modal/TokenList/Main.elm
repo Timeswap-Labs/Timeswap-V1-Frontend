@@ -406,7 +406,7 @@ view :
     -> Blockchain
     -> Modal
     -> Element Msg
-view ({ backdrop, images, chains } as model) blockchain ((Modal { state, tooltip }) as modal) =
+view model blockchain ((Modal { state, tooltip }) as modal) =
     Glass.outsideModal model
         { onClick = Exit
         , modal =
@@ -742,13 +742,31 @@ tokenBalance user token (Modal { tooltip }) =
             user |> User.getBalance token
     in
     case balances of
-        Just balance ->
+        Just (Success balance) ->
             el
                 [ alignRight
                 , Font.regular
                 , Font.size 16
                 ]
                 (balance |> Uint.toString |> text)
+
+        Just Loading ->
+            el
+                [ alignRight
+                , Font.regular
+                , Font.size 16
+                ]
+                (text "loading")
+                |> Debug.log "implement loading animation"
+
+        Just (Failure error) ->
+            el
+                [ alignRight
+                , Font.regular
+                , Font.size 16
+                ]
+                (text "error")
+                |> Debug.log "implement error view"
 
         _ ->
             none

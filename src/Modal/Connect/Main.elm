@@ -32,7 +32,6 @@ import Element
         , padding
         , paddingXY
         , px
-        , rotate
         , row
         , shrink
         , spacing
@@ -46,10 +45,10 @@ import Element.Input as Input
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Modal.Connect.Error as Error exposing (Error)
-import Modal.Connect.Etherscan as Etherscan
 import Modal.Connect.Terms as Terms
 import Sort.Set as Set
 import Utility.Color as Color
+import Utility.Etherscan as Etherscan
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
@@ -134,7 +133,7 @@ update msg modal =
         ( CopyAddress address, _ ) ->
             ( modal |> Just
             , address
-                |> Address.encode
+                |> Address.toString
                 |> copyToClipboard
             )
 
@@ -185,7 +184,7 @@ port connect : Value -> Cmd msg
 port installMetamask : () -> Cmd msg
 
 
-port copyToClipboard : Value -> Cmd msg
+port copyToClipboard : String -> Cmd msg
 
 
 
@@ -219,7 +218,7 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ backdrop } as model) modal =
+view model modal =
     Glass.outsideModal model
         { onClick = Exit
         , modal =
@@ -229,7 +228,7 @@ view ({ backdrop } as model) modal =
                 , padding 24
                 , centerX
                 , centerY
-                , Glass.background backdrop
+                , Background.color Color.background
                 , Border.rounded 8
                 , Border.color Color.transparent100
                 , Border.width 1
@@ -278,7 +277,7 @@ viewWallets :
         , blockchain : Support User.NotSupported Blockchain
     }
     -> Element Msg
-viewWallets ({ images } as model) =
+viewWallets model =
     column
         [ width fill
         , height shrink
@@ -495,7 +494,7 @@ viewInitializing :
     { model | images : Images }
     -> { waiting | wallet : Wallet }
     -> Element Msg
-viewInitializing ({ images } as model) waiting =
+viewInitializing model waiting =
     column
         [ width fill
         , height shrink
@@ -527,7 +526,7 @@ viewError :
     { model | images : Images }
     -> { waiting | wallet : Wallet }
     -> Element Msg
-viewError ({ images } as model) waiting =
+viewError model waiting =
     column
         [ width fill
         , height shrink
@@ -734,8 +733,12 @@ walletConnected { images } blockchain user =
                 |> User.toName
                 |> Maybe.withDefault
                     (user
-                        |> User.toAddress
-                        |> Address.toStringShort
+                        |> User.toName
+                        |> Maybe.withDefault
+                            (user
+                                |> User.toAddress
+                                |> Address.toStringShort
+                            )
                     )
                 |> text
             )
@@ -746,10 +749,8 @@ walletConnected { images } blockchain user =
             ]
             { url =
                 user
-                    |> User.toAddress
-                    |> Etherscan.toUrlString
+                    |> Etherscan.fromUser
                         (blockchain |> Blockchain.toChain)
-                        (user |> User.toName)
             , label =
                 images
                     |> Image.link

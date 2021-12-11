@@ -16,6 +16,7 @@ import Element
         , el
         , fill
         , height
+        , padding
         , paddingXY
         , px
         , row
@@ -69,9 +70,10 @@ view model =
             column
                 [ width <| px 335
                 , height <| px 300
+                , padding 24
                 , centerX
                 , centerY
-                , Background.color Color.light100
+                , Background.color Color.background
                 ]
                 [ row
                     [ width fill

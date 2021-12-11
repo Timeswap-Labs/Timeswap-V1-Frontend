@@ -22,6 +22,8 @@ module Blockchain.User.Main exposing
 import Blockchain.User.Allowances as Allowances exposing (Allowances)
 import Blockchain.User.Balances as Balances exposing (Balances)
 import Data.Address as Address exposing (Address)
+import Data.Chain as Chain exposing (Chain)
+import Data.Chains exposing (Chains)
 import Data.ERC20 exposing (ERC20)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Token exposing (Token)
@@ -39,8 +41,8 @@ type User
         { wallet : Wallet
         , address : Address
         , name : Maybe String
-        , balances : Web Balances
-        , allowances : Web Allowances
+        , balances : Balances
+        , allowances : Allowances
         }
 
 
@@ -62,8 +64,8 @@ type Msg
     = Msg
 
 
-init : Flag -> Maybe ( User, Cmd Msg )
-init flag =
+init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
+init chains chain flag =
     case
         ( flag.wallet |> Wallet.init
         , flag.address |> Address.fromString
@@ -73,8 +75,8 @@ init flag =
             ( { wallet = wallet
               , address = address
               , name = Nothing
-              , balances = Loading
-              , allowances = Loading
+              , balances = Balances.init chains chain
+              , allowances = Allowances.init chains chain
               }
                 |> User
             , Cmd.none |> Debug.log "Later"
@@ -110,15 +112,18 @@ update msg (User user) =
     )
 
 
-decoder : Decoder (Maybe User)
-decoder =
+decoder :
+    { model | chains : Chains }
+    -> Chain
+    -> Decoder (Maybe User)
+decoder { chains } chain =
     Decode.succeed
         (\wallet address ->
             { wallet = wallet
             , address = address
             , name = Nothing
-            , balances = Loading
-            , allowances = Loading
+            , balances = Balances.init chains chain
+            , allowances = Allowances.init chains chain
             }
                 |> User
         )
@@ -140,9 +145,19 @@ decoderNotSupported =
         |> Pipeline.required "address" Address.decoder
 
 
-receiveUserInit : Value -> Maybe ( User, Cmd Msg )
-receiveUserInit value =
-    case value |> Decode.decodeValue decoder of
+isSame : User -> User -> Bool
+isSame (User user1) (User user2) =
+    (user1.address == user2.address)
+        && (user1.wallet == user2.wallet)
+
+
+receiveUserInit :
+    { model | chains : Chains }
+    -> Chain
+    -> Value
+    -> Maybe ( User, Cmd Msg )
+receiveUserInit model chain value =
+    case value |> Decode.decodeValue (decoder model chain) of
         Ok (Just decodedUser) ->
             ( decodedUser
             , Cmd.none |> Debug.log "Later"
@@ -153,11 +168,16 @@ receiveUserInit value =
             Nothing
 
 
-receiveUser : Value -> User -> Maybe ( User, Cmd Msg )
-receiveUser value user =
-    case value |> Decode.decodeValue decoder of
+receiveUser :
+    { model | chains : Chains }
+    -> Chain
+    -> Value
+    -> User
+    -> Maybe ( User, Cmd Msg )
+receiveUser model chain value user =
+    case value |> Decode.decodeValue (decoder model chain) of
         Ok (Just decodedUser) ->
-            if user == decodedUser then
+            if isSame user decodedUser then
                 ( user
                 , Cmd.none
                 )
@@ -217,28 +237,32 @@ toAddressNotSupported (NotSupported { address }) =
 toName : User -> Maybe String
 toName (User { name }) =
     name
+        |> Maybe.map
+            (\justName ->
+                if (justName |> String.length) > 20 then
+                    [ justName |> String.left 20
+                    , "..."
+                    ]
+                        |> String.concat
+
+                else
+                    justName
+            )
 
 
-getBalance : Token -> User -> Maybe Uint
+getBalance : Token -> User -> Maybe (Web Uint)
 getBalance token (User { balances }) =
     balances
-        |> Remote.map
-            (\dict ->
-                dict
-                    |> Dict.get token
-            )
-        |> Remote.withDefault Nothing
+        |> Dict.get token
 
 
 hasEnoughBalance : Token -> Uint -> User -> Bool
 hasEnoughBalance token amount (User { balances }) =
     balances
-        |> Remote.map (Balances.hasEnough token amount)
-        |> Remote.withDefault False
+        |> Balances.hasEnough token amount
 
 
 hasEnoughAllowance : ERC20 -> Uint -> User -> Bool
 hasEnoughAllowance erc20 amount (User { allowances }) =
     allowances
-        |> Remote.map (Allowances.hasEnough erc20 amount)
-        |> Remote.withDefault False
+        |> Allowances.hasEnough erc20 amount

@@ -231,7 +231,7 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ time, offset, chosenZone, backdrop, images } as model) (Modal ({ tooltip } as modal)) =
+view ({ time, offset, chosenZone } as model) (Modal ({ tooltip } as modal)) =
     Glass.outsideModal model
         { onClick = Exit
         , modal =
@@ -242,7 +242,7 @@ view ({ time, offset, chosenZone, backdrop, images } as model) (Modal ({ tooltip
                 , spacing 16
                 , centerX
                 , centerY
-                , Glass.background backdrop
+                , Background.color Color.background
                 , Border.rounded 8
                 , Border.color Color.transparent100
                 , Border.width 1

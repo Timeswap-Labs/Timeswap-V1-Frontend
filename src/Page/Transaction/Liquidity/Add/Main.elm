@@ -7,6 +7,7 @@ port module Page.Transaction.Liquidity.Add.Main exposing
     , subscriptions
     , toAddError
     , update
+    , view
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
@@ -309,10 +310,11 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         user
                             |> User.getBalance
                                 (pool.pair |> Pair.toAsset)
-                            |> Maybe.map
+                            |> (Maybe.map << Remote.map)
                                 (Uint.toAmount
                                     (pool.pair |> Pair.toAsset)
                                 )
+                            |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
                     (\assetIn ->
@@ -409,10 +411,11 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         user
                             |> User.getBalance
                                 (pool.pair |> Pair.toCollateral)
-                            |> Maybe.map
+                            |> (Maybe.map << Remote.map)
                                 (Uint.toAmount
                                     (pool.pair |> Pair.toCollateral)
                                 )
+                            |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
                     (\collateralOut ->
@@ -878,6 +881,7 @@ view :
     ->
         { first : Element Msg
         , second : Element Msg
+        , third : Element Msg
         , buttons : Element Msg
         }
 view model blockchain pool (Transaction transaction) =
@@ -894,7 +898,9 @@ view model blockchain pool (Transaction transaction) =
             , Border.rounded 8
             ]
             none
-    , buttons = none
+            |> Debug.log "later"
+    , third = none |> Debug.log "later"
+    , buttons = none |> Debug.log "later"
     }
 
 
@@ -973,367 +979,4 @@ viewAssetIn model blockchain asset { state, tooltip } =
                                 Left ""
             , description = "asset in textbox"
             }
-        ]
-
-
-userBalance :
-    User
-    -> Token
-    -> { transaction | tooltip : Maybe Tooltip }
-    -> Element Msg
-userBalance user asset { tooltip } =
-    user
-        |> User.getBalance asset
-        |> Maybe.map
-            (\balance ->
-                row
-                    [ width shrink
-                    , height shrink
-                    , alignRight
-                    , centerY
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 12
-                        , paddingXY 0 2
-                        , Font.color Color.transparent300
-                        ]
-                        (text "Bal: ")
-                    , Truncate.viewBalance
-                        { onMouseEnter = OnMouseEnter
-                        , onMouseLeave = OnMouseLeave
-                        , tooltip = Tooltip.AssetBalance
-                        , opened = tooltip
-                        , token = asset
-                        , balance = balance
-                        }
-                    ]
-            )
-        |> Maybe.withDefault none
-
-
-maxButton : Element Msg
-maxButton =
-    Input.button
-        [ Region.description "max asset lend"
-        , width shrink
-        , height shrink
-        , alignRight
-        , centerY
-        , Font.size 12
-        , paddingXY 0 2
-        , Font.color Color.warning400
-        , Font.bold
-        ]
-        { onPress = Just InputMaxAsset
-        , label = text "MAX"
-        }
-
-
-disabled :
-    { model | images : Images }
-    -> Blockchain
-    -> Pool
-    -> Transaction
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-disabled model blockchain pool (Transaction transaction) =
-    { first =
-        transaction
-            |> disabledAssetIn
-                model
-                blockchain
-                (pool.pair |> Pair.toAsset)
-    , second =
-        transaction
-            |> disabledDues model pool
-    }
-
-
-disabledAssetIn :
-    { model | images : Images }
-    -> Blockchain
-    -> Token
-    -> { transaction | state : State }
-    -> Element Never
-disabledAssetIn model blockchain asset transaction =
-    column
-        [ Region.description "lend asset"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 10
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 6
-            , centerY
-            ]
-            (el
-                [ width shrink
-                , height shrink
-                , Font.size 14
-                , paddingXY 0 3
-                , Font.color Color.primary400
-                ]
-                (text "Amount to Lend")
-                :: (blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (\user ->
-                                [ disabledUserBalance user asset
-                                , disabledMaxButton
-                                ]
-                            )
-                        |> Maybe.withDefault
-                            []
-                   )
-            )
-        , Textbox.disabled model
-            { token = asset
-            , text =
-                case transaction.state of
-                    Asset { assetIn } ->
-                        assetIn
-
-                    _ ->
-                        ""
-            , description = "lend asset textbox"
-            }
-        ]
-
-
-disabledUserBalance :
-    User
-    -> Token
-    -> Element Never
-disabledUserBalance user asset =
-    user
-        |> User.getBalance asset
-        |> Maybe.map
-            (\balance ->
-                row
-                    [ width shrink
-                    , height shrink
-                    , alignRight
-                    , centerY
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 12
-                        , paddingXY 0 2
-                        , Font.color Color.transparent300
-                        ]
-                        (text "Bal: ")
-                    , Truncate.disabledBalance
-                        { token = asset
-                        , balance = balance
-                        }
-                    ]
-            )
-        |> Maybe.withDefault none
-
-
-disabledMaxButton : Element Never
-disabledMaxButton =
-    el
-        [ Region.description "max asset lend"
-        , width shrink
-        , height shrink
-        , alignRight
-        , centerY
-        , Font.size 12
-        , paddingXY 0 2
-        , Font.color Color.warning400
-        , Font.bold
-        ]
-        (text "MAX")
-
-
-disabledDues :
-    { model | images : Images }
-    -> Pool
-    -> { transaction | state : State }
-    -> Element Never
-disabledDues model pool transaction =
-    column
-        [ Region.description "dues"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 12
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        []
-
-
-empty :
-    { model | images : Images }
-    ->
-        { asset : Maybe Token
-        , collateral : Maybe Token
-        }
-    ->
-        { first : Element Never
-        , second : Element Never
-        }
-empty model { asset, collateral } =
-    { first = emptyAssetIn model asset
-    , second = emptyDues model asset collateral
-    }
-
-
-emptyAssetIn :
-    { model | images : Images }
-    -> Maybe Token
-    -> Element Never
-emptyAssetIn model token =
-    column
-        [ Region.description "lend asset"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 10
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.primary400
-            ]
-            (text "Amount to Lend")
-        , token
-            |> Maybe.map
-                (\asset ->
-                    Textbox.disabled model
-                        { token = asset
-                        , text = ""
-                        , description = "asset in textbox"
-                        }
-                )
-            |> Maybe.withDefault
-                (Textbox.empty "asset in textbox")
-        ]
-
-
-emptyDues :
-    { model | images : Images }
-    -> Maybe Token
-    -> Maybe Token
-    -> Element Never
-emptyDues model asset collateral =
-    column
-        [ Region.description "dues"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 12
-        , alpha 0.2
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 16
-            ]
-            [ Info.emptyAPR
-            , Info.emptyCDP
-            ]
-        , emptyDuesIn model asset collateral
-        ]
-
-
-emptyDuesIn :
-    { model | images : Images }
-    -> Maybe Token
-    -> Maybe Token
-    -> Element Never
-emptyDuesIn model asset collateral =
-    column
-        [ width fill
-        , height shrink
-        , padding 12
-        , spacing 12
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ emptyDebtOut model asset
-        , emptyCollateralOut model collateral
-        ]
-
-
-emptyDebtOut :
-    { model | images : Images }
-    -> Maybe Token
-    -> Element Never
-emptyDebtOut model asset =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , Font.color Color.primary400
-            ]
-            (text "Debt to Repay")
-        , asset
-            |> Maybe.map
-                (\token ->
-                    Textbox.disabled model
-                        { token = token
-                        , text = ""
-                        , description = "debt output"
-                        }
-                )
-            |> Maybe.withDefault
-                (Textbox.empty "debt output")
-        ]
-
-
-emptyCollateralOut :
-    { model | images : Images }
-    -> Maybe Token
-    -> Element Never
-emptyCollateralOut model collateral =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , Font.color Color.primary400
-            ]
-            (text "Collateral to Lock")
-        , collateral
-            |> Maybe.map
-                (\token ->
-                    Textbox.disabled model
-                        { token = token
-                        , text = ""
-                        , description = "collateral output"
-                        }
-                )
-            |> Maybe.withDefault
-                (Textbox.empty "collateral output")
         ]
