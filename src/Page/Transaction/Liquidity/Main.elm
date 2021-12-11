@@ -30,7 +30,6 @@ import Data.TokenParam as TokenParam exposing (TokenParam)
 import Element
     exposing
         ( Element
-        , alignLeft
         , alignRight
         , alignTop
         , centerY
@@ -43,7 +42,6 @@ import Element
         , padding
         , paddingXY
         , px
-        , rotate
         , row
         , shrink
         , spacing
@@ -72,6 +70,7 @@ import Task
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Glass as Glass
+import Utility.IconButton as IconButton
 import Utility.Image as Image
 import Utility.Input as Input
 
@@ -136,7 +135,7 @@ type Msg
 type Effect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
-    | OpenChooseMaturity Pair
+    | OpenInputMaturity Pair
     | OpenConnect
     | OpenSettings
     | OpenConfirm
@@ -411,7 +410,7 @@ update model blockchain msg (Transaction transaction) =
             ( transaction |> Transaction
             , Cmd.none
             , pair
-                |> OpenChooseMaturity
+                |> OpenInputMaturity
                 |> Just
             )
 
@@ -419,7 +418,7 @@ update model blockchain msg (Transaction transaction) =
             ( transaction |> Transaction
             , Cmd.none
             , pool.pair
-                |> OpenChooseMaturity
+                |> OpenInputMaturity
                 |> Just
             )
 
@@ -987,7 +986,7 @@ view ({ backdrop } as model) (Transaction transaction) =
                                 none
 
                             New _ ->
-                                backButton model
+                                IconButton.back model GoToAdd
                         , el
                             [ width shrink
                             , height shrink
@@ -1040,27 +1039,6 @@ view ({ backdrop } as model) (Transaction transaction) =
                         ]
                     ]
            )
-
-
-backButton :
-    { model | images : Images }
-    -> Element Msg
-backButton { images } =
-    Input.button
-        [ width shrink
-        , height shrink
-        , alignLeft
-        , centerY
-        ]
-        { onPress = Just GoToAdd
-        , label =
-            images
-                |> Image.arrowDown
-                    [ width <| px 18
-                    , height <| px 18
-                    , rotate (pi / 2)
-                    ]
-        }
 
 
 createPoolButton :

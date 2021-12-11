@@ -3,9 +3,9 @@ module Modal.Main exposing
     , Modal
     , Msg
     , initChainList
-    , initChooseMaturity
     , initConfirm
     , initConnect
+    , initInputMaturity
     , initMaturityList
     , initSettings
     , initTokenList
@@ -77,9 +77,9 @@ type Effect
     | InputPool Pool
 
 
-initConnect : Modal
-initConnect =
-    Connect.init
+initConnect : Support User.NotSupported Blockchain -> Modal
+initConnect blockchain =
+    Connect.init blockchain
         |> Connect
 
 
@@ -118,8 +118,8 @@ initMaturityList blockchain pair =
             (Cmd.map MaturityListMsg)
 
 
-initChooseMaturity : Pair -> Modal
-initChooseMaturity pair =
+initInputMaturity : Pair -> Modal
+initInputMaturity pair =
     InputMaturity.init pair
         |> InputMaturity
 

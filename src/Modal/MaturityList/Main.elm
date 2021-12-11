@@ -59,6 +59,7 @@ import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
+import Utility.IconButton as IconButton
 import Utility.Image as Image
 
 
@@ -231,73 +232,61 @@ view :
     -> Modal
     -> Element Msg
 view ({ time, offset, chosenZone, backdrop, images } as model) (Modal ({ tooltip } as modal)) =
-    Glass.outsideModal backdrop
-        Exit
-        (column
-            [ width <| px 375
-            , height shrink
-            , padding 24
-            , spacing 16
-            , centerX
-            , centerY
-            , Glass.background backdrop
-            , Border.rounded 8
-            , Border.color Color.transparent100
-            , Border.width 1
-            ]
-            [ row
-                [ width fill
+    Glass.outsideModal model
+        { onClick = Exit
+        , modal =
+            column
+                [ width <| px 375
                 , height shrink
+                , padding 24
+                , spacing 16
+                , centerX
+                , centerY
+                , Glass.background backdrop
+                , Border.rounded 8
+                , Border.color Color.transparent100
+                , Border.width 1
                 ]
-                [ el
-                    [ width shrink
+                [ row
+                    [ width fill
                     , height shrink
-                    , centerY
-                    , Font.size 18
-                    , paddingXY 0 3
-                    , Font.color Color.light100
                     ]
-                    (text "Select Maturity")
-                , Input.button
-                    [ width shrink
-                    , height shrink
-                    , alignRight
-                    , centerY
+                    [ el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        , Font.size 18
+                        , paddingXY 0 3
+                        , Font.color Color.light100
+                        ]
+                        (text "Select Maturity")
+                    , IconButton.exit model Exit
                     ]
-                    { onPress = Just Exit
-                    , label =
-                        images
-                            |> Image.close
-                                [ width <| px 24
-                                , height <| px 24
-                                ]
-                    }
-                ]
-            , column
-                []
-                (case modal.pools of
-                    Success pools ->
-                        pools
-                            |> Dict.toList
-                            |> List.map
-                                (\( maturity, summary ) ->
-                                    el
-                                        []
-                                        (Duration.viewMaturity
-                                            { onMouseEnter = OnMouseEnter
-                                            , onMouseLeave = OnMouseLeave
-                                            , tooltip = Tooltip.Maturity maturity
-                                            , opened = tooltip
-                                            , time = time
-                                            , offset = offset
-                                            , chosenZone = chosenZone
-                                            , maturity = maturity
-                                            }
-                                        )
-                                )
+                , column
+                    []
+                    (case modal.pools of
+                        Success pools ->
+                            pools
+                                |> Dict.toList
+                                |> List.map
+                                    (\( maturity, summary ) ->
+                                        el
+                                            []
+                                            (Duration.viewMaturity
+                                                { onMouseEnter = OnMouseEnter
+                                                , onMouseLeave = OnMouseLeave
+                                                , tooltip = Tooltip.Maturity maturity
+                                                , opened = tooltip
+                                                , time = time
+                                                , offset = offset
+                                                , chosenZone = chosenZone
+                                                , maturity = maturity
+                                                }
+                                            )
+                                    )
 
-                    _ ->
-                        []
-                )
-            ]
-        )
+                        _ ->
+                            []
+                    )
+                ]
+        }

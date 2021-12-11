@@ -304,7 +304,11 @@ update msg model =
             )
 
         OpenConnect ->
-            ( { model | modal = Modal.initConnect |> Just }
+            ( { model
+                | modal =
+                    Modal.initConnect model.blockchain
+                        |> Just
+              }
             , Cmd.none
             )
 
@@ -487,8 +491,8 @@ pageEffect blockchain effect model =
                     )
                     (Cmd.map ModalMsg)
 
-        Page.OpenChooseMaturity pair ->
-            ( { model | modal = Modal.initChooseMaturity pair |> Just }
+        Page.OpenInputMaturity pair ->
+            ( { model | modal = Modal.initInputMaturity pair |> Just }
             , Cmd.none
             )
 
@@ -498,7 +502,11 @@ pageEffect blockchain effect model =
             )
 
         Page.OpenConnect ->
-            ( { model | modal = Modal.initConnect |> Just }
+            ( { model
+                | modal =
+                    Modal.initConnect (Supported blockchain)
+                        |> Just
+              }
             , Cmd.none
             )
 

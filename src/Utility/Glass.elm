@@ -47,8 +47,14 @@ background backdrop =
         |> behindContent
 
 
-outsideModal : Backdrop -> msg -> Element msg -> Element msg
-outsideModal backdrop exitMsg =
+outsideModal :
+    { model | backdrop : Backdrop }
+    ->
+        { onClick : msg
+        , modal : Element msg
+        }
+    -> Element msg
+outsideModal { backdrop } { onClick, modal } =
     el
         [ width fill
         , height fill
@@ -59,7 +65,7 @@ outsideModal backdrop exitMsg =
             , el
                 ([ width fill
                  , height fill
-                 , Events.onClick exitMsg
+                 , Events.onClick onClick
                  , Background.color Color.outside
                  ]
                     ++ (case backdrop of
@@ -82,3 +88,4 @@ outsideModal backdrop exitMsg =
             none
             |> behindContent
         ]
+        modal

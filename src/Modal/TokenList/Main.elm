@@ -60,6 +60,7 @@ import Process
 import Task
 import Utility.Color as Color
 import Utility.Glass as Glass
+import Utility.IconButton as IconButton
 import Utility.Image as Image
 import Utility.Truncate as Truncate
 
@@ -400,38 +401,39 @@ view :
     -> Modal
     -> Element Msg
 view ({ backdrop, images, chains } as model) blockchain ((Modal { state, tooltip }) as modal) =
-    Glass.outsideModal backdrop
-        Exit
-        (column
-            [ width <| px 350
-            , height <| minimum 360 fill
-            , centerX
-            , centerY
-            , padding 0
-            , Background.color Color.background
-            , Border.color Color.transparent100
-            , Border.width 1
-            , Border.rounded 8
-            ]
-            [ modalHeader model modal
-            , case state of
-                ImportingERC20 erc20 ->
-                    importTokenWarning model (erc20 |> Token.ERC20) tooltip
+    Glass.outsideModal model
+        { onClick = Exit
+        , modal =
+            column
+                [ width <| px 350
+                , height <| minimum 360 fill
+                , centerX
+                , centerY
+                , padding 0
+                , Background.color Color.background
+                , Border.color Color.transparent100
+                , Border.width 1
+                , Border.rounded 8
+                ]
+                [ modalHeader model modal
+                , case state of
+                    ImportingERC20 erc20 ->
+                        importTokenWarning model (erc20 |> Token.ERC20) tooltip
 
-                _ ->
-                    tokenList model blockchain modal
-            , case state of
-                AllTokens a ->
-                    manageTokensBtn model
+                    _ ->
+                        tokenList model blockchain modal
+                , case state of
+                    AllTokens a ->
+                        manageTokensBtn model
 
-                _ ->
-                    none
-            ]
-        )
+                    _ ->
+                        none
+                ]
+        }
 
 
 modalHeader : { model | images : Images } -> Modal -> Element Msg
-modalHeader { images } (Modal { state }) =
+modalHeader model (Modal { state }) =
     column
         [ width fill
         , height shrink
@@ -464,28 +466,16 @@ modalHeader { images } (Modal { state }) =
                         [ text "Select Token" ]
 
                     ImportingERC20 a ->
-                        [ backButton images
+                        [ IconButton.back model GoToAllTokens
                         , text "Import Token"
                         ]
 
                     CustomERC20s ->
-                        [ backButton images
+                        [ IconButton.back model GoToAllTokens
                         , text "Manage Tokens"
                         ]
                 )
-            , Input.button
-                [ width shrink
-                , alignRight
-                , centerY
-                ]
-                { onPress = Just Exit
-                , label =
-                    images
-                        |> Image.close
-                            [ width <| px 24
-                            , height <| px 24
-                            ]
-                }
+            , IconButton.exit model Exit
             ]
         , case state of
             ImportingERC20 a ->
@@ -522,21 +512,6 @@ modalHeader { images } (Modal { state }) =
                     , label = Input.labelHidden "Search token"
                     }
         ]
-
-
-backButton : Images -> Element Msg
-backButton images =
-    Input.button
-        []
-        { onPress = Just GoToAllTokens
-        , label =
-            images
-                |> Image.arrowDown
-                    [ width <| px 16
-                    , height <| px 16
-                    , rotate (pi / 2)
-                    ]
-        }
 
 
 tokenList :

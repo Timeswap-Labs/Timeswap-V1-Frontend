@@ -51,6 +51,7 @@ import Modal.Connect.Terms as Terms
 import Sort.Set as Set
 import Utility.Color as Color
 import Utility.Glass as Glass
+import Utility.IconButton as IconButton
 import Utility.Image as Image
 
 
@@ -65,6 +66,7 @@ type Modal
 
 type Msg
     = GoToWallets
+    | GoToConnected
     | Connect Wallet
     | TryAgain
     | InstallMetamask
@@ -73,9 +75,17 @@ type Msg
     | Exit
 
 
-init : Modal
-init =
-    Wallets
+init : Support User.NotSupported Blockchain -> Modal
+init param =
+    case param of
+        Supported blockchain ->
+            blockchain
+                |> Blockchain.toUser
+                |> Maybe.map (\_ -> Connected)
+                |> Maybe.withDefault Wallets
+
+        NotSupported _ ->
+            Connected
 
 
 update : Msg -> Modal -> ( Maybe Modal, Cmd Msg )
@@ -88,6 +98,11 @@ update msg modal =
 
         ( GoToWallets, Connected ) ->
             ( Wallets |> Just
+            , Cmd.none
+            )
+
+        ( GoToConnected, Wallets ) ->
+            ( Connected |> Just
             , Cmd.none
             )
 
@@ -205,54 +220,55 @@ view :
     -> Modal
     -> Element Msg
 view ({ backdrop } as model) modal =
-    Glass.outsideModal backdrop
-        Exit
-        (el
-            [ width <| px 375
-            , height shrink
-            , padding 24
-            , centerX
-            , centerY
-            , Glass.background backdrop
-            , Border.rounded 8
-            , Border.color Color.transparent100
-            , Border.width 1
-            ]
-            (case
-                ( case model.blockchain of
-                    Supported blockchain ->
+    Glass.outsideModal model
+        { onClick = Exit
+        , modal =
+            el
+                [ width <| px 375
+                , height shrink
+                , padding 24
+                , centerX
+                , centerY
+                , Glass.background backdrop
+                , Border.rounded 8
+                , Border.color Color.transparent100
+                , Border.width 1
+                ]
+                (case
+                    ( case model.blockchain of
+                        Supported blockchain ->
+                            blockchain
+                                |> Ok
+
+                        NotSupported notSupported ->
+                            notSupported
+                                |> Err
+                    , modal
+                    )
+                 of
+                    ( _, Wallets ) ->
+                        viewWallets model
+
+                    ( _, Waiting ({ error } as waiting) ) ->
+                        case error of
+                            Loading ->
+                                viewInitializing model waiting
+
+                            _ ->
+                                viewError model waiting
+
+                    ( Ok blockchain, Connected ) ->
                         blockchain
-                            |> Ok
+                            |> Blockchain.toUser
+                            |> Maybe.map
+                                (viewConnected model blockchain)
+                            |> Maybe.withDefault
+                                (viewWallets model)
 
-                    NotSupported notSupported ->
-                        notSupported
-                            |> Err
-                , modal
+                    ( Err notSupported, Connected ) ->
+                        viewNotSupported model notSupported
                 )
-             of
-                ( _, Wallets ) ->
-                    viewWallets model
-
-                ( _, Waiting ({ error } as waiting) ) ->
-                    case error of
-                        Loading ->
-                            viewInitializing model waiting
-
-                        _ ->
-                            viewError model waiting
-
-                ( Ok blockchain, Connected ) ->
-                    blockchain
-                        |> Blockchain.toUser
-                        |> Maybe.map
-                            (viewConnected model blockchain)
-                        |> Maybe.withDefault
-                            (viewWallets model)
-
-                ( Err notSupported, Connected ) ->
-                    viewNotSupported model notSupported
-            )
-        )
+        }
 
 
 viewWallets :
@@ -271,6 +287,7 @@ viewWallets ({ images } as model) =
         [ row
             [ width fill
             , height shrink
+            , spacing 16
             ]
             (((case model.blockchain of
                 Supported blockchain ->
@@ -285,21 +302,7 @@ viewWallets ({ images } as model) =
               )
                 |> Maybe.map
                     (\_ ->
-                        [ Input.button
-                            [ width shrink
-                            , height shrink
-                            , centerY
-                            , spacing 16
-                            ]
-                            { onPress = Just GoToWallets
-                            , label =
-                                images
-                                    |> Image.arrowDown
-                                        [ width <| px 18
-                                        , height <| px 18
-                                        , rotate (pi / 2)
-                                        ]
-                            }
+                        [ IconButton.back model GoToConnected
                         , el
                             [ width shrink
                             , height shrink
@@ -323,20 +326,7 @@ viewWallets ({ images } as model) =
                         (text "Connect Wallet")
                     ]
              )
-                ++ [ Input.button
-                        [ width shrink
-                        , height shrink
-                        , alignRight
-                        , centerY
-                        ]
-                        { onPress = Just Exit
-                        , label =
-                            images
-                                |> Image.close
-                                    [ width <| px 24
-                                    , height <| px 24
-                                    ]
-                        }
+                ++ [ IconButton.exit model Exit
                    ]
             )
         , metamaskButton model
@@ -516,20 +506,7 @@ viewInitializing ({ images } as model) waiting =
             , height shrink
             , spacing 16
             ]
-            [ Input.button
-                [ width shrink
-                , height shrink
-                , centerY
-                ]
-                { onPress = Just GoToWallets
-                , label =
-                    images
-                        |> Image.arrowDown
-                            [ width <| px 18
-                            , height <| px 18
-                            , rotate (pi / 2)
-                            ]
-                }
+            [ IconButton.back model GoToWallets
             , el
                 [ width shrink
                 , height shrink
@@ -539,20 +516,7 @@ viewInitializing ({ images } as model) waiting =
                 , Font.color Color.light100
                 ]
                 (text "Initializing")
-            , Input.button
-                [ width shrink
-                , height shrink
-                , alignRight
-                , centerY
-                ]
-                { onPress = Just Exit
-                , label =
-                    images
-                        |> Image.close
-                            [ width <| px 24
-                            , height <| px 24
-                            ]
-                }
+            , IconButton.exit model Exit
             ]
         , walletWaiting model waiting
         , Terms.view
@@ -574,44 +538,17 @@ viewError ({ images } as model) waiting =
             , height shrink
             , spacing 16
             ]
-            [ Input.button
-                [ width shrink
-                , height shrink
-                , centerY
-                ]
-                { onPress = Just GoToWallets
-                , label =
-                    images
-                        |> Image.arrowDown
-                            [ width <| px 18
-                            , height <| px 18
-                            , rotate (pi / 2)
-                            ]
-                }
+            [ IconButton.back model GoToWallets
             , el
                 [ width shrink
                 , height shrink
-                , centerX
                 , centerY
                 , Font.size 18
                 , paddingXY 0 3
                 , Font.color Color.negative500
                 ]
                 (text "Error")
-            , Input.button
-                [ width shrink
-                , height shrink
-                , alignRight
-                , centerY
-                ]
-                { onPress = Just Exit
-                , label =
-                    images
-                        |> Image.close
-                            [ width <| px 24
-                            , height <| px 24
-                            ]
-                }
+            , IconButton.exit model Exit
             ]
         , walletError model waiting
         , Terms.view
@@ -673,7 +610,7 @@ walletError { images } { wallet } =
         , height <| px 54
         , paddingXY 18 0
         , spacing 8
-        , Background.color Color.primary100
+        , Background.color Color.negative100
         , Border.width 1
         , Border.color Color.negative500
         , Border.rounded 8
@@ -699,7 +636,7 @@ walletError { images } { wallet } =
             )
         , Input.button
             [ width shrink
-            , height <| px 44
+            , height <| px 32
             , paddingXY 12 0
             , alignRight
             , centerY

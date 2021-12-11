@@ -9,31 +9,36 @@ port module Modal.Settings.Main exposing
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Deadline as Deadline exposing (Deadline)
+import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.Spot as Spot exposing (Spot)
 import Element
     exposing
         ( Element
-        , alpha
-        , behindContent
         , centerX
         , centerY
         , column
         , el
         , fill
         , height
-        , none
+        , paddingXY
         , px
+        , row
+        , shrink
+        , spacing
+        , text
         , width
         )
 import Element.Background as Background
-import Element.Events as Events
+import Element.Border as Border
+import Element.Font as Font
 import Element.Input as Input
 import Json.Encode exposing (Value)
 import Modal.Settings.Tooltip exposing (Tooltip)
 import Utility.Color as Color
 import Utility.Glass as Glass
+import Utility.IconButton as IconButton
 import Utility.Input as Input
 
 
@@ -169,16 +174,48 @@ port cacheDeadline : Value -> Cmd msg
 port cacheSpot : Value -> Cmd msg
 
 
-view : { model | backdrop : Backdrop } -> Modal -> Element Msg
-view { backdrop } modal =
-    Glass.outsideModal backdrop
-        Exit
-        (column
-            [ width <| px 335
-            , height <| px 300
-            , centerX
-            , centerY
-            , Background.color Color.light100
-            ]
-            []
-        )
+view :
+    { model
+        | backdrop : Backdrop
+        , images : Images
+    }
+    -> Modal
+    -> Element Msg
+view ({ backdrop } as model) modal =
+    Glass.outsideModal model
+        { onClick = Exit
+        , modal =
+            column
+                [ width <| px 335
+                , height <| px 300
+                , centerX
+                , centerY
+                , Glass.background backdrop
+                , Border.rounded 8
+                , Border.color Color.transparent100
+                , Border.width 1
+                ]
+                [ column
+                    [ width fill
+                    , height shrink
+                    , spacing 16
+                    ]
+                    [ row
+                        [ width fill
+                        , height shrink
+                        , spacing 16
+                        ]
+                        [ el
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            , Font.size 18
+                            , paddingXY 0 3
+                            , Font.color Color.light100
+                            ]
+                            (text "Settings")
+                        , IconButton.exit model Exit
+                        ]
+                    ]
+                ]
+        }

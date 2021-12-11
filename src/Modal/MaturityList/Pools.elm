@@ -1,6 +1,7 @@
 module Modal.MaturityList.Pools exposing (Pools, decoder)
 
 import Data.Maturity as Maturity exposing (Maturity)
+import Data.Pool as Pool exposing (Pool)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Modal.MaturityList.Summary as Summary exposing (Summary)
@@ -14,7 +15,8 @@ type alias Pools =
 decoder : Decoder Pools
 decoder =
     Decode.succeed Tuple.pair
-        |> Pipeline.required "maturity" Maturity.decoder
+        |> Pipeline.required "pool"
+            (Decode.field "maturity" Maturity.decoder)
         |> Pipeline.custom Summary.decoder
         |> Decode.list
         |> Decode.map (Dict.fromList Maturity.sorter)

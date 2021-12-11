@@ -7,22 +7,31 @@ module Modal.InputMaturity.Main exposing
     )
 
 import Data.Backdrop exposing (Backdrop)
+import Data.Images exposing (Images)
 import Data.Pair exposing (Pair)
 import Element
     exposing
         ( Element
         , centerX
         , centerY
+        , column
         , el
+        , fill
         , height
-        , none
         , padding
+        , paddingXY
         , px
+        , row
+        , shrink
+        , spacing
+        , text
         , width
         )
 import Element.Border as Border
+import Element.Font as Font
 import Utility.Color as Color
 import Utility.Glass as Glass
+import Utility.IconButton as IconButton
 
 
 type Modal
@@ -48,20 +57,49 @@ update msg modal =
             Nothing
 
 
-view : { model | backdrop : Backdrop } -> Modal -> Element Msg
-view { backdrop } (Modal modal) =
-    Glass.outsideModal backdrop
-        Exit
-        (el
-            [ width <| px 375
-            , height <| px 200
-            , padding 24
-            , centerX
-            , centerY
-            , Glass.background backdrop
-            , Border.rounded 8
-            , Border.color Color.transparent100
-            , Border.width 1
-            ]
-            none
-        )
+view :
+    { model
+        | backdrop : Backdrop
+        , images : Images
+    }
+    -> Modal
+    -> Element Msg
+view ({ backdrop } as model) (Modal modal) =
+    Glass.outsideModal model
+        { onClick = Exit
+        , modal =
+            el
+                [ width <| px 375
+                , height <| px 200
+                , padding 24
+                , centerX
+                , centerY
+                , Glass.background backdrop
+                , Border.rounded 8
+                , Border.color Color.transparent100
+                , Border.width 1
+                ]
+                (column
+                    [ width fill
+                    , height shrink
+                    , spacing 16
+                    ]
+                    [ row
+                        [ width fill
+                        , height shrink
+                        , spacing 16
+                        ]
+                        [ el
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            , Font.size 18
+                            , paddingXY 0 3
+                            , Font.color Color.light100
+                            ]
+                            (text "Change Wallet")
+                        , IconButton.exit model Exit
+                        ]
+                    ]
+                )
+        }

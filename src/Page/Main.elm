@@ -60,7 +60,7 @@ type Msg
 type Effect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
-    | OpenChooseMaturity Pair
+    | OpenInputMaturity Pair
     | OpenSettings
     | OpenConnect
     | OpenConfirm
@@ -240,8 +240,8 @@ liquidityEffects effect =
         Liquidity.OpenMaturityList pair ->
             OpenMaturityList pair
 
-        Liquidity.OpenChooseMaturity pair ->
-            OpenChooseMaturity pair
+        Liquidity.OpenInputMaturity pair ->
+            OpenInputMaturity pair
 
         Liquidity.OpenConnect ->
             OpenConnect

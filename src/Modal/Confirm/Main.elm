@@ -7,10 +7,11 @@ import Element
         , none
         )
 import Utility.Glass as Glass
+import Utility.IconButton as IconButton
 
 
 type Modal
-    = Confirm
+    = Confirming
     | Reject
 
 
@@ -20,7 +21,7 @@ type Msg
 
 init : Modal
 init =
-    Confirm
+    Confirming
 
 
 update : Msg -> Modal -> Maybe Modal
@@ -31,7 +32,8 @@ update msg modal =
 
 
 view : { model | backdrop : Backdrop } -> Element Msg
-view { backdrop } =
-    Glass.outsideModal backdrop
-        Exit
-        none
+view model =
+    Glass.outsideModal model
+        { onClick = Exit
+        , modal = none
+        }
