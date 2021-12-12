@@ -58,6 +58,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Http
 import Page.Transaction.Answer as Answer exposing (Answer)
+import Page.Transaction.Button as Button
 import Page.Transaction.Liquidity.Add.Disabled as AddDisabled
 import Page.Transaction.Liquidity.Add.Main as Add
 import Page.Transaction.Liquidity.Empty as Empty
@@ -495,10 +496,10 @@ update model blockchain msg (Transaction transaction) =
             )
 
         ( ReceiveAnswer chain pool result, Add (Pool currentPool (Active remote)) ) ->
-            ( (if
+            (if
                 (chain == (blockchain |> Blockchain.toChain))
                     && (pool == currentPool)
-               then
+             then
                 case
                     ( result
                     , remote
@@ -508,37 +509,48 @@ update model blockchain msg (Transaction transaction) =
                         add
                             |> Exist poolInfo
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Ok (Right poolInfo), Success (DoesNotExist _ ()) ) ->
                         Add.init
                             |> Exist poolInfo
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Ok (Right poolInfo), Failure error ) ->
                         error.add
-                            |> Add.fromAddError
-                            |> Exist poolInfo
-                            |> Success
-                            |> Just
+                            |> Add.fromDisabled model blockchain pool poolInfo
+                            |> (\( updated, cmd ) ->
+                                    ( updated
+                                        |> Exist poolInfo
+                                        |> Success
+                                    , cmd |> Cmd.map AddMsg
+                                    )
+                                        |> Right
+                                        |> Just
+                               )
 
                     ( Ok (Right poolInfo), Loading ) ->
                         Add.init
                             |> Exist poolInfo
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Ok (Left spot), _ ) ->
                         DoesNotExist spot ()
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Err error, Success (Exist _ add) ) ->
                         { http = error
-                        , add = add |> Add.toAddError
+                        , add = add |> Add.toDisabled
                         }
                             |> Failure
+                            |> Left
                             |> Just
 
                     ( Err error, Success (DoesNotExist _ ()) ) ->
@@ -546,11 +558,13 @@ update model blockchain msg (Transaction transaction) =
                         , add = AddDisabled.init
                         }
                             |> Failure
+                            |> Left
                             |> Just
 
                     ( Err error, Failure failure ) ->
                         { failure | http = error }
                             |> Failure
+                            |> Left
                             |> Just
 
                     ( Err error, Loading ) ->
@@ -558,33 +572,57 @@ update model blockchain msg (Transaction transaction) =
                         , add = AddDisabled.init
                         }
                             |> Failure
+                            |> Left
                             |> Just
 
-               else
+             else
                 Nothing
-              )
-                |> Maybe.map
-                    (\state ->
-                        { transaction
-                            | state =
-                                state
-                                    |> Active
-                                    |> Pool pool
-                                    |> Add
-                        }
-                    )
-                |> Maybe.withDefault transaction
-                |> Transaction
-            , Process.sleep 5000
-                |> Task.perform (\_ -> QueryAgain)
-            , Nothing
             )
+                |> Maybe.map
+                    (\or ->
+                        case or of
+                            Left state ->
+                                ( { transaction
+                                    | state =
+                                        state
+                                            |> Active
+                                            |> Pool pool
+                                            |> Add
+                                  }
+                                , Cmd.none
+                                )
+
+                            Right ( updated, cmd ) ->
+                                ( { transaction
+                                    | state =
+                                        updated
+                                            |> Active
+                                            |> Pool pool
+                                            |> Add
+                                  }
+                                , cmd
+                                )
+                    )
+                |> Maybe.withDefault
+                    ( transaction
+                    , Cmd.none
+                    )
+                |> (\( updated, cmd ) ->
+                        ( updated |> Transaction
+                        , Cmd.batch
+                            [ cmd
+                            , Process.sleep 5000
+                                |> Task.perform (\_ -> QueryAgain)
+                            ]
+                        , Nothing
+                        )
+                   )
 
         ( ReceiveAnswer chain pool result, New (Pool currentPool (Active remote)) ) ->
-            ( (if
+            (if
                 (chain == (blockchain |> Blockchain.toChain))
                     && (pool == currentPool)
-               then
+             then
                 case
                     ( result
                     , remote
@@ -593,31 +631,41 @@ update model blockchain msg (Transaction transaction) =
                     ( Ok (Right poolInfo), _ ) ->
                         Exist poolInfo ()
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Ok (Left spot), Success (Exist _ ()) ) ->
                         New.init
                             |> DoesNotExist spot
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Ok (Left spot), Success (DoesNotExist _ new) ) ->
                         new
                             |> DoesNotExist spot
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Ok (Left spot), Failure error ) ->
                         error.new
-                            |> New.fromNewError
-                            |> DoesNotExist spot
-                            |> Success
-                            |> Just
+                            |> New.fromDisabled blockchain pool spot
+                            |> (\( updated, cmd ) ->
+                                    ( updated
+                                        |> DoesNotExist spot
+                                        |> Success
+                                    , cmd |> Cmd.map NewMsg
+                                    )
+                                        |> Right
+                                        |> Just
+                               )
 
                     ( Ok (Left spot), Loading ) ->
                         New.init
                             |> DoesNotExist spot
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Err error, Success (Exist _ ()) ) ->
@@ -625,18 +673,21 @@ update model blockchain msg (Transaction transaction) =
                         , new = NewDisabled.init
                         }
                             |> Failure
+                            |> Left
                             |> Just
 
                     ( Err error, Success (DoesNotExist _ new) ) ->
                         { http = error
-                        , new = new |> New.toNewError
+                        , new = new |> New.toDisabled
                         }
                             |> Failure
+                            |> Left
                             |> Just
 
                     ( Err error, Failure failure ) ->
                         { failure | http = error }
                             |> Failure
+                            |> Left
                             |> Just
 
                     ( Err error, Loading ) ->
@@ -644,27 +695,51 @@ update model blockchain msg (Transaction transaction) =
                         , new = NewDisabled.init
                         }
                             |> Failure
+                            |> Left
                             |> Just
 
-               else
+             else
                 Nothing
-              )
-                |> Maybe.map
-                    (\state ->
-                        { transaction
-                            | state =
-                                state
-                                    |> Active
-                                    |> Pool pool
-                                    |> New
-                        }
-                    )
-                |> Maybe.withDefault transaction
-                |> Transaction
-            , Process.sleep 5000
-                |> Task.perform (\_ -> QueryAgain)
-            , Nothing
             )
+                |> (\maybeOr ->
+                        case maybeOr of
+                            Just (Left state) ->
+                                ( { transaction
+                                    | state =
+                                        state
+                                            |> Active
+                                            |> Pool pool
+                                            |> New
+                                  }
+                                , Cmd.none
+                                )
+
+                            Just (Right ( updated, cmd )) ->
+                                ( { transaction
+                                    | state =
+                                        updated
+                                            |> Active
+                                            |> Pool pool
+                                            |> New
+                                  }
+                                , cmd
+                                )
+
+                            Nothing ->
+                                ( transaction
+                                , Cmd.none
+                                )
+                   )
+                |> (\( updated, cmd ) ->
+                        ( updated |> Transaction
+                        , Cmd.batch
+                            [ cmd
+                            , Process.sleep 5000
+                                |> Task.perform (\_ -> QueryAgain)
+                            ]
+                        , Nothing
+                        )
+                   )
 
         ( CheckMaturity posix, Add (Pool pool (Active _)) ) ->
             (if pool.maturity |> Maturity.isActive posix then
@@ -715,7 +790,7 @@ update model blockchain msg (Transaction transaction) =
 
         ( NewMsg newMsg, New (Pool pool (Active (Success (DoesNotExist spot new)))) ) ->
             new
-                |> New.update model blockchain pool spot newMsg
+                |> New.update blockchain pool spot newMsg
                 |> (\( updated, cmd, maybeEffect ) ->
                         ( { transaction
                             | state =
@@ -901,7 +976,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectTokens |> map never
                         }
                    )
 
@@ -914,7 +989,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectTokens |> map never
                         }
                    )
 
@@ -927,7 +1002,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectTokens |> map never
                         }
                    )
 
@@ -940,7 +1015,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectTokens |> map never
                         }
                    )
 
@@ -953,7 +1028,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectTokens |> map never
                         }
                    )
 
@@ -966,7 +1041,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectTokens |> map never
                         }
                    )
 
@@ -985,7 +1060,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectMaturity |> map never
                         }
                    )
 
@@ -1004,7 +1079,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectMaturity |> map never
                         }
                    )
 
@@ -1023,7 +1098,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.matured |> map never
                         }
                    )
 
@@ -1042,7 +1117,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.matured |> map never
                         }
                    )
 
@@ -1061,7 +1136,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.loading |> map never
                         }
                    )
 
@@ -1080,7 +1155,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.loading |> map never
                         }
                    )
 
@@ -1091,7 +1166,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.error http |> map never
                         }
                    )
 
@@ -1102,7 +1177,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.error http |> map never
                         }
                    )
 
@@ -1121,7 +1196,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.doesNotExist |> map never
                         }
                    )
 
@@ -1162,7 +1237,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         { first = first |> map never
                         , second = second |> map never
                         , third = third |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.exist |> map never
                         }
                    )
     )

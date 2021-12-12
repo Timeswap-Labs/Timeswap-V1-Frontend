@@ -2,10 +2,10 @@ port module Page.Transaction.Lend.Lend.Main exposing
     ( Effect(..)
     , Msg
     , Transaction
-    , fromLendError
+    , fromDisabled
     , init
     , subscriptions
-    , toLendError
+    , toDisabled
     , update
     , view
     )
@@ -15,6 +15,7 @@ import Blockchain.User.Main as User
 import Data.CDP as CDP exposing (CDP)
 import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
+import Data.Mode as Mode exposing (Mode)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair
 import Data.Percent as Percent exposing (Percent)
@@ -27,8 +28,6 @@ import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
-        , alignLeft
-        , alignRight
         , centerY
         , column
         , el
@@ -37,7 +36,6 @@ import Element
         , map
         , none
         , padding
-        , paddingXY
         , px
         , row
         , shrink
@@ -65,9 +63,10 @@ import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Slider as Slider
-import Page.Transaction.Switch as Switch exposing (Mode)
+import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
+import Url.Builder as Builder
 import Utility.Color as Color
 import Utility.Input as Input
 
@@ -198,40 +197,97 @@ initGivenInsurance =
     }
 
 
-fromLendError : Disabled.Transaction -> Transaction
-fromLendError { assetIn, claimsOut } =
-    { assetIn = assetIn
-    , claimsOut =
-        case claimsOut of
-            Disabled.Default ->
-                Default Loading
+fromDisabled :
+    { model | slippage : Slippage }
+    -> Blockchain
+    -> Pool
+    -> PoolInfo
+    -> Disabled.Transaction
+    -> ( Transaction, Cmd Msg )
+fromDisabled model blockchain pool poolInfo ({ assetIn } as transaction) =
+    (case ( transaction.claimsOut, assetIn |> Input.isZero ) of
+        ( Disabled.Default, True ) ->
+            initGivenPercent
+                |> Success
+                |> Default
+                |> Left
 
-            Disabled.Slider percent ->
-                { percent = percent
-                , claims = Loading
-                }
-                    |> Slider
+        ( Disabled.Default, False ) ->
+            Default Loading
+                |> Right
 
-            Disabled.Bond { percent, bondOut } ->
-                { percent = percent
-                , bondOut = bondOut
-                , claims = Loading
-                }
-                    |> Bond
+        ( Disabled.Slider percent, True ) ->
+            { percent = percent
+            , claims =
+                initGivenPercent
+                    |> Success
+            }
+                |> Slider
+                |> Left
 
-            Disabled.Insurance { percent, insuranceOut } ->
-                { percent = percent
-                , insuranceOut = insuranceOut
-                , claims = Loading
-                }
-                    |> Insurance
-    , tooltip = Nothing
-    }
-        |> Transaction
+        ( Disabled.Slider percent, False ) ->
+            { percent = percent
+            , claims = Loading
+            }
+                |> Slider
+                |> Right
+
+        ( Disabled.Bond { percent, bondOut }, True ) ->
+            { percent = percent
+            , bondOut = bondOut
+            , claims =
+                initGivenBond
+                    |> Success
+            }
+                |> Bond
+                |> Left
+
+        ( Disabled.Bond { percent, bondOut }, False ) ->
+            { percent = percent
+            , bondOut = bondOut
+            , claims = Loading
+            }
+                |> Bond
+                |> Right
+
+        ( Disabled.Insurance { percent, insuranceOut }, True ) ->
+            { percent = percent
+            , insuranceOut = insuranceOut
+            , claims =
+                initGivenInsurance
+                    |> Success
+            }
+                |> Insurance
+                |> Left
+
+        ( Disabled.Insurance { percent, insuranceOut }, False ) ->
+            { percent = percent
+            , insuranceOut = insuranceOut
+            , claims = Loading
+            }
+                |> Insurance
+                |> Right
+    )
+        |> (\or ->
+                case or of
+                    Left claimsOut ->
+                        { assetIn = assetIn
+                        , claimsOut = claimsOut
+                        , tooltip = Nothing
+                        }
+                            |> noCmd
+
+                    Right claimsOut ->
+                        { assetIn = assetIn
+                        , claimsOut = claimsOut
+                        , tooltip = Nothing
+                        }
+                            |> initQuery model blockchain pool poolInfo
+           )
 
 
-toLendError : Transaction -> Disabled.Transaction
-toLendError (Transaction { assetIn, claimsOut }) =
+toDisabled : Transaction -> Disabled.Transaction
+toDisabled (Transaction { assetIn, claimsOut }) =
     { assetIn = assetIn
     , claimsOut =
         case claimsOut of
@@ -268,24 +324,56 @@ update :
     -> Transaction
     -> ( Transaction, Cmd Msg, Maybe Effect )
 update model blockchain pool poolInfo msg (Transaction transaction) =
-    case msg of
-        InputAssetIn assetIn ->
+    case ( msg, transaction.claimsOut ) of
+        ( InputAssetIn assetIn, Default _ ) ->
             if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
                 { transaction
                     | assetIn = assetIn
                     , claimsOut =
-                        if assetIn |> Input.isZero then
-                            transaction.claimsOut |> updateGivenAssetInZero
-
-                        else
-                            transaction.claimsOut |> updateGivenAssetIn
+                        assetIn |> updateDefault
                 }
                     |> query model blockchain pool poolInfo
 
             else
                 transaction |> noCmdAndEffect
 
-        InputMax ->
+        ( InputAssetIn assetIn, Slider { percent } ) ->
+            if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
+                { transaction
+                    | assetIn = assetIn
+                    , claimsOut =
+                        assetIn |> updateSlider percent
+                }
+                    |> query model blockchain pool poolInfo
+
+            else
+                transaction |> noCmdAndEffect
+
+        ( InputAssetIn assetIn, Bond { bondOut, percent } ) ->
+            if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
+                { transaction
+                    | assetIn = assetIn
+                    , claimsOut =
+                        assetIn |> updateBond percent bondOut
+                }
+                    |> query model blockchain pool poolInfo
+
+            else
+                transaction |> noCmdAndEffect
+
+        ( InputAssetIn assetIn, Insurance { insuranceOut, percent } ) ->
+            if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
+                { transaction
+                    | assetIn = assetIn
+                    , claimsOut =
+                        assetIn |> updateInsurance percent insuranceOut
+                }
+                    |> query model blockchain pool poolInfo
+
+            else
+                transaction |> noCmdAndEffect
+
+        ( InputMax, Default _ ) ->
             blockchain
                 |> Blockchain.toUser
                 |> Maybe.andThen
@@ -304,218 +392,312 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         { transaction
                             | assetIn = assetIn
                             , claimsOut =
-                                if assetIn |> Input.isZero then
-                                    transaction.claimsOut |> updateGivenAssetInZero
-
-                                else
-                                    transaction.claimsOut |> updateGivenAssetIn
+                                assetIn |> updateDefault
                         }
                             |> query model blockchain pool poolInfo
                     )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
-        SwitchMode Switch.Advanced ->
+        ( InputMax, Slider { percent } ) ->
+            blockchain
+                |> Blockchain.toUser
+                |> Maybe.andThen
+                    (\user ->
+                        user
+                            |> User.getBalance
+                                (pool.pair |> Pair.toAsset)
+                            |> (Maybe.map << Remote.map)
+                                (Uint.toAmount
+                                    (pool.pair |> Pair.toAsset)
+                                )
+                            |> (Maybe.map << Remote.withDefault) ""
+                    )
+                |> Maybe.map
+                    (\assetIn ->
+                        { transaction
+                            | assetIn = assetIn
+                            , claimsOut =
+                                assetIn |> updateSlider percent
+                        }
+                            |> query model blockchain pool poolInfo
+                    )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( InputMax, Bond { bondOut, percent } ) ->
+            blockchain
+                |> Blockchain.toUser
+                |> Maybe.andThen
+                    (\user ->
+                        user
+                            |> User.getBalance
+                                (pool.pair |> Pair.toAsset)
+                            |> (Maybe.map << Remote.map)
+                                (Uint.toAmount
+                                    (pool.pair |> Pair.toAsset)
+                                )
+                            |> (Maybe.map << Remote.withDefault) ""
+                    )
+                |> Maybe.map
+                    (\assetIn ->
+                        { transaction
+                            | assetIn = assetIn
+                            , claimsOut =
+                                assetIn |> updateBond percent bondOut
+                        }
+                            |> query model blockchain pool poolInfo
+                    )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( InputMax, Insurance { insuranceOut, percent } ) ->
+            blockchain
+                |> Blockchain.toUser
+                |> Maybe.andThen
+                    (\user ->
+                        user
+                            |> User.getBalance
+                                (pool.pair |> Pair.toAsset)
+                            |> (Maybe.map << Remote.map)
+                                (Uint.toAmount
+                                    (pool.pair |> Pair.toAsset)
+                                )
+                            |> (Maybe.map << Remote.withDefault) ""
+                    )
+                |> Maybe.map
+                    (\assetIn ->
+                        { transaction
+                            | assetIn = assetIn
+                            , claimsOut =
+                                assetIn |> updateInsurance percent insuranceOut
+                        }
+                            |> query model blockchain pool poolInfo
+                    )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( SwitchMode Mode.Advanced, Default _ ) ->
             { transaction
                 | claimsOut =
-                    if transaction.assetIn |> Input.isZero then
-                        transaction.claimsOut |> switchToAdvanceZero
-
-                    else
-                        transaction.claimsOut |> switchToAdvance
+                    transaction.assetIn |> updateSlider Percent.init
             }
                 |> noCmdAndEffect
 
-        SwitchMode Switch.Recommended ->
+        ( SwitchMode Mode.Recommended, Slider { percent } ) ->
             { transaction
                 | claimsOut =
-                    if transaction.assetIn |> Input.isZero then
-                        switchToBasicZero
-
-                    else
-                        transaction.claimsOut |> switchToBasic
+                    transaction.assetIn |> updateDefault
             }
                 |> (\updated ->
-                        case transaction.claimsOut of
-                            Slider { percent } ->
-                                if (percent |> Percent.toFloat) == 64 then
-                                    updated |> noCmdAndEffect
+                        if (percent |> Percent.toFloat) == 64 then
+                            updated |> noCmdAndEffect
 
-                                else
-                                    updated |> query model blockchain pool poolInfo
-
-                            Default _ ->
-                                updated |> noCmdAndEffect
-
-                            _ ->
-                                updated |> query model blockchain pool poolInfo
+                        else
+                            updated |> query model blockchain pool poolInfo
                    )
 
-        ClickSlider ->
-            (case transaction.claimsOut of
-                Bond { percent } ->
-                    percent |> Just
+        ( SwitchMode Mode.Recommended, Bond _ ) ->
+            { transaction
+                | claimsOut =
+                    transaction.assetIn |> updateDefault
+            }
+                |> query model blockchain pool poolInfo
 
-                Insurance { percent } ->
-                    percent |> Just
+        ( SwitchMode Mode.Recommended, Insurance _ ) ->
+            { transaction
+                | claimsOut =
+                    transaction.assetIn |> updateDefault
+            }
+                |> query model blockchain pool poolInfo
+
+        ( ClickSlider, Bond { percent } ) ->
+            { transaction
+                | claimsOut =
+                    transaction.assetIn |> updateSlider percent
+            }
+                |> query model blockchain pool poolInfo
+
+        ( ClickSlider, Insurance { percent } ) ->
+            { transaction
+                | claimsOut =
+                    transaction.assetIn |> updateSlider percent
+            }
+                |> query model blockchain pool poolInfo
+
+        ( Slide float, Slider _ ) ->
+            { transaction
+                | claimsOut =
+                    transaction.assetIn
+                        |> updateSlider
+                            (float |> Percent.fromFloat)
+            }
+                |> query model blockchain pool poolInfo
+
+        ( Slide float, Bond _ ) ->
+            { transaction
+                | claimsOut =
+                    transaction.assetIn
+                        |> updateSlider
+                            (float |> Percent.fromFloat)
+            }
+                |> query model blockchain pool poolInfo
+
+        ( Slide float, Insurance _ ) ->
+            { transaction
+                | claimsOut =
+                    transaction.assetIn
+                        |> updateSlider
+                            (float |> Percent.fromFloat)
+            }
+                |> query model blockchain pool poolInfo
+
+        ( ClickBondOut, Slider { percent, claims } ) ->
+            (case claims of
+                Success { bondOut } ->
+                    bondOut
+                        |> Uint.toAmount
+                            (pool.pair |> Pair.toAsset)
 
                 _ ->
-                    Nothing
+                    ""
             )
-                |> Maybe.map
-                    (\percent ->
+                |> (\bondOut ->
                         { transaction
                             | claimsOut =
-                                if transaction.assetIn |> Input.isZero then
-                                    percent
-                                        |> Percent.toFloat
-                                        |> slideZero
-
-                                else
-                                    percent
-                                        |> Percent.toFloat
-                                        |> slide
+                                transaction.assetIn
+                                    |> updateBond percent bondOut
                         }
                             |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+                   )
 
-        Slide float ->
-            case transaction.claimsOut of
-                Default _ ->
-                    transaction |> noCmdAndEffect
-
-                _ ->
-                    { transaction
-                        | claimsOut =
-                            if transaction.assetIn |> Input.isZero then
-                                float |> slideZero
-
-                            else
-                                float |> slide
-                    }
-                        |> query model blockchain pool poolInfo
-
-        ClickBondOut ->
-            (case transaction.claimsOut of
-                Slider { claims } ->
-                    case claims of
-                        Success { bondOut } ->
-                            bondOut
-                                |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
-
-                Insurance { claims } ->
-                    case claims of
-                        Success { bondOut } ->
-                            bondOut
-                                |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
+        ( ClickBondOut, Insurance { percent, claims } ) ->
+            (case claims of
+                Success { bondOut } ->
+                    bondOut
+                        |> Uint.toAmount
+                            (pool.pair |> Pair.toAsset)
 
                 _ ->
-                    Nothing
+                    ""
             )
-                |> Maybe.map
-                    (\bondOut ->
+                |> (\bondOut ->
                         { transaction
                             | claimsOut =
-                                if transaction.assetIn |> Input.isZero then
-                                    transaction.claimsOut
-                                        |> updateGivenBondOutZero bondOut
-
-                                else
-                                    transaction.claimsOut
-                                        |> updateGivenBondOut bondOut
+                                transaction.assetIn
+                                    |> updateBond percent bondOut
                         }
                             |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+                   )
 
-        InputBondOut bondOut ->
+        ( InputBondOut bondOut, Slider { percent } ) ->
             if bondOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
                 { transaction
                     | claimsOut =
-                        if transaction.assetIn |> Input.isZero then
-                            transaction.claimsOut
-                                |> updateGivenBondOutZero bondOut
-
-                        else
-                            transaction.claimsOut
-                                |> updateGivenBondOut bondOut
+                        transaction.assetIn |> updateBond percent bondOut
                 }
                     |> query model blockchain pool poolInfo
 
             else
                 transaction |> noCmdAndEffect
 
-        ClickInsuranceOut ->
-            (case transaction.claimsOut of
-                Slider { claims } ->
-                    case claims of
-                        Success { insuranceOut } ->
-                            insuranceOut
-                                |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                |> Just
+        ( InputBondOut bondOut, Bond { percent } ) ->
+            if bondOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
+                { transaction
+                    | claimsOut =
+                        transaction.assetIn |> updateBond percent bondOut
+                }
+                    |> query model blockchain pool poolInfo
 
-                        _ ->
-                            "" |> Just
+            else
+                transaction |> noCmdAndEffect
 
-                Bond { claims } ->
-                    case claims of
-                        Success { insuranceOut } ->
-                            insuranceOut
-                                |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                |> Just
+        ( InputBondOut bondOut, Insurance { percent } ) ->
+            if bondOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
+                { transaction
+                    | claimsOut =
+                        transaction.assetIn |> updateBond percent bondOut
+                }
+                    |> query model blockchain pool poolInfo
 
-                        _ ->
-                            "" |> Just
+            else
+                transaction |> noCmdAndEffect
+
+        ( ClickInsuranceOut, Slider { percent, claims } ) ->
+            (case claims of
+                Success { insuranceOut } ->
+                    insuranceOut
+                        |> Uint.toAmount
+                            (pool.pair |> Pair.toCollateral)
 
                 _ ->
-                    Nothing
+                    ""
             )
-                |> Maybe.map
-                    (\insuranceOut ->
+                |> (\insuranceOut ->
                         { transaction
                             | claimsOut =
-                                if transaction.assetIn |> Input.isZero then
-                                    transaction.claimsOut
-                                        |> updateGivenInsuranceOutZero insuranceOut
-
-                                else
-                                    transaction.claimsOut
-                                        |> updateGivenInsuranceOut insuranceOut
+                                transaction.assetIn
+                                    |> updateInsurance percent insuranceOut
                         }
                             |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+                   )
 
-        InputInsuranceOut insuranceOut ->
+        ( ClickInsuranceOut, Bond { percent, claims } ) ->
+            (case claims of
+                Success { insuranceOut } ->
+                    insuranceOut
+                        |> Uint.toAmount
+                            (pool.pair |> Pair.toCollateral)
+
+                _ ->
+                    ""
+            )
+                |> (\insuranceOut ->
+                        { transaction
+                            | claimsOut =
+                                transaction.assetIn
+                                    |> updateInsurance percent insuranceOut
+                        }
+                            |> query model blockchain pool poolInfo
+                   )
+
+        ( InputInsuranceOut insuranceOut, Slider { percent } ) ->
             if insuranceOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
                 { transaction
                     | claimsOut =
-                        if transaction.assetIn |> Input.isZero then
-                            transaction.claimsOut
-                                |> updateGivenInsuranceOutZero insuranceOut
-
-                        else
-                            transaction.claimsOut
-                                |> updateGivenInsuranceOut insuranceOut
+                        transaction.assetIn
+                            |> updateInsurance percent insuranceOut
                 }
                     |> query model blockchain pool poolInfo
 
             else
                 transaction |> noCmdAndEffect
 
-        QueryAgain _ ->
+        ( InputInsuranceOut insuranceOut, Bond { percent } ) ->
+            if insuranceOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
+                { transaction
+                    | claimsOut =
+                        transaction.assetIn
+                            |> updateInsurance percent insuranceOut
+                }
+                    |> query model blockchain pool poolInfo
+
+            else
+                transaction |> noCmdAndEffect
+
+        ( InputInsuranceOut insuranceOut, Insurance { percent } ) ->
+            if insuranceOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
+                { transaction
+                    | claimsOut =
+                        transaction.assetIn
+                            |> updateInsurance percent insuranceOut
+                }
+                    |> query model blockchain pool poolInfo
+
+            else
+                transaction |> noCmdAndEffect
+
+        ( QueryAgain _, _ ) ->
             transaction
                 |> queryPerSecond model blockchain pool poolInfo
 
-        ClickConnect ->
+        ( ClickConnect, _ ) ->
             blockchain
                 |> Blockchain.toUser
                 |> Maybe.map (\_ -> transaction |> noCmdAndEffect)
@@ -525,7 +707,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     , OpenConnect |> Just
                     )
 
-        ClickApprove ->
+        ( ClickApprove, _ ) ->
             (case
                 ( blockchain |> Blockchain.toUser
                 , transaction.assetIn
@@ -566,7 +748,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
-        ClickLend ->
+        ( ClickLend, Default (Success answer) ) ->
             (case
                 ( blockchain |> Blockchain.toUser
                 , transaction.assetIn
@@ -575,159 +757,209 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 )
              of
                 ( Just user, Just assetIn ) ->
-                    case
-                        ( transaction.claimsOut
-                        , user
+                    if
+                        (user
                             |> User.hasEnoughBalance
                                 (pool.pair |> Pair.toAsset)
                                 assetIn
-                        , pool.pair
-                            |> Pair.toAsset
-                            |> Token.toERC20
-                            |> Maybe.map
-                                (\erc20 ->
-                                    user
-                                        |> User.hasEnoughAllowance
-                                            erc20
-                                            assetIn
-                                )
-                            |> Maybe.withDefault True
                         )
-                    of
-                        ( Default (Success answer), True, True ) ->
-                            ( { transaction
-                                | assetIn = ""
-                                , claimsOut =
-                                    initGivenPercent
-                                        |> Success
-                                        |> Default
-                              }
-                                |> Transaction
-                            , { pool = pool
-                              , assetIn = assetIn
-                              , percent = Percent.init
-                              , minBond = answer.minBond
-                              , minInsurance = answer.minInsurance
-                              }
-                                |> Write.GivenPercent
-                                |> Write.encode model blockchain user
-                                |> lend
-                            , OpenConfirm |> Just
-                            )
-                                |> Just
-
-                        ( Slider { percent, claims }, True, True ) ->
-                            claims
-                                |> Remote.map
-                                    (\answer ->
-                                        ( { transaction
-                                            | assetIn = ""
-                                            , claimsOut =
-                                                { percent = Percent.init
-                                                , claims =
-                                                    initGivenPercent
-                                                        |> Success
-                                                }
-                                                    |> Slider
-                                          }
-                                            |> Transaction
-                                        , { pool = pool
-                                          , assetIn = assetIn
-                                          , percent = percent
-                                          , minBond = answer.minBond
-                                          , minInsurance = answer.minInsurance
-                                          }
-                                            |> Write.GivenPercent
-                                            |> Write.encode model blockchain user
-                                            |> lend
-                                        , OpenConfirm |> Just
+                            && (pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toERC20
+                                    |> Maybe.map
+                                        (\erc20 ->
+                                            user
+                                                |> User.hasEnoughAllowance
+                                                    erc20
+                                                    assetIn
                                         )
-                                            |> Just
-                                    )
-                                |> Remote.withDefault Nothing
+                                    |> Maybe.withDefault True
+                               )
+                    then
+                        ( transaction |> Transaction
+                        , { pool = pool
+                          , assetIn = assetIn
+                          , percent = Percent.init
+                          , minBond = answer.minBond
+                          , minInsurance = answer.minInsurance
+                          }
+                            |> Write.GivenPercent
+                            |> Write.encode model blockchain user
+                            |> lend
+                        , OpenConfirm |> Just
+                        )
+                            |> Just
 
-                        ( Bond bond, True, True ) ->
-                            case
-                                ( bond.claims
-                                , bond.bondOut
-                                    |> Uint.fromAmount (pool.pair |> Pair.toAsset)
-                                )
-                            of
-                                ( Success answer, Just bondOut ) ->
-                                    ( { transaction
-                                        | assetIn = ""
-                                        , claimsOut =
-                                            { percent = Percent.init
-                                            , bondOut = ""
-                                            , claims = initGivenBond |> Success
-                                            }
-                                                |> Bond
-                                      }
-                                        |> Transaction
-                                    , { pool = pool
-                                      , assetIn = assetIn
-                                      , bondOut = bondOut
-                                      , minInsurance = answer.minInsurance
-                                      }
-                                        |> Write.GivenBond
-                                        |> Write.encode model blockchain user
-                                        |> lend
-                                    , OpenConfirm |> Just
-                                    )
-                                        |> Just
-
-                                _ ->
-                                    Nothing
-
-                        ( Insurance insurance, True, True ) ->
-                            case
-                                ( insurance.claims
-                                , insurance.insuranceOut
-                                    |> Uint.fromAmount (pool.pair |> Pair.toCollateral)
-                                )
-                            of
-                                ( Success answer, Just insuranceOut ) ->
-                                    ( { transaction
-                                        | assetIn = ""
-                                        , claimsOut =
-                                            { percent = Percent.init
-                                            , insuranceOut = ""
-                                            , claims = initGivenInsurance |> Success
-                                            }
-                                                |> Insurance
-                                      }
-                                        |> Transaction
-                                    , { pool = pool
-                                      , assetIn = assetIn
-                                      , insuranceOut = insuranceOut
-                                      , minBond = answer.minBond
-                                      }
-                                        |> Write.GivenInsurance
-                                        |> Write.encode model blockchain user
-                                        |> lend
-                                    , OpenConfirm |> Just
-                                    )
-                                        |> Just
-
-                                _ ->
-                                    Nothing
-
-                        _ ->
-                            Nothing
+                    else
+                        Nothing
 
                 _ ->
                     Nothing
             )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
-        ReceiveAnswer value ->
+        ( ClickLend, Slider { percent, claims } ) ->
             (case
-                ( value
-                    |> Decode.decodeValue Answer.decoder
-                , transaction.claimsOut
+                ( claims
+                , blockchain |> Blockchain.toUser
+                , transaction.assetIn
+                    |> Uint.fromAmount
+                        (pool.pair |> Pair.toAsset)
                 )
              of
-                ( Ok (Answer.GivenPercent answer), Default _ ) ->
+                ( Success answer, Just user, Just assetIn ) ->
+                    if
+                        (user
+                            |> User.hasEnoughBalance
+                                (pool.pair |> Pair.toAsset)
+                                assetIn
+                        )
+                            && (pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toERC20
+                                    |> Maybe.map
+                                        (\erc20 ->
+                                            user
+                                                |> User.hasEnoughAllowance
+                                                    erc20
+                                                    assetIn
+                                        )
+                                    |> Maybe.withDefault True
+                               )
+                    then
+                        ( transaction |> Transaction
+                        , { pool = pool
+                          , assetIn = assetIn
+                          , percent = percent
+                          , minBond = answer.minBond
+                          , minInsurance = answer.minInsurance
+                          }
+                            |> Write.GivenPercent
+                            |> Write.encode model blockchain user
+                            |> lend
+                        , OpenConfirm |> Just
+                        )
+                            |> Just
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ClickLend, Bond bond ) ->
+            (case
+                ( bond.claims
+                , blockchain |> Blockchain.toUser
+                , ( transaction.assetIn
+                        |> Uint.fromAmount
+                            (pool.pair |> Pair.toAsset)
+                  , bond.bondOut
+                        |> Uint.fromAmount
+                            (pool.pair |> Pair.toAsset)
+                  )
+                )
+             of
+                ( Success answer, Just user, ( Just assetIn, Just bondOut ) ) ->
+                    if
+                        (user
+                            |> User.hasEnoughBalance
+                                (pool.pair |> Pair.toAsset)
+                                assetIn
+                        )
+                            && (pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toERC20
+                                    |> Maybe.map
+                                        (\erc20 ->
+                                            user
+                                                |> User.hasEnoughAllowance
+                                                    erc20
+                                                    assetIn
+                                        )
+                                    |> Maybe.withDefault True
+                               )
+                    then
+                        ( transaction |> Transaction
+                        , { pool = pool
+                          , assetIn = assetIn
+                          , bondOut = bondOut
+                          , minInsurance = answer.minInsurance
+                          }
+                            |> Write.GivenBond
+                            |> Write.encode model blockchain user
+                            |> lend
+                        , OpenConfirm |> Just
+                        )
+                            |> Just
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ClickLend, Insurance insurance ) ->
+            (case
+                ( insurance.claims
+                , blockchain |> Blockchain.toUser
+                , ( transaction.assetIn
+                        |> Uint.fromAmount
+                            (pool.pair |> Pair.toAsset)
+                  , insurance.insuranceOut
+                        |> Uint.fromAmount
+                            (pool.pair |> Pair.toCollateral)
+                  )
+                )
+             of
+                ( Success answer, Just user, ( Just assetIn, Just insuranceOut ) ) ->
+                    if
+                        (user
+                            |> User.hasEnoughBalance
+                                (pool.pair |> Pair.toAsset)
+                                assetIn
+                        )
+                            && (pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toERC20
+                                    |> Maybe.map
+                                        (\erc20 ->
+                                            user
+                                                |> User.hasEnoughAllowance
+                                                    erc20
+                                                    assetIn
+                                        )
+                                    |> Maybe.withDefault True
+                               )
+                    then
+                        ( transaction |> Transaction
+                        , { pool = pool
+                          , assetIn = assetIn
+                          , insuranceOut = insuranceOut
+                          , minBond = answer.minBond
+                          }
+                            |> Write.GivenInsurance
+                            |> Write.encode model blockchain user
+                            |> lend
+                        , OpenConfirm |> Just
+                        )
+                            |> Just
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ReceiveAnswer value, Default _ ) ->
+            (case value |> Decode.decodeValue Answer.decoder of
+                Ok (Answer.GivenPercent answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -744,7 +976,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                         { transaction
                             | claimsOut =
                                 answer.result
-                                    |> toClaimsGivenPercent
+                                    |> toRemote
                                     |> Default
                         }
                             |> Just
@@ -752,7 +984,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     else
                         Nothing
 
-                ( Ok (Answer.GivenPercent answer), Slider slider ) ->
+                _ ->
+                    Nothing
+            )
+                |> Maybe.map noCmdAndEffect
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ReceiveAnswer value, Slider slider ) ->
+            (case value |> Decode.decodeValue Answer.decoder of
+                Ok (Answer.GivenPercent answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -768,11 +1008,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     then
                         { transaction
                             | claimsOut =
-                                { slider
-                                    | claims =
-                                        answer.result
-                                            |> toClaimsGivenPercent
-                                }
+                                { slider | claims = answer.result |> toRemote }
                                     |> Slider
                         }
                             |> Just
@@ -780,7 +1016,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     else
                         Nothing
 
-                ( Ok (Answer.GivenBond answer), Bond bond ) ->
+                _ ->
+                    Nothing
+            )
+                |> Maybe.map noCmdAndEffect
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ReceiveAnswer value, Bond bond ) ->
+            (case value |> Decode.decodeValue Answer.decoder of
+                Ok (Answer.GivenBond answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -817,7 +1061,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     else
                         Nothing
 
-                ( Ok (Answer.GivenInsurance answer), Insurance insurance ) ->
+                _ ->
+                    Nothing
+            )
+                |> Maybe.map noCmdAndEffect
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ReceiveAnswer value, Insurance insurance ) ->
+            (case value |> Decode.decodeValue Answer.decoder of
+                Ok (Answer.GivenInsurance answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -860,269 +1112,90 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.map noCmdAndEffect
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
-        OnMouseEnter tooltip ->
+        ( OnMouseEnter tooltip, _ ) ->
             ( { transaction | tooltip = Just tooltip }
                 |> Transaction
             , Cmd.none
             , Nothing
             )
 
-        OnMouseLeave ->
+        ( OnMouseLeave, _ ) ->
             ( { transaction | tooltip = Nothing }
                 |> Transaction
             , Cmd.none
             , Nothing
             )
 
-
-updateGivenAssetInZero : ClaimsOut -> ClaimsOut
-updateGivenAssetInZero claimsOut =
-    case claimsOut of
-        Default _ ->
-            initGivenPercent
-                |> Success
-                |> Default
-
-        Slider slider ->
-            { slider
-                | claims =
-                    initGivenPercent |> Success
-            }
-                |> Slider
-
-        Bond bond ->
-            { bond
-                | claims =
-                    initGivenBond |> Success
-            }
-                |> Bond
-
-        Insurance insurance ->
-            { insurance
-                | claims =
-                    initGivenInsurance |> Success
-            }
-                |> Insurance
-
-
-updateGivenAssetIn : ClaimsOut -> ClaimsOut
-updateGivenAssetIn claimsOut =
-    case claimsOut of
-        Default _ ->
-            Default Loading
-
-        Slider slider ->
-            { slider | claims = Loading }
-                |> Slider
-
-        Bond bond ->
-            { bond
-                | claims =
-                    if bond.bondOut |> Input.isZero then
-                        initGivenBond |> Success
-
-                    else
-                        Loading
-            }
-                |> Bond
-
-        Insurance insurance ->
-            { insurance
-                | claims =
-                    if insurance.insuranceOut |> Input.isZero then
-                        initGivenInsurance |> Success
-
-                    else
-                        Loading
-            }
-                |> Insurance
-
-
-switchToAdvanceZero : ClaimsOut -> ClaimsOut
-switchToAdvanceZero claimsOut =
-    case claimsOut of
-        Default _ ->
-            { percent = Percent.init
-            , claims =
-                initGivenPercent |> Success
-            }
-                |> Slider
-
         _ ->
-            claimsOut
+            transaction |> noCmdAndEffect
 
 
-switchToAdvance : ClaimsOut -> ClaimsOut
-switchToAdvance claimsOut =
-    case claimsOut of
-        Default claims ->
-            { percent = Percent.init
-            , claims = claims
-            }
-                |> Slider
+updateDefault : String -> ClaimsOut
+updateDefault assetIn =
+    (if assetIn |> Input.isZero then
+        initGivenPercent
+            |> Success
 
-        _ ->
-            claimsOut
-
-
-switchToBasicZero : ClaimsOut
-switchToBasicZero =
-    initGivenPercent
-        |> Success
+     else
+        Loading
+    )
         |> Default
 
 
-switchToBasic : ClaimsOut -> ClaimsOut
-switchToBasic claimsOut =
-    case claimsOut of
-        Slider { percent, claims } ->
-            if (percent |> Percent.toFloat) == 64 then
-                Default claims
+updateSlider : Percent -> String -> ClaimsOut
+updateSlider percent assetIn =
+    { percent = percent
+    , claims =
+        if assetIn |> Input.isZero then
+            initGivenPercent
+                |> Success
 
-            else
-                Default Loading
-
-        Default _ ->
-            claimsOut
-
-        _ ->
-            Default Loading
-
-
-slideZero : Float -> ClaimsOut
-slideZero float =
-    { percent = float |> Percent.fromFloat
-    , claims = initGivenPercent |> Success
+        else
+            Loading
     }
         |> Slider
 
 
-slide : Float -> ClaimsOut
-slide float =
-    { percent = float |> Percent.fromFloat
-    , claims = Loading
+updateBond : Percent -> String -> String -> ClaimsOut
+updateBond percent bondOut assetIn =
+    { percent = percent
+    , bondOut = bondOut
+    , claims =
+        if
+            (assetIn |> Input.isZero)
+                || (bondOut |> Input.isZero)
+        then
+            initGivenBond
+                |> Success
+
+        else
+            Loading
     }
-        |> Slider
+        |> Bond
 
 
-updateGivenBondOutZero : String -> ClaimsOut -> ClaimsOut
-updateGivenBondOutZero input claimsOut =
-    (case claimsOut of
-        Slider { percent } ->
-            percent |> Just
+updateInsurance : Percent -> String -> String -> ClaimsOut
+updateInsurance percent insuranceOut assetIn =
+    { percent = percent
+    , insuranceOut = insuranceOut
+    , claims =
+        if
+            (assetIn |> Input.isZero)
+                || (insuranceOut |> Input.isZero)
+        then
+            initGivenInsurance
+                |> Success
 
-        Bond { percent } ->
-            percent |> Just
-
-        Insurance { percent } ->
-            percent |> Just
-
-        _ ->
-            Nothing
-    )
-        |> Maybe.map
-            (\percent ->
-                { percent = percent
-                , bondOut = input
-                , claims = initGivenBond |> Success
-                }
-                    |> Bond
-            )
-        |> Maybe.withDefault claimsOut
+        else
+            Loading
+    }
+        |> Insurance
 
 
-updateGivenBondOut : String -> ClaimsOut -> ClaimsOut
-updateGivenBondOut input claimsOut =
-    (case claimsOut of
-        Slider { percent } ->
-            percent |> Just
-
-        Bond { percent } ->
-            percent |> Just
-
-        Insurance { percent } ->
-            percent |> Just
-
-        _ ->
-            Nothing
-    )
-        |> Maybe.map
-            (\percent ->
-                { percent = percent
-                , bondOut = input
-                , claims =
-                    if input |> Input.isZero then
-                        initGivenBond |> Success
-
-                    else
-                        Loading
-                }
-                    |> Bond
-            )
-        |> Maybe.withDefault claimsOut
-
-
-updateGivenInsuranceOutZero : String -> ClaimsOut -> ClaimsOut
-updateGivenInsuranceOutZero input claimsOut =
-    (case claimsOut of
-        Slider { percent } ->
-            percent |> Just
-
-        Bond { percent } ->
-            percent |> Just
-
-        Insurance { percent } ->
-            percent |> Just
-
-        _ ->
-            Nothing
-    )
-        |> Maybe.map
-            (\percent ->
-                { percent = percent
-                , insuranceOut = input
-                , claims = initGivenInsurance |> Success
-                }
-                    |> Insurance
-            )
-        |> Maybe.withDefault claimsOut
-
-
-updateGivenInsuranceOut : String -> ClaimsOut -> ClaimsOut
-updateGivenInsuranceOut input claimsOut =
-    (case claimsOut of
-        Slider { percent } ->
-            percent |> Just
-
-        Bond { percent } ->
-            percent |> Just
-
-        Insurance { percent } ->
-            percent |> Just
-
-        _ ->
-            Nothing
-    )
-        |> Maybe.map
-            (\percent ->
-                { percent = percent
-                , insuranceOut = input
-                , claims =
-                    if input |> Input.isZero then
-                        initGivenInsurance |> Success
-
-                    else
-                        Loading
-                }
-                    |> Insurance
-            )
-        |> Maybe.withDefault claimsOut
-
-
-toClaimsGivenPercent :
-    Result Error Answer.ResultPercent
-    -> Remote Error ClaimsGivenPercent
-toClaimsGivenPercent result =
+toRemote :
+    Result Error answer
+    -> Remote Error answer
+toRemote result =
     case result of
         Ok claims ->
             Success claims
@@ -1165,6 +1238,18 @@ toClaimsGivenInsurance result =
             Failure error
 
 
+noCmd :
+    { assetIn : String
+    , claimsOut : ClaimsOut
+    , tooltip : Maybe Tooltip
+    }
+    -> ( Transaction, Cmd Msg )
+noCmd transaction =
+    ( transaction |> Transaction
+    , Cmd.none
+    )
+
+
 noCmdAndEffect :
     { assetIn : String
     , claimsOut : ClaimsOut
@@ -1178,6 +1263,21 @@ noCmdAndEffect transaction =
     )
 
 
+initQuery :
+    { model | slippage : Slippage }
+    -> Blockchain
+    -> Pool
+    -> PoolInfo
+    ->
+        { assetIn : String
+        , claimsOut : ClaimsOut
+        , tooltip : Maybe Tooltip
+        }
+    -> ( Transaction, Cmd Msg )
+initQuery =
+    constructQuery queryLend
+
+
 query :
     { model | slippage : Slippage }
     -> Blockchain
@@ -1189,8 +1289,19 @@ query :
         , tooltip : Maybe Tooltip
         }
     -> ( Transaction, Cmd Msg, Maybe Effect )
-query =
-    constructQuery queryLend
+query model blockchain pool poolInfo transaction =
+    transaction
+        |> constructQuery queryLend
+            model
+            blockchain
+            pool
+            poolInfo
+        |> (\( updated, cmd ) ->
+                ( updated
+                , cmd
+                , Nothing
+                )
+           )
 
 
 queryPerSecond :
@@ -1204,8 +1315,19 @@ queryPerSecond :
         , tooltip : Maybe Tooltip
         }
     -> ( Transaction, Cmd Msg, Maybe Effect )
-queryPerSecond =
-    constructQuery queryLendPerSecond
+queryPerSecond model blockchain pool poolInfo transaction =
+    transaction
+        |> constructQuery queryLendPerSecond
+            model
+            blockchain
+            pool
+            poolInfo
+        |> (\( updated, cmd ) ->
+                ( updated
+                , cmd
+                , Nothing
+                )
+           )
 
 
 constructQuery :
@@ -1219,7 +1341,7 @@ constructQuery :
         , claimsOut : ClaimsOut
         , tooltip : Maybe Tooltip
         }
-    -> ( Transaction, Cmd Msg, Maybe Effect )
+    -> ( Transaction, Cmd Msg )
 constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
     (case
         ( transaction.assetIn |> Input.isZero
@@ -1228,9 +1350,6 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                 (pool.pair |> Pair.toAsset)
         )
      of
-        ( True, _ ) ->
-            Nothing
-
         ( False, Just assetIn ) ->
             case transaction.claimsOut of
                 Default _ ->
@@ -1303,7 +1422,6 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
         |> (\cmd ->
                 ( transaction |> Transaction
                 , cmd
-                , Nothing
                 )
            )
 
@@ -1447,10 +1565,10 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
         ]
         [ (case claimsOut of
             Default _ ->
-                Switch.Recommended
+                Mode.Recommended
 
             _ ->
-                Switch.Advanced
+                Mode.Advanced
           )
             |> (\mode ->
                     Switch.view
@@ -1471,7 +1589,22 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
             Insurance { percent } ->
                 Just percent
           )
-            |> Maybe.map sliderSection
+            |> Maybe.map
+                (\percent ->
+                    Slider.view
+                        { onChange = Slide
+                        , click = ClickSlider
+                        , percent = percent
+                        , learnMore =
+                            Builder.crossOrigin
+                                "https://timeswap.gitbook.io"
+                                [ "timeswap"
+                                , "deep-dive"
+                                , "lending"
+                                ]
+                                []
+                        }
+                )
             |> Maybe.withDefault none
         , row
             [ width fill
@@ -1606,58 +1739,6 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
-        ]
-
-
-sliderSection : Percent -> Element Msg
-sliderSection percent =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , paddingXY 0 3
-            , Font.size 14
-            ]
-            [ el
-                [ alignLeft
-                , Font.regular
-                , Font.color Color.transparent500
-                ]
-                (text "Adjust your APR")
-            ]
-        , column
-            [ width fill
-            , height shrink
-            , spacing 6
-            ]
-            [ Slider.view
-                { onChange = Slide
-                , click = ClickSlider
-                , percent = percent
-                }
-            , row
-                [ width fill
-                , height shrink
-                , paddingXY 0 2
-                , Font.size 12
-                , Font.color Color.transparent300
-                ]
-                [ el
-                    [ alignLeft
-                    , Font.regular
-                    ]
-                    (text "Low")
-                , el
-                    [ alignRight
-                    , Font.regular
-                    ]
-                    (text "High")
-                ]
-            ]
         ]
 
 

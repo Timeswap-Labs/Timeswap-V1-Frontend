@@ -10,6 +10,7 @@ module Page.Transaction.Lend.Lend.Disabled exposing
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
 import Data.Images exposing (Images)
+import Data.Mode as Mode exposing (Mode)
 import Data.Pair as Pair
 import Data.Percent exposing (Percent)
 import Data.Pool exposing (Pool)
@@ -171,10 +172,10 @@ claimsOutSection model pool { claimsOut } =
         ]
         [ (case claimsOut of
             Default ->
-                Switch.Recommended
+                Mode.Recommended
 
             _ ->
-                Switch.Advanced
+                Mode.Advanced
           )
             |> Switch.disabled
         , (case claimsOut of
@@ -190,7 +191,7 @@ claimsOutSection model pool { claimsOut } =
             Insurance { percent } ->
                 Just percent
           )
-            |> Maybe.map sliderSection
+            |> Maybe.map Slider.disabled
             |> Maybe.withDefault none
         , row
             [ width fill
@@ -260,54 +261,6 @@ claimsOutSection model pool { claimsOut } =
                         |> advancedInsuranceOutSection model
                             (pool.pair |> Pair.toCollateral)
                     ]
-        ]
-
-
-sliderSection : Percent -> Element Never
-sliderSection percent =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , paddingXY 0 3
-            , Font.size 14
-            ]
-            [ el
-                [ alignLeft
-                , Font.regular
-                , Font.color Color.transparent500
-                ]
-                (text "Adjust your APR")
-            ]
-        , column
-            [ width fill
-            , height shrink
-            , spacing 6
-            ]
-            [ Slider.disabled percent
-            , row
-                [ width fill
-                , height shrink
-                , paddingXY 0 2
-                , Font.size 12
-                , Font.color Color.transparent300
-                ]
-                [ el
-                    [ alignLeft
-                    , Font.regular
-                    ]
-                    (text "Low")
-                , el
-                    [ alignRight
-                    , Font.regular
-                    ]
-                    (text "High")
-                ]
-            ]
         ]
 
 

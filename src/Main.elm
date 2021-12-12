@@ -1075,6 +1075,9 @@ zoneButton ({ offset, zoneName, chosenZone } as model) =
                     ChosenZone.Here ->
                         zoneName
                             |> ZoneName.toString offset
+
+                    ChosenZone.Unix ->
+                        "Unix"
                  )
                     |> text
                 )

@@ -2,9 +2,9 @@ port module Page.Transaction.Liquidity.New.Main exposing
     ( Effect(..)
     , Msg
     , Transaction
-    , fromNewError
+    , fromDisabled
     , init
-    , toNewError
+    , toDisabled
     , update
     , view
     )
@@ -12,13 +12,11 @@ port module Page.Transaction.Liquidity.New.Main exposing
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
 import Data.CDP as CDP exposing (CDP)
-import Data.Deadline exposing (Deadline)
 import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Slippage exposing (Slippage)
 import Data.Spot exposing (Spot)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
@@ -58,7 +56,6 @@ import Page.Transaction.Liquidity.New.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
-import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Input as Input
 
@@ -120,19 +117,38 @@ initGivenNew =
     }
 
 
-fromNewError : Disabled.Transaction -> Transaction
-fromNewError transaction =
-    { assetIn = transaction.assetIn
-    , debtOut = transaction.debtOut
-    , collateralOut = transaction.collateralOut
-    , liquidityOut = Loading
-    , tooltip = Nothing
-    }
-        |> Transaction
+fromDisabled :
+    Blockchain
+    -> Pool
+    -> Maybe Uint
+    -> Disabled.Transaction
+    -> ( Transaction, Cmd Msg )
+fromDisabled blockchain pool spot transaction =
+    if
+        (transaction.assetIn |> Input.isZero)
+            || (transaction.debtOut |> Input.isZero)
+            || (transaction.collateralOut |> Input.isZero)
+    then
+        { assetIn = transaction.assetIn
+        , debtOut = transaction.debtOut
+        , collateralOut = transaction.collateralOut
+        , liquidityOut = initGivenNew |> Success
+        , tooltip = Nothing
+        }
+            |> noCmd
+
+    else
+        { assetIn = transaction.assetIn
+        , debtOut = transaction.debtOut
+        , collateralOut = transaction.collateralOut
+        , liquidityOut = Loading
+        , tooltip = Nothing
+        }
+            |> initQuery blockchain pool spot
 
 
-toNewError : Transaction -> Disabled.Transaction
-toNewError (Transaction { assetIn, debtOut, collateralOut }) =
+toDisabled : Transaction -> Disabled.Transaction
+toDisabled (Transaction { assetIn, debtOut, collateralOut }) =
     { assetIn = assetIn
     , debtOut = debtOut
     , collateralOut = collateralOut
@@ -140,18 +156,13 @@ toNewError (Transaction { assetIn, debtOut, collateralOut }) =
 
 
 update :
-    { model
-        | time : Posix
-        , slippage : Slippage
-        , deadline : Deadline
-    }
-    -> Blockchain
+    Blockchain
     -> Pool
     -> Maybe Uint
     -> Msg
     -> Transaction
     -> ( Transaction, Cmd Msg, Maybe Effect )
-update model blockchain pool spot msg (Transaction transaction) =
+update blockchain pool spot msg (Transaction transaction) =
     case msg of
         InputAssetIn assetIn ->
             if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
@@ -434,6 +445,20 @@ toRemote result =
             Failure error
 
 
+noCmd :
+    { assetIn : String
+    , debtOut : String
+    , collateralOut : String
+    , liquidityOut : Remote Error LiquidityGivenNew
+    , tooltip : Maybe Tooltip
+    }
+    -> ( Transaction, Cmd Msg )
+noCmd transaction =
+    ( transaction |> Transaction
+    , Cmd.none
+    )
+
+
 noCmdAndEffect :
     { assetIn : String
     , debtOut : String
@@ -449,6 +474,22 @@ noCmdAndEffect transaction =
     )
 
 
+initQuery :
+    Blockchain
+    -> Pool
+    -> Maybe Uint
+    ->
+        { assetIn : String
+        , debtOut : String
+        , collateralOut : String
+        , liquidityOut : Remote Error LiquidityGivenNew
+        , tooltip : Maybe Tooltip
+        }
+    -> ( Transaction, Cmd Msg )
+initQuery =
+    constructQueryNew queryCreate
+
+
 query :
     Blockchain
     -> Pool
@@ -461,8 +502,18 @@ query :
         , tooltip : Maybe Tooltip
         }
     -> ( Transaction, Cmd Msg, Maybe Effect )
-query =
-    constructQueryNew queryCreate
+query blockchain pool spot transaction =
+    transaction
+        |> constructQueryNew queryCreate
+            blockchain
+            pool
+            spot
+        |> (\( updated, cmd ) ->
+                ( updated
+                , cmd
+                , Nothing
+                )
+           )
 
 
 constructQueryNew :
@@ -477,7 +528,7 @@ constructQueryNew :
         , liquidityOut : Remote Error LiquidityGivenNew
         , tooltip : Maybe Tooltip
         }
-    -> ( Transaction, Cmd Msg, Maybe Effect )
+    -> ( Transaction, Cmd Msg )
 constructQueryNew givenCmd blockchain pool spot transaction =
     (if
         (transaction.assetIn |> Input.isZero)
@@ -518,7 +569,6 @@ constructQueryNew givenCmd blockchain pool spot transaction =
         |> (\cmd ->
                 ( transaction |> Transaction
                 , cmd
-                , Nothing
                 )
            )
 

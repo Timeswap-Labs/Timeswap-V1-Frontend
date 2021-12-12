@@ -1,4 +1,11 @@
-module Page.Transaction.Output exposing (disabledLiquidity, empty, liquidity, view)
+module Page.Transaction.Output exposing
+    ( disabledCollateral
+    , disabledLiquidity
+    , empty
+    , liquidity
+    , view
+    , viewCollateral
+    )
 
 import Data.Images exposing (Images)
 import Data.Remote exposing (Remote(..))
@@ -19,9 +26,12 @@ import Element
         , row
         , shrink
         , spacing
+        , text
         , width
         )
+import Element.Font as Font
 import Element.Region as Region
+import Utility.Color as Color
 import Utility.Fade as Fade
 import Utility.Image as Image
 import Utility.Truncate as Truncate
@@ -86,6 +96,96 @@ view { images } param =
         ]
 
 
+viewCollateral :
+    { model | images : Images }
+    ->
+        { onMouseEnter : tooltip -> msg
+        , onMouseLeave : msg
+        , tooltip : tooltip
+        , opened : Maybe tooltip
+        , token : Token
+        , input : String
+        , description : String
+        }
+    -> Element msg
+viewCollateral { images } param =
+    row
+        [ Region.description param.description
+        , width fill
+        , height <| px 24
+        , spacing 12
+        , clip
+        ]
+        [ row
+            [ width <| px 80
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            [ images
+                |> Image.viewToken
+                    [ width <| px 24
+                    , height <| px 24
+                    ]
+                    param.token
+            , Truncate.viewSymbol
+                { onMouseEnter = param.onMouseEnter
+                , onMouseLeave = param.onMouseLeave
+                , tooltip = param.tooltip
+                , opened = param.opened
+                , token = param.token
+                }
+            ]
+        , el
+            [ width shrink
+            , height shrink
+            , centerY
+            , Font.color Color.light100
+            , Font.size 16
+            ]
+            (text param.input)
+        ]
+
+
+disabledCollateral :
+    { model | images : Images }
+    ->
+        { token : Token
+        , input : String
+        , description : String
+        }
+    -> Element Never
+disabledCollateral { images } param =
+    row
+        [ Region.description param.description
+        , width fill
+        , height <| px 24
+        , spacing 12
+        , clip
+        ]
+        [ row
+            [ width <| px 80
+            , height shrink
+            , spacing 6
+            , centerY
+            ]
+            [ images
+                |> Image.viewToken
+                    [ width <| px 24
+                    , height <| px 24
+                    ]
+                    param.token
+            , Truncate.disabledSymbol param.token
+            ]
+        , el
+            [ width shrink
+            , height shrink
+            , centerY
+            ]
+            (text param.input)
+        ]
+
+
 empty :
     { model | images : Images }
     ->
@@ -98,7 +198,6 @@ empty { images } param =
         [ Region.description param.description
         , width fill
         , height <| px 24
-        , spacing 12
         , clip
         ]
         (row

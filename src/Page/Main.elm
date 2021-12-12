@@ -41,7 +41,7 @@ import Element
         , width
         )
 import Page.Route as Route
-import Page.Transaction.Borrow.Main as TransactionBorrow
+import Page.Transaction.Borrow.Main as Borrow
 import Page.Transaction.Lend.Main as Lend
 import Page.Transaction.Liquidity.Main as Liquidity
 import Page.Transaction.PoolInfo exposing (PoolInfo)
@@ -51,12 +51,13 @@ import Url exposing (Url)
 
 type Page
     = Lend { transaction : Lend.Transaction }
-    | Borrow { transaction : TransactionBorrow.Section }
+    | Borrow { transaction : Borrow.Transaction }
     | Liquidity { transaction : Liquidity.Transaction }
 
 
 type Msg
     = LendMsg Lend.Msg
+    | BorrowMsg Borrow.Msg
     | LiquidityMsg Liquidity.Msg
 
 
@@ -142,11 +143,35 @@ construct ({ chains } as model) url maybePage =
                     )
                     (Cmd.map LendMsg)
 
-        ( Just (Route.Borrow parameter), _, _ ) ->
-            ( { transaction = TransactionBorrow.init parameter }
-                |> Borrow
-            , Cmd.none
-            )
+        ( Just (Route.Borrow (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
+            poolInfo
+                |> Borrow.initGivenPoolInfo model blockchain pool
+                |> Tuple.mapBoth
+                    (\transaction ->
+                        { transaction = transaction }
+                            |> Borrow
+                    )
+                    (Cmd.map BorrowMsg)
+
+        ( Just (Route.Borrow (Just (Parameter.Pool pool))), Supported blockchain, Just (Left spot) ) ->
+            spot
+                |> Borrow.initGivenSpot model blockchain pool
+                |> Tuple.mapBoth
+                    (\transaction ->
+                        { transaction = transaction }
+                            |> Borrow
+                    )
+                    (Cmd.map BorrowMsg)
+
+        ( Just (Route.Borrow parameter), Supported blockchain, _ ) ->
+            parameter
+                |> Borrow.init model blockchain
+                |> Tuple.mapBoth
+                    (\transaction ->
+                        { transaction = transaction }
+                            |> Borrow
+                    )
+                    (Cmd.map BorrowMsg)
 
         ( Just (Route.Liquidity (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
             poolInfo
@@ -212,6 +237,21 @@ update model blockchain msg page =
                         )
                    )
 
+        ( BorrowMsg transactionBorrowMsg, Borrow borrow ) ->
+            borrow.transaction
+                |> Borrow.update
+                    model
+                    blockchain
+                    transactionBorrowMsg
+                |> (\( updated, cmd, maybeEffect ) ->
+                        ( { borrow | transaction = updated }
+                            |> Borrow
+                        , cmd |> Cmd.map BorrowMsg
+                        , maybeEffect
+                            |> Maybe.map borrowEffects
+                        )
+                   )
+
         ( LiquidityMsg liquidityMsg, Liquidity liquidity ) ->
             liquidity.transaction
                 |> Liquidity.update
@@ -252,6 +292,27 @@ lendEffects effect =
             OpenConfirm
 
 
+borrowEffects :
+    Borrow.Effect
+    -> Effect
+borrowEffects effect =
+    case effect of
+        Borrow.OpenTokenList tokenParam ->
+            OpenTokenList tokenParam
+
+        Borrow.OpenMaturityList pair ->
+            OpenMaturityList pair
+
+        Borrow.OpenConnect ->
+            OpenConnect
+
+        Borrow.OpenSettings ->
+            OpenSettings
+
+        Borrow.OpenConfirm ->
+            OpenConfirm
+
+
 liquidityEffects :
     Liquidity.Effect
     -> Effect
@@ -286,15 +347,19 @@ subscriptions page =
             ]
                 |> Sub.batch
 
+        Borrow { transaction } ->
+            [ transaction
+                |> Borrow.subscriptions
+                |> Sub.map BorrowMsg
+            ]
+                |> Sub.batch
+
         Liquidity { transaction } ->
             [ transaction
                 |> Liquidity.subscriptions
                 |> Sub.map LiquidityMsg
             ]
                 |> Sub.batch
-
-        _ ->
-            Sub.none
 
 
 toTab : Page -> Tab
@@ -319,7 +384,7 @@ toParameter page =
 
         Borrow { transaction } ->
             transaction
-                |> TransactionBorrow.toParameter
+                |> Borrow.toParameter
 
         Liquidity { transaction } ->
             transaction
@@ -333,8 +398,13 @@ toPoolInfo page =
             transaction
                 |> Lend.toPoolInfo
 
-        _ ->
-            Nothing
+        Borrow { transaction } ->
+            transaction
+                |> Borrow.toPoolInfo
+
+        Liquidity { transaction } ->
+            transaction
+                |> Liquidity.toPoolInfo
 
 
 view :
@@ -364,12 +434,15 @@ view model blockchain page =
                     |> map LendMsg
                 ]
 
+            Borrow { transaction } ->
+                [ transaction
+                    |> Borrow.view model blockchain
+                    |> map BorrowMsg
+                ]
+
             Liquidity { transaction } ->
                 [ transaction
                     |> Liquidity.view model blockchain
                     |> map LiquidityMsg
                 ]
-
-            _ ->
-                []
         )

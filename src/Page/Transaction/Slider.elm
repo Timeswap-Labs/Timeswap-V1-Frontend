@@ -5,20 +5,28 @@ import Element
     exposing
         ( Element
         , alignLeft
+        , alignRight
         , behindContent
         , centerY
+        , column
         , el
         , fill
         , height
         , moveRight
+        , newTabLink
         , none
+        , paddingXY
         , px
+        , row
         , shrink
+        , spacing
+        , text
         , width
         )
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
+import Element.Font as Font
 import Element.Input as Input
 import Utility.Color as Color
 
@@ -27,9 +35,72 @@ view :
     { onChange : Float -> msg
     , click : msg
     , percent : Percent
+    , learnMore : String
     }
     -> Element msg
-view { onChange, click, percent } =
+view param =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , paddingXY 0 3
+            , Font.size 14
+            ]
+            [ el
+                [ alignLeft
+                , Font.regular
+                , Font.color Color.transparent500
+                ]
+                (text "Adjust your APR")
+            , newTabLink
+                [ alignRight
+                , Font.regular
+                , Font.color Color.primary500
+                ]
+                { url = param.learnMore
+                , label = text "Learn more"
+                }
+            ]
+        , column
+            [ width fill
+            , height shrink
+            , spacing 6
+            ]
+            [ slider param
+            , row
+                [ width fill
+                , height shrink
+                , paddingXY 0 2
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                [ el
+                    [ alignLeft
+                    , Font.regular
+                    ]
+                    (text "Low")
+                , el
+                    [ alignRight
+                    , Font.regular
+                    ]
+                    (text "High")
+                ]
+            ]
+        ]
+
+
+slider :
+    { param
+        | onChange : Float -> msg
+        , click : msg
+        , percent : Percent
+    }
+    -> Element msg
+slider { onChange, click, percent } =
     Input.slider
         [ width fill
         , height shrink
@@ -63,6 +134,60 @@ view { onChange, click, percent } =
 
 disabled : Percent -> Element Never
 disabled percent =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , paddingXY 0 3
+            , Font.size 14
+            ]
+            [ el
+                [ alignLeft
+                , Font.regular
+                , Font.color Color.transparent500
+                ]
+                (text "Adjust your APR")
+            , el
+                [ alignRight
+                , Font.regular
+                , Font.color Color.primary500
+                ]
+                (text "Learn more")
+            ]
+        , column
+            [ width fill
+            , height shrink
+            , spacing 6
+            ]
+            [ disabledSlider percent
+            , row
+                [ width fill
+                , height shrink
+                , paddingXY 0 2
+                , Font.size 12
+                , Font.color Color.transparent300
+                ]
+                [ el
+                    [ alignLeft
+                    , Font.regular
+                    ]
+                    (text "Low")
+                , el
+                    [ alignRight
+                    , Font.regular
+                    ]
+                    (text "High")
+                ]
+            ]
+        ]
+
+
+disabledSlider : Percent -> Element Never
+disabledSlider percent =
     el
         [ width fill
         , height shrink

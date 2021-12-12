@@ -42,7 +42,6 @@ import Element
         , fill
         , height
         , map
-        , none
         , padding
         , paddingXY
         , px
@@ -59,6 +58,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Http
 import Page.Transaction.Answer as Answer exposing (Answer)
+import Page.Transaction.Button as Button
 import Page.Transaction.Lend.Empty as Empty
 import Page.Transaction.Lend.Lend.Disabled as Disabled
 import Page.Transaction.Lend.Lend.Main as Lend
@@ -304,10 +304,10 @@ update model blockchain msg (Transaction transaction) =
             )
 
         ( ReceiveAnswer chain pool result, Pool currentPool (Active remote) ) ->
-            ( (if
+            (if
                 (chain == (blockchain |> Blockchain.toChain))
                     && (pool == currentPool)
-               then
+             then
                 case
                     ( result
                     , remote
@@ -317,37 +317,48 @@ update model blockchain msg (Transaction transaction) =
                         lend
                             |> Exist poolInfo
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Ok (Right poolInfo), Success (DoesNotExist _) ) ->
                         Lend.init
                             |> Exist poolInfo
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Ok (Right poolInfo), Failure error ) ->
                         error.lend
-                            |> Lend.fromLendError
-                            |> Exist poolInfo
-                            |> Success
-                            |> Just
+                            |> Lend.fromDisabled model blockchain pool poolInfo
+                            |> (\( updated, cmd ) ->
+                                    ( updated
+                                        |> Exist poolInfo
+                                        |> Success
+                                    , cmd |> Cmd.map LendMsg
+                                    )
+                                        |> Right
+                                        |> Just
+                               )
 
                     ( Ok (Right poolInfo), Loading ) ->
                         Lend.init
                             |> Exist poolInfo
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Ok (Left spot), _ ) ->
                         DoesNotExist spot
                             |> Success
+                            |> Left
                             |> Just
 
                     ( Err error, Success (Exist _ lend) ) ->
                         { http = error
-                        , lend = lend |> Lend.toLendError
+                        , lend = lend |> Lend.toDisabled
                         }
                             |> Failure
+                            |> Left
                             |> Just
 
                     ( Err error, Success (DoesNotExist _) ) ->
@@ -355,11 +366,13 @@ update model blockchain msg (Transaction transaction) =
                         , lend = Disabled.init
                         }
                             |> Failure
+                            |> Left
                             |> Just
 
                     ( Err error, Failure failure ) ->
                         { failure | http = error }
                             |> Failure
+                            |> Left
                             |> Just
 
                     ( Err error, Loading ) ->
@@ -367,26 +380,49 @@ update model blockchain msg (Transaction transaction) =
                         , lend = Disabled.init
                         }
                             |> Failure
+                            |> Left
                             |> Just
 
-               else
+             else
                 Nothing
-              )
-                |> Maybe.map
-                    (\state ->
-                        { transaction
-                            | state =
-                                state
-                                    |> Active
-                                    |> Pool pool
-                        }
-                    )
-                |> Maybe.withDefault transaction
-                |> Transaction
-            , Process.sleep 5000
-                |> Task.perform (\_ -> QueryAgain)
-            , Nothing
             )
+                |> (\maybeOr ->
+                        case maybeOr of
+                            Just (Left state) ->
+                                ( { transaction
+                                    | state =
+                                        state
+                                            |> Active
+                                            |> Pool pool
+                                  }
+                                , Cmd.none
+                                )
+
+                            Just (Right ( updated, cmd )) ->
+                                ( { transaction
+                                    | state =
+                                        updated
+                                            |> Active
+                                            |> Pool pool
+                                  }
+                                , cmd
+                                )
+
+                            Nothing ->
+                                ( transaction
+                                , Cmd.none
+                                )
+                   )
+                |> (\( updated, cmd ) ->
+                        ( updated |> Transaction
+                        , Cmd.batch
+                            [ cmd
+                            , Process.sleep 5000
+                                |> Task.perform (\_ -> QueryAgain)
+                            ]
+                        , Nothing
+                        )
+                   )
 
         ( CheckMaturity posix, Pool pool (Active _) ) ->
             (if pool.maturity |> Maturity.isActive posix then
@@ -556,7 +592,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectTokens |> map never
                         }
                    )
 
@@ -568,7 +604,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectTokens |> map never
                         }
                    )
 
@@ -580,7 +616,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectTokens |> map never
                         }
                    )
 
@@ -598,7 +634,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.selectMaturity |> map never
                         }
                    )
 
@@ -616,7 +652,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.matured |> map never
                         }
                    )
 
@@ -634,7 +670,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.loading |> map never
                         }
                    )
 
@@ -644,7 +680,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.error http |> map never
                         }
                    )
 
@@ -662,7 +698,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = none |> Debug.log "later"
+                        , buttons = Button.doesNotExist |> map never
                         }
                    )
 

@@ -1,5 +1,6 @@
-module Page.Transaction.Switch exposing (Mode(..), disabled, empty, view)
+module Page.Transaction.Switch exposing (disabled, empty, view)
 
+import Data.Mode as Mode exposing (Mode)
 import Element
     exposing
         ( Element
@@ -22,11 +23,6 @@ import Element.Input as Input exposing (OptionState)
 import Utility.Color as Color
 
 
-type Mode
-    = Recommended
-    | Advanced
-
-
 view :
     { onChange : Mode -> msg
     , mode : Mode
@@ -44,9 +40,9 @@ view { onChange, mode } =
         { onChange = onChange
         , options =
             [ viewRecommended
-                |> Input.optionWith Recommended
+                |> Input.optionWith Mode.Recommended
             , viewAdvanced
-                |> Input.optionWith Advanced
+                |> Input.optionWith Mode.Advanced
             ]
         , selected = Just mode
         , label = Input.labelHidden "switch mode"
@@ -116,12 +112,12 @@ disabledRecommended mode =
          , height fill
          ]
             ++ (case mode of
-                    Recommended ->
+                    Mode.Recommended ->
                         [ Background.color Color.primary500
                         , Border.rounded 4
                         ]
 
-                    Advanced ->
+                    Mode.Advanced ->
                         []
                )
         )
@@ -186,10 +182,10 @@ disabledAdvanced mode =
          , height fill
          ]
             ++ (case mode of
-                    Recommended ->
+                    Mode.Recommended ->
                         []
 
-                    Advanced ->
+                    Mode.Advanced ->
                         [ Background.color Color.primary500
                         , Border.rounded 4
                         ]

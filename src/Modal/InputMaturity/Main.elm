@@ -98,7 +98,7 @@ view model (Modal modal) =
                             , paddingXY 0 3
                             , Font.color Color.light100
                             ]
-                            (text "Change Wallet")
+                            (text "Input Maturity")
                         , IconButton.exit model Exit
                         ]
                     ]

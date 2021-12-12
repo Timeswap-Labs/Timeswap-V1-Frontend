@@ -6,6 +6,7 @@ import Json.Encode as Encode exposing (Value)
 type ChosenZone
     = Here
     | UTC
+    | Unix
 
 
 type alias Flag =
@@ -38,6 +39,9 @@ encode chosenZone =
 
         UTC ->
             "utc"
+
+        Unix ->
+            "unix"
     )
         |> Encode.string
 
@@ -49,4 +53,7 @@ switch chosenZone =
             UTC
 
         UTC ->
+            Unix
+
+        Unix ->
             Here

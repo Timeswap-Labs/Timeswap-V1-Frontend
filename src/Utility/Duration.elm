@@ -88,15 +88,22 @@ viewMaturity param =
         , Font.size 14
         , Font.color Color.light100
         ]
-        (param.maturity
-            |> Maturity.toString
-                (case param.chosenZone of
-                    ChosenZone.Here ->
-                        param.offset
+        ((case param.chosenZone of
+            ChosenZone.Here ->
+                param.maturity
+                    |> Maturity.toString
+                        (param.offset
                             |> Offset.toZone
+                        )
 
-                    ChosenZone.UTC ->
-                        Time.utc
-                )
+            ChosenZone.UTC ->
+                param.maturity
+                    |> Maturity.toString Time.utc
+
+            ChosenZone.Unix ->
+                param.maturity
+                    |> Maturity.toUnix
+                    |> String.fromInt
+         )
             |> text
         )

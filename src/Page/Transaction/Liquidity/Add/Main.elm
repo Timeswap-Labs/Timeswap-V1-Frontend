@@ -2,10 +2,10 @@ port module Page.Transaction.Liquidity.Add.Main exposing
     ( Effect(..)
     , Msg
     , Transaction
-    , fromAddError
+    , fromDisabled
     , init
     , subscriptions
-    , toAddError
+    , toDisabled
     , update
     , view
     )
@@ -26,7 +26,6 @@ import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
-        , alpha
         , centerY
         , column
         , el
@@ -209,34 +208,78 @@ initGivenCollateral =
     }
 
 
-fromAddError : Disabled.Transaction -> Transaction
-fromAddError transaction =
-    { state =
-        case transaction of
-            Disabled.Asset assetIn ->
+fromDisabled :
+    { model | slippage : Slippage }
+    -> Blockchain
+    -> Pool
+    -> PoolInfo
+    -> Disabled.Transaction
+    -> ( Transaction, Cmd Msg )
+fromDisabled model blockchain pool poolInfo transaction =
+    (case transaction of
+        Disabled.Asset assetIn ->
+            if assetIn |> Input.isZero then
+                { assetIn = assetIn
+                , out = initGivenAsset |> Success
+                }
+                    |> Asset
+                    |> Left
+
+            else
                 { assetIn = assetIn
                 , out = Loading
                 }
                     |> Asset
+                    |> Right
 
-            Disabled.Debt debtOut ->
+        Disabled.Debt debtOut ->
+            if debtOut |> Input.isZero then
+                { debtOut = debtOut
+                , out = initGivenDebt |> Success
+                }
+                    |> Debt
+                    |> Left
+
+            else
                 { debtOut = debtOut
                 , out = Loading
                 }
                     |> Debt
+                    |> Right
 
-            Disabled.Collateral collateralOut ->
+        Disabled.Collateral collateralOut ->
+            if collateralOut |> Input.isZero then
+                { collateralOut = collateralOut
+                , out = initGivenCollateral |> Success
+                }
+                    |> Collateral
+                    |> Left
+
+            else
                 { collateralOut = collateralOut
                 , out = Loading
                 }
                     |> Collateral
-    , tooltip = Nothing
-    }
-        |> Transaction
+                    |> Right
+    )
+        |> (\or ->
+                case or of
+                    Left state ->
+                        { state = state
+                        , tooltip = Nothing
+                        }
+                            |> noCmd
+
+                    Right state ->
+                        { state = state
+                        , tooltip = Nothing
+                        }
+                            |> initQuery model blockchain pool poolInfo
+           )
 
 
-toAddError : Transaction -> Disabled.Transaction
-toAddError (Transaction { state }) =
+toDisabled : Transaction -> Disabled.Transaction
+toDisabled (Transaction { state }) =
     case state of
         Asset { assetIn } ->
             Disabled.Asset assetIn
@@ -261,40 +304,36 @@ update :
     -> Transaction
     -> ( Transaction, Cmd Msg, Maybe Effect )
 update model blockchain pool poolInfo msg (Transaction transaction) =
-    case msg of
-        ClickAssetIn ->
-            (case transaction.state of
-                Debt { out } ->
-                    case out of
-                        Success { assetIn } ->
-                            assetIn
-                                |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
-
-                Collateral { out } ->
-                    case out of
-                        Success { assetIn } ->
-                            assetIn
-                                |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
+    case ( msg, transaction.state ) of
+        ( ClickAssetIn, Debt { out } ) ->
+            (case out of
+                Success { assetIn } ->
+                    assetIn
+                        |> Uint.toAmount (pool.pair |> Pair.toAsset)
 
                 _ ->
-                    Nothing
+                    ""
             )
-                |> Maybe.map
-                    (\assetIn ->
+                |> (\assetIn ->
                         { transaction | state = assetIn |> updateGivenAssetIn }
                             |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+                   )
 
-        InputAssetIn assetIn ->
+        ( ClickAssetIn, Collateral { out } ) ->
+            (case out of
+                Success { assetIn } ->
+                    assetIn
+                        |> Uint.toAmount (pool.pair |> Pair.toAsset)
+
+                _ ->
+                    ""
+            )
+                |> (\assetIn ->
+                        { transaction | state = assetIn |> updateGivenAssetIn }
+                            |> query model blockchain pool poolInfo
+                   )
+
+        ( InputAssetIn assetIn, _ ) ->
             if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
                 { transaction | state = assetIn |> updateGivenAssetIn }
                     |> query model blockchain pool poolInfo
@@ -302,7 +341,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             else
                 transaction |> noCmdAndEffect
 
-        InputMaxAsset ->
+        ( InputMaxAsset, _ ) ->
             blockchain
                 |> Blockchain.toUser
                 |> Maybe.andThen
@@ -323,39 +362,35 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
-        ClickDebtOut ->
-            (case transaction.state of
-                Asset { out } ->
-                    case out of
-                        Success { debtOut } ->
-                            debtOut
-                                |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
-
-                Collateral { out } ->
-                    case out of
-                        Success { debtOut } ->
-                            debtOut
-                                |> Uint.toAmount (pool.pair |> Pair.toAsset)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
+        ( ClickDebtOut, Asset { out } ) ->
+            (case out of
+                Success { debtOut } ->
+                    debtOut
+                        |> Uint.toAmount (pool.pair |> Pair.toAsset)
 
                 _ ->
-                    Nothing
+                    ""
             )
-                |> Maybe.map
-                    (\debtOut ->
+                |> (\debtOut ->
                         { transaction | state = debtOut |> updateGivenDebtOut }
                             |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+                   )
 
-        InputDebtOut debtOut ->
+        ( ClickDebtOut, Collateral { out } ) ->
+            (case out of
+                Success { debtOut } ->
+                    debtOut
+                        |> Uint.toAmount (pool.pair |> Pair.toAsset)
+
+                _ ->
+                    ""
+            )
+                |> (\debtOut ->
+                        { transaction | state = debtOut |> updateGivenDebtOut }
+                            |> query model blockchain pool poolInfo
+                   )
+
+        ( InputDebtOut debtOut, _ ) ->
             if debtOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
                 { transaction | state = debtOut |> updateGivenDebtOut }
                     |> query model blockchain pool poolInfo
@@ -363,39 +398,35 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             else
                 transaction |> noCmdAndEffect
 
-        ClickCollateralOut ->
-            (case transaction.state of
-                Asset { out } ->
-                    case out of
-                        Success { collateralOut } ->
-                            collateralOut
-                                |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
-
-                Debt { out } ->
-                    case out of
-                        Success { collateralOut } ->
-                            collateralOut
-                                |> Uint.toAmount (pool.pair |> Pair.toCollateral)
-                                |> Just
-
-                        _ ->
-                            "" |> Just
+        ( ClickCollateralOut, Asset { out } ) ->
+            (case out of
+                Success { collateralOut } ->
+                    collateralOut
+                        |> Uint.toAmount (pool.pair |> Pair.toCollateral)
 
                 _ ->
-                    Nothing
+                    ""
             )
-                |> Maybe.map
-                    (\collateralOut ->
+                |> (\collateralOut ->
                         { transaction | state = collateralOut |> updateGivenCollateralOut }
                             |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+                   )
 
-        InputCollateralOut collateralOut ->
+        ( ClickCollateralOut, Debt { out } ) ->
+            (case out of
+                Success { collateralOut } ->
+                    collateralOut
+                        |> Uint.toAmount (pool.pair |> Pair.toCollateral)
+
+                _ ->
+                    ""
+            )
+                |> (\collateralOut ->
+                        { transaction | state = collateralOut |> updateGivenCollateralOut }
+                            |> query model blockchain pool poolInfo
+                   )
+
+        ( InputCollateralOut collateralOut, _ ) ->
             if collateralOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
                 { transaction | state = collateralOut |> updateGivenCollateralOut }
                     |> query model blockchain pool poolInfo
@@ -403,7 +434,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             else
                 transaction |> noCmdAndEffect
 
-        InputMaxCollateral ->
+        ( InputMaxCollateral, _ ) ->
             blockchain
                 |> Blockchain.toUser
                 |> Maybe.andThen
@@ -424,11 +455,11 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
-        QueryAgain _ ->
+        ( QueryAgain _, _ ) ->
             transaction
                 |> queryPerSecond model blockchain pool poolInfo
 
-        ClickConnect ->
+        ( ClickConnect, _ ) ->
             blockchain
                 |> Blockchain.toUser
                 |> Maybe.map (\_ -> transaction |> noCmdAndEffect)
@@ -438,7 +469,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     , OpenConnect |> Just
                     )
 
-        ClickApproveAsset ->
+        ( ClickApproveAsset, _ ) ->
             (case
                 ( blockchain |> Blockchain.toUser
                 , case transaction.state of
@@ -497,7 +528,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
-        ClickApproveCollateral ->
+        ( ClickApproveCollateral, _ ) ->
             (case
                 ( blockchain |> Blockchain.toUser
                 , case transaction.state of
@@ -556,14 +587,9 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
-        ReceiveAnswer value ->
-            (case
-                ( value
-                    |> Decode.decodeValue Answer.decoder
-                , transaction.state
-                )
-             of
-                ( Ok (Answer.GivenAsset answer), Asset asset ) ->
+        ( ReceiveAnswer value, Asset asset ) ->
+            (case value |> Decode.decodeValue Answer.decoder of
+                Ok (Answer.GivenAsset answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -586,7 +612,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     else
                         Nothing
 
-                ( Ok (Answer.GivenDebt answer), Debt debt ) ->
+                _ ->
+                    Nothing
+            )
+                |> Maybe.map noCmdAndEffect
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ReceiveAnswer value, Debt debt ) ->
+            (case value |> Decode.decodeValue Answer.decoder of
+                Ok (Answer.GivenDebt answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -609,7 +643,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     else
                         Nothing
 
-                ( Ok (Answer.GivenCollateral answer), Collateral collateral ) ->
+                _ ->
+                    Nothing
+            )
+                |> Maybe.map noCmdAndEffect
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ReceiveAnswer value, Collateral collateral ) ->
+            (case value |> Decode.decodeValue Answer.decoder of
+                Ok (Answer.GivenCollateral answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -638,13 +680,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.map noCmdAndEffect
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
-        OnMouseEnter tooltip ->
+        ( OnMouseEnter tooltip, _ ) ->
             { transaction | tooltip = Just tooltip }
                 |> noCmdAndEffect
 
-        OnMouseLeave ->
+        ( OnMouseLeave, _ ) ->
             { transaction | tooltip = Nothing }
                 |> noCmdAndEffect
+
+        _ ->
+            transaction |> noCmdAndEffect
 
 
 updateGivenAssetIn : String -> State
@@ -701,6 +746,17 @@ toRemote result =
             Failure error
 
 
+noCmd :
+    { state : State
+    , tooltip : Maybe Tooltip
+    }
+    -> ( Transaction, Cmd Msg )
+noCmd transaction =
+    ( transaction |> Transaction
+    , Cmd.none
+    )
+
+
 noCmdAndEffect :
     { state : State
     , tooltip : Maybe Tooltip
@@ -713,6 +769,20 @@ noCmdAndEffect transaction =
     )
 
 
+initQuery :
+    { model | slippage : Slippage }
+    -> Blockchain
+    -> Pool
+    -> PoolInfo
+    ->
+        { state : State
+        , tooltip : Maybe Tooltip
+        }
+    -> ( Transaction, Cmd Msg )
+initQuery =
+    constructQuery queryLiquidity
+
+
 query :
     { model | slippage : Slippage }
     -> Blockchain
@@ -723,8 +793,19 @@ query :
         , tooltip : Maybe Tooltip
         }
     -> ( Transaction, Cmd Msg, Maybe Effect )
-query =
-    constructQuery queryLiquidity
+query model blockchain pool poolInfo transaction =
+    transaction
+        |> constructQuery queryLiquidity
+            model
+            blockchain
+            pool
+            poolInfo
+        |> (\( updated, cmd ) ->
+                ( updated
+                , cmd
+                , Nothing
+                )
+           )
 
 
 queryPerSecond :
@@ -737,8 +818,19 @@ queryPerSecond :
         , tooltip : Maybe Tooltip
         }
     -> ( Transaction, Cmd Msg, Maybe Effect )
-queryPerSecond =
-    constructQuery queryLiquidityPerSecond
+queryPerSecond model blockchain pool poolInfo transaction =
+    transaction
+        |> constructQuery queryLiquidityPerSecond
+            model
+            blockchain
+            pool
+            poolInfo
+        |> (\( updated, cmd ) ->
+                ( updated
+                , cmd
+                , Nothing
+                )
+           )
 
 
 constructQuery :
@@ -751,7 +843,7 @@ constructQuery :
         { state : State
         , tooltip : Maybe Tooltip
         }
-    -> ( Transaction, Cmd Msg, Maybe Effect )
+    -> ( Transaction, Cmd Msg )
 constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
     (case transaction.state of
         Asset asset ->
@@ -762,9 +854,6 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                         (pool.pair |> Pair.toAsset)
                 )
             of
-                ( True, _ ) ->
-                    Nothing
-
                 ( False, Just assetIn ) ->
                     { chainId = blockchain |> Blockchain.toChain
                     , pool = pool
@@ -786,9 +875,6 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                         (pool.pair |> Pair.toAsset)
                 )
             of
-                ( True, _ ) ->
-                    Nothing
-
                 ( False, Just debtOut ) ->
                     { chainId = blockchain |> Blockchain.toChain
                     , pool = pool
@@ -810,9 +896,6 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                         (pool.pair |> Pair.toCollateral)
                 )
             of
-                ( True, _ ) ->
-                    Nothing
-
                 ( False, Just collateralOut ) ->
                     { chainId = blockchain |> Blockchain.toChain
                     , pool = pool
@@ -831,7 +914,6 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
         |> (\cmd ->
                 ( transaction |> Transaction
                 , cmd
-                , Nothing
                 )
            )
 
