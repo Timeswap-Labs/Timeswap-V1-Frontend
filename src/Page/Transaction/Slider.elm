@@ -35,6 +35,8 @@ view :
     { onChange : Float -> msg
     , click : msg
     , percent : Percent
+    , min : Float
+    , max : Float
     , learnMore : String
     }
     -> Element msg
@@ -98,9 +100,11 @@ slider :
         | onChange : Float -> msg
         , click : msg
         , percent : Percent
+        , min : Float
+        , max : Float
     }
     -> Element msg
-slider { onChange, click, percent } =
+slider { onChange, click, percent, min, max } =
     Input.slider
         [ width fill
         , height shrink
@@ -116,8 +120,8 @@ slider { onChange, click, percent } =
         ]
         { onChange = onChange
         , label = Input.labelHidden "slider"
-        , min = 0
-        , max = 128
+        , min = min
+        , max = max
         , value = percent |> Percent.toFloat
         , thumb =
             Input.thumb

@@ -5,6 +5,7 @@ module Page.Transaction.Borrow.Main exposing
     , init
     , initGivenPoolInfo
     , initGivenSpot
+    , notSupported
     , subscriptions
     , toParameter
     , toPoolInfo
@@ -240,6 +241,14 @@ initGivenSpot { time } blockchain pool spot =
             |> Transaction
         , Cmd.none
         )
+
+
+notSupported : Transaction
+notSupported =
+    { state = None
+    , tooltip = Nothing
+    }
+        |> Transaction
 
 
 update :

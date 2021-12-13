@@ -1904,6 +1904,8 @@ duesOutSection model blockchain pool ({ state, tooltip } as transaction) =
                         { onChange = Slide
                         , click = ClickSlider
                         , percent = percent
+                        , min = 8
+                        , max = 120
                         , learnMore =
                             Builder.crossOrigin
                                 "https://timeswap.gitbook.io"

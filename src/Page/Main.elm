@@ -203,6 +203,34 @@ construct ({ chains } as model) url maybePage =
                     )
                     (Cmd.map LiquidityMsg)
 
+        ( _, Supported blockchain, _ ) ->
+            Nothing
+                |> Lend.init model blockchain
+                |> Tuple.mapBoth
+                    (\transaction ->
+                        { transaction = transaction }
+                            |> Lend
+                    )
+                    (Cmd.map LendMsg)
+
+        ( Just (Route.Lend _), NotSupported _, _ ) ->
+            ( { transaction = Lend.notSupported }
+                |> Lend
+            , Cmd.none
+            )
+
+        ( Just (Route.Borrow _), NotSupported _, _ ) ->
+            ( { transaction = Borrow.notSupported }
+                |> Borrow
+            , Cmd.none
+            )
+
+        ( Just (Route.Liquidity _), NotSupported _, _ ) ->
+            ( { transaction = Liquidity.notSupported }
+                |> Liquidity
+            , Cmd.none
+            )
+
         _ ->
             ( { transaction = Lend.notSupported }
                 |> Lend

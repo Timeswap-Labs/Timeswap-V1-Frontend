@@ -1595,6 +1595,8 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                         { onChange = Slide
                         , click = ClickSlider
                         , percent = percent
+                        , min = 0
+                        , max = 128
                         , learnMore =
                             Builder.crossOrigin
                                 "https://timeswap.gitbook.io"
