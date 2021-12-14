@@ -30,7 +30,6 @@ import Data.Slippage exposing (Slippage)
 import Data.Spot exposing (Spot)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
-import Data.Uint exposing (Uint)
 import Element
     exposing
         ( Element
@@ -65,6 +64,7 @@ import Page.Transaction.Lend.Lend.Main as Lend
 import Page.Transaction.MaturityButton as MaturityButton
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Query as Query
+import Page.Transaction.SpotPrice exposing (SpotPrice)
 import Page.Transaction.TokenButton as TokenButton
 import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
 import Process
@@ -103,7 +103,7 @@ type alias Error =
 
 type PoolState
     = Exist PoolInfo Lend.Transaction
-    | DoesNotExist (Maybe Uint)
+    | DoesNotExist SpotPrice
 
 
 type Msg
@@ -219,7 +219,7 @@ initGivenSpot :
     { model | time : Posix }
     -> Blockchain
     -> Pool
-    -> Maybe Uint
+    -> SpotPrice
     -> ( Transaction, Cmd Msg )
 initGivenSpot { time } blockchain pool spot =
     if pool.maturity |> Maturity.isActive time then
@@ -553,7 +553,7 @@ toParameter (Transaction { state }) =
                 |> Just
 
 
-toPoolInfo : Transaction -> Maybe (Or (Maybe Uint) PoolInfo)
+toPoolInfo : Transaction -> Maybe (Or SpotPrice PoolInfo)
 toPoolInfo (Transaction { state }) =
     case state of
         Pool _ (Active (Success (Exist poolInfo _))) ->

@@ -68,6 +68,7 @@ import Page.Transaction.Liquidity.New.Main as New
 import Page.Transaction.MaturityButton as MaturityButton
 import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Query as Query
+import Page.Transaction.SpotPrice exposing (SpotPrice)
 import Page.Transaction.TokenButton as TokenButton
 import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
 import Process
@@ -119,7 +120,7 @@ type alias NewDisabled =
 
 type PoolState exist doesNotExist
     = Exist PoolInfo exist
-    | DoesNotExist (Maybe Uint) doesNotExist
+    | DoesNotExist SpotPrice doesNotExist
 
 
 type Msg
@@ -247,7 +248,7 @@ initGivenSpot :
     { model | time : Posix }
     -> Blockchain
     -> Pool
-    -> Maybe Uint
+    -> SpotPrice
     -> ( Transaction, Cmd Msg )
 initGivenSpot { time } blockchain pool spot =
     if pool.maturity |> Maturity.isActive time then
@@ -935,7 +936,7 @@ toParameter (Transaction { state }) =
                 |> Just
 
 
-toPoolInfo : Transaction -> Maybe (Or (Maybe Uint) PoolInfo)
+toPoolInfo : Transaction -> Maybe (Or SpotPrice PoolInfo)
 toPoolInfo (Transaction { state }) =
     case state of
         Add (Pool _ (Active (Success (Exist poolInfo _)))) ->

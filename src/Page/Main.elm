@@ -27,7 +27,6 @@ import Data.Spot exposing (Spot)
 import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
 import Data.TokenParam exposing (TokenParam)
-import Data.Uint exposing (Uint)
 import Element
     exposing
         ( Element
@@ -45,6 +44,7 @@ import Page.Transaction.Borrow.Main as Borrow
 import Page.Transaction.Lend.Main as Lend
 import Page.Transaction.Liquidity.Main as Liquidity
 import Page.Transaction.PoolInfo exposing (PoolInfo)
+import Page.Transaction.SpotPrice exposing (SpotPrice)
 import Time exposing (Posix)
 import Url exposing (Url)
 
@@ -419,7 +419,7 @@ toParameter page =
                 |> Liquidity.toParameter
 
 
-toPoolInfo : Page -> Maybe (Or (Maybe Uint) PoolInfo)
+toPoolInfo : Page -> Maybe (Or SpotPrice PoolInfo)
 toPoolInfo page =
     case page of
         Lend { transaction } ->

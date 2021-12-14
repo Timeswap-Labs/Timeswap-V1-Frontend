@@ -55,6 +55,7 @@ import Page.Transaction.Liquidity.New.Query as Query
 import Page.Transaction.Liquidity.New.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
+import Page.Transaction.SpotPrice exposing (SpotPrice)
 import Page.Transaction.Textbox as Textbox
 import Utility.Color as Color
 import Utility.Input as Input
@@ -120,7 +121,7 @@ initGivenNew =
 fromDisabled :
     Blockchain
     -> Pool
-    -> Maybe Uint
+    -> SpotPrice
     -> Disabled.Transaction
     -> ( Transaction, Cmd Msg )
 fromDisabled blockchain pool spot transaction =
@@ -158,7 +159,7 @@ toDisabled (Transaction { assetIn, debtOut, collateralOut }) =
 update :
     Blockchain
     -> Pool
-    -> Maybe Uint
+    -> SpotPrice
     -> Msg
     -> Transaction
     -> ( Transaction, Cmd Msg, Maybe Effect )
@@ -477,7 +478,7 @@ noCmdAndEffect transaction =
 initQuery :
     Blockchain
     -> Pool
-    -> Maybe Uint
+    -> SpotPrice
     ->
         { assetIn : String
         , debtOut : String
@@ -493,7 +494,7 @@ initQuery =
 query :
     Blockchain
     -> Pool
-    -> Maybe Uint
+    -> SpotPrice
     ->
         { assetIn : String
         , debtOut : String
@@ -520,7 +521,7 @@ constructQueryNew :
     (Value -> Cmd Msg)
     -> Blockchain
     -> Pool
-    -> Maybe Uint
+    -> SpotPrice
     ->
         { assetIn : String
         , debtOut : String

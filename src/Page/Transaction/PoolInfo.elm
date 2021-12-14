@@ -16,7 +16,8 @@ type alias PoolInfo =
     , totalBond : Uint
     , totalInsurance : Uint
     , totalDebtCreated : Uint
-    , spot : Maybe Uint
+    , assetSpot : Maybe Float
+    , collateralSpot : Maybe Float
     }
 
 
@@ -32,7 +33,8 @@ decoder =
         |> Pipeline.required "totalBond" Uint.decoder
         |> Pipeline.required "totalInsurance" Uint.decoder
         |> Pipeline.required "totalDebtCreated" Uint.decoder
-        |> Pipeline.required "spot" (Uint.decoder |> Decode.nullable)
+        |> Pipeline.required "assetSpot" (Decode.float |> Decode.nullable)
+        |> Pipeline.required "collateralSpot" (Decode.float |> Decode.nullable)
 
 
 encode : PoolInfo -> Value
@@ -58,9 +60,14 @@ encode poolInfo =
     , ( "totalDebtCreated"
       , poolInfo.totalDebtCreated |> Uint.encode
       )
-    , ( "spot"
-      , poolInfo.spot
-            |> Maybe.map Uint.encode
+    , ( "assetSpot"
+      , poolInfo.assetSpot
+            |> Maybe.map Encode.float
+            |> Maybe.withDefault Encode.null
+      )
+    , ( "collateralSpot"
+      , poolInfo.collateralSpot
+            |> Maybe.map Encode.float
             |> Maybe.withDefault Encode.null
       )
     ]
