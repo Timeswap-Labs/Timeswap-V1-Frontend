@@ -4,7 +4,6 @@ module Utility.Router exposing
     , toBorrow
     , toBorrowDashboard
     , toConnect
-    , toFaucet
     , toLend
     , toLendDashboard
     , toLiquidityProvider
@@ -12,6 +11,7 @@ module Utility.Router exposing
     , toPairMarket
     , toPay
     , toSettings
+    , toSwap
     , toWallet
     , toWithdraw
     )
@@ -103,11 +103,6 @@ toWallet =
     "#wallet"
 
 
-toFaucet : String
-toFaucet =
-    "#faucet"
-
-
 toNoMetamask : String
 toNoMetamask =
     "#nometamask"
@@ -121,3 +116,8 @@ toSettings =
 exit : String
 exit =
     "#"
+
+
+toSwap : String
+toSwap =
+    "#swap"

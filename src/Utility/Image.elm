@@ -27,6 +27,7 @@ module Utility.Image exposing
     , option
     , plus
     , setting
+    , swap
     , telegram
     , token
     , tripleDots
@@ -242,3 +243,8 @@ telegram =
 medium : Images -> List (Attribute msg) -> Element msg
 medium =
     view "Medium"
+
+
+swap : Images -> List (Attribute msg) -> Element msg
+swap =
+    view "Swap"

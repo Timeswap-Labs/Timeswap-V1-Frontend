@@ -20,7 +20,7 @@ import Utility.Router as Router
 type Route
     = Page Page
     | Modal ( Modal, Cmd Modal.Msg )
-    | Service Service
+    | Service ( Service, Cmd Service.Msg )
     | Aside
     | Exit
 
@@ -55,7 +55,7 @@ pushUrl ({ device, key } as model) url =
                             |> Modal.toUrl
                             |> Navigation.pushUrl key
 
-                    Service service ->
+                    Service ( service, _ ) ->
                         service
                             |> Service.toUrl
                             |> Navigation.pushUrl key
