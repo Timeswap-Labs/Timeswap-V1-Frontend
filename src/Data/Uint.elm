@@ -2,6 +2,7 @@ module Data.Uint exposing
     ( Uint
     , compare
     , decoder
+    , dummy
     , encode
     , fromAmount
     , fromString
@@ -23,6 +24,11 @@ import Utility.Input as Input
 
 type Uint
     = Uint String
+
+
+dummy : Uint
+dummy =
+    "4000000000000000000000" |> Uint
 
 
 decoder : Decoder Uint

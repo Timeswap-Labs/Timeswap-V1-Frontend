@@ -22,6 +22,7 @@ import Element
         , width
         )
 import Element.Font as Font
+import Utility.Calculate as Calculate
 import Utility.Color as Color
 import Utility.Truncate as Truncate
 
@@ -48,17 +49,7 @@ lendAPR float =
             , paddingXY 0 3
             , Font.color Color.positive400
             ]
-            ([ float
-                |> (*) 10000
-                |> truncate
-                |> toFloat
-                |> (/) 100
-                |> String.fromFloat
-             , "%"
-             ]
-                |> String.concat
-                |> text
-            )
+            (Calculate.apr float)
         ]
 
 
@@ -84,17 +75,7 @@ borrowAPR float =
             , paddingXY 0 3
             , Font.color Color.negative400
             ]
-            ([ float
-                |> (*) 10000
-                |> truncate
-                |> toFloat
-                |> (/) 100
-                |> String.fromFloat
-             , "%"
-             ]
-                |> String.concat
-                |> text
-            )
+            (Calculate.apr float)
         ]
 
 
@@ -133,7 +114,7 @@ lendCDP { spot } param =
                     Spot.None ->
                         False
 
-                    Spot.Uniswap ->
+                    Spot.Utilize ->
                         param.cdp.percent
                             |> Maybe.map (\_ -> True)
                             |> Maybe.withDefault False
@@ -164,7 +145,7 @@ lendCDP { spot } param =
                 Spot.None ->
                     Nothing
 
-                Spot.Uniswap ->
+                Spot.Utilize ->
                     param.cdp.percent
              )
                 |> Maybe.map
@@ -243,7 +224,7 @@ borrowCDP { spot } param =
                     Spot.None ->
                         False
 
-                    Spot.Uniswap ->
+                    Spot.Utilize ->
                         param.cdp.percent
                             |> Maybe.map (\_ -> True)
                             |> Maybe.withDefault False
@@ -274,7 +255,7 @@ borrowCDP { spot } param =
                 Spot.None ->
                     Nothing
 
-                Spot.Uniswap ->
+                Spot.Utilize ->
                     param.cdp.percent
              )
                 |> Maybe.map

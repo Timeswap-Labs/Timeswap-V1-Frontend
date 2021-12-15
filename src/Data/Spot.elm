@@ -10,7 +10,7 @@ import Json.Encode as Encode exposing (Value)
 
 type Spot
     = None
-    | Uniswap
+    | Utilize
 
 
 type alias Flag =
@@ -27,12 +27,12 @@ init maybeString =
                         Just None
 
                     "uniswap" ->
-                        Just Uniswap
+                        Just Utilize
 
                     _ ->
                         Nothing
             )
-        |> Maybe.withDefault Uniswap
+        |> Maybe.withDefault Utilize
 
 
 encode :
@@ -43,7 +43,7 @@ encode oracle =
         None ->
             "none"
 
-        Uniswap ->
+        Utilize ->
             "uniswap"
     )
         |> Encode.string

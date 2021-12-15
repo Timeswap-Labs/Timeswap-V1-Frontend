@@ -412,7 +412,7 @@ view model blockchain ((Modal { state, tooltip }) as modal) =
         , modal =
             column
                 [ width <| px 350
-                , height <| minimum 360 fill
+                , height <| minimum 360 shrink
                 , centerX
                 , centerY
                 , padding 0

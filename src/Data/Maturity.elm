@@ -2,6 +2,8 @@ module Data.Maturity exposing
     ( Maturity
     , Status(..)
     , decoder
+    , dummy
+    , dummy2
     , encode
     , fromFragment
     , isActive
@@ -21,6 +23,16 @@ import Url.Builder as Builder exposing (QueryParameter)
 
 type Maturity
     = Maturity Posix
+
+
+dummy : Maturity
+dummy =
+    Time.millisToPosix 16656548645000 |> Maturity
+
+
+dummy2 : Maturity
+dummy2 =
+    Time.millisToPosix 1665654865000 |> Maturity
 
 
 type Status matured active

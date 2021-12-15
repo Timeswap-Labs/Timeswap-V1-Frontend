@@ -21,6 +21,7 @@ import Data.Backdrop exposing (Backdrop)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
+import Data.Device exposing (Device)
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Offset exposing (Offset)
@@ -279,6 +280,8 @@ view :
         , wallets : Wallets
         , chains : Chains
         , blockchain : Support User.NotSupported Blockchain
+        , device : Device
+        , spot : Spot
     }
     -> Modal
     -> Element Msg
