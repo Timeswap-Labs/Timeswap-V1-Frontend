@@ -22,8 +22,8 @@ import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
 import Data.Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
+import Data.PriceFeed exposing (PriceFeed)
 import Data.Slippage exposing (Slippage)
-import Data.Spot exposing (Spot)
 import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
 import Data.TokenParam exposing (TokenParam)
@@ -440,7 +440,7 @@ view :
         | time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
-        , spot : Spot
+        , spot : PriceFeed
         , backdrop : Backdrop
         , images : Images
     }

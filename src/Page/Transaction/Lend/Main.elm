@@ -25,9 +25,9 @@ import Data.Or exposing (Or(..))
 import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
+import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Spot exposing (Spot)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
 import Element
@@ -582,7 +582,7 @@ view :
         | time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
-        , spot : Spot
+        , spot : PriceFeed
         , backdrop : Backdrop
         , images : Images
     }

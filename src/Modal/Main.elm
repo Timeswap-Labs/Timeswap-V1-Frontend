@@ -27,8 +27,8 @@ import Data.Images exposing (Images)
 import Data.Offset exposing (Offset)
 import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)
+import Data.PriceFeed exposing (PriceFeed)
 import Data.Slippage exposing (Slippage)
-import Data.Spot exposing (Spot)
 import Data.Support exposing (Support(..))
 import Data.Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
@@ -70,7 +70,7 @@ type Msg
 
 
 type Effect
-    = UpdateSettings Slippage Deadline Spot
+    = UpdateSettings Slippage Deadline PriceFeed
     | InputToken TokenParam Token
     | AddERC20 TokenParam ERC20
     | RemoveERC20 ERC20
@@ -88,7 +88,7 @@ initSettings :
     { model
         | slippage : Slippage
         , deadline : Deadline
-        , spot : Spot
+        , spot : PriceFeed
     }
     -> Modal
 initSettings model =
@@ -281,7 +281,7 @@ view :
         , chains : Chains
         , blockchain : Support User.NotSupported Blockchain
         , device : Device
-        , spot : Spot
+        , spot : PriceFeed
     }
     -> Modal
     -> Element Msg

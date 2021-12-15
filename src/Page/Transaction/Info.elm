@@ -1,8 +1,15 @@
-module Page.Transaction.Info exposing (borrowAPR, borrowCDP, emptyAPR, emptyCDP, lendAPR, lendCDP)
+module Page.Transaction.Info exposing
+    ( borrowAPR
+    , borrowCDP
+    , emptyAPR
+    , emptyCDP
+    , lendAPR
+    , lendCDP
+    )
 
 import Data.CDP exposing (CDP)
 import Data.Pair exposing (Pair)
-import Data.Spot as Spot exposing (Spot)
+import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Element
     exposing
         ( Element
@@ -80,7 +87,7 @@ borrowAPR float =
 
 
 lendCDP :
-    { model | spot : Spot }
+    { model | spot : PriceFeed }
     ->
         { onMouseEnter : tooltip -> msg
         , onMouseLeave : msg
@@ -111,10 +118,10 @@ lendCDP { spot } param =
                 (text "CDP")
             , if
                 case spot of
-                    Spot.None ->
+                    PriceFeed.Ignore ->
                         False
 
-                    Spot.Utilize ->
+                    PriceFeed.Utilize ->
                         param.cdp.percent
                             |> Maybe.map (\_ -> True)
                             |> Maybe.withDefault False
@@ -142,10 +149,10 @@ lendCDP { spot } param =
             , height <| px 24
             ]
             ((case spot of
-                Spot.None ->
+                PriceFeed.Ignore ->
                     Nothing
 
-                Spot.Utilize ->
+                PriceFeed.Utilize ->
                     param.cdp.percent
              )
                 |> Maybe.map
@@ -190,7 +197,7 @@ lendCDP { spot } param =
 
 
 borrowCDP :
-    { model | spot : Spot }
+    { model | spot : PriceFeed }
     ->
         { onMouseEnter : tooltip -> msg
         , onMouseLeave : msg
@@ -221,10 +228,10 @@ borrowCDP { spot } param =
                 (text "CDP")
             , if
                 case spot of
-                    Spot.None ->
+                    PriceFeed.Ignore ->
                         False
 
-                    Spot.Utilize ->
+                    PriceFeed.Utilize ->
                         param.cdp.percent
                             |> Maybe.map (\_ -> True)
                             |> Maybe.withDefault False
@@ -252,10 +259,10 @@ borrowCDP { spot } param =
             , height <| px 24
             ]
             ((case spot of
-                Spot.None ->
+                PriceFeed.Ignore ->
                     Nothing
 
-                Spot.Utilize ->
+                PriceFeed.Utilize ->
                     param.cdp.percent
              )
                 |> Maybe.map

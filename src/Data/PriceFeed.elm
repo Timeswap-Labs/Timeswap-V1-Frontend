@@ -1,6 +1,6 @@
-module Data.Spot exposing
+module Data.PriceFeed exposing
     ( Flag
-    , Spot(..)
+    , PriceFeed(..)
     , encode
     , init
     )
@@ -8,8 +8,8 @@ module Data.Spot exposing
 import Json.Encode as Encode exposing (Value)
 
 
-type Spot
-    = None
+type PriceFeed
+    = Ignore
     | Utilize
 
 
@@ -17,16 +17,16 @@ type alias Flag =
     Maybe String
 
 
-init : Flag -> Spot
+init : Flag -> PriceFeed
 init maybeString =
     maybeString
         |> Maybe.andThen
             (\string ->
                 case string of
-                    "none" ->
-                        Just None
+                    "ignore" ->
+                        Just Ignore
 
-                    "uniswap" ->
+                    "utilize" ->
                         Just Utilize
 
                     _ ->
@@ -36,14 +36,14 @@ init maybeString =
 
 
 encode :
-    Spot
+    PriceFeed
     -> Value
 encode oracle =
     (case oracle of
-        None ->
-            "none"
+        Ignore ->
+            "ignore"
 
         Utilize ->
-            "uniswap"
+            "utilize"
     )
         |> Encode.string

@@ -2,7 +2,7 @@ module Utility.Calculate exposing (apr, cdp)
 
 import Data.CDP exposing (CDP)
 import Data.Pair exposing (Pair)
-import Data.Spot as Spot exposing (Spot)
+import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Element
     exposing
         ( Color
@@ -42,7 +42,7 @@ cdp :
     , pair : Pair
     , cdp : CDP
     }
-    -> Spot
+    -> PriceFeed
     -> Color
     -> Int
     -> Element msg
@@ -52,10 +52,10 @@ cdp params spot color fontSize =
         , height <| px 24
         ]
         ((case spot of
-            Spot.None ->
+            PriceFeed.Ignore ->
                 Nothing
 
-            Spot.Utilize ->
+            PriceFeed.Utilize ->
                 params.cdp.percent
          )
             |> Maybe.map

@@ -20,9 +20,9 @@ import Data.Or exposing (Or(..))
 import Data.Pair as Pair
 import Data.Percent as Percent exposing (Percent)
 import Data.Pool exposing (Pool)
+import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Spot exposing (Spot)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -1760,7 +1760,7 @@ hasInputZero state =
 
 
 view :
-    { model | spot : Spot, images : Images }
+    { model | spot : PriceFeed, images : Images }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -1850,7 +1850,7 @@ assetOutSection model asset { state, tooltip } =
 
 
 duesOutSection :
-    { model | spot : Spot, images : Images }
+    { model | spot : PriceFeed, images : Images }
     -> Blockchain
     -> Pool
     -> { transaction | state : State, tooltip : Maybe Tooltip }

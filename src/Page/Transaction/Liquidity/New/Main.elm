@@ -16,8 +16,8 @@ import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
+import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Spot exposing (Spot)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -581,7 +581,7 @@ port approveCreate : Value -> Cmd msg
 
 
 view :
-    { model | spot : Spot, images : Images }
+    { model | spot : PriceFeed, images : Images }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -667,7 +667,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
 
 
 duesOutSection :
-    { model | spot : Spot, images : Images }
+    { model | spot : PriceFeed, images : Images }
     -> Blockchain
     -> Pool
     ->

@@ -11,8 +11,8 @@ import Data.Backdrop exposing (Backdrop)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
+import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Slippage as Slippage exposing (Slippage)
-import Data.Spot as Spot exposing (Spot)
 import Element
     exposing
         ( Element
@@ -47,7 +47,7 @@ type Modal
     = Modal
         { slippage : Or Slippage.Option String
         , deadline : Or Deadline.Option String
-        , spot : Spot
+        , spot : PriceFeed
         , tooltip : Maybe Tooltip
         }
 
@@ -55,7 +55,7 @@ type Modal
 type Msg
     = ChooseSlippageOption Slippage.Option
     | ChooseDeadlineOption Deadline.Option
-    | ChooseSpot Spot
+    | ChooseSpot PriceFeed
     | InputSlippage String
     | InputDeadline String
     | OnMouseEnter Tooltip
@@ -64,14 +64,14 @@ type Msg
 
 
 type Effect
-    = UpdateSettings Slippage Deadline Spot
+    = UpdateSettings Slippage Deadline PriceFeed
 
 
 init :
     { model
         | slippage : Slippage
         , deadline : Deadline
-        , spot : Spot
+        , spot : PriceFeed
     }
     -> Modal
 init { slippage, deadline, spot } =
@@ -155,7 +155,7 @@ update msg (Modal modal) =
                 ( Nothing
                 , [ slippage |> Slippage.encode |> cacheSlippage
                   , deadline |> Deadline.encode |> cacheDeadline
-                  , modal.spot |> Spot.encode |> cacheSpot
+                  , modal.spot |> PriceFeed.encode |> cacheSpot
                   ]
                     |> Cmd.batch
                 , UpdateSettings slippage deadline modal.spot

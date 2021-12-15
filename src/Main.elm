@@ -15,8 +15,8 @@ import Data.Device as Device exposing (Device(..))
 import Data.Images as Images exposing (Images)
 import Data.Offset as Offset exposing (Offset)
 import Data.Parameter as Parameter
+import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Slippage as Slippage exposing (Slippage)
-import Data.Spot as Spot exposing (Spot)
 import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
 import Data.Theme as Theme exposing (Theme)
@@ -97,7 +97,7 @@ type alias Model =
     , images : Images
     , slippage : Slippage
     , deadline : Deadline
-    , spot : Spot
+    , spot : PriceFeed
     , wallets : Wallets
     , chains : Chains
     , blockchain : Support User.NotSupported Blockchain
@@ -120,7 +120,7 @@ type alias Flags =
     , walletImages : Images.Flags
     , slippage : Slippage.Flag
     , deadline : Deadline.Flag
-    , spot : Spot.Flag
+    , spot : PriceFeed.Flag
     , wallets : Wallets.Flags
     , chains : Chains.Flags
     , user : Maybe User.Flag
@@ -229,7 +229,7 @@ init flags url key =
                             }
                   , slippage = flags.slippage |> Slippage.init
                   , deadline = flags.deadline |> Deadline.init
-                  , spot = flags.spot |> Spot.init
+                  , spot = flags.spot |> PriceFeed.init
                   , wallets = flags.wallets |> Wallets.init
                   , chains = chains
                   , blockchain = blockchain
@@ -1125,7 +1125,7 @@ body :
         , offset : Offset
         , chosenZone : ChosenZone
         , backdrop : Backdrop
-        , spot : Spot
+        , spot : PriceFeed
         , images : Images
         , blockchain : Support User.NotSupported Blockchain
         , page : Page

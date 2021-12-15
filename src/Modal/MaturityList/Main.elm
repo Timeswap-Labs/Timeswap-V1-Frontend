@@ -18,8 +18,8 @@ import Data.Maturity exposing (Maturity)
 import Data.Offset exposing (Offset)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
+import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote exposing (Remote(..))
-import Data.Spot exposing (Spot)
 import Data.Token as Token
 import Data.Web as Web exposing (Web)
 import Element
@@ -233,7 +233,7 @@ view :
         , backdrop : Backdrop
         , images : Images
         , device : Device
-        , spot : Spot
+        , spot : PriceFeed
     }
     -> Modal
     -> Element Msg
@@ -444,7 +444,7 @@ maturityList :
         , time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
-        , spot : Spot
+        , spot : PriceFeed
     }
     -> Modal
     -> Element Msg
