@@ -1,4 +1,4 @@
-module Page.Transaction.PoolInfo exposing (PoolInfo, decoder, encode)
+module Page.Transaction.PoolInfo exposing (PoolInfo, decoder, dummy, encode)
 
 import Data.Uint as Uint exposing (Uint)
 import Json.Decode as Decode exposing (Decoder)
@@ -18,6 +18,22 @@ type alias PoolInfo =
     , totalDebtCreated : Uint
     , assetSpot : Maybe Float
     , collateralSpot : Maybe Float
+    }
+
+
+dummy : PoolInfo
+dummy =
+    { x = Uint.dummy
+    , y = Uint.dummy
+    , z = Uint.dummy
+    , assetReserve = Uint.dummy
+    , collateralReserve = Uint.dummy
+    , totalLiquidity = Uint.dummy
+    , totalBond = Uint.dummy
+    , totalInsurance = Uint.dummy
+    , totalDebtCreated = Uint.dummy
+    , assetSpot = Nothing
+    , collateralSpot = Nothing
     }
 
 

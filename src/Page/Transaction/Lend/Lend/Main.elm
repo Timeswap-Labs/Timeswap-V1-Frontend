@@ -36,6 +36,7 @@ import Element
         , map
         , none
         , padding
+        , paddingXY
         , px
         , row
         , shrink
@@ -1502,7 +1503,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
         , height shrink
         , padding 16
         , spacing 10
-        , Background.color Color.light500
+        , Background.color Color.primary100
         , Border.rounded 8
         ]
         [ row
@@ -1515,6 +1516,8 @@ assetInSection model blockchain asset { assetIn, tooltip } =
                 [ width shrink
                 , height shrink
                 , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
                 ]
                 (text "Amount to Lend")
             , blockchain

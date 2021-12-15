@@ -13,6 +13,7 @@ import Element
         , el
         , fill
         , height
+        , moveUp
         , none
         , padding
         , paddingXY
@@ -54,31 +55,38 @@ view { images } param =
         , width fill
         , height <| px 44
         , paddingXY 12 0
-        , Background.color Color.primary100
+        , Border.width 1
+        , Border.color Color.primary100
         , Border.rounded 8
-        , (case param.text of
-            Left _ ->
-                none
-
-            Right uint ->
-                el
-                    [ width fill
-                    , height fill
-                    , paddingXY 12 0
-                    ]
-                    (uint
-                        |> Uint.toAmount param.token
-                        |> text
-                    )
-          )
-            |> behindContent
         ]
         (Input.text
             ([ width fill
-             , height fill
-             , paddingXY 0 14
+             , height shrink
+             , centerY
+             , paddingXY 0 4
              , spacing 12
+             , Background.color Color.none
+             , Border.width 0
              , Font.size 16
+             , Font.color Color.light100
+             , (case param.text of
+                    Left _ ->
+                        none
+
+                    Right uint ->
+                        el
+                            [ width fill
+                            , height fill
+                            , paddingXY 0 4
+                            , Font.size 16
+                            , Font.color Color.light100
+                            ]
+                            (uint
+                                |> Uint.toAmount param.token
+                                |> text
+                            )
+               )
+                |> behindContent
              ]
                 ++ (param.onClick
                         |> Maybe.map Events.onClick

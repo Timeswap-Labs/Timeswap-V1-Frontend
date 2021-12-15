@@ -107,7 +107,7 @@ slider :
 slider { onChange, click, percent, min, max } =
     Input.slider
         [ width fill
-        , height shrink
+        , height <| px 20
         , el
             [ width fill
             , height <| px 2
@@ -194,7 +194,7 @@ disabledSlider : Percent -> Element Never
 disabledSlider percent =
     el
         [ width fill
-        , height shrink
+        , height <| px 20
         , el
             [ width fill
             , height <| px 2

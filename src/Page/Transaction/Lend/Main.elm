@@ -62,7 +62,7 @@ import Page.Transaction.Lend.Empty as Empty
 import Page.Transaction.Lend.Lend.Disabled as Disabled
 import Page.Transaction.Lend.Lend.Main as Lend
 import Page.Transaction.MaturityButton as MaturityButton
-import Page.Transaction.PoolInfo exposing (PoolInfo)
+import Page.Transaction.PoolInfo as PoolInfo exposing (PoolInfo)
 import Page.Transaction.Query as Query
 import Page.Transaction.SpotPrice exposing (SpotPrice)
 import Page.Transaction.TokenButton as TokenButton
@@ -168,13 +168,20 @@ init { time } blockchain parameter =
         Just (Parameter.Pool pool) ->
             if pool.maturity |> Maturity.isActive time then
                 ( { state =
-                        Loading
+                        Lend.init
+                            |> Exist PoolInfo.dummy
+                            |> Success
                             |> Active
                             |> Pool pool
+
+                  -- Loading
+                  --     |> Active
+                  --     |> Pool pool
                   , tooltip = Nothing
                   }
                     |> Transaction
-                , get blockchain pool
+                  -- , get blockchain pool
+                , Cmd.none
                 )
 
             else

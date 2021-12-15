@@ -998,7 +998,7 @@ assetInSection model blockchain asset { state, tooltip } =
         , height shrink
         , padding 16
         , spacing 10
-        , Background.color Color.light500
+        , Background.color Color.primary100
         , Border.rounded 8
         ]
         [ row
@@ -1011,6 +1011,8 @@ assetInSection model blockchain asset { state, tooltip } =
                 [ width shrink
                 , height shrink
                 , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
                 ]
                 (text "Amount to Lend")
             , blockchain
@@ -1076,6 +1078,8 @@ duesOutSection model blockchain pool ({ state, tooltip } as transaction) =
         , height shrink
         , padding 16
         , spacing 12
+        , Background.color Color.primary100
+        , Border.rounded 8
         ]
         [ row
             [ width fill

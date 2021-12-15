@@ -167,7 +167,7 @@ lendCDP { spot } param =
                                 |> (*) 10000
                                 |> truncate
                                 |> toFloat
-                                |> (/) 100
+                                |> (\number -> number / 100)
                                 |> String.fromFloat
                              , "%"
                              ]
@@ -277,7 +277,7 @@ borrowCDP { spot } param =
                                 |> (*) 10000
                                 |> truncate
                                 |> toFloat
-                                |> (/) 100
+                                |> (\number -> number / 100)
                                 |> String.fromFloat
                              , "%"
                              ]

@@ -19,7 +19,7 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
-import Element.Input as Input exposing (OptionState)
+import Element.Input as Input
 import Utility.Color as Color
 
 
@@ -28,8 +28,8 @@ view :
     , mode : Mode
     }
     -> Element msg
-view { onChange, mode } =
-    Input.radioRow
+view param =
+    row
         [ width fill
         , height <| px 44
         , padding 4
@@ -37,16 +37,9 @@ view { onChange, mode } =
         , Background.color Color.primary100
         , Border.rounded 8
         ]
-        { onChange = onChange
-        , options =
-            [ viewRecommended
-                |> Input.optionWith Mode.Recommended
-            , viewAdvanced
-                |> Input.optionWith Mode.Advanced
-            ]
-        , selected = Just mode
-        , label = Input.labelHidden "switch mode"
-        }
+        [ viewRecommended param
+        , viewAdvanced param
+        ]
 
 
 disabled : Mode -> Element Never
@@ -79,14 +72,18 @@ empty =
         ]
 
 
-viewRecommended : OptionState -> Element msg
-viewRecommended optionState =
-    el
+viewRecommended :
+    { onChange : Mode -> msg
+    , mode : Mode
+    }
+    -> Element msg
+viewRecommended { onChange, mode } =
+    Input.button
         ([ width fill
          , height fill
          ]
-            ++ (case optionState of
-                    Input.Selected ->
+            ++ (case mode of
+                    Mode.Recommended ->
                         [ Background.color Color.primary500
                         , Border.rounded 4
                         ]
@@ -95,14 +92,22 @@ viewRecommended optionState =
                         []
                )
         )
-        (el
-            [ centerX
-            , centerY
-            , Font.color Color.light100
-            , Font.size 14
-            ]
-            (text "Recommended")
-        )
+        { onPress =
+            case mode of
+                Mode.Recommended ->
+                    Nothing
+
+                Mode.Advanced ->
+                    Just (onChange Mode.Recommended)
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.color Color.light100
+                , Font.size 14
+                ]
+                (text "Recommended")
+        }
 
 
 disabledRecommended : Mode -> Element Never
@@ -149,14 +154,18 @@ emptyRecommended =
         )
 
 
-viewAdvanced : OptionState -> Element msg
-viewAdvanced optionState =
-    el
+viewAdvanced :
+    { onChange : Mode -> msg
+    , mode : Mode
+    }
+    -> Element msg
+viewAdvanced { onChange, mode } =
+    Input.button
         ([ width fill
          , height fill
          ]
-            ++ (case optionState of
-                    Input.Selected ->
+            ++ (case mode of
+                    Mode.Advanced ->
                         [ Background.color Color.primary500
                         , Border.rounded 4
                         ]
@@ -165,14 +174,22 @@ viewAdvanced optionState =
                         []
                )
         )
-        (el
-            [ centerX
-            , centerY
-            , Font.color Color.light100
-            , Font.size 14
-            ]
-            (text "Advanced")
-        )
+        { onPress =
+            case mode of
+                Mode.Recommended ->
+                    Just (onChange Mode.Advanced)
+
+                Mode.Advanced ->
+                    Nothing
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.color Color.light100
+                , Font.size 14
+                ]
+                (text "Advanced")
+        }
 
 
 disabledAdvanced : Mode -> Element Never

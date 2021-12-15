@@ -26,7 +26,7 @@ apr float =
         |> (*) 10000
         |> truncate
         |> toFloat
-        |> (/) 100
+        |> (\number -> number / 100)
         |> String.fromFloat
     , "%"
     ]
@@ -77,7 +77,7 @@ cdp params spot color fontSize =
                             |> (*) 10000
                             |> truncate
                             |> toFloat
-                            |> (/) 100
+                            |> (\number -> number / 100)
                             |> String.fromFloat
                          , "%"
                          ]
