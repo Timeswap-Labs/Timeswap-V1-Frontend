@@ -54,7 +54,6 @@ import Json.Encode exposing (Value)
 import Page.Approve as Approve
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
-import Page.Transaction.Lend.Lend.Answer as Answer
 import Page.Transaction.Lend.Lend.Disabled as Disabled
 import Page.Transaction.Lend.Lend.Error exposing (Error)
 import Page.Transaction.Lend.Lend.Query as Query
@@ -552,9 +551,13 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
         ( ClickBondOut, Slider { percent, claims } ) ->
             (case claims of
                 Success { bondOut } ->
-                    bondOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toAsset)
+                    if transaction.assetIn |> Input.isZero then
+                        ""
+
+                    else
+                        bondOut
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toAsset)
 
                 _ ->
                     ""
@@ -571,9 +574,13 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
         ( ClickBondOut, Insurance { percent, claims } ) ->
             (case claims of
                 Success { bondOut } ->
-                    bondOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toAsset)
+                    if transaction.assetIn |> Input.isZero then
+                        ""
+
+                    else
+                        bondOut
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toAsset)
 
                 _ ->
                     ""
@@ -623,9 +630,13 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
         ( ClickInsuranceOut, Slider { percent, claims } ) ->
             (case claims of
                 Success { insuranceOut } ->
-                    insuranceOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toCollateral)
+                    if transaction.assetIn |> Input.isZero then
+                        ""
+
+                    else
+                        insuranceOut
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toCollateral)
 
                 _ ->
                     ""
@@ -642,9 +653,13 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
         ( ClickInsuranceOut, Bond { percent, claims } ) ->
             (case claims of
                 Success { insuranceOut } ->
-                    insuranceOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toCollateral)
+                    if transaction.assetIn |> Input.isZero then
+                        ""
+
+                    else
+                        insuranceOut
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toCollateral)
 
                 _ ->
                     ""
@@ -959,8 +974,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ReceiveAnswer value, Default _ ) ->
-            (case value |> Decode.decodeValue Answer.decoder of
-                Ok (Answer.GivenPercent answer) ->
+            (case value |> Decode.decodeValue Query.decoder of
+                Ok (Query.GivenPercent answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -992,8 +1007,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ReceiveAnswer value, Slider slider ) ->
-            (case value |> Decode.decodeValue Answer.decoder of
-                Ok (Answer.GivenPercent answer) ->
+            (case value |> Decode.decodeValue Query.decoder of
+                Ok (Query.GivenPercent answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -1024,8 +1039,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ReceiveAnswer value, Bond bond ) ->
-            (case value |> Decode.decodeValue Answer.decoder of
-                Ok (Answer.GivenBond answer) ->
+            (case value |> Decode.decodeValue Query.decoder of
+                Ok (Query.GivenBond answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -1069,8 +1084,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ReceiveAnswer value, Insurance insurance ) ->
-            (case value |> Decode.decodeValue Answer.decoder of
-                Ok (Answer.GivenInsurance answer) ->
+            (case value |> Decode.decodeValue Query.decoder of
+                Ok (Query.GivenInsurance answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -1206,7 +1221,7 @@ toRemote result =
 
 
 toClaimsGivenBond :
-    Result Error Answer.ResultBond
+    Result Error Query.ResultBond
     -> Remote Error ClaimsGivenBond
 toClaimsGivenBond result =
     case result of
@@ -1223,7 +1238,7 @@ toClaimsGivenBond result =
 
 
 toClaimsGivenInsurance :
-    Result Error Answer.ResultInsurance
+    Result Error Query.ResultInsurance
     -> Remote Error ClaimsGivenInsurance
 toClaimsGivenInsurance result =
     case result of
@@ -1486,7 +1501,7 @@ view model blockchain pool (Transaction transaction) =
     , second =
         transaction
             |> claimsOutSection model pool
-    , buttons = none
+    , buttons = buttons blockchain
     }
 
 
@@ -1895,3 +1910,19 @@ advancedInsuranceOutSection model collateral { tooltip } or =
             , description = "insurance output"
             }
         ]
+
+
+buttons : Blockchain -> Element Msg
+buttons blockchain =
+    column
+        [ width <| px 343
+        , height shrink
+        , spacing 12
+        ]
+        (blockchain
+            |> Blockchain.toUser
+            |> Maybe.map
+                (\_ -> [])
+            |> Maybe.withDefault
+                [ Button.connect ClickConnect ]
+        )

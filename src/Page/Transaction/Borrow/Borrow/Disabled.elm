@@ -62,19 +62,19 @@ type alias SliderInput =
 type alias DebtInput =
     { assetOut : String
     , percent : Percent
-    , debtOut : String
+    , debtIn : String
     }
 
 
 type alias CollateralInput =
     { assetOut : String
     , percent : Percent
-    , collateralOut : String
+    , collateralIn : String
     }
 
 
 type alias MaxInput =
-    { collateralOut : String
+    { collateralIn : String
     , percent : Percent
     }
 
@@ -101,7 +101,7 @@ view model blockchain pool transaction =
                 (pool.pair |> Pair.toAsset)
     , second =
         transaction
-            |> duesOutSection model blockchain pool
+            |> duesInSection model blockchain pool
     }
 
 
@@ -155,13 +155,13 @@ assetOutSection model asset transaction =
         ]
 
 
-duesOutSection :
+duesInSection :
     { model | images : Images }
     -> Blockchain
     -> Pool
     -> Transaction
     -> Element Never
-duesOutSection model blockchain pool transaction =
+duesInSection model blockchain pool transaction =
     column
         [ Region.description "claims"
         , width <| px 343
@@ -222,16 +222,16 @@ duesOutSection model blockchain pool transaction =
                     [ pool.pair
                         |> Pair.toAsset
                         |> Just
-                        |> debtOutSection model
+                        |> debtInSection model
                     , pool.pair
                         |> Pair.toCollateral
                         |> Just
-                        |> collateralOutSection model
+                        |> collateralInSection model
                             blockchain
                             ""
                     ]
 
-            DefaultMax collateralOut ->
+            DefaultMax collateralIn ->
                 column
                     [ width fill
                     , height shrink
@@ -240,13 +240,13 @@ duesOutSection model blockchain pool transaction =
                     [ pool.pair
                         |> Pair.toAsset
                         |> Just
-                        |> debtOutSection model
+                        |> debtInSection model
                     , pool.pair
                         |> Pair.toCollateral
                         |> Just
-                        |> collateralOutSection model
+                        |> collateralInSection model
                             blockchain
-                            collateralOut
+                            collateralIn
                     ]
 
             Slider _ ->
@@ -256,69 +256,69 @@ duesOutSection model blockchain pool transaction =
                     , spacing 12
                     ]
                     [ Nothing
-                        |> advancedDebtOutSection model
+                        |> advancedDebtInSection model
                             (pool.pair |> Pair.toAsset)
                     , Nothing
-                        |> advancedCollateralOutSection model
+                        |> advancedCollateralInSection model
                             blockchain
                             (pool.pair |> Pair.toCollateral)
                     ]
 
-            Debt { debtOut } ->
+            Debt { debtIn } ->
                 column
                     [ width fill
                     , height shrink
                     , spacing 12
                     ]
-                    [ debtOut
+                    [ debtIn
                         |> Just
-                        |> advancedDebtOutSection model
+                        |> advancedDebtInSection model
                             (pool.pair |> Pair.toAsset)
                     , Nothing
-                        |> advancedCollateralOutSection model
+                        |> advancedCollateralInSection model
                             blockchain
                             (pool.pair |> Pair.toCollateral)
                     ]
 
-            Collateral { collateralOut } ->
+            Collateral { collateralIn } ->
                 column
                     [ width fill
                     , height shrink
                     , spacing 12
                     ]
                     [ Nothing
-                        |> advancedDebtOutSection model
+                        |> advancedDebtInSection model
                             (pool.pair |> Pair.toAsset)
-                    , collateralOut
+                    , collateralIn
                         |> Just
-                        |> advancedCollateralOutSection model
+                        |> advancedCollateralInSection model
                             blockchain
                             (pool.pair |> Pair.toCollateral)
                     ]
 
-            AdvancedMax { collateralOut } ->
+            AdvancedMax { collateralIn } ->
                 column
                     [ width fill
                     , height shrink
                     , spacing 12
                     ]
                     [ Nothing
-                        |> advancedDebtOutSection model
+                        |> advancedDebtInSection model
                             (pool.pair |> Pair.toAsset)
-                    , collateralOut
+                    , collateralIn
                         |> Just
-                        |> advancedCollateralOutSection model
+                        |> advancedCollateralInSection model
                             blockchain
                             (pool.pair |> Pair.toCollateral)
                     ]
         ]
 
 
-debtOutSection :
+debtInSection :
     { model | images : Images }
     -> Maybe Token
     -> Element Never
-debtOutSection model asset =
+debtInSection model asset =
     column
         [ width fill
         , height shrink
@@ -349,13 +349,13 @@ debtOutSection model asset =
         ]
 
 
-collateralOutSection :
+collateralInSection :
     { model | images : Images }
     -> Blockchain
     -> String
     -> Maybe Token
     -> Element Never
-collateralOutSection model blockchain collateralOut maybeCollateral =
+collateralInSection model blockchain collateralIn maybeCollateral =
     column
         [ width fill
         , height shrink
@@ -397,7 +397,7 @@ collateralOutSection model blockchain collateralOut maybeCollateral =
                 (\token ->
                     Output.disabledCollateral model
                         { token = token
-                        , input = collateralOut
+                        , input = collateralIn
                         , description = "collateral output"
                         }
                 )
@@ -411,12 +411,12 @@ collateralOutSection model blockchain collateralOut maybeCollateral =
         ]
 
 
-advancedDebtOutSection :
+advancedDebtInSection :
     { model | images : Images }
     -> Token
     -> Maybe String
     -> Element Never
-advancedDebtOutSection model asset input =
+advancedDebtInSection model asset input =
     column
         [ width fill
         , height shrink
@@ -437,13 +437,13 @@ advancedDebtOutSection model asset input =
         ]
 
 
-advancedCollateralOutSection :
+advancedCollateralInSection :
     { model | images : Images }
     -> Blockchain
     -> Token
     -> Maybe String
     -> Element Never
-advancedCollateralOutSection model blockchain collateral input =
+advancedCollateralInSection model blockchain collateral input =
     column
         [ width fill
         , height shrink

@@ -808,7 +808,7 @@ update model blockchain msg (Transaction transaction) =
 
         ( NewMsg newMsg, New (Pool pool (Active (Success (DoesNotExist spot new)))) ) ->
             new
-                |> New.update blockchain pool spot newMsg
+                |> New.update model blockchain pool spot newMsg
                 |> (\( updated, cmd, maybeEffect ) ->
                         ( { transaction
                             | state =

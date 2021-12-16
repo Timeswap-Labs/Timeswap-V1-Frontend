@@ -42,16 +42,16 @@ import Utility.Color as Color
 
 type alias Transaction =
     { assetIn : String
-    , debtOut : String
-    , collateralOut : String
+    , debtIn : String
+    , collateralIn : String
     }
 
 
 init : Transaction
 init =
     { assetIn = ""
-    , debtOut = ""
-    , collateralOut = ""
+    , debtIn = ""
+    , collateralIn = ""
     }
 
 
@@ -71,7 +71,7 @@ view model blockchain pool transaction =
             blockchain
             (pool.pair |> Pair.toAsset)
             transaction
-    , second = duesOutSection model blockchain pool transaction
+    , second = duesInSection model blockchain pool transaction
     , third = liquidityOutSection model pool
     }
 
@@ -127,13 +127,13 @@ assetInSection model blockchain asset { assetIn } =
         ]
 
 
-duesOutSection :
+duesInSection :
     { model | images : Images }
     -> Blockchain
     -> Pool
     -> Transaction
     -> Element Never
-duesOutSection model blockchain pool transaction =
+duesInSection model blockchain pool transaction =
     column
         [ Region.description "dues"
         , width <| px 343
@@ -157,10 +157,10 @@ duesOutSection model blockchain pool transaction =
             , height shrink
             , spacing 12
             ]
-            [ debtOutSection model
+            [ debtInSection model
                 (pool.pair |> Pair.toAsset)
                 transaction
-            , collateralOutSection model
+            , collateralInSection model
                 blockchain
                 (pool.pair |> Pair.toCollateral)
                 transaction
@@ -168,12 +168,12 @@ duesOutSection model blockchain pool transaction =
         ]
 
 
-debtOutSection :
+debtInSection :
     { model | images : Images }
     -> Token
     -> Transaction
     -> Element Never
-debtOutSection model asset { debtOut } =
+debtInSection model asset { debtIn } =
     column
         [ width fill
         , height shrink
@@ -183,24 +183,25 @@ debtOutSection model asset { debtOut } =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Debt to Repay")
         , Textbox.disabled model
             { token = asset
-            , text = debtOut
+            , text = debtIn
             , description = "debt output"
             }
         ]
 
 
-collateralOutSection :
+collateralInSection :
     { model | images : Images }
     -> Blockchain
     -> Token
     -> Transaction
     -> Element Never
-collateralOutSection model blockchain collateral { collateralOut } =
+collateralInSection model blockchain collateral { collateralIn } =
     column
         [ width fill
         , height shrink
@@ -216,6 +217,7 @@ collateralOutSection model blockchain collateral { collateralOut } =
                 [ width shrink
                 , height shrink
                 , Font.size 14
+                , paddingXY 0 3
                 , Font.color Color.primary400
                 ]
                 (text "Collateral to Lock")
@@ -233,7 +235,7 @@ collateralOutSection model blockchain collateral { collateralOut } =
             ]
         , Textbox.disabled model
             { token = collateral
-            , text = collateralOut
+            , text = collateralIn
             , description = "collateral output"
             }
         ]
@@ -261,7 +263,7 @@ liquidityOutSection model pool =
             , paddingXY 0 3
             , Font.color Color.primary400
             ]
-            (text "LP Tokens")
+            (text "LP Tokens to Receive")
         , Output.disabledLiquidity model
             { asset = pool.pair |> Pair.toAsset
             , collateral = pool.pair |> Pair.toCollateral

@@ -67,7 +67,7 @@ view model blockchain pool transaction =
             blockchain
             (pool.pair |> Pair.toAsset)
             transaction
-    , second = duesOutSection model blockchain pool transaction
+    , second = duesInSection model blockchain pool transaction
     , third = liquidityOutSection model pool
     }
 
@@ -132,13 +132,13 @@ assetInSection model blockchain asset transaction =
         ]
 
 
-duesOutSection :
+duesInSection :
     { model | images : Images }
     -> Blockchain
     -> Pool
     -> Transaction
     -> Element Never
-duesOutSection model blockchain pool transaction =
+duesInSection model blockchain pool transaction =
     column
         [ Region.description "dues"
         , width <| px 343
@@ -162,10 +162,10 @@ duesOutSection model blockchain pool transaction =
             , height shrink
             , spacing 12
             ]
-            [ debtOutSection model
+            [ debtInSection model
                 (pool.pair |> Pair.toAsset)
                 transaction
-            , collateralOutSection model
+            , collateralInSection model
                 blockchain
                 (pool.pair |> Pair.toCollateral)
                 transaction
@@ -173,12 +173,12 @@ duesOutSection model blockchain pool transaction =
         ]
 
 
-debtOutSection :
+debtInSection :
     { model | images : Images }
     -> Token
     -> Transaction
     -> Element Never
-debtOutSection model asset transaction =
+debtInSection model asset transaction =
     column
         [ width fill
         , height shrink
@@ -188,6 +188,7 @@ debtOutSection model asset transaction =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Debt to Repay")
@@ -208,13 +209,13 @@ debtOutSection model asset transaction =
         ]
 
 
-collateralOutSection :
+collateralInSection :
     { model | images : Images }
     -> Blockchain
     -> Token
     -> Transaction
     -> Element Never
-collateralOutSection model blockchain collateral transaction =
+collateralInSection model blockchain collateral transaction =
     column
         [ width fill
         , height shrink
@@ -230,6 +231,7 @@ collateralOutSection model blockchain collateral transaction =
                 [ width shrink
                 , height shrink
                 , Font.size 14
+                , paddingXY 0 3
                 , Font.color Color.primary400
                 ]
                 (text "Collateral to Lock")
@@ -284,7 +286,7 @@ liquidityOutSection model pool =
             , paddingXY 0 3
             , Font.color Color.primary400
             ]
-            (text "LP Tokens")
+            (text "LP Tokens to Receive")
         , Output.disabledLiquidity model
             { asset = pool.pair |> Pair.toAsset
             , collateral = pool.pair |> Pair.toCollateral

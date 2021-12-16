@@ -52,11 +52,12 @@ import Element.Region as Region
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Page.Approve as Approve
-import Page.Transaction.Borrow.Borrow.Answer as Answer
 import Page.Transaction.Borrow.Borrow.Disabled as Disabled
 import Page.Transaction.Borrow.Borrow.Error exposing (Error)
 import Page.Transaction.Borrow.Borrow.Query as Query
 import Page.Transaction.Borrow.Borrow.Tooltip as Tooltip exposing (Tooltip)
+import Page.Transaction.Borrow.Borrow.Write as Write
+import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
@@ -93,7 +94,7 @@ type alias DefaultInput =
 
 
 type alias DefaultMaxInput =
-    { collateralOut : String
+    { collateralIn : String
     , out : Remote Error OutGivenMax
     }
 
@@ -108,7 +109,7 @@ type alias SliderInput =
 type alias DebtInput =
     { assetOut : String
     , percent : Percent
-    , debtOut : String
+    , debtIn : String
     , dues : Remote Error DuesGivenDebt
     }
 
@@ -116,21 +117,21 @@ type alias DebtInput =
 type alias CollateralInput =
     { assetOut : String
     , percent : Percent
-    , collateralOut : String
+    , collateralIn : String
     , dues : Remote Error DuesGivenCollateral
     }
 
 
 type alias AdvancedMaxInput =
-    { collateralOut : String
+    { collateralIn : String
     , percent : Percent
     , out : Remote Error OutGivenMax
     }
 
 
 type alias DuesGivenPercent =
-    { debtOut : Uint
-    , collateralOut : Uint
+    { debtIn : Uint
+    , collateralIn : Uint
     , maxDebt : Uint
     , maxCollateral : Uint
     , apr : Float
@@ -140,7 +141,7 @@ type alias DuesGivenPercent =
 
 type alias OutGivenMax =
     { assetOut : Uint
-    , debtOut : Uint
+    , debtIn : Uint
     , maxDebt : Uint
     , apr : Float
     , cdp : CDP
@@ -148,7 +149,7 @@ type alias OutGivenMax =
 
 
 type alias DuesGivenDebt =
-    { collateralOut : Uint
+    { collateralIn : Uint
     , maxCollateral : Uint
     , apr : Float
     , cdp : CDP
@@ -156,7 +157,7 @@ type alias DuesGivenDebt =
 
 
 type alias DuesGivenCollateral =
-    { debtOut : Uint
+    { debtIn : Uint
     , maxDebt : Uint
     , apr : Float
     , cdp : CDP
@@ -169,15 +170,15 @@ type Msg
     | SwitchMode Mode
     | ClickSlider
     | Slide Float
-    | ClickDebtOut
-    | InputDebtOut String
-    | ClickCollateralOut
-    | InputCollateralOut String
+    | ClickDebtIn
+    | InputDebtIn String
+    | ClickCollateralIn
+    | InputCollateralIn String
     | InputMax
     | QueryAgain Posix
     | ClickConnect
     | ClickApprove
-      -- | ClickBorrow
+    | ClickBorrow
     | ReceiveAnswer Value
     | OnMouseEnter Tooltip
     | OnMouseLeave
@@ -204,8 +205,8 @@ init =
 
 initGivenPercent : DuesGivenPercent
 initGivenPercent =
-    { debtOut = Uint.zero
-    , collateralOut = Uint.zero
+    { debtIn = Uint.zero
+    , collateralIn = Uint.zero
     , maxDebt = Uint.zero
     , maxCollateral = Uint.zero
     , apr = 0
@@ -216,7 +217,7 @@ initGivenPercent =
 initGivenMax : OutGivenMax
 initGivenMax =
     { assetOut = Uint.zero
-    , debtOut = Uint.zero
+    , debtIn = Uint.zero
     , maxDebt = Uint.zero
     , apr = 0
     , cdp = CDP.init
@@ -225,7 +226,7 @@ initGivenMax =
 
 initGivenDebt : DuesGivenDebt
 initGivenDebt =
-    { collateralOut = Uint.zero
+    { collateralIn = Uint.zero
     , maxCollateral = Uint.zero
     , apr = 0
     , cdp = CDP.init
@@ -234,7 +235,7 @@ initGivenDebt =
 
 initGivenCollateral : DuesGivenCollateral
 initGivenCollateral =
-    { debtOut = Uint.zero
+    { debtIn = Uint.zero
     , maxDebt = Uint.zero
     , apr = 0
     , cdp = CDP.init
@@ -265,16 +266,16 @@ fromDisabled model blockchain pool poolInfo transaction =
                     |> Default
                     |> Right
 
-        Disabled.DefaultMax collateralOut ->
-            if collateralOut |> Input.isZero then
-                { collateralOut = collateralOut
+        Disabled.DefaultMax collateralIn ->
+            if collateralIn |> Input.isZero then
+                { collateralIn = collateralIn
                 , out = initGivenMax |> Success
                 }
                     |> DefaultMax
                     |> Left
 
             else
-                { collateralOut = collateralOut
+                { collateralIn = collateralIn
                 , out = Loading
                 }
                     |> DefaultMax
@@ -297,14 +298,14 @@ fromDisabled model blockchain pool poolInfo transaction =
                     |> Slider
                     |> Right
 
-        Disabled.Debt { assetOut, percent, debtOut } ->
+        Disabled.Debt { assetOut, percent, debtIn } ->
             if
                 (assetOut |> Input.isZero)
-                    || (debtOut |> Input.isZero)
+                    || (debtIn |> Input.isZero)
             then
                 { assetOut = assetOut
                 , percent = percent
-                , debtOut = debtOut
+                , debtIn = debtIn
                 , dues = initGivenDebt |> Success
                 }
                     |> Debt
@@ -313,20 +314,20 @@ fromDisabled model blockchain pool poolInfo transaction =
             else
                 { assetOut = assetOut
                 , percent = percent
-                , debtOut = debtOut
+                , debtIn = debtIn
                 , dues = Loading
                 }
                     |> Debt
                     |> Right
 
-        Disabled.Collateral { assetOut, percent, collateralOut } ->
+        Disabled.Collateral { assetOut, percent, collateralIn } ->
             if
                 (assetOut |> Input.isZero)
-                    || (collateralOut |> Input.isZero)
+                    || (collateralIn |> Input.isZero)
             then
                 { assetOut = assetOut
                 , percent = percent
-                , collateralOut = collateralOut
+                , collateralIn = collateralIn
                 , dues = initGivenCollateral |> Success
                 }
                     |> Collateral
@@ -335,15 +336,15 @@ fromDisabled model blockchain pool poolInfo transaction =
             else
                 { assetOut = assetOut
                 , percent = percent
-                , collateralOut = collateralOut
+                , collateralIn = collateralIn
                 , dues = Loading
                 }
                     |> Collateral
                     |> Right
 
-        Disabled.AdvancedMax { collateralOut, percent } ->
-            if collateralOut |> Input.isZero then
-                { collateralOut = collateralOut
+        Disabled.AdvancedMax { collateralIn, percent } ->
+            if collateralIn |> Input.isZero then
+                { collateralIn = collateralIn
                 , percent = percent
                 , out = initGivenMax |> Success
                 }
@@ -351,7 +352,7 @@ fromDisabled model blockchain pool poolInfo transaction =
                     |> Left
 
             else
-                { collateralOut = collateralOut
+                { collateralIn = collateralIn
                 , percent = percent
                 , out = Loading
                 }
@@ -380,8 +381,8 @@ toDisabled (Transaction { state }) =
         Default { assetOut } ->
             Disabled.Default assetOut
 
-        DefaultMax { collateralOut } ->
-            Disabled.DefaultMax collateralOut
+        DefaultMax { collateralIn } ->
+            Disabled.DefaultMax collateralIn
 
         Slider { assetOut, percent } ->
             { assetOut = assetOut
@@ -389,22 +390,22 @@ toDisabled (Transaction { state }) =
             }
                 |> Disabled.Slider
 
-        Debt { assetOut, percent, debtOut } ->
+        Debt { assetOut, percent, debtIn } ->
             { assetOut = assetOut
             , percent = percent
-            , debtOut = debtOut
+            , debtIn = debtIn
             }
                 |> Disabled.Debt
 
-        Collateral { assetOut, percent, collateralOut } ->
+        Collateral { assetOut, percent, collateralIn } ->
             { assetOut = assetOut
             , percent = percent
-            , collateralOut = collateralOut
+            , collateralIn = collateralIn
             }
                 |> Disabled.Collateral
 
-        AdvancedMax { collateralOut, percent } ->
-            { collateralOut = collateralOut
+        AdvancedMax { collateralIn, percent } ->
+            { collateralIn = collateralIn
             , percent = percent
             }
                 |> Disabled.AdvancedMax
@@ -424,12 +425,16 @@ update :
     -> ( Transaction, Cmd Msg, Maybe Effect )
 update model blockchain pool poolInfo msg (Transaction transaction) =
     case ( msg, transaction.state ) of
-        ( ClickAssetOut, DefaultMax { out } ) ->
+        ( ClickAssetOut, DefaultMax { collateralIn, out } ) ->
             (case out of
                 Success { assetOut } ->
-                    assetOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toAsset)
+                    if collateralIn |> Input.isZero then
+                        ""
+
+                    else
+                        assetOut
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toAsset)
 
                 _ ->
                     ""
@@ -442,12 +447,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             |> query model blockchain pool poolInfo
                    )
 
-        ( ClickAssetOut, AdvancedMax { percent, out } ) ->
+        ( ClickAssetOut, AdvancedMax { collateralIn, percent, out } ) ->
             (case out of
                 Success { assetOut } ->
-                    assetOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toAsset)
+                    if collateralIn |> Input.isZero then
+                        ""
+
+                    else
+                        assetOut
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toAsset)
 
                 _ ->
                     ""
@@ -493,22 +502,22 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             else
                 transaction |> noCmdAndEffect
 
-        ( InputAssetOut assetOut, Debt { percent, debtOut } ) ->
+        ( InputAssetOut assetOut, Debt { percent, debtIn } ) ->
             if assetOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
                 { transaction
                     | state =
-                        assetOut |> updateDebt percent debtOut
+                        assetOut |> updateDebt percent debtIn
                 }
                     |> query model blockchain pool poolInfo
 
             else
                 transaction |> noCmdAndEffect
 
-        ( InputAssetOut assetOut, Collateral { percent, collateralOut } ) ->
+        ( InputAssetOut assetOut, Collateral { percent, collateralIn } ) ->
             if assetOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
                 { transaction
                     | state =
-                        assetOut |> updateCollateral percent collateralOut
+                        assetOut |> updateCollateral percent collateralIn
                 }
                     |> query model blockchain pool poolInfo
 
@@ -533,10 +542,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             }
                 |> noCmdAndEffect
 
-        ( SwitchMode Mode.Advanced, DefaultMax { collateralOut } ) ->
+        ( SwitchMode Mode.Advanced, DefaultMax { collateralIn } ) ->
             { transaction
                 | state =
-                    collateralOut |> updateAdvancedMax Percent.init
+                    collateralIn |> updateAdvancedMax Percent.init
             }
                 |> noCmdAndEffect
 
@@ -567,10 +576,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             }
                 |> query model blockchain pool poolInfo
 
-        ( SwitchMode Mode.Recommended, AdvancedMax { collateralOut, percent } ) ->
+        ( SwitchMode Mode.Recommended, AdvancedMax { collateralIn, percent } ) ->
             { transaction
                 | state =
-                    collateralOut |> updateDefaultMax
+                    collateralIn |> updateDefaultMax
             }
                 |> (\updated ->
                         if (percent |> Percent.toFloat) == 64 then
@@ -621,58 +630,66 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             }
                 |> query model blockchain pool poolInfo
 
-        ( Slide float, AdvancedMax { collateralOut } ) ->
+        ( Slide float, AdvancedMax { collateralIn } ) ->
             { transaction
                 | state =
-                    collateralOut
+                    collateralIn
                         |> updateAdvancedMax
                             (float |> Percent.fromFloat)
             }
                 |> query model blockchain pool poolInfo
 
-        ( ClickDebtOut, Slider { assetOut, percent, dues } ) ->
+        ( ClickDebtIn, Slider { assetOut, percent, dues } ) ->
             (case dues of
-                Success { debtOut } ->
-                    debtOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toAsset)
+                Success { debtIn } ->
+                    if assetOut |> Input.isZero then
+                        ""
+
+                    else
+                        debtIn
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toAsset)
 
                 _ ->
                     ""
             )
-                |> (\debtOut ->
+                |> (\debtIn ->
                         { transaction
                             | state =
-                                assetOut |> updateDebt percent debtOut
+                                assetOut |> updateDebt percent debtIn
                         }
                             |> query model blockchain pool poolInfo
                    )
 
-        ( ClickDebtOut, Collateral { assetOut, percent, dues } ) ->
+        ( ClickDebtIn, Collateral { assetOut, percent, dues } ) ->
             (case dues of
-                Success { debtOut } ->
-                    debtOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toAsset)
+                Success { debtIn } ->
+                    if assetOut |> Input.isZero then
+                        ""
+
+                    else
+                        debtIn
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toAsset)
 
                 _ ->
                     ""
             )
-                |> (\debtOut ->
+                |> (\debtIn ->
                         { transaction
                             | state =
-                                assetOut |> updateDebt percent debtOut
+                                assetOut |> updateDebt percent debtIn
                         }
                             |> query model blockchain pool poolInfo
                    )
 
-        ( ClickDebtOut, AdvancedMax { percent, out } ) ->
+        ( ClickDebtIn, AdvancedMax { collateralIn, percent, out } ) ->
             (case out of
-                Success { assetOut, debtOut } ->
+                Success { assetOut, debtIn } ->
                     ( assetOut
                         |> Uint.toAmount
                             (pool.pair |> Pair.toAsset)
-                    , debtOut
+                    , debtIn
                         |> Uint.toAmount
                             (pool.pair |> Pair.toAsset)
                     )
@@ -680,49 +697,55 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 _ ->
                     ( "", "" )
             )
-                |> (\( assetOut, debtOut ) ->
+                |> (\( assetOut, debtIn ) ->
                         { transaction
                             | state =
-                                assetOut |> updateDebt percent debtOut
+                                (if collateralIn |> Input.isZero then
+                                    ""
+
+                                 else
+                                    assetOut
+                                )
+                                    |> updateDebt percent debtIn
                         }
                             |> query model blockchain pool poolInfo
                    )
 
-        ( InputDebtOut debtOut, Slider { assetOut, percent } ) ->
-            if debtOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
+        ( InputDebtIn debtIn, Slider { assetOut, percent } ) ->
+            if debtIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
                 { transaction
                     | state =
-                        assetOut |> updateDebt percent debtOut
+                        assetOut |> updateDebt percent debtIn
                 }
                     |> query model blockchain pool poolInfo
 
             else
                 transaction |> noCmdAndEffect
 
-        ( InputDebtOut debtOut, Debt { assetOut, percent } ) ->
-            if debtOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
+        ( InputDebtIn debtIn, Debt { assetOut, percent } ) ->
+            if debtIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
                 { transaction
                     | state =
-                        assetOut |> updateDebt percent debtOut
+                        assetOut |> updateDebt percent debtIn
                 }
                     |> query model blockchain pool poolInfo
 
             else
                 transaction |> noCmdAndEffect
 
-        ( InputDebtOut debtOut, Collateral { assetOut, percent } ) ->
-            if debtOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
+        ( InputDebtIn debtIn, Collateral { assetOut, percent } ) ->
+            if debtIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
                 { transaction
                     | state =
-                        assetOut |> updateDebt percent debtOut
+                        assetOut |> updateDebt percent debtIn
                 }
                     |> query model blockchain pool poolInfo
 
             else
                 transaction |> noCmdAndEffect
 
-        ( InputDebtOut debtOut, AdvancedMax { percent, out } ) ->
-            if debtOut |> Uint.isAmount (pool.pair |> Pair.toAsset) then
+        ( InputDebtIn debtIn, AdvancedMax { percent, out } ) ->
+            if debtIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
                 (case out of
                     Success { assetOut } ->
                         assetOut
@@ -735,7 +758,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     |> (\assetOut ->
                             { transaction
                                 | state =
-                                    assetOut |> updateDebt percent debtOut
+                                    assetOut |> updateDebt percent debtIn
                             }
                                 |> query model blockchain pool poolInfo
                        )
@@ -743,48 +766,60 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             else
                 transaction |> noCmdAndEffect
 
-        ( ClickCollateralOut, Slider { assetOut, percent, dues } ) ->
+        ( ClickCollateralIn, Slider { assetOut, percent, dues } ) ->
             (case dues of
-                Success { collateralOut } ->
-                    collateralOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toCollateral)
+                Success { collateralIn } ->
+                    if assetOut |> Input.isZero then
+                        ""
+
+                    else
+                        collateralIn
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toCollateral)
 
                 _ ->
                     ""
             )
-                |> (\collateralOut ->
+                |> (\collateralIn ->
                         { transaction
                             | state =
-                                assetOut |> updateCollateral percent collateralOut
+                                assetOut |> updateCollateral percent collateralIn
                         }
                             |> query model blockchain pool poolInfo
                    )
 
-        ( ClickCollateralOut, Debt { assetOut, percent, dues } ) ->
+        ( ClickCollateralIn, Debt { assetOut, percent, dues } ) ->
             (case dues of
-                Success { collateralOut } ->
-                    collateralOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toCollateral)
+                Success { collateralIn } ->
+                    if assetOut |> Input.isZero then
+                        ""
+
+                    else
+                        collateralIn
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toCollateral)
 
                 _ ->
                     ""
             )
-                |> (\collateralOut ->
+                |> (\collateralIn ->
                         { transaction
                             | state =
-                                assetOut |> updateCollateral percent collateralOut
+                                assetOut |> updateCollateral percent collateralIn
                         }
                             |> query model blockchain pool poolInfo
                    )
 
-        ( ClickCollateralOut, AdvancedMax { collateralOut, percent, out } ) ->
+        ( ClickCollateralIn, AdvancedMax { collateralIn, percent, out } ) ->
             (case out of
                 Success { assetOut } ->
-                    assetOut
-                        |> Uint.toAmount
-                            (pool.pair |> Pair.toAsset)
+                    if collateralIn |> Input.isZero then
+                        ""
+
+                    else
+                        assetOut
+                            |> Uint.toAmount
+                                (pool.pair |> Pair.toAsset)
 
                 _ ->
                     ""
@@ -792,46 +827,46 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> (\assetOut ->
                         { transaction
                             | state =
-                                assetOut |> updateCollateral percent collateralOut
+                                assetOut |> updateCollateral percent collateralIn
                         }
                             |> query model blockchain pool poolInfo
                    )
 
-        ( InputCollateralOut collateralOut, Slider { assetOut, percent } ) ->
-            if collateralOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
+        ( InputCollateralIn collateralIn, Slider { assetOut, percent } ) ->
+            if collateralIn |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
                 { transaction
                     | state =
-                        assetOut |> updateCollateral percent collateralOut
+                        assetOut |> updateCollateral percent collateralIn
                 }
                     |> query model blockchain pool poolInfo
 
             else
                 transaction |> noCmdAndEffect
 
-        ( InputCollateralOut collateralOut, Debt { assetOut, percent } ) ->
-            if collateralOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
+        ( InputCollateralIn collateralIn, Debt { assetOut, percent } ) ->
+            if collateralIn |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
                 { transaction
                     | state =
-                        assetOut |> updateCollateral percent collateralOut
+                        assetOut |> updateCollateral percent collateralIn
                 }
                     |> query model blockchain pool poolInfo
 
             else
                 transaction |> noCmdAndEffect
 
-        ( InputCollateralOut collateralOut, Collateral { assetOut, percent } ) ->
-            if collateralOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
+        ( InputCollateralIn collateralIn, Collateral { assetOut, percent } ) ->
+            if collateralIn |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
                 { transaction
                     | state =
-                        assetOut |> updateCollateral percent collateralOut
+                        assetOut |> updateCollateral percent collateralIn
                 }
                     |> query model blockchain pool poolInfo
 
             else
                 transaction |> noCmdAndEffect
 
-        ( InputCollateralOut collateralOut, AdvancedMax { percent, out } ) ->
-            if collateralOut |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
+        ( InputCollateralIn collateralIn, AdvancedMax { percent, out } ) ->
+            if collateralIn |> Uint.isAmount (pool.pair |> Pair.toCollateral) then
                 (case out of
                     Success { assetOut } ->
                         assetOut
@@ -844,7 +879,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     |> (\assetOut ->
                             { transaction
                                 | state =
-                                    assetOut |> updateCollateral percent collateralOut
+                                    assetOut |> updateCollateral percent collateralIn
                             }
                                 |> query model blockchain pool poolInfo
                        )
@@ -867,10 +902,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
-                    (\collateralOut ->
+                    (\collateralIn ->
                         { transaction
                             | state =
-                                collateralOut |> updateDefaultMax
+                                collateralIn |> updateDefaultMax
                         }
                             |> query model blockchain pool poolInfo
                     )
@@ -891,10 +926,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
-                    (\collateralOut ->
+                    (\collateralIn ->
                         { transaction
                             | state =
-                                collateralOut |> updateDefaultMax
+                                collateralIn |> updateDefaultMax
                         }
                             |> query model blockchain pool poolInfo
                     )
@@ -915,10 +950,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
-                    (\collateralOut ->
+                    (\collateralIn ->
                         { transaction
                             | state =
-                                collateralOut |> updateAdvancedMax percent
+                                collateralIn |> updateAdvancedMax percent
                         }
                             |> query model blockchain pool poolInfo
                     )
@@ -939,10 +974,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
-                    (\collateralOut ->
+                    (\collateralIn ->
                         { transaction
                             | state =
-                                collateralOut |> updateAdvancedMax percent
+                                collateralIn |> updateAdvancedMax percent
                         }
                             |> query model blockchain pool poolInfo
                     )
@@ -963,10 +998,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
-                    (\collateralOut ->
+                    (\collateralIn ->
                         { transaction
                             | state =
-                                collateralOut |> updateAdvancedMax percent
+                                collateralIn |> updateAdvancedMax percent
                         }
                             |> query model blockchain pool poolInfo
                     )
@@ -987,10 +1022,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             |> (Maybe.map << Remote.withDefault) ""
                     )
                 |> Maybe.map
-                    (\collateralOut ->
+                    (\collateralIn ->
                         { transaction
                             | state =
-                                collateralOut |> updateAdvancedMax percent
+                                collateralIn |> updateAdvancedMax percent
                         }
                             |> query model blockchain pool poolInfo
                     )
@@ -1016,40 +1051,40 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 , case transaction.state of
                     Default { dues } ->
                         case dues of
-                            Success { collateralOut } ->
-                                collateralOut |> Just
+                            Success { collateralIn } ->
+                                collateralIn |> Just
 
                             _ ->
                                 Nothing
 
-                    DefaultMax { collateralOut } ->
-                        collateralOut
+                    DefaultMax { collateralIn } ->
+                        collateralIn
                             |> Uint.fromAmount
                                 (pool.pair |> Pair.toCollateral)
 
                     Slider { dues } ->
                         case dues of
-                            Success { collateralOut } ->
-                                collateralOut |> Just
+                            Success { collateralIn } ->
+                                collateralIn |> Just
 
                             _ ->
                                 Nothing
 
                     Debt { dues } ->
                         case dues of
-                            Success { collateralOut } ->
-                                collateralOut |> Just
+                            Success { collateralIn } ->
+                                collateralIn |> Just
 
                             _ ->
                                 Nothing
 
-                    Collateral { collateralOut } ->
-                        collateralOut
+                    Collateral { collateralIn } ->
+                        collateralIn
                             |> Uint.fromAmount
                                 (pool.pair |> Pair.toCollateral)
 
-                    AdvancedMax { collateralOut } ->
-                        collateralOut
+                    AdvancedMax { collateralIn } ->
+                        collateralIn
                             |> Uint.fromAmount
                                 (pool.pair |> Pair.toCollateral)
                 , pool.pair
@@ -1057,17 +1092,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     |> Token.toERC20
                 )
              of
-                ( Just user, Just collateralOut, Just erc20 ) ->
+                ( Just user, Just collateralIn, Just erc20 ) ->
                     if
                         (user
                             |> User.hasEnoughBalance
                                 (pool.pair |> Pair.toCollateral)
-                                collateralOut
+                                collateralIn
                         )
                             && (user
                                     |> User.hasEnoughAllowance
                                         erc20
-                                        collateralOut
+                                        collateralIn
                                     |> not
                                )
                     then
@@ -1087,9 +1122,341 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
+        ( ClickBorrow, Default default ) ->
+            (case default.dues of
+                Success answer ->
+                    case
+                        ( blockchain |> Blockchain.toUser
+                        , default.assetOut
+                            |> Uint.fromAmount
+                                (pool.pair |> Pair.toAsset)
+                        )
+                    of
+                        ( Just user, Just assetOut ) ->
+                            if
+                                (user
+                                    |> User.hasEnoughBalance
+                                        (pool.pair |> Pair.toCollateral)
+                                        answer.collateralIn
+                                )
+                                    && (pool.pair
+                                            |> Pair.toCollateral
+                                            |> Token.toERC20
+                                            |> Maybe.map
+                                                (\erc20 ->
+                                                    user
+                                                        |> User.hasEnoughAllowance
+                                                            erc20
+                                                            answer.collateralIn
+                                                )
+                                            |> Maybe.withDefault True
+                                       )
+                            then
+                                ( transaction |> Transaction
+                                , { pool = pool
+                                  , assetOut = assetOut
+                                  , percent = Percent.init
+                                  , maxDebt = answer.maxDebt
+                                  , maxCollateral = answer.maxCollateral
+                                  }
+                                    |> Write.GivenPercent
+                                    |> Write.encode model blockchain user
+                                    |> borrow
+                                , OpenConfirm |> Just
+                                )
+                                    |> Just
+
+                            else
+                                Nothing
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ClickBorrow, DefaultMax defaultMax ) ->
+            (case defaultMax.out of
+                Success answer ->
+                    case
+                        ( blockchain |> Blockchain.toUser
+                        , defaultMax.collateralIn
+                            |> Uint.fromAmount
+                                (pool.pair |> Pair.toCollateral)
+                        )
+                    of
+                        ( Just user, Just collateralIn ) ->
+                            if
+                                (user
+                                    |> User.hasEnoughBalance
+                                        (pool.pair |> Pair.toCollateral)
+                                        collateralIn
+                                )
+                                    && (pool.pair
+                                            |> Pair.toCollateral
+                                            |> Token.toERC20
+                                            |> Maybe.map
+                                                (\erc20 ->
+                                                    user
+                                                        |> User.hasEnoughAllowance
+                                                            erc20
+                                                            collateralIn
+                                                )
+                                            |> Maybe.withDefault True
+                                       )
+                            then
+                                ( transaction |> Transaction
+                                , { pool = pool
+                                  , assetOut = answer.assetOut
+                                  , collateralIn = collateralIn
+                                  , maxDebt = answer.maxDebt
+                                  }
+                                    |> Write.GivenCollateral
+                                    |> Write.encode model blockchain user
+                                    |> borrow
+                                , OpenConfirm |> Just
+                                )
+                                    |> Just
+
+                            else
+                                Nothing
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ClickBorrow, Slider slider ) ->
+            (case slider.dues of
+                Success answer ->
+                    case
+                        ( blockchain |> Blockchain.toUser
+                        , slider.assetOut
+                            |> Uint.fromAmount
+                                (pool.pair |> Pair.toAsset)
+                        )
+                    of
+                        ( Just user, Just assetOut ) ->
+                            if
+                                (user
+                                    |> User.hasEnoughBalance
+                                        (pool.pair |> Pair.toCollateral)
+                                        answer.collateralIn
+                                )
+                                    && (pool.pair
+                                            |> Pair.toCollateral
+                                            |> Token.toERC20
+                                            |> Maybe.map
+                                                (\erc20 ->
+                                                    user
+                                                        |> User.hasEnoughAllowance
+                                                            erc20
+                                                            answer.collateralIn
+                                                )
+                                            |> Maybe.withDefault True
+                                       )
+                            then
+                                ( transaction |> Transaction
+                                , { pool = pool
+                                  , assetOut = assetOut
+                                  , percent = slider.percent
+                                  , maxDebt = answer.maxDebt
+                                  , maxCollateral = answer.maxCollateral
+                                  }
+                                    |> Write.GivenPercent
+                                    |> Write.encode model blockchain user
+                                    |> borrow
+                                , OpenConfirm |> Just
+                                )
+                                    |> Just
+
+                            else
+                                Nothing
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ClickBorrow, Debt debt ) ->
+            (case debt.dues of
+                Success answer ->
+                    case
+                        ( blockchain |> Blockchain.toUser
+                        , debt.assetOut
+                            |> Uint.fromAmount
+                                (pool.pair |> Pair.toAsset)
+                        , debt.debtIn
+                            |> Uint.fromAmount
+                                (pool.pair |> Pair.toAsset)
+                        )
+                    of
+                        ( Just user, Just assetOut, Just debtIn ) ->
+                            if
+                                (user
+                                    |> User.hasEnoughBalance
+                                        (pool.pair |> Pair.toCollateral)
+                                        answer.collateralIn
+                                )
+                                    && (pool.pair
+                                            |> Pair.toCollateral
+                                            |> Token.toERC20
+                                            |> Maybe.map
+                                                (\erc20 ->
+                                                    user
+                                                        |> User.hasEnoughAllowance
+                                                            erc20
+                                                            answer.collateralIn
+                                                )
+                                            |> Maybe.withDefault True
+                                       )
+                            then
+                                ( transaction |> Transaction
+                                , { pool = pool
+                                  , assetOut = assetOut
+                                  , debtIn = debtIn
+                                  , maxCollateral = answer.maxCollateral
+                                  }
+                                    |> Write.GivenDebt
+                                    |> Write.encode model blockchain user
+                                    |> borrow
+                                , OpenConfirm |> Just
+                                )
+                                    |> Just
+
+                            else
+                                Nothing
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ClickBorrow, Collateral collateral ) ->
+            (case collateral.dues of
+                Success answer ->
+                    case
+                        ( blockchain |> Blockchain.toUser
+                        , collateral.assetOut
+                            |> Uint.fromAmount
+                                (pool.pair |> Pair.toAsset)
+                        , collateral.collateralIn
+                            |> Uint.fromAmount
+                                (pool.pair |> Pair.toCollateral)
+                        )
+                    of
+                        ( Just user, Just assetOut, Just collateralIn ) ->
+                            if
+                                (user
+                                    |> User.hasEnoughBalance
+                                        (pool.pair |> Pair.toCollateral)
+                                        collateralIn
+                                )
+                                    && (pool.pair
+                                            |> Pair.toCollateral
+                                            |> Token.toERC20
+                                            |> Maybe.map
+                                                (\erc20 ->
+                                                    user
+                                                        |> User.hasEnoughAllowance
+                                                            erc20
+                                                            collateralIn
+                                                )
+                                            |> Maybe.withDefault True
+                                       )
+                            then
+                                ( transaction |> Transaction
+                                , { pool = pool
+                                  , assetOut = assetOut
+                                  , collateralIn = collateralIn
+                                  , maxDebt = answer.maxDebt
+                                  }
+                                    |> Write.GivenCollateral
+                                    |> Write.encode model blockchain user
+                                    |> borrow
+                                , OpenConfirm |> Just
+                                )
+                                    |> Just
+
+                            else
+                                Nothing
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ClickBorrow, AdvancedMax advancedMax ) ->
+            (case advancedMax.out of
+                Success answer ->
+                    case
+                        ( blockchain |> Blockchain.toUser
+                        , advancedMax.collateralIn
+                            |> Uint.fromAmount
+                                (pool.pair |> Pair.toCollateral)
+                        )
+                    of
+                        ( Just user, Just collateralIn ) ->
+                            if
+                                (user
+                                    |> User.hasEnoughBalance
+                                        (pool.pair |> Pair.toCollateral)
+                                        collateralIn
+                                )
+                                    && (pool.pair
+                                            |> Pair.toCollateral
+                                            |> Token.toERC20
+                                            |> Maybe.map
+                                                (\erc20 ->
+                                                    user
+                                                        |> User.hasEnoughAllowance
+                                                            erc20
+                                                            collateralIn
+                                                )
+                                            |> Maybe.withDefault True
+                                       )
+                            then
+                                ( transaction |> Transaction
+                                , { pool = pool
+                                  , assetOut = answer.assetOut
+                                  , collateralIn = collateralIn
+                                  , maxDebt = answer.maxDebt
+                                  }
+                                    |> Write.GivenCollateral
+                                    |> Write.encode model blockchain user
+                                    |> borrow
+                                , OpenConfirm |> Just
+                                )
+                                    |> Just
+
+                            else
+                                Nothing
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
         ( ReceiveAnswer value, Default default ) ->
-            (case value |> Decode.decodeValue Answer.decoder of
-                Ok (Answer.GivenPercent answer) ->
+            (case value |> Decode.decodeValue Query.decoder of
+                Ok (Query.GivenPercent answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -1120,14 +1487,14 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ReceiveAnswer value, DefaultMax defaultMax ) ->
-            (case value |> Decode.decodeValue Answer.decoder of
-                Ok (Answer.GivenMax answer) ->
+            (case value |> Decode.decodeValue Query.decoder of
+                Ok (Query.GivenMax answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
-                            && (Just answer.collateralOut
-                                    == (defaultMax.collateralOut
+                            && (Just answer.collateralIn
+                                    == (defaultMax.collateralIn
                                             |> Uint.fromAmount
                                                 (pool.pair |> Pair.toCollateral)
                                        )
@@ -1152,8 +1519,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ReceiveAnswer value, Slider slider ) ->
-            (case value |> Decode.decodeValue Answer.decoder of
-                Ok (Answer.GivenPercent answer) ->
+            (case value |> Decode.decodeValue Query.decoder of
+                Ok (Query.GivenPercent answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -1184,8 +1551,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ReceiveAnswer value, Debt debt ) ->
-            (case value |> Decode.decodeValue Answer.decoder of
-                Ok (Answer.GivenDebt answer) ->
+            (case value |> Decode.decodeValue Query.decoder of
+                Ok (Query.GivenDebt answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -1196,8 +1563,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                                 (pool.pair |> Pair.toAsset)
                                        )
                                )
-                            && (Just answer.debtOut
-                                    == (debt.debtOut
+                            && (Just answer.debtIn
+                                    == (debt.debtIn
                                             |> Uint.fromAmount
                                                 (pool.pair |> Pair.toAsset)
                                        )
@@ -1229,8 +1596,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ReceiveAnswer value, Collateral collateral ) ->
-            (case value |> Decode.decodeValue Answer.decoder of
-                Ok (Answer.GivenCollateral answer) ->
+            (case value |> Decode.decodeValue Query.decoder of
+                Ok (Query.GivenCollateral answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
@@ -1241,8 +1608,8 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                                 (pool.pair |> Pair.toAsset)
                                        )
                                )
-                            && (Just answer.collateralOut
-                                    == (collateral.collateralOut
+                            && (Just answer.collateralIn
+                                    == (collateral.collateralIn
                                             |> Uint.fromAmount
                                                 (pool.pair |> Pair.toCollateral)
                                        )
@@ -1274,14 +1641,14 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ReceiveAnswer value, AdvancedMax advancedMax ) ->
-            (case value |> Decode.decodeValue Answer.decoder of
-                Ok (Answer.GivenMax answer) ->
+            (case value |> Decode.decodeValue Query.decoder of
+                Ok (Query.GivenMax answer) ->
                     if
                         (answer.chainId == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
-                            && (Just answer.collateralOut
-                                    == (advancedMax.collateralOut
+                            && (Just answer.collateralIn
+                                    == (advancedMax.collateralIn
                                             |> Uint.fromAmount
                                                 (pool.pair |> Pair.toCollateral)
                                        )
@@ -1332,10 +1699,10 @@ updateDefault assetOut =
 
 
 updateDefaultMax : String -> State
-updateDefaultMax collateralOut =
-    { collateralOut = collateralOut
+updateDefaultMax collateralIn =
+    { collateralIn = collateralIn
     , out =
-        if collateralOut |> Input.isZero then
+        if collateralIn |> Input.isZero then
             initGivenMax
                 |> Success
 
@@ -1361,14 +1728,14 @@ updateSlider percent assetOut =
 
 
 updateDebt : Percent -> String -> String -> State
-updateDebt percent debtOut assetOut =
+updateDebt percent debtIn assetOut =
     { assetOut = assetOut
     , percent = percent
-    , debtOut = debtOut
+    , debtIn = debtIn
     , dues =
         if
             (assetOut |> Input.isZero)
-                || (debtOut |> Input.isZero)
+                || (debtIn |> Input.isZero)
         then
             initGivenDebt
                 |> Success
@@ -1380,14 +1747,14 @@ updateDebt percent debtOut assetOut =
 
 
 updateCollateral : Percent -> String -> String -> State
-updateCollateral percent collateralOut assetOut =
+updateCollateral percent collateralIn assetOut =
     { assetOut = assetOut
     , percent = percent
-    , collateralOut = collateralOut
+    , collateralIn = collateralIn
     , dues =
         if
             (assetOut |> Input.isZero)
-                || (collateralOut |> Input.isZero)
+                || (collateralIn |> Input.isZero)
         then
             initGivenCollateral
                 |> Success
@@ -1399,11 +1766,11 @@ updateCollateral percent collateralOut assetOut =
 
 
 updateAdvancedMax : Percent -> String -> State
-updateAdvancedMax percent collateralOut =
-    { collateralOut = collateralOut
+updateAdvancedMax percent collateralIn =
+    { collateralIn = collateralIn
     , percent = percent
     , out =
-        if collateralOut |> Input.isZero then
+        if collateralIn |> Input.isZero then
             initGivenMax
                 |> Success
 
@@ -1426,12 +1793,12 @@ toRemote result =
 
 
 toStateGivenDebt :
-    Result Error Answer.ResultDebt
+    Result Error Query.ResultDebt
     -> Remote Error DuesGivenDebt
 toStateGivenDebt result =
     case result of
-        Ok { collateralOut, maxCollateral, apr, cdp } ->
-            { collateralOut = collateralOut
+        Ok { collateralIn, maxCollateral, apr, cdp } ->
+            { collateralIn = collateralIn
             , maxCollateral = maxCollateral
             , apr = apr
             , cdp = cdp
@@ -1443,12 +1810,12 @@ toStateGivenDebt result =
 
 
 toStateGivenCollateral :
-    Result Error Answer.ResultCollateral
+    Result Error Query.ResultCollateral
     -> Remote Error DuesGivenCollateral
 toStateGivenCollateral result =
     case result of
-        Ok { debtOut, maxDebt, apr, cdp } ->
-            { debtOut = debtOut
+        Ok { debtIn, maxDebt, apr, cdp } ->
+            { debtIn = debtIn
             , maxDebt = maxDebt
             , apr = apr
             , cdp = cdp
@@ -1583,17 +1950,17 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
 
         DefaultMax defaultMax ->
             case
-                ( defaultMax.collateralOut |> Input.isZero
-                , defaultMax.collateralOut
+                ( defaultMax.collateralIn |> Input.isZero
+                , defaultMax.collateralIn
                     |> Uint.fromAmount
                         (pool.pair |> Pair.toCollateral)
                 )
             of
-                ( False, Just collateralOut ) ->
+                ( False, Just collateralIn ) ->
                     { chainId = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
-                    , collateralOut = collateralOut
+                    , collateralIn = collateralIn
                     , percent = Percent.init
                     , slippage = slippage
                     }
@@ -1628,21 +1995,21 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
         Debt debt ->
             case
                 ( (debt.assetOut |> Input.isZero)
-                    || (debt.debtOut |> Input.isZero)
+                    || (debt.debtIn |> Input.isZero)
                 , debt.assetOut
                     |> Uint.fromAmount
                         (pool.pair |> Pair.toAsset)
-                , debt.debtOut
+                , debt.debtIn
                     |> Uint.fromAmount
                         (pool.pair |> Pair.toAsset)
                 )
             of
-                ( False, Just assetOut, Just debtOut ) ->
+                ( False, Just assetOut, Just debtIn ) ->
                     { chainId = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , assetOut = assetOut
-                    , debtOut = debtOut
+                    , debtIn = debtIn
                     , slippage = slippage
                     }
                         |> Query.givenDebt
@@ -1654,21 +2021,21 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
         Collateral collateral ->
             case
                 ( (collateral.assetOut |> Input.isZero)
-                    || (collateral.collateralOut |> Input.isZero)
+                    || (collateral.collateralIn |> Input.isZero)
                 , collateral.assetOut
                     |> Uint.fromAmount
                         (pool.pair |> Pair.toAsset)
-                , collateral.collateralOut
+                , collateral.collateralIn
                     |> Uint.fromAmount
                         (pool.pair |> Pair.toCollateral)
                 )
             of
-                ( False, Just assetOut, Just collateralOut ) ->
+                ( False, Just assetOut, Just collateralIn ) ->
                     { chainId = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , assetOut = assetOut
-                    , collateralOut = collateralOut
+                    , collateralIn = collateralIn
                     , slippage = slippage
                     }
                         |> Query.givenCollateral
@@ -1679,17 +2046,17 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
 
         AdvancedMax advancedMax ->
             case
-                ( advancedMax.collateralOut |> Input.isZero
-                , advancedMax.collateralOut
+                ( advancedMax.collateralIn |> Input.isZero
+                , advancedMax.collateralIn
                     |> Uint.fromAmount
                         (pool.pair |> Pair.toCollateral)
                 )
             of
-                ( False, Just collateralOut ) ->
+                ( False, Just collateralIn ) ->
                     { chainId = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
-                    , collateralOut = collateralOut
+                    , collateralIn = collateralIn
                     , percent = advancedMax.percent
                     , slippage = slippage
                     }
@@ -1741,22 +2108,22 @@ hasInputZero state =
         Default { assetOut } ->
             assetOut |> Input.isZero
 
-        DefaultMax { collateralOut } ->
-            collateralOut |> Input.isZero
+        DefaultMax { collateralIn } ->
+            collateralIn |> Input.isZero
 
         Slider { assetOut } ->
             assetOut |> Input.isZero
 
-        Debt { assetOut, debtOut } ->
+        Debt { assetOut, debtIn } ->
             (assetOut |> Input.isZero)
-                || (debtOut |> Input.isZero)
+                || (debtIn |> Input.isZero)
 
-        Collateral { assetOut, collateralOut } ->
+        Collateral { assetOut, collateralIn } ->
             (assetOut |> Input.isZero)
-                || (collateralOut |> Input.isZero)
+                || (collateralIn |> Input.isZero)
 
-        AdvancedMax { collateralOut } ->
-            collateralOut |> Input.isZero
+        AdvancedMax { collateralIn } ->
+            collateralIn |> Input.isZero
 
 
 view :
@@ -1776,8 +2143,8 @@ view model blockchain pool (Transaction transaction) =
                 (pool.pair |> Pair.toAsset)
     , second =
         transaction
-            |> duesOutSection model blockchain pool
-    , buttons = none
+            |> duesInSection model blockchain pool
+    , buttons = buttons blockchain
     }
 
 
@@ -1843,19 +2210,19 @@ assetOutSection model asset { state, tooltip } =
                         , onClick = Just ClickAssetOut
                         , onChange = InputAssetOut
                         , text = assetOut
-                        , description = "asset in textbox"
+                        , description = "asset out textbox"
                         }
                )
         ]
 
 
-duesOutSection :
+duesInSection :
     { model | spot : PriceFeed, images : Images }
     -> Blockchain
     -> Pool
     -> { transaction | state : State, tooltip : Maybe Tooltip }
     -> Element Msg
-duesOutSection model blockchain pool ({ state, tooltip } as transaction) =
+duesInSection model blockchain pool ({ state, tooltip } as transaction) =
     column
         [ Region.description "claims"
         , width <| px 343
@@ -2000,33 +2367,33 @@ duesOutSection model blockchain pool ({ state, tooltip } as transaction) =
                     , spacing 12
                     ]
                     [ dues
-                        |> Remote.map .debtOut
-                        |> debtOutSection model
+                        |> Remote.map .debtIn
+                        |> debtInSection model
                             (pool.pair |> Pair.toAsset)
                             transaction
                     , dues
-                        |> Remote.map .collateralOut
+                        |> Remote.map .collateralIn
                         |> Right
-                        |> collateralOutSection model
+                        |> collateralInSection model
                             blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
 
-            DefaultMax { collateralOut, out } ->
+            DefaultMax { collateralIn, out } ->
                 column
                     [ width fill
                     , height shrink
                     , spacing 12
                     ]
                     [ out
-                        |> Remote.map .debtOut
-                        |> debtOutSection model
+                        |> Remote.map .debtIn
+                        |> debtInSection model
                             (pool.pair |> Pair.toAsset)
                             transaction
-                    , collateralOut
+                    , collateralIn
                         |> Left
-                        |> collateralOutSection model
+                        |> collateralInSection model
                             blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
@@ -2039,75 +2406,75 @@ duesOutSection model blockchain pool ({ state, tooltip } as transaction) =
                     , spacing 12
                     ]
                     [ dues
-                        |> Remote.map .debtOut
+                        |> Remote.map .debtIn
                         |> Right
-                        |> advancedDebtOutSection model
+                        |> advancedDebtInSection model
                             (pool.pair |> Pair.toAsset)
                             transaction
                     , dues
-                        |> Remote.map .collateralOut
+                        |> Remote.map .collateralIn
                         |> Right
-                        |> advancedCollateralOutSection model
+                        |> advancedCollateralInSection model
                             blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
 
-            Debt { debtOut, dues } ->
+            Debt { debtIn, dues } ->
                 column
                     [ width fill
                     , height shrink
                     , spacing 12
                     ]
-                    [ debtOut
+                    [ debtIn
                         |> Left
-                        |> advancedDebtOutSection model
+                        |> advancedDebtInSection model
                             (pool.pair |> Pair.toAsset)
                             transaction
                     , dues
-                        |> Remote.map .collateralOut
+                        |> Remote.map .collateralIn
                         |> Right
-                        |> advancedCollateralOutSection model
+                        |> advancedCollateralInSection model
                             blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
 
-            Collateral { collateralOut, dues } ->
+            Collateral { collateralIn, dues } ->
                 column
                     [ width fill
                     , height shrink
                     , spacing 12
                     ]
                     [ dues
-                        |> Remote.map .debtOut
+                        |> Remote.map .debtIn
                         |> Right
-                        |> advancedDebtOutSection model
+                        |> advancedDebtInSection model
                             (pool.pair |> Pair.toAsset)
                             transaction
-                    , collateralOut
+                    , collateralIn
                         |> Left
-                        |> advancedCollateralOutSection model
+                        |> advancedCollateralInSection model
                             blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
 
-            AdvancedMax { collateralOut, out } ->
+            AdvancedMax { collateralIn, out } ->
                 column
                     [ width fill
                     , height shrink
                     , spacing 12
                     ]
                     [ out
-                        |> Remote.map .debtOut
+                        |> Remote.map .debtIn
                         |> Right
-                        |> advancedDebtOutSection model
+                        |> advancedDebtInSection model
                             (pool.pair |> Pair.toAsset)
                             transaction
-                    , collateralOut
+                    , collateralIn
                         |> Left
-                        |> advancedCollateralOutSection model
+                        |> advancedCollateralInSection model
                             blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
@@ -2115,13 +2482,13 @@ duesOutSection model blockchain pool ({ state, tooltip } as transaction) =
         ]
 
 
-debtOutSection :
+debtInSection :
     { model | images : Images }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Remote Error Uint
     -> Element Msg
-debtOutSection model asset { tooltip } output =
+debtInSection model asset { tooltip } output =
     column
         [ width fill
         , height shrink
@@ -2147,14 +2514,14 @@ debtOutSection model asset { tooltip } output =
         ]
 
 
-collateralOutSection :
+collateralInSection :
     { model | images : Images }
     -> Blockchain
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Or String (Remote Error Uint)
     -> Element Msg
-collateralOutSection model blockchain collateral { tooltip } or =
+collateralInSection model blockchain collateral { tooltip } or =
     column
         [ width fill
         , height shrink
@@ -2216,13 +2583,13 @@ collateralOutSection model blockchain collateral { tooltip } or =
         ]
 
 
-advancedDebtOutSection :
+advancedDebtInSection :
     { model | images : Images }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Or String (Remote Error Uint)
     -> Element Msg
-advancedDebtOutSection model asset { tooltip } or =
+advancedDebtInSection model asset { tooltip } or =
     column
         [ width fill
         , height shrink
@@ -2242,8 +2609,8 @@ advancedDebtOutSection model asset { tooltip } or =
             , tooltip = Tooltip.DebtOutSymbol
             , opened = tooltip
             , token = asset
-            , onClick = Just ClickDebtOut
-            , onChange = InputDebtOut
+            , onClick = Just ClickDebtIn
+            , onChange = InputDebtIn
             , text =
                 case or of
                     Left string ->
@@ -2259,14 +2626,14 @@ advancedDebtOutSection model asset { tooltip } or =
         ]
 
 
-advancedCollateralOutSection :
+advancedCollateralInSection :
     { model | images : Images }
     -> Blockchain
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Or String (Remote Error Uint)
     -> Element Msg
-advancedCollateralOutSection model blockchain collateral { tooltip } or =
+advancedCollateralInSection model blockchain collateral { tooltip } or =
     column
         [ width fill
         , height shrink
@@ -2309,8 +2676,8 @@ advancedCollateralOutSection model blockchain collateral { tooltip } or =
             , tooltip = Tooltip.CollateralOutSymbol
             , opened = tooltip
             , token = collateral
-            , onClick = Just ClickCollateralOut
-            , onChange = InputCollateralOut
+            , onClick = Just ClickCollateralIn
+            , onChange = InputCollateralIn
             , text =
                 case or of
                     Left string ->
@@ -2324,3 +2691,19 @@ advancedCollateralOutSection model blockchain collateral { tooltip } or =
             , description = "collateral output"
             }
         ]
+
+
+buttons : Blockchain -> Element Msg
+buttons blockchain =
+    column
+        [ width <| px 343
+        , height shrink
+        , spacing 12
+        ]
+        (blockchain
+            |> Blockchain.toUser
+            |> Maybe.map
+                (\_ -> [])
+            |> Maybe.withDefault
+                [ Button.connect ClickConnect ]
+        )

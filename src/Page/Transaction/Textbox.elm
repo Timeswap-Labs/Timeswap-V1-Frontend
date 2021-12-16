@@ -30,6 +30,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Utility.Color as Color
+import Utility.Fade as Fade
 import Utility.Image as Image
 import Utility.Truncate as Truncate
 
@@ -62,35 +63,12 @@ view { images } param =
             ([ width fill
              , height shrink
              , centerY
-             , paddingXY 0 4
              , spacing 12
              , Background.color Color.none
              , Border.width 0
              , Font.size 16
+             , paddingXY 0 4
              , Font.color Color.light100
-             , (case param.text of
-                    Left _ ->
-                        none
-
-                    Right uint ->
-                        el
-                            [ width fill
-                            , height fill
-                            , paddingXY 0 4
-                            , Font.size 16
-                            , Font.color Color.light100
-                            ]
-                            ((if uint |> Uint.isZero then
-                                ""
-
-                              else
-                                uint
-                                    |> Uint.toAmount param.token
-                             )
-                                |> text
-                            )
-               )
-                |> behindContent
              ]
                 ++ (param.onClick
                         |> Maybe.map Events.onClick
@@ -107,28 +85,24 @@ view { images } param =
                     Right _ ->
                         ""
             , placeholder =
-                case param.text of
+                (case param.text of
                     Left _ ->
                         Input.placeholder
                             [ Font.size 16
-                            , paddingXY 0 4
+                            , centerY
                             , Font.color Color.transparent200
                             ]
                             (text "0.0")
-                            |> Just
 
                     Right uint ->
-                        if uint |> Uint.isZero then
-                            Input.placeholder
-                                [ Font.size 16
-                                , paddingXY 0 4
-                                , Font.color Color.transparent200
-                                ]
-                                (text "0.0")
-                                |> Just
-
-                        else
-                            Nothing
+                        Input.placeholder
+                            [ width fill
+                            , height fill
+                            , centerY
+                            ]
+                            (Fade.view param.token uint)
+                )
+                    |> Just
             , label =
                 Input.labelLeft
                     [ width shrink
@@ -181,7 +155,7 @@ disabled { images } param =
         [ row
             [ width <| px 100
             , height fill
-            , paddingXY 0 14
+            , paddingXY 0 12
             , spacing 6
             , alignLeft
             , centerY
@@ -197,8 +171,9 @@ disabled { images } param =
         , el
             [ width fill
             , height fill
-            , padding 14
+            , centerY
             , Font.size 16
+            , paddingXY 0 4
             ]
             (text param.text)
         ]
@@ -210,7 +185,6 @@ empty description =
         [ Region.description description
         , width fill
         , height <| px 44
-        , spacing 6
         , paddingXY 12 0
         , Border.width 1
         , Border.color Color.primary100

@@ -135,6 +135,7 @@ debtOutSection model asset =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Debt to Repay")
@@ -166,6 +167,7 @@ collateralOutSection model collateral =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Collateral to Lock")
@@ -206,7 +208,7 @@ liquidityOutSection model maybeAsset maybeCollateral =
             , paddingXY 0 3
             , Font.color Color.primary400
             ]
-            (text "LP Tokens")
+            (text "LP Tokens to Receive")
         , Just
             (\asset collateral ->
                 Output.disabledLiquidity model

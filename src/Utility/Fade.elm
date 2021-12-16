@@ -8,6 +8,7 @@ import Element
         , el
         , height
         , none
+        , paddingXY
         , row
         , shrink
         , text
@@ -20,7 +21,13 @@ import Utility.Color as Color
 view : Token -> Uint -> Element msg
 view token amount =
     if amount |> Uint.isZero then
-        none
+        el
+            [ width shrink
+            , height shrink
+            , Font.color Color.transparent200
+            , Font.size 16
+            ]
+            (text "0.0")
 
     else
         row
@@ -41,7 +48,7 @@ view token amount =
                         , el
                             [ width shrink
                             , height shrink
-                            , Font.color Color.transparent300
+                            , Font.color Color.transparent200
                             , Font.size 16
                             ]
                             (text faded)
