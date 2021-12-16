@@ -62,9 +62,9 @@ import Page.Transaction.Borrow.Borrow.Main as Borrow
 import Page.Transaction.Borrow.Empty as Empty
 import Page.Transaction.Button as Button
 import Page.Transaction.MaturityButton as MaturityButton
-import Page.Transaction.PoolInfo exposing (PoolInfo)
+import Page.Transaction.PoolInfo as PoolInfo exposing (PoolInfo)
+import Page.Transaction.Price exposing (Price)
 import Page.Transaction.Query as Query
-import Page.Transaction.SpotPrice exposing (SpotPrice)
 import Page.Transaction.TokenButton as TokenButton
 import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
 import Process
@@ -103,7 +103,7 @@ type Status
 
 type PoolState
     = Exist PoolInfo Borrow.Transaction
-    | DoesNotExist SpotPrice
+    | DoesNotExist Price
 
 
 type Msg
@@ -168,13 +168,20 @@ init { time } blockchain parameter =
         Just (Parameter.Pool pool) ->
             if pool.maturity |> Maturity.isActive time then
                 ( { state =
-                        Loading
+                        Borrow.init
+                            |> Exist PoolInfo.dummy
+                            |> Success
                             |> Active
                             |> Pool pool
+
+                  -- Loading
+                  --     |> Active
+                  --     |> Pool pool
                   , tooltip = Nothing
                   }
                     |> Transaction
-                , get blockchain pool
+                  -- , get blockchain pool
+                , Cmd.none
                 )
 
             else
@@ -203,7 +210,8 @@ initGivenPoolInfo { time } blockchain pool poolInfo =
           , tooltip = Nothing
           }
             |> Transaction
-        , get blockchain pool
+          --, get blockchain pool
+        , Cmd.none
         )
 
     else
@@ -219,7 +227,7 @@ initGivenSpot :
     { model | time : Posix }
     -> Blockchain
     -> Pool
-    -> SpotPrice
+    -> Price
     -> ( Transaction, Cmd Msg )
 initGivenSpot { time } blockchain pool spot =
     if pool.maturity |> Maturity.isActive time then
@@ -553,7 +561,7 @@ toParameter (Transaction { state }) =
                 |> Just
 
 
-toPoolInfo : Transaction -> Maybe (Or SpotPrice PoolInfo)
+toPoolInfo : Transaction -> Maybe (Or Price PoolInfo)
 toPoolInfo (Transaction { state }) =
     case state of
         Pool _ (Active (Success (Exist poolInfo _))) ->

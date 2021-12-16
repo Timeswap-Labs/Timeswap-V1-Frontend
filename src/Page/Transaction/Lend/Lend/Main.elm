@@ -1763,6 +1763,7 @@ bondOutSection model asset { tooltip } output =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Amount to Receive")
@@ -1794,6 +1795,7 @@ insuranceOutSection model collateral { tooltip } output =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Amount Protecting")
@@ -1825,6 +1827,7 @@ advancedBondOutSection model asset { tooltip } or =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Amount to Receive")
@@ -1867,6 +1870,7 @@ advancedInsuranceOutSection model collateral { tooltip } or =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Amount Protecting")

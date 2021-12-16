@@ -1202,6 +1202,7 @@ debtOutSection model asset { tooltip } out =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Debt to Repay")
@@ -1242,6 +1243,7 @@ collateralOutSection model blockchain collateral { tooltip } or =
                 [ width shrink
                 , height shrink
                 , Font.size 14
+                , paddingXY 0 3
                 , Font.color Color.primary400
                 ]
                 (text "Collateral to Lock")

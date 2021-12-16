@@ -13,7 +13,7 @@ type alias CDP =
 
 init : CDP
 init =
-    { percent = Nothing
+    { percent = Just 0
     , ratio = Uint.zero
     }
 

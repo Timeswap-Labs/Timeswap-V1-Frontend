@@ -54,7 +54,13 @@ lendAPR float =
             , height <| px 24
             , Font.size 18
             , paddingXY 0 3
-            , Font.color Color.positive400
+            , (if float == 0 then
+                Color.transparent200
+
+               else
+                Color.positive400
+              )
+                |> Font.color
             ]
             (Calculate.apr float)
         ]
@@ -80,7 +86,13 @@ borrowAPR float =
             , height <| px 24
             , Font.size 18
             , paddingXY 0 3
-            , Font.color Color.negative400
+            , (if float == 0 then
+                Color.transparent200
+
+               else
+                Color.negative400
+              )
+                |> Font.color
             ]
             (Calculate.apr float)
         ]
@@ -107,6 +119,7 @@ lendCDP { spot } param =
         [ row
             [ width fill
             , height shrink
+            , spacing 5
             ]
             [ el
                 [ width shrink
@@ -132,7 +145,6 @@ lendCDP { spot } param =
                 el
                     [ width shrink
                     , height shrink
-                    , alignRight
                     , centerY
                     ]
                     (Truncate.viewCDPSymbol
@@ -162,7 +174,10 @@ lendCDP { spot } param =
                             , height <| px 24
                             , Font.size 18
                             , paddingXY 0 3
-                            , (if percent <= 1 then
+                            , (if percent == 0 then
+                                Color.transparent200
+
+                               else if percent <= 1 then
                                 Color.negative400
 
                                else
@@ -217,6 +232,7 @@ borrowCDP { spot } param =
         [ row
             [ width fill
             , height shrink
+            , spacing 5
             ]
             [ el
                 [ width shrink
@@ -242,7 +258,6 @@ borrowCDP { spot } param =
                 el
                     [ width shrink
                     , height shrink
-                    , alignRight
                     , centerY
                     ]
                     (Truncate.viewCDPSymbol
@@ -272,7 +287,10 @@ borrowCDP { spot } param =
                             , height <| px 24
                             , Font.size 18
                             , paddingXY 0 3
-                            , (if percent <= 1 then
+                            , (if percent == 0 then
+                                Color.transparent200
+
+                               else if percent <= 1 then
                                 Color.positive400
 
                                else

@@ -44,7 +44,7 @@ import Page.Transaction.Borrow.Main as Borrow
 import Page.Transaction.Lend.Main as Lend
 import Page.Transaction.Liquidity.Main as Liquidity
 import Page.Transaction.PoolInfo exposing (PoolInfo)
-import Page.Transaction.SpotPrice exposing (SpotPrice)
+import Page.Transaction.Price exposing (Price)
 import Time exposing (Posix)
 import Url exposing (Url)
 
@@ -419,7 +419,7 @@ toParameter page =
                 |> Liquidity.toParameter
 
 
-toPoolInfo : Page -> Maybe (Or SpotPrice PoolInfo)
+toPoolInfo : Page -> Maybe (Or Price PoolInfo)
 toPoolInfo page =
     case page of
         Lend { transaction } ->

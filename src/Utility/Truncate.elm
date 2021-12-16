@@ -350,7 +350,13 @@ viewCDP param =
                   )
                     |> below
                 , Font.size 18
-                , Font.color Color.warning400
+                , (if param.cdp |> Uint.isZero then
+                    Color.transparent200
+
+                   else
+                    Color.warning400
+                  )
+                    |> Font.color
                 ]
                 (text short)
 

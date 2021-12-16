@@ -55,7 +55,7 @@ import Page.Transaction.Liquidity.New.Query as Query
 import Page.Transaction.Liquidity.New.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
-import Page.Transaction.SpotPrice exposing (SpotPrice)
+import Page.Transaction.Price exposing (Price)
 import Page.Transaction.Textbox as Textbox
 import Utility.Color as Color
 import Utility.Input as Input
@@ -121,7 +121,7 @@ initGivenNew =
 fromDisabled :
     Blockchain
     -> Pool
-    -> SpotPrice
+    -> Price
     -> Disabled.Transaction
     -> ( Transaction, Cmd Msg )
 fromDisabled blockchain pool spot transaction =
@@ -159,7 +159,7 @@ toDisabled (Transaction { assetIn, debtOut, collateralOut }) =
 update :
     Blockchain
     -> Pool
-    -> SpotPrice
+    -> Price
     -> Msg
     -> Transaction
     -> ( Transaction, Cmd Msg, Maybe Effect )
@@ -478,7 +478,7 @@ noCmdAndEffect transaction =
 initQuery :
     Blockchain
     -> Pool
-    -> SpotPrice
+    -> Price
     ->
         { assetIn : String
         , debtOut : String
@@ -494,7 +494,7 @@ initQuery =
 query :
     Blockchain
     -> Pool
-    -> SpotPrice
+    -> Price
     ->
         { assetIn : String
         , debtOut : String
@@ -521,7 +521,7 @@ constructQueryNew :
     (Value -> Cmd Msg)
     -> Blockchain
     -> Pool
-    -> SpotPrice
+    -> Price
     ->
         { assetIn : String
         , debtOut : String
@@ -753,6 +753,7 @@ debtOutSection model asset { tooltip } input =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Debt to Repay")
@@ -793,6 +794,7 @@ collateralOutSection model blockchain collateral { tooltip } input =
                 [ width shrink
                 , height shrink
                 , Font.size 14
+                , paddingXY 0 3
                 , Font.color Color.primary400
                 ]
                 (text "Collateral to Lock")

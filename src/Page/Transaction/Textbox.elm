@@ -13,7 +13,6 @@ import Element
         , el
         , fill
         , height
-        , moveUp
         , none
         , padding
         , paddingXY
@@ -81,8 +80,13 @@ view { images } param =
                             , Font.size 16
                             , Font.color Color.light100
                             ]
-                            (uint
-                                |> Uint.toAmount param.token
+                            ((if uint |> Uint.isZero then
+                                ""
+
+                              else
+                                uint
+                                    |> Uint.toAmount param.token
+                             )
                                 |> text
                             )
                )
@@ -102,7 +106,29 @@ view { images } param =
 
                     Right _ ->
                         ""
-            , placeholder = Nothing
+            , placeholder =
+                case param.text of
+                    Left _ ->
+                        Input.placeholder
+                            [ Font.size 16
+                            , paddingXY 0 4
+                            , Font.color Color.transparent200
+                            ]
+                            (text "0.0")
+                            |> Just
+
+                    Right uint ->
+                        if uint |> Uint.isZero then
+                            Input.placeholder
+                                [ Font.size 16
+                                , paddingXY 0 4
+                                , Font.color Color.transparent200
+                                ]
+                                (text "0.0")
+                                |> Just
+
+                        else
+                            Nothing
             , label =
                 Input.labelLeft
                     [ width shrink

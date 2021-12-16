@@ -2131,6 +2131,7 @@ debtOutSection model asset { tooltip } output =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Debt to Repay")
@@ -2231,6 +2232,7 @@ advancedDebtOutSection model asset { tooltip } or =
             [ width shrink
             , height shrink
             , Font.size 14
+            , paddingXY 0 3
             , Font.color Color.primary400
             ]
             (text "Debt to Repay")
