@@ -26,7 +26,7 @@ init :
     -> Balances
 init chains chain =
     chains
-        |> Chains.toList chain
+        |> Chains.toTokenList chain
         |> List.map (\token -> ( token, Loading ))
         |> Dict.fromList Token.sorter
 

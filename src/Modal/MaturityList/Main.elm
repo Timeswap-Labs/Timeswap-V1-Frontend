@@ -26,6 +26,7 @@ import Element
     exposing
         ( Element
         , alignRight
+        , below
         , centerX
         , centerY
         , column
@@ -33,19 +34,26 @@ import Element
         , fill
         , fillPortion
         , height
+        , maximum
         , minimum
+        , mouseOver
+        , moveDown
+        , moveLeft
+        , moveRight
+        , none
         , paddingEach
         , paddingXY
         , px
         , row
         , shrink
         , spacing
+        , table
         , text
         , width
         )
 import Element.Background as Background
 import Element.Border as Border
-import Element.Font as Font exposing (center)
+import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Http
@@ -70,6 +78,8 @@ type Modal
     = Modal
         { pair : Pair
         , sorting : Sorting
+        , sortOptions : List Sorting
+        , sortDropdown : Maybe ()
         , pools : Web Pools
         , tooltip : Maybe Tooltip
         }
@@ -83,6 +93,8 @@ type Msg
     | ReceiveAnswer Chain Pair (Result Http.Error Answer)
     | OnMouseEnter Tooltip
     | OnMouseLeave
+    | OpenDropdown
+    | CloseDropdown
     | Exit
 
 
@@ -97,6 +109,8 @@ init :
 init blockchain pair =
     ( { pair = pair
       , sorting = Sorting.Liquidity
+      , sortOptions = [ Sorting.Liquidity, Sorting.Maturity ]
+      , sortDropdown = Nothing
       , pools = Success Pools.dummy
       , tooltip = Nothing
       }
@@ -195,6 +209,22 @@ update blockchain msg (Modal modal) =
             , Nothing
             )
 
+        ( OpenDropdown, _ ) ->
+            ( { modal | sortDropdown = Just () }
+                |> Modal
+                |> Just
+            , Cmd.none
+            , Nothing
+            )
+
+        ( CloseDropdown, _ ) ->
+            ( { modal | sortDropdown = Nothing }
+                |> Modal
+                |> Just
+            , Cmd.none
+            , Nothing
+            )
+
         ( Exit, _ ) ->
             ( Nothing
             , Cmd.none
@@ -247,7 +277,7 @@ view ({ time, offset, chosenZone, device } as model) (Modal modal) =
 
                   else
                     width <| minimum 622 shrink
-                , height shrink
+                , height <| maximum 468 shrink
                 , spacing 16
                 , centerX
                 , centerY
@@ -294,11 +324,12 @@ view ({ time, offset, chosenZone, device } as model) (Modal modal) =
                     [ width fill
                     , height <| px 34
                     , centerY
+                    , paddingXY 24 0
                     , Background.color Color.list
                     ]
                     [ el
                         [ centerX
-                        , width <| fillPortion 1
+                        , width <| fillPortion 2
                         , Font.size 12
                         , Font.bold
                         , Font.letterSpacing 0.08
@@ -339,7 +370,7 @@ pairWithPoolCount :
     }
     -> Modal
     -> Element Msg
-pairWithPoolCount { images } (Modal { pair }) =
+pairWithPoolCount { images } (Modal { pair, pools }) =
     let
         asset =
             pair |> Pair.toAsset
@@ -352,18 +383,22 @@ pairWithPoolCount { images } (Modal { pair }) =
         , height shrink
         , spacing 8
         ]
-        [ images
-            |> Image.viewToken
-                [ width <| px 32
-                , height <| px 32
-                ]
-                asset
-        , images
-            |> Image.viewToken
-                [ width <| px 32
-                , height <| px 32
-                ]
-                collateral
+        [ row [ width <| px 52 ]
+            [ images
+                |> Image.viewToken
+                    [ width <| px 32
+                    , height <| px 32
+                    , moveRight 16
+                    ]
+                    collateral
+            , images
+                |> Image.viewToken
+                    [ width <| px 32
+                    , height <| px 32
+                    , moveLeft 32
+                    ]
+                    asset
+            ]
         , el
             [ width shrink
             , height shrink
@@ -385,8 +420,24 @@ pairWithPoolCount { images } (Modal { pair }) =
             , paddingXY 0 3
             , Font.color Color.transparent300
             ]
-            ("(10 Pools)"
-                |> text
+            (case pools of
+                Success poolsDict ->
+                    [ "("
+                    , poolsDict
+                        |> Dict.toList
+                        |> List.length
+                        |> String.fromInt
+                    , if (poolsDict |> Dict.toList |> List.length) == 1 then
+                        " Pool)"
+
+                      else
+                        " Pools)"
+                    ]
+                        |> String.concat
+                        |> text
+
+                _ ->
+                    none
             )
         ]
 
@@ -397,7 +448,7 @@ sortBy :
     }
     -> Modal
     -> Element Msg
-sortBy { images } (Modal modal) =
+sortBy { images } (Modal { sorting, sortOptions, sortDropdown }) =
     row
         [ alignRight
         , spacing 14
@@ -415,8 +466,20 @@ sortBy { images } (Modal modal) =
             , Border.width 1
             , Border.color Color.transparent100
             , Border.rounded 8
+            , (if sortDropdown == Just () then
+                sortOptions |> sortOptionsEl
+
+               else
+                none
+              )
+                |> below
             ]
-            { onPress = Nothing
+            { onPress =
+                if sortDropdown == Just () then
+                    Just CloseDropdown
+
+                else
+                    Just OpenDropdown
             , label =
                 row
                     [ width fill
@@ -425,7 +488,7 @@ sortBy { images } (Modal modal) =
                     , spacing 6
                     , Font.color Color.light100
                     ]
-                    [ text "APR"
+                    [ sorting |> Sorting.toString |> text
                     , images
                         |> Image.discloser
                             [ width <| px 11
@@ -438,6 +501,40 @@ sortBy { images } (Modal modal) =
         ]
 
 
+sortOptionsEl : List Sorting -> Element Msg
+sortOptionsEl sortList =
+    column
+        [ width <| px 130
+        , height shrink
+        , moveDown 10
+        , Background.color Color.dark300
+        , Border.rounded 4
+        , Border.width 1
+        , Border.color Color.transparent100
+        ]
+        (sortList
+            |> List.map
+                (\sortOption ->
+                    Input.button
+                        [ width fill
+                        , height shrink
+                        , paddingXY 12 10
+                        , Font.color Color.light100
+                        , mouseOver [ Background.color Color.primary100 ]
+                        ]
+                        { onPress =
+                            case sortOption of
+                                Sorting.Liquidity ->
+                                    Just GoToSortLiquidity
+
+                                Sorting.Maturity ->
+                                    Just GoToSortMaturity
+                        , label = sortOption |> Sorting.toString |> text
+                        }
+                )
+        )
+
+
 maturityList :
     { model
         | images : Images
@@ -448,7 +545,7 @@ maturityList :
     }
     -> Modal
     -> Element Msg
-maturityList { images, time, offset, chosenZone, spot } ((Modal { pair, pools, tooltip }) as modal) =
+maturityList { images, time, offset, chosenZone, spot } (Modal { pair, pools, tooltip, sorting }) =
     column
         [ width fill
         , height shrink
@@ -470,66 +567,83 @@ maturityList { images, time, offset, chosenZone, spot } ((Modal { pair, pools, t
             Success poolsDict ->
                 poolsDict
                     |> Dict.toList
+                    |> List.sortWith
+                        (case sorting of
+                            Sorting.Maturity ->
+                                Pools.compareMaturity
+
+                            Sorting.Liquidity ->
+                                Pools.compareRank
+                        )
                     |> List.map
                         (\( maturity, summary ) ->
-                            row
-                                [ width fill
-                                , height <| px 62
-                                , paddingXY 20 12
-                                , spacing 16
-                                , centerY
-                                , Background.color Color.primary100
-                                , Border.rounded 8
-                                ]
-                                [ images
-                                    |> Image.hourglassPrimary
-                                        [ width <| px 16
-                                        , height <| px 22
+                            Input.button [ width fill ]
+                                { onPress = Just (SelectMaturity maturity)
+                                , label =
+                                    row
+                                        [ width fill
+                                        , height <| px 62
+                                        , paddingXY 20 12
+                                        , spacing 16
+                                        , centerY
+                                        , Background.color Color.primary100
+                                        , Border.rounded 8
+                                        , mouseOver [ Background.color Color.primary200 ]
                                         ]
-                                , column
-                                    []
-                                    [ Duration.viewMaturity
-                                        { onMouseEnter = OnMouseEnter
-                                        , onMouseLeave = OnMouseLeave
-                                        , tooltip = Tooltip.Maturity maturity
-                                        , opened = tooltip
-                                        , time = time
-                                        , offset = offset
-                                        , chosenZone = chosenZone
-                                        , maturity = maturity
-                                        }
-                                    ]
-                                , el
-                                    [ width fill
-                                    , centerY
-                                    , paddingXY 0 3
-                                    , Font.size 14
-                                    , Font.bold
-                                    , Font.color Color.positive400
-                                    ]
-                                    (Calculate.apr summary.apr)
-                                , el
-                                    [ width fill
-                                    , centerY
-                                    , centerX
-                                    , paddingXY 0 3
-                                    , Font.size 14
-                                    , Font.bold
-                                    , Font.center
-                                    , Font.color Color.light100
-                                    ]
-                                    (Calculate.cdp
-                                        { onMouseEnter = OnMouseEnter
-                                        , onMouseLeave = OnMouseLeave
-                                        , cdpTooltip = Tooltip.CDP
-                                        , opened = tooltip
-                                        , pair = pair
-                                        , cdp = summary.cdp
-                                        }
-                                        spot
-                                        Color.light100
-                                        14
-                                    )
-                                ]
+                                        [ row [ width <| fillPortion 2, spacing 16 ]
+                                            [ images
+                                                |> Image.hourglassPrimary
+                                                    [ width <| px 16
+                                                    , height <| px 22
+                                                    ]
+                                            , column
+                                                []
+                                                [ Duration.viewMaturity
+                                                    { onMouseEnter = OnMouseEnter
+                                                    , onMouseLeave = OnMouseLeave
+                                                    , tooltip = Tooltip.Maturity maturity
+                                                    , opened = tooltip
+                                                    , time = time
+                                                    , offset = offset
+                                                    , chosenZone = chosenZone
+                                                    , maturity = maturity
+                                                    }
+                                                ]
+                                            ]
+                                        , el
+                                            [ width <| fillPortion 1
+                                            , centerX
+                                            , centerY
+                                            , paddingXY 0 3
+                                            , Font.size 14
+                                            , Font.bold
+                                            , Font.center
+                                            , Font.color Color.positive400
+                                            ]
+                                            (Calculate.apr summary.apr)
+                                        , el
+                                            [ width <| fillPortion 1
+                                            , centerX
+                                            , centerY
+                                            , paddingXY 0 3
+                                            , Font.size 14
+                                            , Font.bold
+                                            , Font.center
+                                            , Font.color Color.light100
+                                            ]
+                                            (Calculate.cdp
+                                                { onMouseEnter = OnMouseEnter
+                                                , onMouseLeave = OnMouseLeave
+                                                , cdpTooltip = Tooltip.CDP
+                                                , opened = tooltip
+                                                , pair = pair
+                                                , cdp = summary.cdp
+                                                }
+                                                spot
+                                                Color.light100
+                                                14
+                                            )
+                                        ]
+                                }
                         )
         )

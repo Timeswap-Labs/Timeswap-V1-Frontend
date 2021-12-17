@@ -1,4 +1,4 @@
-module Modal.MaturityList.Pools exposing (Pools, decoder, dummy)
+module Modal.MaturityList.Pools exposing (Pools, compareMaturity, compareRank, decoder, dummy)
 
 import Data.CDP exposing (CDP)
 import Data.Maturity as Maturity exposing (Maturity)
@@ -29,3 +29,21 @@ decoder =
         |> Pipeline.custom Summary.decoder
         |> Decode.list
         |> Decode.map (Dict.fromList Maturity.sorter)
+
+
+compareRank : ( Maturity, Summary ) -> ( Maturity, Summary ) -> Order
+compareRank ( maturity1, summary1 ) ( maturity2, summary2 ) =
+    if summary1.rank > summary2.rank then
+        GT
+
+    else
+        LT
+
+
+compareMaturity : ( Maturity, Summary ) -> ( Maturity, Summary ) -> Order
+compareMaturity ( maturity1, summary1 ) ( maturity2, summary2 ) =
+    if (maturity1 |> Maturity.toUnix) > (maturity2 |> Maturity.toUnix) then
+        GT
+
+    else
+        LT

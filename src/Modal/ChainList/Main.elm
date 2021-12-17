@@ -4,9 +4,13 @@ port module Modal.ChainList.Main exposing
     , view
     )
 
+import Blockchain.Main exposing (Blockchain)
+import Blockchain.User.Main as User exposing (User)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain as Chain exposing (Chain)
+import Data.Chains as Chains exposing (Chains)
 import Data.Images exposing (Images)
+import Data.Support exposing (Support)
 import Element
     exposing
         ( Element
@@ -26,11 +30,13 @@ import Element
         , width
         )
 import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Json.Encode exposing (Value)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
+import Utility.Image as Image
 
 
 type Msg
@@ -61,6 +67,7 @@ view :
     { model
         | backdrop : Backdrop
         , images : Images
+        , chains : Chains
     }
     -> Element Msg
 view model =
@@ -69,11 +76,15 @@ view model =
         , modal =
             column
                 [ width <| px 335
-                , height <| px 300
+                , height shrink
                 , padding 24
                 , centerX
                 , centerY
+                , spacing 16
                 , Background.color Color.background
+                , Border.rounded 8
+                , Border.color Color.transparent100
+                , Border.width 1
                 ]
                 [ row
                     [ width fill
@@ -91,5 +102,49 @@ view model =
                         (text "Change Chain")
                     , IconButton.exit model Exit
                     ]
+                , column [ width fill ]
+                    (model.chains
+                        |> Chains.toList
+                        |> List.map (\chain -> chain |> chainRow model)
+                    )
                 ]
         }
+
+
+chainRow :
+    { model
+        | backdrop : Backdrop
+        , images : Images
+        , chains : Chains
+    }
+    -> Chain
+    -> Element Msg
+chainRow model chain =
+    row
+        [ width fill
+        , height <| px 54
+        , paddingXY 18 0
+        , spacing 8
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        [ model.images
+            |> Image.viewChain
+                [ width <| px 24
+                , height <| px 24
+                , centerY
+                ]
+                chain
+        , el
+            [ width shrink
+            , height shrink
+            , centerY
+            , Font.size 16
+            , paddingXY 0 4
+            , Font.color Color.light100
+            ]
+            (chain
+                |> Chain.toString
+                |> text
+            )
+        ]
