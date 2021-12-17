@@ -556,7 +556,7 @@ tokenList ({ backdrop, chains } as model) blockchain ((Modal { state }) as modal
                                 )
                             |> Maybe.withDefault
                                 (chains
-                                    |> Chains.toList (blockchain |> Blockchain.toChain)
+                                    |> Chains.toTokenList (blockchain |> Blockchain.toChain)
                                     |> List.filter (\token -> input |> Token.containsString token)
                                     |> List.map (tokenButton model blockchain modal)
                                 )

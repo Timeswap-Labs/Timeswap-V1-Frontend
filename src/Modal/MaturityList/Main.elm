@@ -34,6 +34,7 @@ import Element
         , fill
         , fillPortion
         , height
+        , maximum
         , minimum
         , mouseOver
         , moveDown
@@ -276,7 +277,7 @@ view ({ time, offset, chosenZone, device } as model) (Modal modal) =
 
                   else
                     width <| minimum 622 shrink
-                , height shrink
+                , height <| maximum 468 shrink
                 , spacing 16
                 , centerX
                 , centerY

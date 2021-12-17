@@ -15,6 +15,7 @@ module Data.Chains exposing
     , toCustomTokenList
     , toList
     , toListERC20
+    , toTokenList
     )
 
 import Data.Address exposing (Address)
@@ -152,6 +153,16 @@ isMemberOf chain chains address =
         |> Maybe.withDefault False
 
 
+toList : Chains -> List Chain
+toList (Chains { defaultChain, defaultTokens, others }) =
+    [ defaultChain
+    ]
+        ++ (others
+                |> Dict.toList
+                |> List.map (\( chain, tokens ) -> chain)
+           )
+
+
 insert : Chain -> ERC20 -> Chains -> Chains
 insert chain erc20 (Chains ({ defaultChain, defaultTokens, others } as chains)) =
     if chain == defaultChain then
@@ -227,8 +238,8 @@ toCustomTokenList chain chains =
         |> Maybe.withDefault []
 
 
-toList : Chain -> Chains -> List Token
-toList chain chains =
+toTokenList : Chain -> Chains -> List Token
+toTokenList chain chains =
     chains
         |> toDict
         |> Dict.get chain
