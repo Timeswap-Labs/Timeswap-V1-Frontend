@@ -13,10 +13,14 @@ module Page.Main exposing
     )
 
 import Blockchain.Main exposing (Blockchain)
+import Blockchain.User.WriteBorrow exposing (WriteBorrow)
+import Blockchain.User.WriteCreate exposing (WriteCreate)
+import Blockchain.User.WriteLend exposing (WriteLend)
+import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
-import Data.Deadline exposing (Deadline)
+import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
@@ -50,9 +54,9 @@ import Url exposing (Url)
 
 
 type Page
-    = Lend { transaction : Lend.Transaction }
-    | Borrow { transaction : Borrow.Transaction }
-    | Liquidity { transaction : Liquidity.Transaction }
+    = LendPage { transaction : Lend.Transaction }
+    | BorrowPage { transaction : Borrow.Transaction }
+    | LiquidityPage { transaction : Liquidity.Transaction }
 
 
 type Msg
@@ -67,7 +71,11 @@ type Effect
     | OpenInputMaturity Pair
     | OpenSettings
     | OpenConnect
-    | OpenConfirm
+    | Approve ERC20
+    | Lend WriteLend
+    | Borrow WriteBorrow
+    | Liquidity WriteLiquidity
+    | Create WriteCreate
 
 
 init :
@@ -119,7 +127,7 @@ construct ({ chains } as model) url maybePage =
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
-                            |> Lend
+                            |> LendPage
                     )
                     (Cmd.map LendMsg)
 
@@ -129,7 +137,7 @@ construct ({ chains } as model) url maybePage =
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
-                            |> Lend
+                            |> LendPage
                     )
                     (Cmd.map LendMsg)
 
@@ -139,7 +147,7 @@ construct ({ chains } as model) url maybePage =
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
-                            |> Lend
+                            |> LendPage
                     )
                     (Cmd.map LendMsg)
 
@@ -149,7 +157,7 @@ construct ({ chains } as model) url maybePage =
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
-                            |> Borrow
+                            |> BorrowPage
                     )
                     (Cmd.map BorrowMsg)
 
@@ -159,7 +167,7 @@ construct ({ chains } as model) url maybePage =
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
-                            |> Borrow
+                            |> BorrowPage
                     )
                     (Cmd.map BorrowMsg)
 
@@ -169,7 +177,7 @@ construct ({ chains } as model) url maybePage =
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
-                            |> Borrow
+                            |> BorrowPage
                     )
                     (Cmd.map BorrowMsg)
 
@@ -179,7 +187,7 @@ construct ({ chains } as model) url maybePage =
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
-                            |> Liquidity
+                            |> LiquidityPage
                     )
                     (Cmd.map LiquidityMsg)
 
@@ -189,7 +197,7 @@ construct ({ chains } as model) url maybePage =
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
-                            |> Liquidity
+                            |> LiquidityPage
                     )
                     (Cmd.map LiquidityMsg)
 
@@ -199,7 +207,7 @@ construct ({ chains } as model) url maybePage =
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
-                            |> Liquidity
+                            |> LiquidityPage
                     )
                     (Cmd.map LiquidityMsg)
 
@@ -209,86 +217,82 @@ construct ({ chains } as model) url maybePage =
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction }
-                            |> Lend
+                            |> LendPage
                     )
                     (Cmd.map LendMsg)
 
         ( Just (Route.Lend _), NotSupported _, _ ) ->
             ( { transaction = Lend.notSupported }
-                |> Lend
+                |> LendPage
             , Cmd.none
             )
 
         ( Just (Route.Borrow _), NotSupported _, _ ) ->
             ( { transaction = Borrow.notSupported }
-                |> Borrow
+                |> BorrowPage
             , Cmd.none
             )
 
         ( Just (Route.Liquidity _), NotSupported _, _ ) ->
             ( { transaction = Liquidity.notSupported }
-                |> Liquidity
+                |> LiquidityPage
             , Cmd.none
             )
 
         _ ->
             ( { transaction = Lend.notSupported }
-                |> Lend
+                |> LendPage
             , Cmd.none
             )
 
 
 update :
-    { model
-        | time : Posix
-        , slippage : Slippage
-        , deadline : Deadline
-    }
+    { model | slippage : Slippage }
     -> Blockchain
     -> Msg
     -> Page
     -> ( Page, Cmd Msg, Maybe Effect )
 update model blockchain msg page =
     case ( msg, page ) of
-        ( LendMsg transactionLendMsg, Lend lend ) ->
-            lend.transaction
+        ( LendMsg transactionLendMsg, LendPage lendPage ) ->
+            lendPage.transaction
                 |> Lend.update
                     model
                     blockchain
                     transactionLendMsg
                 |> (\( updated, cmd, maybeEffect ) ->
-                        ( { lend | transaction = updated }
-                            |> Lend
+                        ( { lendPage | transaction = updated }
+                            |> LendPage
                         , cmd |> Cmd.map LendMsg
                         , maybeEffect
                             |> Maybe.map lendEffects
                         )
                    )
 
-        ( BorrowMsg transactionBorrowMsg, Borrow borrow ) ->
-            borrow.transaction
+        ( BorrowMsg transactionBorrowMsg, BorrowPage borrowPage ) ->
+            borrowPage.transaction
                 |> Borrow.update
                     model
                     blockchain
                     transactionBorrowMsg
                 |> (\( updated, cmd, maybeEffect ) ->
-                        ( { borrow | transaction = updated }
-                            |> Borrow
+                        ( { borrowPage | transaction = updated }
+                            |> BorrowPage
                         , cmd |> Cmd.map BorrowMsg
                         , maybeEffect
                             |> Maybe.map borrowEffects
                         )
                    )
 
-        ( LiquidityMsg liquidityMsg, Liquidity liquidity ) ->
-            liquidity.transaction
+        ( LiquidityMsg liquidityMsg, LiquidityPage liquidityPage ) ->
+            liquidityPage.transaction
                 |> Liquidity.update
                     model
                     blockchain
                     liquidityMsg
                 |> (\( updated, cmd, maybeEffect ) ->
-                        ( { liquidity | transaction = updated }
-                            |> Liquidity
+                        ( { liquidityPage | transaction = updated }
+                            |> LiquidityPage
                         , cmd |> Cmd.map LiquidityMsg
                         , maybeEffect
                             |> Maybe.map liquidityEffects
@@ -316,8 +320,11 @@ lendEffects effect =
         Lend.OpenSettings ->
             OpenSettings
 
-        Lend.OpenConfirm ->
-            OpenConfirm
+        Lend.Approve erc20 ->
+            Approve erc20
+
+        Lend.Lend writeLend ->
+            Lend writeLend
 
 
 borrowEffects :
@@ -337,8 +344,11 @@ borrowEffects effect =
         Borrow.OpenSettings ->
             OpenSettings
 
-        Borrow.OpenConfirm ->
-            OpenConfirm
+        Borrow.Approve erc20 ->
+            Approve erc20
+
+        Borrow.Borrow writeBorrow ->
+            Borrow writeBorrow
 
 
 liquidityEffects :
@@ -361,28 +371,34 @@ liquidityEffects effect =
         Liquidity.OpenSettings ->
             OpenSettings
 
-        Liquidity.OpenConfirm ->
-            OpenConfirm
+        Liquidity.Approve erc20 ->
+            Approve erc20
+
+        Liquidity.Liquidity writeLiquidity ->
+            Liquidity writeLiquidity
+
+        Liquidity.Create writeCreate ->
+            Create writeCreate
 
 
 subscriptions : Page -> Sub Msg
 subscriptions page =
     case page of
-        Lend { transaction } ->
+        LendPage { transaction } ->
             [ transaction
                 |> Lend.subscriptions
                 |> Sub.map LendMsg
             ]
                 |> Sub.batch
 
-        Borrow { transaction } ->
+        BorrowPage { transaction } ->
             [ transaction
                 |> Borrow.subscriptions
                 |> Sub.map BorrowMsg
             ]
                 |> Sub.batch
 
-        Liquidity { transaction } ->
+        LiquidityPage { transaction } ->
             [ transaction
                 |> Liquidity.subscriptions
                 |> Sub.map LiquidityMsg
@@ -393,28 +409,28 @@ subscriptions page =
 toTab : Page -> Tab
 toTab page =
     case page of
-        Lend _ ->
+        LendPage _ ->
             Tab.Lend
 
-        Borrow _ ->
+        BorrowPage _ ->
             Tab.Borrow
 
-        Liquidity _ ->
+        LiquidityPage _ ->
             Tab.Liquidity
 
 
 toParameter : Page -> Maybe Parameter
 toParameter page =
     case page of
-        Lend { transaction } ->
+        LendPage { transaction } ->
             transaction
                 |> Lend.toParameter
 
-        Borrow { transaction } ->
+        BorrowPage { transaction } ->
             transaction
                 |> Borrow.toParameter
 
-        Liquidity { transaction } ->
+        LiquidityPage { transaction } ->
             transaction
                 |> Liquidity.toParameter
 
@@ -422,15 +438,15 @@ toParameter page =
 toPoolInfo : Page -> Maybe (Or Price PoolInfo)
 toPoolInfo page =
     case page of
-        Lend { transaction } ->
+        LendPage { transaction } ->
             transaction
                 |> Lend.toPoolInfo
 
-        Borrow { transaction } ->
+        BorrowPage { transaction } ->
             transaction
                 |> Borrow.toPoolInfo
 
-        Liquidity { transaction } ->
+        LiquidityPage { transaction } ->
             transaction
                 |> Liquidity.toPoolInfo
 
@@ -456,19 +472,19 @@ view model blockchain page =
         , alignTop
         ]
         (case page of
-            Lend { transaction } ->
+            LendPage { transaction } ->
                 [ transaction
                     |> Lend.view model blockchain
                     |> map LendMsg
                 ]
 
-            Borrow { transaction } ->
+            BorrowPage { transaction } ->
                 [ transaction
                     |> Borrow.view model blockchain
                     |> map BorrowMsg
                 ]
 
-            Liquidity { transaction } ->
+            LiquidityPage { transaction } ->
                 [ transaction
                     |> Liquidity.view model blockchain
                     |> map LiquidityMsg

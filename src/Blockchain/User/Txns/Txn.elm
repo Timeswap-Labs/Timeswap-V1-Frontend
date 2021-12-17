@@ -1,9 +1,9 @@
-module Blockchain.User.Txn exposing
+module Blockchain.User.Txns.Txn exposing
     ( State(..)
     , Txn
     )
 
-import Blockchain.User.TxnWrite exposing (TxnWrite)
+import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 
 
 type alias Txn =

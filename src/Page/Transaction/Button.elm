@@ -1,23 +1,31 @@
 module Page.Transaction.Button exposing
-    ( approveAsset
+    ( approve
+    , approveAsset
     , approveCollateral
     , connect
+    , disabled
+    , disabledApprove
     , doesNotExist
     , error
     , exist
     , loading
     , matured
+    , pendingApprove
     , selectMaturity
     , selectTokens
+    , view
     )
 
+import Data.ERC20 as ERC20 exposing (ERC20)
 import Element
     exposing
         ( Element
         , centerX
         , centerY
         , el
+        , fill
         , height
+        , paddingXY
         , px
         , text
         , width
@@ -31,11 +39,158 @@ import Http
 import Utility.Color as Color
 
 
+view :
+    { onPress : msg
+    , text : String
+    }
+    -> Element msg
+view params =
+    Input.button
+        [ Region.description params.text
+        , width fill
+        , height <| px 44
+        , Background.color Color.primary500
+        , Border.rounded 8
+        ]
+        { onPress = Just params.onPress
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.size 16
+                , paddingXY 0 4
+                , Font.color Color.light100
+                ]
+                (text params.text)
+        }
+
+
+disabled : String -> Element Never
+disabled string =
+    el
+        [ Region.description string
+        , width fill
+        , height <| px 44
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        (el
+            [ centerX
+            , centerY
+            , Font.size 16
+            , paddingXY 0 4
+            , Font.color Color.transparent100
+            ]
+            (text string)
+        )
+
+
+approve :
+    { onPress : msg
+    , erc20 : ERC20
+    }
+    -> Element msg
+approve params =
+    Input.button
+        [ [ "approve"
+          , params.erc20
+                |> ERC20.toSymbol
+          ]
+            |> String.join " "
+            |> Region.description
+        , width fill
+        , height <| px 44
+        , Background.color Color.primary500
+        , Border.rounded 8
+        ]
+        { onPress = Just params.onPress
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.size 16
+                , paddingXY 0 4
+                , Font.color Color.light100
+                ]
+                ([ "Approve"
+                 , params.erc20
+                    |> ERC20.toSymbol
+                    |> String.left 5
+                 ]
+                    |> String.join " "
+                    |> text
+                )
+        }
+
+
+disabledApprove : ERC20 -> Element msg
+disabledApprove erc20 =
+    el
+        [ [ "approve"
+          , erc20
+                |> ERC20.toSymbol
+          ]
+            |> String.join " "
+            |> Region.description
+        , width fill
+        , height <| px 44
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        (el
+            [ centerX
+            , centerY
+            , Font.size 16
+            , paddingXY 0 4
+            , Font.color Color.transparent100
+            ]
+            ([ "Approve"
+             , erc20
+                |> ERC20.toSymbol
+                |> String.left 5
+             ]
+                |> String.join " "
+                |> text
+            )
+        )
+
+
+pendingApprove : ERC20 -> Element msg
+pendingApprove erc20 =
+    el
+        [ [ "approve"
+          , erc20
+                |> ERC20.toSymbol
+          ]
+            |> String.join " "
+            |> Region.description
+        , width fill
+        , height <| px 44
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        (el
+            [ centerX
+            , centerY
+            , Font.size 14
+            , Font.color Color.transparent100
+            ]
+            ([ "approving"
+             , erc20
+                |> ERC20.toSymbol
+                |> String.left 5
+             ]
+                |> String.join " "
+                |> text
+            )
+        )
+
+
 connect : msg -> Element msg
 connect msg =
     Input.button
         [ Region.description "connect wallet"
-        , width <| px 343
+        , width fill
         , height <| px 44
         , Background.color Color.primary500
         , Border.rounded 8
@@ -56,7 +211,7 @@ approveAsset : msg -> Element msg
 approveAsset msg =
     Input.button
         [ Region.description "approve asset"
-        , width <| px 343
+        , width fill
         , height <| px 44
         , Background.color Color.primary500
         , Border.rounded 8
@@ -77,7 +232,7 @@ approveCollateral : msg -> Element msg
 approveCollateral msg =
     Input.button
         [ Region.description "approve collateral"
-        , width <| px 343
+        , width fill
         , height <| px 44
         , Background.color Color.primary500
         , Border.rounded 8
@@ -98,7 +253,7 @@ selectTokens : Element Never
 selectTokens =
     el
         [ Region.description "select token"
-        , width <| px 343
+        , width fill
         , height <| px 44
         , Background.color Color.primary100
         , Border.rounded 8
@@ -117,7 +272,7 @@ selectMaturity : Element Never
 selectMaturity =
     el
         [ Region.description "select maturity"
-        , width <| px 343
+        , width fill
         , height <| px 44
         , Background.color Color.primary100
         , Border.rounded 8
@@ -136,7 +291,7 @@ loading : Element Never
 loading =
     el
         [ Region.description "loading"
-        , width <| px 343
+        , width fill
         , height <| px 44
         , Background.color Color.primary100
         , Border.rounded 8
@@ -155,7 +310,7 @@ matured : Element Never
 matured =
     el
         [ Region.description "matured"
-        , width <| px 343
+        , width fill
         , height <| px 44
         , Background.color Color.primary100
         , Border.rounded 8
@@ -174,7 +329,7 @@ doesNotExist : Element Never
 doesNotExist =
     el
         [ Region.description "does not exist"
-        , width <| px 343
+        , width fill
         , height <| px 44
         , Background.color Color.primary100
         , Border.rounded 8
@@ -193,7 +348,7 @@ exist : Element Never
 exist =
     el
         [ Region.description "exist"
-        , width <| px 343
+        , width fill
         , height <| px 44
         , Background.color Color.primary100
         , Border.rounded 8
@@ -211,7 +366,7 @@ exist =
 error : Http.Error -> Element Never
 error httpError =
     el
-        [ width <| px 343
+        [ width fill
         , height <| px 44
         , Background.color Color.negative500
         , Border.rounded 8

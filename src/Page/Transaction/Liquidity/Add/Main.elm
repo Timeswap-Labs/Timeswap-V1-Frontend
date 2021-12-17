@@ -12,8 +12,9 @@ port module Page.Transaction.Liquidity.Add.Main exposing
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
+import Blockchain.User.WriteLiquidity as WriteLiquidity exposing (WriteLiquidity)
 import Data.CDP as CDP exposing (CDP)
-import Data.Deadline exposing (Deadline)
+import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair
@@ -49,14 +50,12 @@ import Element.Input as Input
 import Element.Region as Region
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
-import Page.Approve as Approve
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.Liquidity.Add.Disabled as Disabled
 import Page.Transaction.Liquidity.Add.Error exposing (Error)
 import Page.Transaction.Liquidity.Add.Query as Query
 import Page.Transaction.Liquidity.Add.Tooltip as Tooltip exposing (Tooltip)
-import Page.Transaction.Liquidity.Add.Write as Write
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.PoolInfo exposing (PoolInfo)
@@ -154,7 +153,8 @@ type Msg
 
 type Effect
     = OpenConnect
-    | OpenConfirm
+    | Approve ERC20
+    | Liquidity WriteLiquidity
 
 
 init : Transaction
@@ -294,11 +294,7 @@ toDisabled (Transaction { state }) =
 
 
 update :
-    { model
-        | time : Posix
-        , slippage : Slippage
-        , deadline : Deadline
-    }
+    { model | slippage : Slippage }
     -> Blockchain
     -> Pool
     -> PoolInfo
@@ -539,10 +535,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , erc20
-                            |> Approve.encode blockchain user
-                            |> approveLiquidity
-                        , OpenConfirm |> Just
+                            |> Approve
+                            |> Just
                         )
                             |> Just
 
@@ -598,10 +594,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , erc20
-                            |> Approve.encode blockchain user
-                            |> approveLiquidity
-                        , OpenConfirm |> Just
+                            |> Approve
+                            |> Just
                         )
                             |> Just
 
@@ -661,16 +657,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                             then
                                 ( transaction |> Transaction
+                                , Cmd.none
                                 , { pool = pool
                                   , assetIn = assetIn
                                   , minLiquidity = answer.minLiquidity
                                   , maxDebt = answer.maxDebt
                                   , maxCollateral = answer.maxCollateral
                                   }
-                                    |> Write.GivenAsset
-                                    |> Write.encode model blockchain user
-                                    |> liquidity
-                                , OpenConfirm |> Just
+                                    |> WriteLiquidity.GivenAsset
+                                    |> Liquidity
+                                    |> Just
                                 )
                                     |> Just
 
@@ -733,16 +729,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                             then
                                 ( transaction |> Transaction
+                                , Cmd.none
                                 , { pool = pool
                                   , debtIn = debtIn
                                   , minLiquidity = answer.minLiquidity
                                   , maxAsset = answer.maxAsset
                                   , maxCollateral = answer.maxCollateral
                                   }
-                                    |> Write.GivenDebt
-                                    |> Write.encode model blockchain user
-                                    |> liquidity
-                                , OpenConfirm |> Just
+                                    |> WriteLiquidity.GivenDebt
+                                    |> Liquidity
+                                    |> Just
                                 )
                                     |> Just
 
@@ -805,16 +801,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                             then
                                 ( transaction |> Transaction
+                                , Cmd.none
                                 , { pool = pool
                                   , collateralIn = collateralIn
                                   , minLiquidity = answer.minLiquidity
                                   , maxAsset = answer.maxAsset
                                   , maxDebt = answer.maxDebt
                                   }
-                                    |> Write.GivenCollateral
-                                    |> Write.encode model blockchain user
-                                    |> liquidity
-                                , OpenConfirm |> Just
+                                    |> WriteLiquidity.GivenCollateral
+                                    |> Liquidity
+                                    |> Just
                                 )
                                     |> Just
 
@@ -1239,7 +1235,7 @@ assetInSection :
 assetInSection model blockchain asset { state, tooltip } =
     column
         [ Region.description "lend asset"
-        , width <| px 343
+        , width fill
         , height shrink
         , padding 16
         , spacing 10
@@ -1319,7 +1315,7 @@ duesInSection :
 duesInSection model blockchain pool ({ state, tooltip } as transaction) =
     column
         [ Region.description "dues"
-        , width <| px 343
+        , width fill
         , height shrink
         , padding 16
         , spacing 12
@@ -1531,7 +1527,7 @@ liquidityOutSection :
 liquidityOutSection model pool { state } =
     column
         [ Region.description "liquidity output"
-        , width <| px 343
+        , width fill
         , height shrink
         , padding 16
         , spacing 10
@@ -1570,7 +1566,7 @@ liquidityOutSection model pool { state } =
 buttons : Blockchain -> Element Msg
 buttons blockchain =
     column
-        [ width <| px 343
+        [ width fill
         , height shrink
         , spacing 12
         ]

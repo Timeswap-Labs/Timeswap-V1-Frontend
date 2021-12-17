@@ -235,13 +235,13 @@ liquidity { images } param =
         , clip
         ]
         (row
-            [ width <| px 80
+            [ width fill
             , height shrink
             , spacing 6
             , centerY
             ]
             [ row
-                [ width <| px 36
+                [ width <| px 40
                 , height <| px 24
                 ]
                 [ images
@@ -260,7 +260,7 @@ liquidity { images } param =
                         param.asset
                 ]
             , el
-                [ width shrink
+                [ width fill
                 , height shrink
                 , centerY
                 ]
@@ -296,13 +296,13 @@ disabledLiquidity { images } param =
         , clip
         ]
         (row
-            [ width <| px 80
+            [ width fill
             , height shrink
             , spacing 6
             , centerY
             ]
             [ row
-                [ width <| px 36
+                [ width <| px 80
                 , height <| px 24
                 ]
                 [ images

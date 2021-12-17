@@ -14,10 +14,12 @@ module Page.Transaction.Liquidity.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
+import Blockchain.User.WriteCreate exposing (WriteCreate)
+import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
-import Data.Deadline exposing (Deadline)
+import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
@@ -66,7 +68,7 @@ import Page.Transaction.Liquidity.New.Disabled as NewDisabled
 import Page.Transaction.Liquidity.New.Main as New
 import Page.Transaction.MaturityButton as MaturityButton
 import Page.Transaction.PoolInfo as PoolInfo exposing (PoolInfo)
-import Page.Transaction.Price as Price exposing (Price)
+import Page.Transaction.Price exposing (Price)
 import Page.Transaction.Query as Query
 import Page.Transaction.TokenButton as TokenButton
 import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
@@ -143,7 +145,9 @@ type Effect
     | OpenInputMaturity Pair
     | OpenConnect
     | OpenSettings
-    | OpenConfirm
+    | Approve ERC20
+    | Liquidity WriteLiquidity
+    | Create WriteCreate
 
 
 init :
@@ -294,11 +298,7 @@ notSupported =
 
 
 update :
-    { model
-        | time : Posix
-        , slippage : Slippage
-        , deadline : Deadline
-    }
+    { model | slippage : Slippage }
     -> Blockchain
     -> Msg
     -> Transaction
@@ -808,7 +808,7 @@ update model blockchain msg (Transaction transaction) =
 
         ( NewMsg newMsg, New (Pool pool (Active (Success (DoesNotExist spot new)))) ) ->
             new
-                |> New.update model blockchain pool spot newMsg
+                |> New.update blockchain pool spot newMsg
                 |> (\( updated, cmd, maybeEffect ) ->
                         ( { transaction
                             | state =
@@ -843,8 +843,11 @@ addEffects effect =
         Add.OpenConnect ->
             OpenConnect
 
-        Add.OpenConfirm ->
-            OpenConfirm
+        Add.Approve erc20 ->
+            Approve erc20
+
+        Add.Liquidity writeLiquidity ->
+            Liquidity writeLiquidity
 
 
 newEffects : New.Effect -> Effect
@@ -853,8 +856,11 @@ newEffects effect =
         New.OpenConnect ->
             OpenConnect
 
-        New.OpenConfirm ->
-            OpenConfirm
+        New.Approve erc20 ->
+            Approve erc20
+
+        New.Create writeCreate ->
+            Create writeCreate
 
 
 noCmdAndEffect :
@@ -1320,7 +1326,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         , spacing 24
                         ]
                         [ column
-                            [ width shrink
+                            [ width <| px 343
                             , height shrink
                             , spacing 16
                             , alignTop
@@ -1329,7 +1335,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                             , first
                             ]
                         , column
-                            [ width shrink
+                            [ width <| px 343
                             , height shrink
                             , spacing 16
                             , alignTop

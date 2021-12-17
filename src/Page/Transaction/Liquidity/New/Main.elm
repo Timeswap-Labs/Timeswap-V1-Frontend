@@ -11,8 +11,9 @@ port module Page.Transaction.Liquidity.New.Main exposing
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
+import Blockchain.User.WriteCreate exposing (WriteCreate)
 import Data.CDP as CDP exposing (CDP)
-import Data.Deadline exposing (Deadline)
+import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair
@@ -47,19 +48,16 @@ import Element.Input as Input
 import Element.Region as Region
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
-import Page.Approve as Approve
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.Liquidity.New.Disabled as Disabled
 import Page.Transaction.Liquidity.New.Error exposing (Error)
 import Page.Transaction.Liquidity.New.Query as Query
 import Page.Transaction.Liquidity.New.Tooltip as Tooltip exposing (Tooltip)
-import Page.Transaction.Liquidity.New.Write as Write
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.Price exposing (Price)
 import Page.Transaction.Textbox as Textbox
-import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Input as Input
 
@@ -98,7 +96,8 @@ type Msg
 
 type Effect
     = OpenConnect
-    | OpenConfirm
+    | Approve ERC20
+    | Create WriteCreate
 
 
 init : Transaction
@@ -161,14 +160,13 @@ toDisabled (Transaction { assetIn, debtIn, collateralIn }) =
 
 
 update :
-    { model | time : Posix, deadline : Deadline }
-    -> Blockchain
+    Blockchain
     -> Pool
     -> Price
     -> Msg
     -> Transaction
     -> ( Transaction, Cmd Msg, Maybe Effect )
-update model blockchain pool spot msg (Transaction transaction) =
+update blockchain pool spot msg (Transaction transaction) =
     case msg of
         InputAssetIn assetIn ->
             if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
@@ -337,10 +335,10 @@ update model blockchain pool spot msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , erc20
-                            |> Approve.encode blockchain user
-                            |> approveCreate
-                        , OpenConfirm |> Just
+                            |> Approve
+                            |> Just
                         )
                             |> Just
 
@@ -378,10 +376,10 @@ update model blockchain pool spot msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , erc20
-                            |> Approve.encode blockchain user
-                            |> approveCreate
-                        , OpenConfirm |> Just
+                            |> Approve
+                            |> Just
                         )
                             |> Just
 
@@ -446,14 +444,14 @@ update model blockchain pool spot msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , { pool = pool
                           , assetIn = assetIn
                           , debtIn = debtIn
                           , collateralIn = collateralIn
                           }
-                            |> Write.encode model blockchain user
-                            |> create
-                        , OpenConfirm |> Just
+                            |> Create
+                            |> Just
                         )
                             |> Just
 
@@ -654,12 +652,6 @@ constructQueryNew givenCmd blockchain pool spot transaction =
 port queryCreate : Value -> Cmd msg
 
 
-port approveCreate : Value -> Cmd msg
-
-
-port create : Value -> Cmd msg
-
-
 view :
     { model | spot : PriceFeed, images : Images }
     -> Blockchain
@@ -694,7 +686,7 @@ assetInSection :
 assetInSection model blockchain asset { assetIn, tooltip } =
     column
         [ Region.description "lend asset"
-        , width <| px 343
+        , width fill
         , height shrink
         , padding 16
         , spacing 10
@@ -761,7 +753,7 @@ duesOutSection :
 duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tooltip } as transaction) =
     column
         [ Region.description "dues"
-        , width <| px 343
+        , width fill
         , height shrink
         , padding 16
         , spacing 12
@@ -917,7 +909,7 @@ liquidityOutSection :
 liquidityOutSection model pool { liquidityOut } =
     column
         [ Region.description "liquidity output"
-        , width <| px 343
+        , width fill
         , height shrink
         , padding 16
         , spacing 10
@@ -946,7 +938,7 @@ liquidityOutSection model pool { liquidityOut } =
 buttons : Blockchain -> Element Msg
 buttons blockchain =
     column
-        [ width <| px 343
+        [ width fill
         , height shrink
         , spacing 12
         ]

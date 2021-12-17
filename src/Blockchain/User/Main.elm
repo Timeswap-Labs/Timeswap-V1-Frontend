@@ -1,4 +1,4 @@
-module Blockchain.User.Main exposing
+port module Blockchain.User.Main exposing
     ( Flag
     , Msg
     , NotSupported
@@ -8,24 +8,43 @@ module Blockchain.User.Main exposing
     , hasEnoughBalance
     , init
     , initNotSupported
+    , isApprovePending
     , receiveNotSupported
     , receiveUser
     , receiveUserInit
     , toAddress
     , toAddressNotSupported
     , toName
+    , toPendingSize
+    , toTxnsList
     , toWallet
     , toWalletNotSupported
     , update
+    , updateApprove
+    , updateBorrow
+    , updateCreate
+    , updateLend
+    , updateLiquidity
     )
 
 import Blockchain.User.Allowances as Allowances exposing (Allowances)
 import Blockchain.User.Balances as Balances exposing (Balances)
+import Blockchain.User.Txns.Main as Txns exposing (Txns)
+import Blockchain.User.Txns.Txn as Txn exposing (Txn)
+import Blockchain.User.Txns.TxnWrite as TxnWrite
+import Blockchain.User.Write as Write
+import Blockchain.User.WriteApprove as WriteApprove
+import Blockchain.User.WriteBorrow as WriteBorrow exposing (WriteBorrow)
+import Blockchain.User.WriteCreate as WriteCreate exposing (WriteCreate)
+import Blockchain.User.WriteLend as WriteLend exposing (WriteLend)
+import Blockchain.User.WriteLiquidity as WriteLiquidity exposing (WriteLiquidity)
 import Data.Address as Address exposing (Address)
-import Data.Chain as Chain exposing (Chain)
+import Data.Chain exposing (Chain)
 import Data.Chains exposing (Chains)
+import Data.Deadline exposing (Deadline)
 import Data.ERC20 exposing (ERC20)
-import Data.Remote as Remote exposing (Remote(..))
+import Data.Hash exposing (Hash)
+import Data.Remote exposing (Remote(..))
 import Data.Token exposing (Token)
 import Data.Uint exposing (Uint)
 import Data.Wallet as Wallet exposing (Wallet)
@@ -34,6 +53,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode exposing (Value)
 import Sort.Dict as Dict
+import Time exposing (Posix)
 
 
 type User
@@ -43,6 +63,7 @@ type User
         , name : Maybe String
         , balances : Balances
         , allowances : Allowances
+        , txns : Txns
         }
 
 
@@ -61,7 +82,7 @@ type alias Flag =
 
 
 type Msg
-    = Msg
+    = ReceiveReceipt Value
 
 
 init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
@@ -77,6 +98,7 @@ init chains chain flag =
               , name = Nothing
               , balances = Balances.init chains chain
               , allowances = Allowances.init chains chain
+              , txns = Txns.init
               }
                 |> User
             , Cmd.none |> Debug.log "Later"
@@ -105,9 +127,151 @@ initNotSupported flag =
             Nothing
 
 
-update : Msg -> User -> ( User, Cmd Msg )
-update msg (User user) =
-    ( User user
+update : Chain -> Msg -> User -> ( User, Cmd Msg )
+update chain msg (User user) =
+    case msg of
+        ReceiveReceipt value ->
+            case value |> Decode.decodeValue Write.decoder of
+                Ok receipt ->
+                    if
+                        (receipt.chainId == chain)
+                            && (receipt.address == user.address)
+                    then
+                        ( { user
+                            | txns =
+                                user.txns
+                                    |> Txns.confirm receipt.id
+                                        receipt.hash
+                                        Txn.Pending
+                          }
+                            |> User
+                        , Cmd.none
+                        )
+
+                    else
+                        user |> noCmd
+
+                Err _ ->
+                    user |> noCmd
+
+
+updateApprove : Chain -> ERC20 -> User -> ( User, Cmd Msg )
+updateApprove chain erc20 (User user) =
+    user.txns
+        |> Txns.insert (TxnWrite.Approve erc20)
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , erc20
+                    |> WriteApprove.encode id chain user.address
+                    |> approve
+                )
+           )
+
+
+updateLend :
+    { model | time : Posix, deadline : Deadline }
+    -> Chain
+    -> WriteLend
+    -> User
+    -> ( User, Cmd Msg )
+updateLend model chain writeLend (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.Lend
+                (writeLend |> WriteLend.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , writeLend
+                    |> WriteLend.encode model user.address
+                    |> Write.encode id chain user.address
+                    |> lend
+                )
+           )
+
+
+updateBorrow :
+    { model | time : Posix, deadline : Deadline }
+    -> Chain
+    -> WriteBorrow
+    -> User
+    -> ( User, Cmd Msg )
+updateBorrow model chain writeBorrow (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.Borrow
+                (writeBorrow |> WriteBorrow.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , writeBorrow
+                    |> WriteBorrow.encode model user.address
+                    |> Write.encode id chain user.address
+                    |> borrow
+                )
+           )
+
+
+updateLiquidity :
+    { model | time : Posix, deadline : Deadline }
+    -> Chain
+    -> WriteLiquidity
+    -> User
+    -> ( User, Cmd Msg )
+updateLiquidity model chain writeLiquidity (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.Liquidity
+                (writeLiquidity |> WriteLiquidity.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , writeLiquidity
+                    |> WriteLiquidity.encode model user.address
+                    |> Write.encode id chain user.address
+                    |> liquidity
+                )
+           )
+
+
+updateCreate :
+    { model | time : Posix, deadline : Deadline }
+    -> Chain
+    -> WriteCreate
+    -> User
+    -> ( User, Cmd Msg )
+updateCreate model chain writeCreate (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.Create
+                (writeCreate |> WriteCreate.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , writeCreate
+                    |> WriteCreate.encode model user.address
+                    |> Write.encode id chain user.address
+                    |> create
+                )
+           )
+
+
+noCmd :
+    { wallet : Wallet
+    , address : Address
+    , name : Maybe String
+    , balances : Balances
+    , allowances : Allowances
+    , txns : Txns
+    }
+    -> ( User, Cmd Msg )
+noCmd user =
+    ( user |> User
     , Cmd.none
     )
 
@@ -124,6 +288,7 @@ decoder { chains } chain =
             , name = Nothing
             , balances = Balances.init chains chain
             , allowances = Allowances.init chains chain
+            , txns = Txns.init
             }
                 |> User
         )
@@ -214,6 +379,24 @@ receiveNotSupported value =
             Nothing
 
 
+port approve : Value -> Cmd msg
+
+
+port lend : Value -> Cmd msg
+
+
+port borrow : Value -> Cmd msg
+
+
+port liquidity : Value -> Cmd msg
+
+
+port create : Value -> Cmd msg
+
+
+port receiveReceipt : (Value -> msg) -> Sub msg
+
+
 toWallet : User -> Wallet
 toWallet (User { wallet }) =
     wallet
@@ -266,3 +449,21 @@ hasEnoughAllowance : ERC20 -> Uint -> User -> Bool
 hasEnoughAllowance erc20 amount (User { allowances }) =
     allowances
         |> Allowances.hasEnough erc20 amount
+
+
+toPendingSize : User -> Int
+toPendingSize (User { txns }) =
+    txns
+        |> Txns.toPendingSize
+
+
+toTxnsList : User -> List ( Hash, Txn )
+toTxnsList (User { txns }) =
+    txns
+        |> Txns.toList
+
+
+isApprovePending : ERC20 -> User -> Bool
+isApprovePending erc20 (User { txns }) =
+    txns
+        |> Txns.isPending erc20

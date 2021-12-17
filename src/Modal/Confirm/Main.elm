@@ -1,5 +1,6 @@
-module Modal.Confirm.Main exposing (Modal, Msg, init, update, view)
+module Modal.Confirm.Main exposing (Modal, Msg, confirm, init, reject, update, view)
 
+import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Data.Backdrop exposing (Backdrop)
 import Element
     exposing
@@ -11,24 +12,45 @@ import Utility.IconButton as IconButton
 
 
 type Modal
+    = Modal
+        { write : TxnWrite
+        , state : State
+        }
+
+
+type State
     = Confirming
-    | Reject
+    | Rejected
 
 
 type Msg
     = Exit
 
 
-init : Modal
-init =
-    Confirming
+init : TxnWrite -> Modal
+init txnWrite =
+    { write = txnWrite
+    , state = Confirming
+    }
+        |> Modal
 
 
-update : Msg -> Modal -> Maybe Modal
-update msg modal =
-    case ( msg, modal ) of
-        ( Exit, _ ) ->
+update : Msg -> Maybe Never
+update msg =
+    case msg of
+        Exit ->
             Nothing
+
+
+confirm : Maybe Never
+confirm =
+    Nothing
+
+
+reject : Modal -> Modal
+reject (Modal modal) =
+    { modal | state = Rejected }
+        |> Modal
 
 
 view : { model | backdrop : Backdrop } -> Element Msg

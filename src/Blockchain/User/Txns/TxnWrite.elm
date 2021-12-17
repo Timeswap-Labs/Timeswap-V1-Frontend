@@ -1,4 +1,4 @@
-module Blockchain.User.TxnWrite exposing (TxnWrite(..), decoder, encode)
+module Blockchain.User.Txns.TxnWrite exposing (TxnWrite(..), decoder, encode)
 
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Pool as Pool exposing (Pool)

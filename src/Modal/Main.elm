@@ -17,6 +17,7 @@ module Modal.Main exposing
 
 import Blockchain.Main exposing (Blockchain)
 import Blockchain.User.Main as User
+import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
@@ -102,9 +103,9 @@ initTokenList tokenParam =
         |> TokenList
 
 
-initConfirm : Modal
-initConfirm =
-    Confirm.init
+initConfirm : TxnWrite -> Modal
+initConfirm txnWrite =
+    Confirm.init txnWrite
         |> Confirm
 
 
@@ -199,11 +200,10 @@ update model msg modal =
                         )
                    )
 
-        ( ConfirmMsg confirmMsg, Confirm confirm, Supported _ ) ->
-            confirm
-                |> Confirm.update confirmMsg
+        ( ConfirmMsg confirmMsg, Confirm _, Supported _ ) ->
+            Confirm.update confirmMsg
                 |> (\updated ->
-                        ( updated |> Maybe.map Confirm
+                        ( updated |> Maybe.map never
                         , Cmd.none
                         , Nothing
                         )

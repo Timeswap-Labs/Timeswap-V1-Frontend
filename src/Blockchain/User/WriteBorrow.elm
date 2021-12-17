@@ -1,9 +1,6 @@
-module Page.Transaction.Borrow.Borrow.Write exposing (Write(..), encode)
+module Blockchain.User.WriteBorrow exposing (WriteBorrow(..), encode, toPool)
 
-import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User exposing (User)
-import Data.Address as Address
-import Data.Chain as Chain
+import Data.Address as Address exposing (Address)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Maturity as Maturity
 import Data.Pair as Pair
@@ -15,13 +12,13 @@ import Json.Encode as Encode exposing (Value)
 import Time exposing (Posix)
 
 
-type Write
-    = GivenPercent WritePercent
-    | GivenDebt WriteDebt
-    | GivenCollateral WriteCollateral
+type WriteBorrow
+    = GivenPercent BorrowGivenPercent
+    | GivenDebt BorrowGivenDebt
+    | GivenCollateral BorrowGivenCollateral
 
 
-type alias WritePercent =
+type alias BorrowGivenPercent =
     { pool : Pool
     , assetOut : Uint
     , percent : Percent
@@ -30,7 +27,7 @@ type alias WritePercent =
     }
 
 
-type alias WriteDebt =
+type alias BorrowGivenDebt =
     { pool : Pool
     , assetOut : Uint
     , debtIn : Uint
@@ -38,7 +35,7 @@ type alias WriteDebt =
     }
 
 
-type alias WriteCollateral =
+type alias BorrowGivenCollateral =
     { pool : Pool
     , assetOut : Uint
     , collateralIn : Uint
@@ -46,61 +43,50 @@ type alias WriteCollateral =
     }
 
 
+toPool : WriteBorrow -> Pool
+toPool writeBorrow =
+    case writeBorrow of
+        GivenPercent { pool } ->
+            pool
+
+        GivenDebt { pool } ->
+            pool
+
+        GivenCollateral { pool } ->
+            pool
+
+
 encode :
     { model | time : Posix, deadline : Deadline }
-    -> Blockchain
-    -> User
-    -> Write
+    -> Address
+    -> WriteBorrow
     -> Value
-encode model blockchain user write =
-    [ ( "chainId"
-      , blockchain
-            |> Blockchain.toChain
-            |> Chain.encode
-      )
-    , ( "address"
-      , user
-            |> User.toAddress
-            |> Address.encode
-      )
-    , ( "send"
-      , write |> encodeWrite model user
-      )
-    ]
-        |> Encode.object
-
-
-encodeWrite :
-    { model | time : Posix, deadline : Deadline }
-    -> User
-    -> Write
-    -> Value
-encodeWrite model user write =
+encode model address write =
     case write of
         GivenPercent givenPercent ->
             givenPercent
-                |> encodeWritePercent model user
+                |> encodeWritePercent model address
 
         GivenDebt givenDebt ->
             givenDebt
-                |> encodeWriteDebt model user
+                |> encodeWriteDebt model address
 
         GivenCollateral givenCollateral ->
             givenCollateral
-                |> encodeWriteCollateral model user
+                |> encodeWriteCollateral model address
 
 
 encodeWritePercent :
     { model | time : Posix, deadline : Deadline }
-    -> User
-    -> WritePercent
+    -> Address
+    -> BorrowGivenPercent
     -> Value
-encodeWritePercent { time, deadline } user { pool, assetOut, percent, maxDebt, maxCollateral } =
+encodeWritePercent { time, deadline } address { pool, assetOut, percent, maxDebt, maxCollateral } =
     [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
     , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
     , ( "maturity", pool.maturity |> Maturity.encode )
-    , ( "assetTo", user |> User.toAddress |> Address.encode )
-    , ( "dueTo", user |> User.toAddress |> Address.encode )
+    , ( "assetTo", address |> Address.encode )
+    , ( "dueTo", address |> Address.encode )
     , ( "assetOut", assetOut |> Uint.encode )
     , ( "percent", percent |> Percent.encode )
     , ( "maxDebt", maxDebt |> Uint.encode )
@@ -112,15 +98,15 @@ encodeWritePercent { time, deadline } user { pool, assetOut, percent, maxDebt, m
 
 encodeWriteDebt :
     { model | time : Posix, deadline : Deadline }
-    -> User
-    -> WriteDebt
+    -> Address
+    -> BorrowGivenDebt
     -> Value
-encodeWriteDebt { time, deadline } user { pool, assetOut, debtIn, maxCollateral } =
+encodeWriteDebt { time, deadline } address { pool, assetOut, debtIn, maxCollateral } =
     [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
     , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
     , ( "maturity", pool.maturity |> Maturity.encode )
-    , ( "assetTo", user |> User.toAddress |> Address.encode )
-    , ( "dueTo", user |> User.toAddress |> Address.encode )
+    , ( "assetTo", address |> Address.encode )
+    , ( "dueTo", address |> Address.encode )
     , ( "assetOut", assetOut |> Uint.encode )
     , ( "debtIn", debtIn |> Uint.encode )
     , ( "maxCollateral", maxCollateral |> Uint.encode )
@@ -131,15 +117,15 @@ encodeWriteDebt { time, deadline } user { pool, assetOut, debtIn, maxCollateral 
 
 encodeWriteCollateral :
     { model | time : Posix, deadline : Deadline }
-    -> User
-    -> WriteCollateral
+    -> Address
+    -> BorrowGivenCollateral
     -> Value
-encodeWriteCollateral { time, deadline } user { pool, assetOut, collateralIn, maxDebt } =
+encodeWriteCollateral { time, deadline } address { pool, assetOut, collateralIn, maxDebt } =
     [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
     , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
     , ( "maturity", pool.maturity |> Maturity.encode )
-    , ( "assetTo", user |> User.toAddress |> Address.encode )
-    , ( "dueTo", user |> User.toAddress |> Address.encode )
+    , ( "assetTo", address |> Address.encode )
+    , ( "dueTo", address |> Address.encode )
     , ( "assetOut", assetOut |> Uint.encode )
     , ( "collateralIn", collateralIn |> Uint.encode )
     , ( "maxDebt", maxDebt |> Uint.encode )

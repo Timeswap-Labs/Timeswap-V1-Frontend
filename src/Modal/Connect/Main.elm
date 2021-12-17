@@ -514,7 +514,7 @@ viewInitializing model waiting =
                 , paddingXY 0 3
                 , Font.color Color.light100
                 ]
-                (text "Initializing")
+                (text "Connect Wallet")
             , IconButton.exit model Exit
             ]
         , walletWaiting model waiting
@@ -544,9 +544,9 @@ viewError model waiting =
                 , centerY
                 , Font.size 18
                 , paddingXY 0 3
-                , Font.color Color.negative500
+                , Font.color Color.light100
                 ]
-                (text "Error")
+                (text "Connect Wallet")
             , IconButton.exit model Exit
             ]
         , walletError model waiting

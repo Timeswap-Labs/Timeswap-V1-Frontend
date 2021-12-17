@@ -2,6 +2,11 @@ port module Main exposing (main)
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
+import Blockchain.User.Txns.TxnWrite as TxnWrite
+import Blockchain.User.WriteBorrow as WriteBorrow
+import Blockchain.User.WriteCreate as WriteCreate
+import Blockchain.User.WriteLend as WriteLend
+import Blockchain.User.WriteLiquidity as WriteLiquidity
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events exposing (Visibility)
 import Browser.Navigation as Navigation exposing (Key)
@@ -64,10 +69,9 @@ import Page.Main as Page exposing (Page)
 import Page.Route as Route
 import Sort.Set as Set
 import Task
-import Time exposing (Posix, Zone)
+import Time exposing (Posix)
 import Url exposing (Url)
 import Utility.Color as Color
-import Utility.Glass as Glass
 import Utility.Image as Image
 
 
@@ -420,7 +424,7 @@ update msg model =
                                     |> Maybe.map
                                         (\effect ->
                                             { model | page = updated }
-                                                |> pageEffect blockchain effect
+                                                |> pageEffects blockchain effect
                                                 |> Tuple.mapSecond List.singleton
                                                 |> Tuple.mapSecond
                                                     ((::) (cmd |> Cmd.map PageMsg))
@@ -446,7 +450,7 @@ update msg model =
                             |> Maybe.map
                                 (\effect ->
                                     { model | modal = updated }
-                                        |> modalEffect effect
+                                        |> modalEffects effect
                                         |> Tuple.mapSecond List.singleton
                                         |> Tuple.mapSecond
                                             ((::) (cmd |> Cmd.map ModalMsg))
@@ -463,12 +467,12 @@ update msg model =
                     )
 
 
-pageEffect :
+pageEffects :
     Blockchain
     -> Page.Effect
     -> Model
     -> ( Model, Cmd Msg )
-pageEffect blockchain effect model =
+pageEffects blockchain effect model =
     case effect of
         Page.OpenTokenList tokenParam ->
             ( { model
@@ -510,17 +514,95 @@ pageEffect blockchain effect model =
             , Cmd.none
             )
 
-        Page.OpenConfirm ->
-            ( { model | modal = Modal.initConfirm |> Just }
-            , Cmd.none
-            )
+        Page.Approve erc20 ->
+            blockchain
+                |> Blockchain.updateApprove erc20
+                |> Tuple.mapBoth
+                    (\updated ->
+                        { model
+                            | blockchain = Supported updated
+                            , modal =
+                                TxnWrite.Approve erc20
+                                    |> Modal.initConfirm
+                                    |> Just
+                        }
+                    )
+                    (Cmd.map BlockchainMsg)
+
+        Page.Lend writeLend ->
+            blockchain
+                |> Blockchain.updateLend model writeLend
+                |> Tuple.mapBoth
+                    (\updated ->
+                        { model
+                            | blockchain = Supported updated
+                            , modal =
+                                writeLend
+                                    |> WriteLend.toPool
+                                    |> TxnWrite.Lend
+                                    |> Modal.initConfirm
+                                    |> Just
+                        }
+                    )
+                    (Cmd.map BlockchainMsg)
+
+        Page.Borrow writeBorrow ->
+            blockchain
+                |> Blockchain.updateBorrow model writeBorrow
+                |> Tuple.mapBoth
+                    (\updated ->
+                        { model
+                            | blockchain = Supported updated
+                            , modal =
+                                writeBorrow
+                                    |> WriteBorrow.toPool
+                                    |> TxnWrite.Borrow
+                                    |> Modal.initConfirm
+                                    |> Just
+                        }
+                    )
+                    (Cmd.map BlockchainMsg)
+
+        Page.Liquidity writeLiquidity ->
+            blockchain
+                |> Blockchain.updateLiquidity model writeLiquidity
+                |> Tuple.mapBoth
+                    (\updated ->
+                        { model
+                            | blockchain = Supported updated
+                            , modal =
+                                writeLiquidity
+                                    |> WriteLiquidity.toPool
+                                    |> TxnWrite.Liquidity
+                                    |> Modal.initConfirm
+                                    |> Just
+                        }
+                    )
+                    (Cmd.map BlockchainMsg)
+
+        Page.Create writeCreate ->
+            blockchain
+                |> Blockchain.updateCreate model writeCreate
+                |> Tuple.mapBoth
+                    (\updated ->
+                        { model
+                            | blockchain = Supported updated
+                            , modal =
+                                writeCreate
+                                    |> WriteCreate.toPool
+                                    |> TxnWrite.Create
+                                    |> Modal.initConfirm
+                                    |> Just
+                        }
+                    )
+                    (Cmd.map BlockchainMsg)
 
 
-modalEffect :
+modalEffects :
     Modal.Effect
     -> Model
     -> ( Model, Cmd Msg )
-modalEffect effect model =
+modalEffects effect model =
     case effect of
         Modal.UpdateSettings slippage deadline spot ->
             ( { model
@@ -1002,6 +1084,34 @@ connectButton ({ images } as model) =
                                                     )
                                                 |> text
                                             )
+                                        , user
+                                            |> User.toPendingSize
+                                            |> (\size ->
+                                                    if size > 0 then
+                                                        el
+                                                            [ width <| px 24
+                                                            , height <| px 24
+                                                            , Background.color Color.warning500
+                                                            , Border.rounded 999
+                                                            ]
+                                                            (el
+                                                                [ width shrink
+                                                                , height shrink
+                                                                , centerX
+                                                                , centerY
+                                                                , Font.color Color.light100
+                                                                , Font.size 16
+                                                                , paddingXY 0 4
+                                                                ]
+                                                                (size
+                                                                    |> String.fromInt
+                                                                    |> text
+                                                                )
+                                                            )
+
+                                                    else
+                                                        none
+                                               )
                                         ]
                                 )
                             |> Maybe.withDefault

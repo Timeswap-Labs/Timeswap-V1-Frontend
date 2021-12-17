@@ -60,7 +60,13 @@ view token amount =
 viewLP : Uint -> Element msg
 viewLP amount =
     if amount |> Uint.isZero then
-        none
+        el
+            [ width shrink
+            , height shrink
+            , Font.color Color.transparent200
+            , Font.size 16
+            ]
+            (text "0.0")
 
     else
         row

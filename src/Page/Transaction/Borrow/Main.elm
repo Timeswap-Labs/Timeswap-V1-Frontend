@@ -14,10 +14,11 @@ module Page.Transaction.Borrow.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
+import Blockchain.User.WriteBorrow exposing (WriteBorrow)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
-import Data.Deadline exposing (Deadline)
+import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
@@ -123,7 +124,8 @@ type Effect
     | OpenMaturityList Pair
     | OpenConnect
     | OpenSettings
-    | OpenConfirm
+    | Approve ERC20
+    | Borrow WriteBorrow
 
 
 init :
@@ -260,11 +262,7 @@ notSupported =
 
 
 update :
-    { model
-        | time : Posix
-        , slippage : Slippage
-        , deadline : Deadline
-    }
+    { model | slippage : Slippage }
     -> Blockchain
     -> Msg
     -> Transaction
@@ -487,8 +485,11 @@ borrowEffects effect =
         Borrow.OpenConnect ->
             OpenConnect
 
-        Borrow.OpenConfirm ->
-            OpenConfirm
+        Borrow.Approve erc20 ->
+            Approve erc20
+
+        Borrow.Borrow writeBorrow ->
+            Borrow writeBorrow
 
 
 noCmdAndEffect :
@@ -753,7 +754,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         , spacing 24
                         ]
                         [ column
-                            [ width shrink
+                            [ width <| px 343
                             , height shrink
                             , spacing 16
                             , alignTop
@@ -762,7 +763,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                             , first
                             ]
                         , column
-                            [ width shrink
+                            [ width <| px 343
                             , height shrink
                             , spacing 16
                             , alignTop

@@ -1,7 +1,8 @@
-module Data.Hash exposing (Hash, decoder, encode)
+module Data.Hash exposing (Hash, decoder, encode, sorter)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
+import Sort exposing (Sorter)
 
 
 type Hash
@@ -55,3 +56,9 @@ decoder =
 encode : Hash -> Value
 encode (Hash string) =
     Encode.string string
+
+
+sorter : Sorter Hash
+sorter =
+    Sort.alphabetical
+        |> Sort.by (\(Hash string) -> string)

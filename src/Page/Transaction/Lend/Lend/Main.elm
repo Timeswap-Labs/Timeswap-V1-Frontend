@@ -12,8 +12,9 @@ port module Page.Transaction.Lend.Lend.Main exposing
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
+import Blockchain.User.WriteLend as WriteLend exposing (WriteLend)
 import Data.CDP as CDP exposing (CDP)
-import Data.Deadline exposing (Deadline)
+import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Mode as Mode exposing (Mode)
 import Data.Or exposing (Or(..))
@@ -51,14 +52,12 @@ import Element.Input as Input
 import Element.Region as Region
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
-import Page.Approve as Approve
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.Lend.Lend.Disabled as Disabled
 import Page.Transaction.Lend.Lend.Error exposing (Error)
 import Page.Transaction.Lend.Lend.Query as Query
 import Page.Transaction.Lend.Lend.Tooltip as Tooltip exposing (Tooltip)
-import Page.Transaction.Lend.Lend.Write as Write
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.PoolInfo exposing (PoolInfo)
@@ -153,7 +152,8 @@ type Msg
 
 type Effect
     = OpenConnect
-    | OpenConfirm
+    | Approve ERC20
+    | Lend WriteLend
 
 
 init : Transaction
@@ -312,11 +312,7 @@ toDisabled (Transaction { assetIn, claimsOut }) =
 
 
 update :
-    { model
-        | time : Posix
-        , slippage : Slippage
-        , deadline : Deadline
-    }
+    { model | slippage : Slippage }
     -> Blockchain
     -> Pool
     -> PoolInfo
@@ -749,10 +745,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , erc20
-                            |> Approve.encode blockchain user
-                            |> approveLend
-                        , OpenConfirm |> Just
+                            |> Approve
+                            |> Just
                         )
                             |> Just
 
@@ -793,16 +789,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , { pool = pool
                           , assetIn = assetIn
                           , percent = Percent.init
                           , minBond = answer.minBond
                           , minInsurance = answer.minInsurance
                           }
-                            |> Write.GivenPercent
-                            |> Write.encode model blockchain user
-                            |> lend
-                        , OpenConfirm |> Just
+                            |> WriteLend.GivenPercent
+                            |> Lend
+                            |> Just
                         )
                             |> Just
 
@@ -844,16 +840,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , { pool = pool
                           , assetIn = assetIn
                           , percent = percent
                           , minBond = answer.minBond
                           , minInsurance = answer.minInsurance
                           }
-                            |> Write.GivenPercent
-                            |> Write.encode model blockchain user
-                            |> lend
-                        , OpenConfirm |> Just
+                            |> WriteLend.GivenPercent
+                            |> Lend
+                            |> Just
                         )
                             |> Just
 
@@ -899,15 +895,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , { pool = pool
                           , assetIn = assetIn
                           , bondOut = bondOut
                           , minInsurance = answer.minInsurance
                           }
-                            |> Write.GivenBond
-                            |> Write.encode model blockchain user
-                            |> lend
-                        , OpenConfirm |> Just
+                            |> WriteLend.GivenBond
+                            |> Lend
+                            |> Just
                         )
                             |> Just
 
@@ -953,15 +949,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , { pool = pool
                           , assetIn = assetIn
                           , insuranceOut = insuranceOut
                           , minBond = answer.minBond
                           }
-                            |> Write.GivenInsurance
-                            |> Write.encode model blockchain user
-                            |> lend
-                        , OpenConfirm |> Just
+                            |> WriteLend.GivenInsurance
+                            |> Lend
+                            |> Just
                         )
                             |> Just
 
@@ -1254,6 +1250,47 @@ toClaimsGivenInsurance result =
             Failure error
 
 
+hasTransaction :
+    { transaction | assetIn : String, claimsOut : ClaimsOut }
+    -> Bool
+hasTransaction transaction =
+    (transaction.assetIn
+        |> Input.isZero
+        |> not
+    )
+        && (case transaction.claimsOut of
+                Default (Success _) ->
+                    True
+
+                Slider { claims } ->
+                    case claims of
+                        Success _ ->
+                            True
+
+                        _ ->
+                            False
+
+                Bond { claims } ->
+                    case claims of
+                        Success _ ->
+                            True
+
+                        _ ->
+                            False
+
+                Insurance { claims } ->
+                    case claims of
+                        Success _ ->
+                            True
+
+                        _ ->
+                            False
+
+                _ ->
+                    False
+           )
+
+
 noCmd :
     { assetIn : String
     , claimsOut : ClaimsOut
@@ -1448,12 +1485,6 @@ port queryLend : Value -> Cmd msg
 port queryLendPerSecond : Value -> Cmd msg
 
 
-port approveLend : Value -> Cmd msg
-
-
-port lend : Value -> Cmd msg
-
-
 port receiveLendAnswer : (Value -> msg) -> Sub msg
 
 
@@ -1501,7 +1532,10 @@ view model blockchain pool (Transaction transaction) =
     , second =
         transaction
             |> claimsOutSection model pool
-    , buttons = buttons blockchain
+    , buttons =
+        transaction
+            |> buttons blockchain
+                (pool.pair |> Pair.toAsset)
     }
 
 
@@ -1514,7 +1548,7 @@ assetInSection :
 assetInSection model blockchain asset { assetIn, tooltip } =
     column
         [ Region.description "lend asset"
-        , width <| px 343
+        , width fill
         , height shrink
         , padding 16
         , spacing 10
@@ -1574,7 +1608,7 @@ claimsOutSection :
 claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
     column
         [ Region.description "claims"
-        , width <| px 343
+        , width fill
         , height shrink
         , padding 16
         , spacing 12
@@ -1912,17 +1946,117 @@ advancedInsuranceOutSection model collateral { tooltip } or =
         ]
 
 
-buttons : Blockchain -> Element Msg
-buttons blockchain =
+buttons :
+    Blockchain
+    -> Token
+    -> { transaction | assetIn : String, claimsOut : ClaimsOut }
+    -> Element Msg
+buttons blockchain asset transaction =
     column
-        [ width <| px 343
+        [ width fill
         , height shrink
         , spacing 12
         ]
         (blockchain
             |> Blockchain.toUser
             |> Maybe.map
-                (\_ -> [])
+                (\user ->
+                    case
+                        ( transaction.assetIn
+                            |> Uint.fromAmount asset
+                        , asset |> Token.toERC20
+                        , transaction |> hasTransaction
+                        )
+                    of
+                        ( Just assetIn, Just erc20, True ) ->
+                            if
+                                (user
+                                    |> User.hasEnoughBalance
+                                        asset
+                                        assetIn
+                                )
+                                    && (user
+                                            |> User.hasEnoughAllowance
+                                                erc20
+                                                assetIn
+                                       )
+                            then
+                                [ lendButton ]
+
+                            else if
+                                user
+                                    |> User.hasEnoughBalance
+                                        asset
+                                        assetIn
+                            then
+                                [ approveButton erc20
+                                , disabledLend
+                                ]
+
+                            else
+                                [ disabledLend ]
+
+                        ( Just assetIn, Just erc20, False ) ->
+                            if
+                                user
+                                    |> User.hasEnoughAllowance
+                                        erc20
+                                        assetIn
+                            then
+                                [ disabledLend ]
+
+                            else
+                                [ disabledApprove erc20
+                                , disabledLend
+                                ]
+
+                        ( Just assetIn, Nothing, True ) ->
+                            if
+                                user
+                                    |> User.hasEnoughBalance
+                                        asset
+                                        assetIn
+                            then
+                                [ lendButton
+                                ]
+
+                            else
+                                [ disabledLend ]
+
+                        ( Just _, Nothing, False ) ->
+                            [ disabledLend ]
+
+                        _ ->
+                            []
+                )
             |> Maybe.withDefault
                 [ Button.connect ClickConnect ]
         )
+
+
+lendButton : Element Msg
+lendButton =
+    Button.view
+        { onPress = ClickLend
+        , text = "Lend"
+        }
+
+
+disabledLend : Element msg
+disabledLend =
+    Button.disabled "Lend"
+        |> map never
+
+
+approveButton : ERC20 -> Element Msg
+approveButton erc20 =
+    Button.approve
+        { onPress = ClickApprove
+        , erc20 = erc20
+        }
+
+
+disabledApprove : ERC20 -> Element msg
+disabledApprove erc20 =
+    Button.disabledApprove erc20
+        |> map never

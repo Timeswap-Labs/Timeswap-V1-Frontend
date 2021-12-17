@@ -12,8 +12,9 @@ port module Page.Transaction.Borrow.Borrow.Main exposing
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
+import Blockchain.User.WriteBorrow as WriteBorrow exposing (WriteBorrow)
 import Data.CDP as CDP exposing (CDP)
-import Data.Deadline exposing (Deadline)
+import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Mode as Mode exposing (Mode)
 import Data.Or exposing (Or(..))
@@ -51,12 +52,10 @@ import Element.Input as Input
 import Element.Region as Region
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
-import Page.Approve as Approve
 import Page.Transaction.Borrow.Borrow.Disabled as Disabled
 import Page.Transaction.Borrow.Borrow.Error exposing (Error)
 import Page.Transaction.Borrow.Borrow.Query as Query
 import Page.Transaction.Borrow.Borrow.Tooltip as Tooltip exposing (Tooltip)
-import Page.Transaction.Borrow.Borrow.Write as Write
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.MaxButton as MaxButton
@@ -186,7 +185,8 @@ type Msg
 
 type Effect
     = OpenConnect
-    | OpenConfirm
+    | Approve ERC20
+    | Borrow WriteBorrow
 
 
 init : Transaction
@@ -412,11 +412,7 @@ toDisabled (Transaction { state }) =
 
 
 update :
-    { model
-        | time : Posix
-        , slippage : Slippage
-        , deadline : Deadline
-    }
+    { model | slippage : Slippage }
     -> Blockchain
     -> Pool
     -> PoolInfo
@@ -1107,10 +1103,10 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                )
                     then
                         ( transaction |> Transaction
+                        , Cmd.none
                         , erc20
-                            |> Approve.encode blockchain user
-                            |> approveBorrow
-                        , OpenConfirm |> Just
+                            |> Approve
+                            |> Just
                         )
                             |> Just
 
@@ -1153,16 +1149,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                             then
                                 ( transaction |> Transaction
+                                , Cmd.none
                                 , { pool = pool
                                   , assetOut = assetOut
                                   , percent = Percent.init
                                   , maxDebt = answer.maxDebt
                                   , maxCollateral = answer.maxCollateral
                                   }
-                                    |> Write.GivenPercent
-                                    |> Write.encode model blockchain user
-                                    |> borrow
-                                , OpenConfirm |> Just
+                                    |> WriteBorrow.GivenPercent
+                                    |> Borrow
+                                    |> Just
                                 )
                                     |> Just
 
@@ -1208,15 +1204,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                             then
                                 ( transaction |> Transaction
+                                , Cmd.none
                                 , { pool = pool
                                   , assetOut = answer.assetOut
                                   , collateralIn = collateralIn
                                   , maxDebt = answer.maxDebt
                                   }
-                                    |> Write.GivenCollateral
-                                    |> Write.encode model blockchain user
-                                    |> borrow
-                                , OpenConfirm |> Just
+                                    |> WriteBorrow.GivenCollateral
+                                    |> Borrow
+                                    |> Just
                                 )
                                     |> Just
 
@@ -1262,16 +1258,16 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                             then
                                 ( transaction |> Transaction
+                                , Cmd.none
                                 , { pool = pool
                                   , assetOut = assetOut
                                   , percent = slider.percent
                                   , maxDebt = answer.maxDebt
                                   , maxCollateral = answer.maxCollateral
                                   }
-                                    |> Write.GivenPercent
-                                    |> Write.encode model blockchain user
-                                    |> borrow
-                                , OpenConfirm |> Just
+                                    |> WriteBorrow.GivenPercent
+                                    |> Borrow
+                                    |> Just
                                 )
                                     |> Just
 
@@ -1320,15 +1316,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                             then
                                 ( transaction |> Transaction
+                                , Cmd.none
                                 , { pool = pool
                                   , assetOut = assetOut
                                   , debtIn = debtIn
                                   , maxCollateral = answer.maxCollateral
                                   }
-                                    |> Write.GivenDebt
-                                    |> Write.encode model blockchain user
-                                    |> borrow
-                                , OpenConfirm |> Just
+                                    |> WriteBorrow.GivenDebt
+                                    |> Borrow
+                                    |> Just
                                 )
                                     |> Just
 
@@ -1377,15 +1373,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                             then
                                 ( transaction |> Transaction
+                                , Cmd.none
                                 , { pool = pool
                                   , assetOut = assetOut
                                   , collateralIn = collateralIn
                                   , maxDebt = answer.maxDebt
                                   }
-                                    |> Write.GivenCollateral
-                                    |> Write.encode model blockchain user
-                                    |> borrow
-                                , OpenConfirm |> Just
+                                    |> WriteBorrow.GivenCollateral
+                                    |> Borrow
+                                    |> Just
                                 )
                                     |> Just
 
@@ -1431,15 +1427,15 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                        )
                             then
                                 ( transaction |> Transaction
+                                , Cmd.none
                                 , { pool = pool
                                   , assetOut = answer.assetOut
                                   , collateralIn = collateralIn
                                   , maxDebt = answer.maxDebt
                                   }
-                                    |> Write.GivenCollateral
-                                    |> Write.encode model blockchain user
-                                    |> borrow
-                                , OpenConfirm |> Just
+                                    |> WriteBorrow.GivenCollateral
+                                    |> Borrow
+                                    |> Just
                                 )
                                     |> Just
 
@@ -2081,12 +2077,6 @@ port queryBorrow : Value -> Cmd msg
 port queryBorrowPerSecond : Value -> Cmd msg
 
 
-port approveBorrow : Value -> Cmd msg
-
-
-port borrow : Value -> Cmd msg
-
-
 port receiveBorrowAnswer : (Value -> msg) -> Sub msg
 
 
@@ -2156,7 +2146,7 @@ assetOutSection :
 assetOutSection model asset { state, tooltip } =
     column
         [ Region.description "borrow asset"
-        , width <| px 343
+        , width fill
         , height shrink
         , padding 16
         , spacing 10
@@ -2225,7 +2215,7 @@ duesInSection :
 duesInSection model blockchain pool ({ state, tooltip } as transaction) =
     column
         [ Region.description "claims"
-        , width <| px 343
+        , width fill
         , height shrink
         , padding 16
         , spacing 12
@@ -2696,7 +2686,7 @@ advancedCollateralInSection model blockchain collateral { tooltip } or =
 buttons : Blockchain -> Element Msg
 buttons blockchain =
     column
-        [ width <| px 343
+        [ width fill
         , height shrink
         , spacing 12
         ]
