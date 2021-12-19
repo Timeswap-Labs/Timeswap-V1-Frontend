@@ -66,7 +66,20 @@ async function elmInit() {
             }
           ]
         },
-        others: [],
+        others: [
+          {
+            chainId: 0x3,
+            name: "Ropsten",
+            etherscan: "https://ropsten.etherscan.io",
+            native: {
+              name: "Ether",
+              symbol: "ETH",
+              decimals: 18,
+            },
+            whitelist : [],
+            custom: [],
+          }
+        ],
       },
       user: null,
     },
