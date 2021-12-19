@@ -71,7 +71,9 @@ type Msg
 
 
 type Effect
-    = UpdateSettings Slippage Deadline PriceFeed
+    = UpdateSlippage Slippage
+    | UpdateDeadline Deadline
+    | UpdatePriceFeed PriceFeed
     | InputToken TokenParam Token
     | AddERC20 TokenParam ERC20
     | RemoveERC20 ERC20
@@ -227,8 +229,14 @@ connectEffect effect =
 settingsEffect : Settings.Effect -> Effect
 settingsEffect effect =
     case effect of
-        Settings.UpdateSettings slippage deadline oracle ->
-            UpdateSettings slippage deadline oracle
+        Settings.UpdateSlippage slippage ->
+            UpdateSlippage slippage
+
+        Settings.UpdateDeadline deadline ->
+            UpdateDeadline deadline
+
+        Settings.UpdatePriceFeed priceFeed ->
+            UpdatePriceFeed priceFeed
 
 
 tokenListEffect : TokenList.Effect -> Effect
@@ -273,6 +281,11 @@ subscriptions modal =
             connect
                 |> Connect.subscriptions
                 |> Sub.map ConnectMsg
+
+        Settings settings ->
+            settings
+                |> Settings.subscriptions
+                |> Sub.map SettingsMsg
 
         _ ->
             Sub.none

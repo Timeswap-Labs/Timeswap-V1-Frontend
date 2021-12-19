@@ -825,6 +825,12 @@ update model blockchain msg (Transaction transaction) =
                         )
                    )
 
+        ( ClickSettings, _ ) ->
+            ( transaction |> Transaction
+            , Cmd.none
+            , OpenSettings |> Just
+            )
+
         ( OnMouseEnter tooltip, _ ) ->
             { transaction | tooltip = Just tooltip }
                 |> noCmdAndEffect

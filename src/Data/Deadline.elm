@@ -7,7 +7,9 @@ module Data.Deadline exposing
     , fromSettings
     , init
     , isCorrect
+    , toOption
     , toSettings
+    , toString
     , toUnix
     )
 
@@ -110,6 +112,26 @@ fromSettings or =
                             Nothing
                     )
                 |> Maybe.withDefault (Deadline 20)
+
+
+toOption : Or Option string -> Maybe Option
+toOption or =
+    case or of
+        Left option ->
+            Just option
+
+        _ ->
+            Nothing
+
+
+toString : Or option String -> Maybe String
+toString or =
+    case or of
+        Right string ->
+            Just string
+
+        _ ->
+            Nothing
 
 
 isCorrect : String -> Bool

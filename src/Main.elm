@@ -21,7 +21,6 @@ import Data.Images as Images exposing (Images)
 import Data.Offset as Offset exposing (Offset)
 import Data.Parameter as Parameter
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
-import Data.Settings as Settings
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
@@ -623,14 +622,19 @@ modalEffects effect model =
                     , Cmd.none
                     )
 
-        Modal.UpdateSettings slippage deadline priceFeed ->
-            ( { model
-                | slippage = slippage
-                , deadline = deadline
-                , priceFeed = priceFeed
-              }
-            , Settings.encode slippage deadline priceFeed
-                |> cacheSettings
+        Modal.UpdateSlippage slippage ->
+            ( { model | slippage = slippage }
+            , Cmd.none
+            )
+
+        Modal.UpdateDeadline deadline ->
+            ( { model | deadline = deadline }
+            , Cmd.none
+            )
+
+        Modal.UpdatePriceFeed priceFeed ->
+            ( { model | priceFeed = priceFeed }
+            , Cmd.none
             )
 
         Modal.InputToken tokenParam token ->
