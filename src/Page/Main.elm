@@ -456,7 +456,7 @@ view :
         | time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
-        , spot : PriceFeed
+        , priceFeed : PriceFeed
         , backdrop : Backdrop
         , images : Images
     }

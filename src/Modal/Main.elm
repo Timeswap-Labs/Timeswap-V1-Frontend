@@ -77,6 +77,7 @@ type Effect
     | RemoveERC20 ERC20
     | RemoveAll
     | InputPool Pool
+    | ClearTxns
 
 
 initConnect : Support User.NotSupported Blockchain -> Modal
@@ -89,7 +90,7 @@ initSettings :
     { model
         | slippage : Slippage
         , deadline : Deadline
-        , spot : PriceFeed
+        , priceFeed : PriceFeed
     }
     -> Modal
 initSettings model =
@@ -144,10 +145,10 @@ update model msg modal =
         ( ConnectMsg connectMsg, Connect connect, _ ) ->
             connect
                 |> Connect.update connectMsg
-                |> (\( updated, cmd ) ->
+                |> (\( updated, cmd, maybeEffect ) ->
                         ( updated |> Maybe.map Connect
                         , cmd |> Cmd.map ConnectMsg
-                        , Nothing
+                        , maybeEffect |> Maybe.map connectEffect
                         )
                    )
 
@@ -216,6 +217,13 @@ update model msg modal =
             )
 
 
+connectEffect : Connect.Effect -> Effect
+connectEffect effect =
+    case effect of
+        Connect.ClearTxns ->
+            ClearTxns
+
+
 settingsEffect : Settings.Effect -> Effect
 settingsEffect effect =
     case effect of
@@ -281,7 +289,7 @@ view :
         , chains : Chains
         , blockchain : Support User.NotSupported Blockchain
         , device : Device
-        , spot : PriceFeed
+        , priceFeed : PriceFeed
     }
     -> Modal
     -> Element Msg

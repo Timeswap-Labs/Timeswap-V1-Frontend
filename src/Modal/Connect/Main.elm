@@ -1,5 +1,6 @@
 port module Modal.Connect.Main exposing
-    ( Modal
+    ( Effect(..)
+    , Modal
     , Msg
     , init
     , receiveUser
@@ -10,9 +11,14 @@ port module Modal.Connect.Main exposing
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User exposing (User)
+import Blockchain.User.Txns.Txn as Txn exposing (Txn)
+import Blockchain.User.Txns.TxnWrite as TxnWrite
 import Data.Address as Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
+import Data.ERC20 as ERC20
+import Data.Hash as Hash exposing (Hash)
 import Data.Images exposing (Images)
+import Data.Pool as Pool
 import Data.Remote exposing (Remote(..))
 import Data.Support exposing (Support(..))
 import Data.Wallet as Wallet exposing (Wallet)
@@ -42,6 +48,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Element.Keyed as Keyed
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Modal.Connect.Error as Error exposing (Error)
@@ -70,8 +77,13 @@ type Msg
     | TryAgain
     | InstallMetamask
     | CopyAddress Address
+    | ClearAll
     | ReceiveNoConnect Value
     | Exit
+
+
+type Effect
+    = ClearTxns
 
 
 init : Support User.NotSupported Blockchain -> Modal
@@ -87,22 +99,25 @@ init param =
             Connected
 
 
-update : Msg -> Modal -> ( Maybe Modal, Cmd Msg )
+update : Msg -> Modal -> ( Maybe Modal, Cmd Msg, Maybe Effect )
 update msg modal =
     case ( msg, modal ) of
         ( GoToWallets, Waiting _ ) ->
             ( Wallets |> Just
             , Cmd.none
+            , Nothing
             )
 
         ( GoToWallets, Connected ) ->
             ( Wallets |> Just
             , Cmd.none
+            , Nothing
             )
 
         ( GoToConnected, Wallets ) ->
             ( Connected |> Just
             , Cmd.none
+            , Nothing
             )
 
         ( Connect wallet, Wallets ) ->
@@ -114,6 +129,7 @@ update msg modal =
             , wallet
                 |> Wallet.encode
                 |> connect
+            , Nothing
             )
 
         ( TryAgain, Waiting waiting ) ->
@@ -123,11 +139,13 @@ update msg modal =
             , waiting.wallet
                 |> Wallet.encode
                 |> connect
+            , Nothing
             )
 
         ( InstallMetamask, Wallets ) ->
             ( modal |> Just
             , installMetamask ()
+            , Nothing
             )
 
         ( CopyAddress address, _ ) ->
@@ -135,6 +153,13 @@ update msg modal =
             , address
                 |> Address.toString
                 |> copyToClipboard
+            , Nothing
+            )
+
+        ( ClearAll, Connected ) ->
+            ( modal |> Just
+            , Cmd.none
+            , ClearTxns |> Just
             )
 
         ( ReceiveNoConnect value, Waiting waiting ) ->
@@ -155,16 +180,19 @@ update msg modal =
               )
                 |> Just
             , Cmd.none
+            , Nothing
             )
 
         ( Exit, _ ) ->
             ( Nothing
             , Cmd.none
+            , Nothing
             )
 
         _ ->
             ( modal |> Just
             , Cmd.none
+            , Nothing
             )
 
 
@@ -697,6 +725,8 @@ viewConnected ({ images } as model) blockchain user =
                 }
             ]
         , walletConnected model blockchain user
+        , recentTransactions
+        , viewTxns model blockchain user
         ]
 
 
@@ -761,6 +791,23 @@ walletConnected { images } blockchain user =
         , Input.button
             [ width shrink
             , height shrink
+            , centerY
+            ]
+            { onPress =
+                user
+                    |> User.toAddress
+                    |> CopyAddress
+                    |> Just
+            , label =
+                images
+                    |> Image.copy
+                        [ width <| px 16
+                        , height <| px 16
+                        ]
+            }
+        , Input.button
+            [ width shrink
+            , height shrink
             , alignRight
             , centerY
             , Font.color Color.primary500
@@ -769,6 +816,167 @@ walletConnected { images } blockchain user =
             ]
             { onPress = Just GoToWallets
             , label = text "Change"
+            }
+        ]
+
+
+recentTransactions : Element Msg
+recentTransactions =
+    row
+        [ width fill
+        , height shrink
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , paddingXY 0 3
+            , Font.color Color.transparent300
+            ]
+            (text "Recent transactions")
+        , Input.button
+            [ width shrink
+            , height shrink
+            , alignRight
+            ]
+            { onPress = Just ClearAll
+            , label =
+                el
+                    [ width shrink
+                    , height shrink
+                    , Font.size 14
+                    , paddingXY 0 3
+                    , Font.color Color.warning400
+                    ]
+                    (text "clear all")
+            }
+        ]
+
+
+viewTxns :
+    { model | images : Images }
+    -> Blockchain
+    -> User
+    -> Element msg
+viewTxns model blockchain user =
+    Keyed.column
+        [ width fill
+        , height shrink
+        , spacing 16
+        ]
+        (user
+            |> User.toTxnsList
+            |> List.map
+                (\tuple ->
+                    ( tuple
+                        |> Tuple.first
+                        |> Hash.toString
+                    , tuple |> viewTxn model blockchain
+                    )
+                )
+        )
+
+
+viewTxn :
+    { model | images : Images }
+    -> Blockchain
+    -> ( Hash, Txn )
+    -> Element msg
+viewTxn { images } blockchain ( hash, txn ) =
+    row
+        [ width fill
+        , height shrink
+        , spacing 14
+        ]
+        [ case txn.state of
+            Txn.Pending ->
+                el
+                    [ width <| px 40
+                    , height <| px 40
+                    , Border.rounded 999
+                    , Background.color Color.warning100
+                    ]
+                    none
+
+            Txn.Failed ->
+                el
+                    [ width <| px 40
+                    , height <| px 40
+                    , Border.rounded 999
+                    , Background.color Color.negative100
+                    ]
+                    none
+
+            Txn.Success ->
+                el
+                    [ width <| px 40
+                    , height <| px 40
+                    , Border.rounded 999
+                    , Background.color Color.positive100
+                    ]
+                    none
+        , el
+            [ width shrink
+            , height shrink
+            , centerY
+            , Font.size 14
+            , paddingXY 0 3
+            ]
+            ((case txn.write of
+                TxnWrite.Approve erc20 ->
+                    [ "Approve"
+                    , erc20
+                        |> ERC20.toSymbol
+                        |> String.left 5
+                    ]
+                        |> String.join " "
+
+                TxnWrite.Lend pool ->
+                    [ "Lend to"
+                    , pool |> Pool.toString
+                    , "pool"
+                    ]
+                        |> String.join " "
+
+                TxnWrite.Borrow pool ->
+                    [ "Borrow from"
+                    , pool |> Pool.toString
+                    , "pool"
+                    ]
+                        |> String.join " "
+
+                TxnWrite.Liquidity pool ->
+                    [ "Add liquidity to"
+                    , pool |> Pool.toString
+                    , "pool"
+                    ]
+                        |> String.join " "
+
+                TxnWrite.Create pool ->
+                    [ "Create new"
+                    , pool |> Pool.toString
+                    , "pool"
+                    ]
+                        |> String.join " "
+             )
+                |> text
+            )
+        , newTabLink
+            [ width shrink
+            , height shrink
+            , alignRight
+            , centerY
+            ]
+            { url =
+                hash
+                    |> Etherscan.fromHash
+                        (blockchain |> Blockchain.toChain)
+            , label =
+                images
+                    |> Image.link
+                        [ width <| px 16
+                        , height <| px 16
+                        ]
             }
         ]
 

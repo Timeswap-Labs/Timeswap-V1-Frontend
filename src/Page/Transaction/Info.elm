@@ -99,7 +99,7 @@ borrowAPR float =
 
 
 lendCDP :
-    { model | spot : PriceFeed }
+    { model | priceFeed : PriceFeed }
     ->
         { onMouseEnter : tooltip -> msg
         , onMouseLeave : msg
@@ -110,7 +110,7 @@ lendCDP :
         , cdp : CDP
         }
     -> Element msg
-lendCDP { spot } param =
+lendCDP { priceFeed } param =
     column
         [ width fill
         , height shrink
@@ -130,7 +130,7 @@ lendCDP { spot } param =
                 ]
                 (text "CDP")
             , if
-                case spot of
+                case priceFeed of
                     PriceFeed.Ignore ->
                         False
 
@@ -160,7 +160,7 @@ lendCDP { spot } param =
             [ width fill
             , height <| px 24
             ]
-            ((case spot of
+            ((case priceFeed of
                 PriceFeed.Ignore ->
                     Nothing
 
@@ -212,7 +212,7 @@ lendCDP { spot } param =
 
 
 borrowCDP :
-    { model | spot : PriceFeed }
+    { model | priceFeed : PriceFeed }
     ->
         { onMouseEnter : tooltip -> msg
         , onMouseLeave : msg
@@ -223,7 +223,7 @@ borrowCDP :
         , cdp : CDP
         }
     -> Element msg
-borrowCDP { spot } param =
+borrowCDP { priceFeed } param =
     column
         [ width fill
         , height shrink
@@ -243,7 +243,7 @@ borrowCDP { spot } param =
                 ]
                 (text "CDP")
             , if
-                case spot of
+                case priceFeed of
                     PriceFeed.Ignore ->
                         False
 
@@ -273,7 +273,7 @@ borrowCDP { spot } param =
             [ width fill
             , height <| px 24
             ]
-            ((case spot of
+            ((case priceFeed of
                 PriceFeed.Ignore ->
                     Nothing
 

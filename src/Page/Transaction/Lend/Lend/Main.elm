@@ -1514,7 +1514,7 @@ hasInputZero claimsOut =
 
 
 view :
-    { model | spot : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -1601,7 +1601,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
 
 
 claimsOutSection :
-    { model | spot : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images }
     -> Pool
     -> { transaction | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element Msg
@@ -1969,62 +1969,147 @@ buttons blockchain asset transaction =
                         )
                     of
                         ( Just assetIn, Just erc20, True ) ->
-                            if
-                                (user
-                                    |> User.hasEnoughBalance
-                                        asset
-                                        assetIn
+                            case
+                                ( user
+                                    |> User.getBalance asset
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough assetIn)
+                                , user
+                                    |> User.getAllowance erc20
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough assetIn)
                                 )
-                                    && (user
-                                            |> User.hasEnoughAllowance
-                                                erc20
-                                                assetIn
-                                       )
-                            then
-                                [ lendButton ]
+                            of
+                                ( Just (Success True), Just (Success True) ) ->
+                                    [ lendButton ]
 
-                            else if
-                                user
-                                    |> User.hasEnoughBalance
-                                        asset
-                                        assetIn
-                            then
-                                [ approveButton erc20
-                                , disabledLend
-                                ]
+                                ( Just (Success False), Just (Success True) ) ->
+                                    [ Button.notEnoughBalance ]
 
-                            else
-                                [ disabledLend ]
+                                ( Just Loading, Just (Success True) ) ->
+                                    [ Button.checkingBalance |> map never ]
+
+                                ( Just (Success True), Just (Success False) ) ->
+                                    [ approveButton erc20
+                                    , disabledLend
+                                    ]
+
+                                ( Just (Success False), Just (Success False) ) ->
+                                    [ disabledApprove erc20
+                                    , disabledLend
+                                    ]
+
+                                ( Just Loading, Just (Success False) ) ->
+                                    [ disabledApprove erc20
+                                    , Button.checkingBalance |> map never
+                                    ]
+
+                                ( Just (Success True), Just Loading ) ->
+                                    [ Button.checkingAllowance |> map never
+                                    , disabledLend
+                                    ]
+
+                                ( Just (Success False), Just Loading ) ->
+                                    [ Button.checkingAllowance |> map never
+                                    , Button.notEnoughBalance |> map never
+                                    ]
+
+                                ( Just Loading, Just Loading ) ->
+                                    [ Button.checkingAllowance |> map never
+                                    , Button.checkingBalance |> map never
+                                    ]
+
+                                ( Just (Failure error), _ ) ->
+                                    [ Button.error error |> map never ]
+
+                                ( _, Just (Failure error) ) ->
+                                    [ Button.error error |> map never ]
+
+                                _ ->
+                                    []
 
                         ( Just assetIn, Just erc20, False ) ->
-                            if
-                                user
-                                    |> User.hasEnoughAllowance
-                                        erc20
-                                        assetIn
-                            then
-                                [ disabledLend ]
+                            case
+                                ( user
+                                    |> User.getBalance asset
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough assetIn)
+                                , user
+                                    |> User.getAllowance erc20
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough assetIn)
+                                )
+                            of
+                                ( Just (Failure error), _ ) ->
+                                    [ Button.error error |> map never ]
 
-                            else
-                                [ disabledApprove erc20
-                                , disabledLend
-                                ]
+                                ( _, Just (Failure error) ) ->
+                                    [ Button.error error |> map never ]
+
+                                ( _, Just (Success True) ) ->
+                                    [ disabledLend ]
+
+                                ( _, Just (Success False) ) ->
+                                    [ disabledApprove erc20
+                                    , disabledLend
+                                    ]
+
+                                ( Just Loading, Just Loading ) ->
+                                    [ Button.checkingAllowance |> map never
+                                    , Button.checkingBalance |> map never
+                                    ]
+
+                                ( _, Just Loading ) ->
+                                    [ Button.checkingAllowance |> map never
+                                    , disabledLend
+                                    ]
+
+                                _ ->
+                                    []
 
                         ( Just assetIn, Nothing, True ) ->
-                            if
+                            case
                                 user
-                                    |> User.hasEnoughBalance
-                                        asset
-                                        assetIn
-                            then
-                                [ lendButton
-                                ]
+                                    |> User.getBalance asset
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough assetIn)
+                            of
+                                Just (Success True) ->
+                                    [ lendButton ]
 
-                            else
-                                [ disabledLend ]
+                                Just (Success False) ->
+                                    [ disabledLend ]
 
-                        ( Just _, Nothing, False ) ->
-                            [ disabledLend ]
+                                Just Loading ->
+                                    [ Button.checkingBalance |> map never ]
+
+                                Just (Failure error) ->
+                                    [ Button.error error |> map never ]
+
+                                Nothing ->
+                                    []
+
+                        ( Just assetIn, Nothing, False ) ->
+                            case
+                                user
+                                    |> User.getBalance asset
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough assetIn)
+                            of
+                                Just (Success True) ->
+                                    [ disabledLend ]
+
+                                Just (Success False) ->
+                                    [ disabledLend ]
+
+                                Just Loading ->
+                                    [ Button.checkingBalance |> map never ]
+
+                                Just (Failure error) ->
+                                    [ Button.error error |> map never ]
+
+                                Nothing ->
+                                    []
 
                         _ ->
                             []

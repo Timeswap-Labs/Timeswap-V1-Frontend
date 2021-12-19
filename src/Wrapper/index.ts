@@ -31,7 +31,7 @@ async function elmInit() {
       walletImages: Object.entries(walletImages),
       slippage: null,
       deadline: null,
-      spot: null,
+      priceFeed: null,
       wallets: ["metamask"],
       chains: {
         default: {

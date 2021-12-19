@@ -262,11 +262,11 @@ initGivenSpot :
     -> Pool
     -> Price
     -> ( Transaction, Cmd Msg )
-initGivenSpot { time } blockchain pool spot =
+initGivenSpot { time } blockchain pool priceFeed =
     if pool.maturity |> Maturity.isActive time then
         ( { state =
                 New.init
-                    |> DoesNotExist spot
+                    |> DoesNotExist priceFeed
                     |> Success
                     |> Active
                     |> Pool pool
@@ -333,11 +333,11 @@ update model blockchain msg (Transaction transaction) =
             }
                 |> noCmdAndEffect
 
-        ( GoToNew, Add (Pool pool (Active (Success (DoesNotExist spot ())))) ) ->
+        ( GoToNew, Add (Pool pool (Active (Success (DoesNotExist priceFeed ())))) ) ->
             { transaction
                 | state =
                     New.init
-                        |> DoesNotExist spot
+                        |> DoesNotExist priceFeed
                         |> Success
                         |> Active
                         |> Pool pool
@@ -405,11 +405,11 @@ update model blockchain msg (Transaction transaction) =
             }
                 |> noCmdAndEffect
 
-        ( GoToAdd, New (Pool pool (Active (Success (DoesNotExist spot _)))) ) ->
+        ( GoToAdd, New (Pool pool (Active (Success (DoesNotExist priceFeed _)))) ) ->
             { transaction
                 | state =
                     ()
-                        |> DoesNotExist spot
+                        |> DoesNotExist priceFeed
                         |> Success
                         |> Active
                         |> Pool pool
@@ -557,8 +557,8 @@ update model blockchain msg (Transaction transaction) =
                             |> Left
                             |> Just
 
-                    ( Ok (Left spot), _ ) ->
-                        DoesNotExist spot ()
+                    ( Ok (Left priceFeed), _ ) ->
+                        DoesNotExist priceFeed ()
                             |> Success
                             |> Left
                             |> Just
@@ -652,26 +652,26 @@ update model blockchain msg (Transaction transaction) =
                             |> Left
                             |> Just
 
-                    ( Ok (Left spot), Success (Exist _ ()) ) ->
+                    ( Ok (Left priceFeed), Success (Exist _ ()) ) ->
                         New.init
-                            |> DoesNotExist spot
+                            |> DoesNotExist priceFeed
                             |> Success
                             |> Left
                             |> Just
 
-                    ( Ok (Left spot), Success (DoesNotExist _ new) ) ->
+                    ( Ok (Left priceFeed), Success (DoesNotExist _ new) ) ->
                         new
-                            |> DoesNotExist spot
+                            |> DoesNotExist priceFeed
                             |> Success
                             |> Left
                             |> Just
 
-                    ( Ok (Left spot), Failure error ) ->
+                    ( Ok (Left priceFeed), Failure error ) ->
                         error.new
-                            |> New.fromDisabled blockchain pool spot
+                            |> New.fromDisabled blockchain pool priceFeed
                             |> (\( updated, cmd ) ->
                                     ( updated
-                                        |> DoesNotExist spot
+                                        |> DoesNotExist priceFeed
                                         |> Success
                                     , cmd |> Cmd.map NewMsg
                                     )
@@ -679,9 +679,9 @@ update model blockchain msg (Transaction transaction) =
                                         |> Just
                                )
 
-                    ( Ok (Left spot), Loading ) ->
+                    ( Ok (Left priceFeed), Loading ) ->
                         New.init
-                            |> DoesNotExist spot
+                            |> DoesNotExist priceFeed
                             |> Success
                             |> Left
                             |> Just
@@ -806,14 +806,14 @@ update model blockchain msg (Transaction transaction) =
                         )
                    )
 
-        ( NewMsg newMsg, New (Pool pool (Active (Success (DoesNotExist spot new)))) ) ->
+        ( NewMsg newMsg, New (Pool pool (Active (Success (DoesNotExist priceFeed new)))) ) ->
             new
-                |> New.update blockchain pool spot newMsg
+                |> New.update blockchain pool priceFeed newMsg
                 |> (\( updated, cmd, maybeEffect ) ->
                         ( { transaction
                             | state =
                                 updated
-                                    |> DoesNotExist spot
+                                    |> DoesNotExist priceFeed
                                     |> Success
                                     |> Active
                                     |> Pool pool
@@ -963,13 +963,13 @@ toPoolInfo (Transaction { state }) =
                 |> Right
                 |> Just
 
-        Add (Pool _ (Active (Success (DoesNotExist spot _)))) ->
-            spot
+        Add (Pool _ (Active (Success (DoesNotExist priceFeed _)))) ->
+            priceFeed
                 |> Left
                 |> Just
 
-        New (Pool _ (Active (Success (DoesNotExist spot _)))) ->
-            spot
+        New (Pool _ (Active (Success (DoesNotExist priceFeed _)))) ->
+            priceFeed
                 |> Left
                 |> Just
 
@@ -983,7 +983,7 @@ view :
         , offset : Offset
         , chosenZone : ChosenZone
         , backdrop : Backdrop
-        , spot : PriceFeed
+        , priceFeed : PriceFeed
         , images : Images
     }
     -> Blockchain

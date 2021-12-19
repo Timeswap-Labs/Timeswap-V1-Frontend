@@ -2,6 +2,8 @@ module Page.Transaction.Button exposing
     ( approve
     , approveAsset
     , approveCollateral
+    , checkingAllowance
+    , checkingBalance
     , connect
     , disabled
     , disabledApprove
@@ -10,6 +12,7 @@ module Page.Transaction.Button exposing
     , exist
     , loading
     , matured
+    , notEnoughBalance
     , pendingApprove
     , selectMaturity
     , selectTokens
@@ -123,6 +126,46 @@ approve params =
         }
 
 
+checkingAllowance : Element Never
+checkingAllowance =
+    el
+        [ Region.description "checking allowance"
+        , width fill
+        , height <| px 44
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        (el
+            [ centerX
+            , centerY
+            , Font.size 16
+            , paddingXY 0 4
+            , Font.color Color.transparent100
+            ]
+            (text "Checking Allowance")
+        )
+
+
+checkingBalance : Element Never
+checkingBalance =
+    el
+        [ Region.description "checking balance"
+        , width fill
+        , height <| px 44
+        , Background.color Color.primary100
+        , Border.rounded 8
+        ]
+        (el
+            [ centerX
+            , centerY
+            , Font.size 16
+            , paddingXY 0 4
+            , Font.color Color.transparent100
+            ]
+            (text "Checking Balance")
+        )
+
+
 disabledApprove : ERC20 -> Element msg
 disabledApprove erc20 =
     el
@@ -172,7 +215,8 @@ pendingApprove erc20 =
         (el
             [ centerX
             , centerY
-            , Font.size 14
+            , Font.size 16
+            , paddingXY 0 4
             , Font.color Color.transparent100
             ]
             ([ "approving"
@@ -200,7 +244,8 @@ connect msg =
             el
                 [ centerX
                 , centerY
-                , Font.size 14
+                , Font.size 16
+                , paddingXY 0 4
                 , Font.color Color.light100
                 ]
                 (text "Connect Wallet")
@@ -221,7 +266,8 @@ approveAsset msg =
             el
                 [ centerX
                 , centerY
-                , Font.size 14
+                , Font.size 16
+                , paddingXY 0 4
                 , Font.color Color.light100
                 ]
                 (text "Approve Asset")
@@ -242,7 +288,8 @@ approveCollateral msg =
             el
                 [ centerX
                 , centerY
-                , Font.size 14
+                , Font.size 16
+                , paddingXY 0 4
                 , Font.color Color.light100
                 ]
                 (text "Approve Collateral")
@@ -261,7 +308,8 @@ selectTokens =
         (el
             [ centerX
             , centerY
-            , Font.size 14
+            , Font.size 16
+            , paddingXY 0 4
             , Font.color Color.transparent100
             ]
             (text "Select Tokens First")
@@ -280,7 +328,8 @@ selectMaturity =
         (el
             [ centerX
             , centerY
-            , Font.size 14
+            , Font.size 16
+            , paddingXY 0 4
             , Font.color Color.transparent100
             ]
             (text "Select Maturity First")
@@ -299,7 +348,8 @@ loading =
         (el
             [ centerX
             , centerY
-            , Font.size 14
+            , Font.size 16
+            , paddingXY 0 4
             , Font.color Color.transparent100
             ]
             (text "Loading")
@@ -318,7 +368,8 @@ matured =
         (el
             [ centerX
             , centerY
-            , Font.size 14
+            , Font.size 16
+            , paddingXY 0 4
             , Font.color Color.transparent100
             ]
             (text "Matured")
@@ -337,7 +388,8 @@ doesNotExist =
         (el
             [ centerX
             , centerY
-            , Font.size 14
+            , Font.size 16
+            , paddingXY 0 4
             , Font.color Color.transparent100
             ]
             (text "Pool Does Not Exist")
@@ -356,7 +408,8 @@ exist =
         (el
             [ centerX
             , centerY
-            , Font.size 14
+            , Font.size 16
+            , paddingXY 0 4
             , Font.color Color.transparent100
             ]
             (text "Pool Already Exist")
@@ -374,8 +427,28 @@ error httpError =
         (el
             [ centerX
             , centerY
-            , Font.size 14
+            , Font.size 16
+            , paddingXY 0 4
             , Font.color Color.light100
             ]
             (text "error")
+        )
+
+
+notEnoughBalance : Element msg
+notEnoughBalance =
+    el
+        [ width fill
+        , height <| px 44
+        , Background.color Color.negative500
+        , Border.rounded 8
+        ]
+        (el
+            [ centerX
+            , centerY
+            , Font.size 16
+            , paddingXY 0 4
+            , Font.color Color.light100
+            ]
+            (text "Not Enough Balance")
         )

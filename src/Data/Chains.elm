@@ -154,12 +154,11 @@ isMemberOf chain chains address =
 
 
 toList : Chains -> List Chain
-toList (Chains { defaultChain, defaultTokens, others }) =
-    [ defaultChain
-    ]
-        ++ (others
+toList (Chains { defaultChain, others }) =
+    defaultChain
+        :: (others
                 |> Dict.toList
-                |> List.map (\( chain, tokens ) -> chain)
+                |> List.map (\( chain, _ ) -> chain)
            )
 
 

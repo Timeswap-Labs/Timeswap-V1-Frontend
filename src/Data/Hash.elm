@@ -1,4 +1,11 @@
-module Data.Hash exposing (Hash, decoder, encode, sorter)
+module Data.Hash exposing
+    ( Hash
+    , decoder
+    , encode
+    , fromString
+    , sorter
+    , toString
+    )
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
@@ -39,6 +46,11 @@ fromString string =
 
     else
         Nothing
+
+
+toString : Hash -> String
+toString (Hash string) =
+    string
 
 
 decoder : Decoder Hash

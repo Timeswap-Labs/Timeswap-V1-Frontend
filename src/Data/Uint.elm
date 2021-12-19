@@ -1,11 +1,11 @@
 module Data.Uint exposing
     ( Uint
-    , compare
     , decoder
     , dummy
     , encode
     , fromAmount
     , fromString
+    , hasEnough
     , isAmount
     , isZero
     , sorter
@@ -185,6 +185,16 @@ isAmount token string =
     fromAmount token string
         |> Maybe.map (\_ -> True)
         |> Maybe.withDefault False
+
+
+hasEnough : Uint -> Uint -> Bool
+hasEnough uint1 uint2 =
+    case compare uint1 uint2 of
+        GT ->
+            False
+
+        _ ->
+            True
 
 
 toString : Uint -> String

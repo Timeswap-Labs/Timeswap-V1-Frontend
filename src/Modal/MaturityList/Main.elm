@@ -263,7 +263,7 @@ view :
         , backdrop : Backdrop
         , images : Images
         , device : Device
-        , spot : PriceFeed
+        , priceFeed : PriceFeed
     }
     -> Modal
     -> Element Msg
@@ -541,11 +541,11 @@ maturityList :
         , time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
-        , spot : PriceFeed
+        , priceFeed : PriceFeed
     }
     -> Modal
     -> Element Msg
-maturityList { images, time, offset, chosenZone, spot } (Modal { pair, pools, tooltip, sorting }) =
+maturityList { images, time, offset, chosenZone, priceFeed } (Modal { pair, pools, tooltip, sorting }) =
     column
         [ width fill
         , height shrink
@@ -639,7 +639,7 @@ maturityList { images, time, offset, chosenZone, spot } (Modal { pair, pools, to
                                                 , pair = pair
                                                 , cdp = summary.cdp
                                                 }
-                                                spot
+                                                priceFeed
                                                 Color.light100
                                                 14
                                             )

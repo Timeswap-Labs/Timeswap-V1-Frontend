@@ -47,7 +47,7 @@ type Modal
     = Modal
         { slippage : Or Slippage.Option String
         , deadline : Or Deadline.Option String
-        , spot : PriceFeed
+        , priceFeed : PriceFeed
         , tooltip : Maybe Tooltip
         }
 
@@ -71,13 +71,13 @@ init :
     { model
         | slippage : Slippage
         , deadline : Deadline
-        , spot : PriceFeed
+        , priceFeed : PriceFeed
     }
     -> Modal
-init { slippage, deadline, spot } =
+init { slippage, deadline, priceFeed } =
     { slippage = slippage |> Slippage.toSettings
     , deadline = deadline |> Deadline.toSettings
-    , spot = spot
+    , priceFeed = priceFeed
     , tooltip = Nothing
     }
         |> Modal
@@ -102,8 +102,8 @@ update msg (Modal modal) =
             , Nothing
             )
 
-        ChooseSpot spot ->
-            ( { modal | spot = spot }
+        ChooseSpot priceFeed ->
+            ( { modal | priceFeed = priceFeed }
                 |> Modal
                 |> Just
             , Cmd.none
@@ -155,10 +155,10 @@ update msg (Modal modal) =
                 ( Nothing
                 , [ slippage |> Slippage.encode |> cacheSlippage
                   , deadline |> Deadline.encode |> cacheDeadline
-                  , modal.spot |> PriceFeed.encode |> cacheSpot
+                  , modal.priceFeed |> PriceFeed.encode |> cacheSpot
                   ]
                     |> Cmd.batch
-                , UpdateSettings slippage deadline modal.spot
+                , UpdateSettings slippage deadline modal.priceFeed
                     |> Just
                 )
             )

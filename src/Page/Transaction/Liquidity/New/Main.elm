@@ -127,7 +127,7 @@ fromDisabled :
     -> Price
     -> Disabled.Transaction
     -> ( Transaction, Cmd Msg )
-fromDisabled blockchain pool spot transaction =
+fromDisabled blockchain pool priceFeed transaction =
     if
         (transaction.assetIn |> Input.isZero)
             || (transaction.debtIn |> Input.isZero)
@@ -148,7 +148,7 @@ fromDisabled blockchain pool spot transaction =
         , liquidityOut = Loading
         , tooltip = Nothing
         }
-            |> initQuery blockchain pool spot
+            |> initQuery blockchain pool priceFeed
 
 
 toDisabled : Transaction -> Disabled.Transaction
@@ -166,7 +166,7 @@ update :
     -> Msg
     -> Transaction
     -> ( Transaction, Cmd Msg, Maybe Effect )
-update blockchain pool spot msg (Transaction transaction) =
+update blockchain pool priceFeed msg (Transaction transaction) =
     case msg of
         InputAssetIn assetIn ->
             if assetIn |> Uint.isAmount (pool.pair |> Pair.toAsset) then
@@ -184,7 +184,7 @@ update blockchain pool spot msg (Transaction transaction) =
                         else
                             Loading
                 }
-                    |> query blockchain pool spot
+                    |> query blockchain pool priceFeed
 
             else
                 transaction |> noCmdAndEffect
@@ -219,7 +219,7 @@ update blockchain pool spot msg (Transaction transaction) =
                                 else
                                     Loading
                         }
-                            |> query blockchain pool spot
+                            |> query blockchain pool priceFeed
                     )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
@@ -239,7 +239,7 @@ update blockchain pool spot msg (Transaction transaction) =
                         else
                             Loading
                 }
-                    |> query blockchain pool spot
+                    |> query blockchain pool priceFeed
 
             else
                 transaction |> noCmdAndEffect
@@ -260,7 +260,7 @@ update blockchain pool spot msg (Transaction transaction) =
                         else
                             Loading
                 }
-                    |> query blockchain pool spot
+                    |> query blockchain pool priceFeed
 
             else
                 transaction |> noCmdAndEffect
@@ -295,7 +295,7 @@ update blockchain pool spot msg (Transaction transaction) =
                                 else
                                     Loading
                         }
-                            |> query blockchain pool spot
+                            |> query blockchain pool priceFeed
                     )
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
@@ -578,12 +578,12 @@ query :
         , tooltip : Maybe Tooltip
         }
     -> ( Transaction, Cmd Msg, Maybe Effect )
-query blockchain pool spot transaction =
+query blockchain pool priceFeed transaction =
     transaction
         |> constructQueryNew queryCreate
             blockchain
             pool
-            spot
+            priceFeed
         |> (\( updated, cmd ) ->
                 ( updated
                 , cmd
@@ -605,7 +605,7 @@ constructQueryNew :
         , tooltip : Maybe Tooltip
         }
     -> ( Transaction, Cmd Msg )
-constructQueryNew givenCmd blockchain pool spot transaction =
+constructQueryNew givenCmd blockchain pool price transaction =
     (if
         (transaction.assetIn |> Input.isZero)
             || (transaction.debtIn |> Input.isZero)
@@ -629,7 +629,7 @@ constructQueryNew givenCmd blockchain pool spot transaction =
             ( Just assetIn, Just debtIn, Just collateralIn ) ->
                 { chainId = blockchain |> Blockchain.toChain
                 , pool = pool
-                , spot = spot
+                , price = price
                 , assetIn = assetIn
                 , debtIn = debtIn
                 , collateralIn = collateralIn
@@ -653,7 +653,7 @@ port queryCreate : Value -> Cmd msg
 
 
 view :
-    { model | spot : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -739,7 +739,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
 
 
 duesOutSection :
-    { model | spot : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images }
     -> Blockchain
     -> Pool
     ->

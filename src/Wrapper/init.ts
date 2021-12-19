@@ -108,6 +108,10 @@ function receiveUser(
         chainId: Number(ethereum.chainId),
         wallet: walletName,
         address: accounts[0],
+        txns: {
+          confirmed: [],
+          uncomfirmed: [],
+        },
       });
       gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
@@ -130,6 +134,10 @@ function metamaskConnected(
         chainId: Number(ethereum.chainId),
         wallet: "metamask",
         address: accounts[0],
+        txns: {
+          confirmed: [],
+          uncomfirmed: [],
+        },
       });
       gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
@@ -150,6 +158,10 @@ function metamaskChainChange(
           chainId: Number(chainId),
           wallet: "metamask",
           address: accounts[0],
+          txns: {
+            confirmed: [],
+            uncomfirmed: [],
+          },
         });
 
         gp.provider.removeAllListeners();
@@ -175,6 +187,10 @@ function metamaskAccountsChange(
         chainId: Number(ethereum.chainId),
         wallet: "metamask",
         address: accounts[0],
+        txns: {
+          confirmed: [],
+          uncomfirmed: [],
+        },
       });
 
       gp.metamaskProvider.removeAllListeners();

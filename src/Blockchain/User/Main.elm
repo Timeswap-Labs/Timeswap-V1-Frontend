@@ -3,6 +3,7 @@ port module Blockchain.User.Main exposing
     , Msg
     , NotSupported
     , User
+    , getAllowance
     , getBalance
     , hasEnoughAllowance
     , hasEnoughBalance
@@ -22,6 +23,7 @@ port module Blockchain.User.Main exposing
     , update
     , updateApprove
     , updateBorrow
+    , updateClearTxns
     , updateCreate
     , updateLend
     , updateLiquidity
@@ -29,6 +31,7 @@ port module Blockchain.User.Main exposing
 
 import Blockchain.User.Allowances as Allowances exposing (Allowances)
 import Blockchain.User.Balances as Balances exposing (Balances)
+import Blockchain.User.Cache as Cache
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
 import Blockchain.User.Txns.Txn as Txn exposing (Txn)
 import Blockchain.User.Txns.TxnWrite as TxnWrite
@@ -78,6 +81,7 @@ type alias Flag =
     { chainId : Int
     , wallet : Wallet.Flag
     , address : String
+    , txns : Txns.Flags
     }
 
 
@@ -98,7 +102,7 @@ init chains chain flag =
               , name = Nothing
               , balances = Balances.init chains chain
               , allowances = Allowances.init chains chain
-              , txns = Txns.init
+              , txns = flag.txns |> Txns.init
               }
                 |> User
             , Cmd.none |> Debug.log "Later"
@@ -137,22 +141,33 @@ update chain msg (User user) =
                         (receipt.chainId == chain)
                             && (receipt.address == user.address)
                     then
-                        ( { user
-                            | txns =
-                                user.txns
-                                    |> Txns.confirm receipt.id
-                                        receipt.hash
-                                        Txn.Pending
-                          }
-                            |> User
-                        , Cmd.none
-                        )
+                        user.txns
+                            |> Txns.confirm receipt.id
+                                receipt.hash
+                                Txn.Pending
+                            |> (\txns ->
+                                    ( { user | txns = txns }
+                                        |> User
+                                    , txns
+                                        |> Cache.encodeTxns chain user.address
+                                        |> cacheTxns
+                                    )
+                               )
 
                     else
                         user |> noCmd
 
                 Err _ ->
                     user |> noCmd
+
+
+updateClearTxns : Chain -> User -> ( User, Cmd Msg )
+updateClearTxns chain (User user) =
+    ( { user | txns = Txns.initEmpty } |> User
+    , Txns.initEmpty
+        |> Cache.encodeTxns chain user.address
+        |> cacheTxns
+    )
 
 
 updateApprove : Chain -> ERC20 -> User -> ( User, Cmd Msg )
@@ -162,9 +177,14 @@ updateApprove chain erc20 (User user) =
         |> (\( id, txns ) ->
                 ( { user | txns = txns }
                     |> User
-                , erc20
-                    |> WriteApprove.encode id chain user.address
-                    |> approve
+                , [ erc20
+                        |> WriteApprove.encode id chain user.address
+                        |> approve
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
                 )
            )
 
@@ -184,10 +204,15 @@ updateLend model chain writeLend (User user) =
         |> (\( id, txns ) ->
                 ( { user | txns = txns }
                     |> User
-                , writeLend
-                    |> WriteLend.encode model user.address
-                    |> Write.encode id chain user.address
-                    |> lend
+                , [ writeLend
+                        |> WriteLend.encode model user.address
+                        |> Write.encode id chain user.address
+                        |> lend
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
                 )
            )
 
@@ -207,10 +232,15 @@ updateBorrow model chain writeBorrow (User user) =
         |> (\( id, txns ) ->
                 ( { user | txns = txns }
                     |> User
-                , writeBorrow
-                    |> WriteBorrow.encode model user.address
-                    |> Write.encode id chain user.address
-                    |> borrow
+                , [ writeBorrow
+                        |> WriteBorrow.encode model user.address
+                        |> Write.encode id chain user.address
+                        |> borrow
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
                 )
            )
 
@@ -230,10 +260,15 @@ updateLiquidity model chain writeLiquidity (User user) =
         |> (\( id, txns ) ->
                 ( { user | txns = txns }
                     |> User
-                , writeLiquidity
-                    |> WriteLiquidity.encode model user.address
-                    |> Write.encode id chain user.address
-                    |> liquidity
+                , [ writeLiquidity
+                        |> WriteLiquidity.encode model user.address
+                        |> Write.encode id chain user.address
+                        |> liquidity
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
                 )
            )
 
@@ -253,10 +288,15 @@ updateCreate model chain writeCreate (User user) =
         |> (\( id, txns ) ->
                 ( { user | txns = txns }
                     |> User
-                , writeCreate
-                    |> WriteCreate.encode model user.address
-                    |> Write.encode id chain user.address
-                    |> create
+                , [ writeCreate
+                        |> WriteCreate.encode model user.address
+                        |> Write.encode id chain user.address
+                        |> create
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
                 )
            )
 
@@ -282,18 +322,19 @@ decoder :
     -> Decoder (Maybe User)
 decoder { chains } chain =
     Decode.succeed
-        (\wallet address ->
+        (\wallet address txns ->
             { wallet = wallet
             , address = address
             , name = Nothing
             , balances = Balances.init chains chain
             , allowances = Allowances.init chains chain
-            , txns = Txns.init
+            , txns = txns
             }
                 |> User
         )
         |> Pipeline.required "wallet" Wallet.decoder
         |> Pipeline.required "address" Address.decoder
+        |> Pipeline.required "txns" Txns.decoder
         |> Decode.nullable
 
 
@@ -325,7 +366,7 @@ receiveUserInit model chain value =
     case value |> Decode.decodeValue (decoder model chain) of
         Ok (Just decodedUser) ->
             ( decodedUser
-            , Cmd.none |> Debug.log "Later"
+            , Cmd.none |> Debug.log "query for name"
             )
                 |> Just
 
@@ -350,7 +391,7 @@ receiveUser model chain value user =
 
             else
                 ( decodedUser
-                , Cmd.none |> Debug.log "Later"
+                , Cmd.none |> Debug.log "query for name"
                 )
                     |> Just
 
@@ -377,6 +418,9 @@ receiveNotSupported value =
 
         Err _ ->
             Nothing
+
+
+port cacheTxns : Value -> Cmd msg
 
 
 port approve : Value -> Cmd msg
@@ -437,6 +481,12 @@ getBalance : Token -> User -> Maybe (Web Uint)
 getBalance token (User { balances }) =
     balances
         |> Dict.get token
+
+
+getAllowance : ERC20 -> User -> Maybe (Web Uint)
+getAllowance erc20 (User { allowances }) =
+    allowances
+        |> Dict.get erc20
 
 
 hasEnoughBalance : Token -> Uint -> User -> Bool

@@ -19,7 +19,7 @@ import Page.Transaction.Price as Price exposing (Price)
 type alias QueryNew =
     { chainId : Chain
     , pool : Pool
-    , spot : Price
+    , price : Price
     , assetIn : Uint
     , debtIn : Uint
     , collateralIn : Uint
@@ -29,7 +29,7 @@ type alias QueryNew =
 type alias Answer =
     { chainId : Chain
     , pool : Pool
-    , spot : Maybe Uint
+    , price : Maybe Uint
     , assetIn : Uint
     , debtIn : Uint
     , collateralIn : Uint
@@ -45,10 +45,10 @@ type alias ResultNew =
 
 
 givenNew : QueryNew -> Value
-givenNew { chainId, pool, spot, assetIn, debtIn, collateralIn } =
+givenNew { chainId, pool, price, assetIn, debtIn, collateralIn } =
     [ ( "chainId", chainId |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
-    , ( "spot", spot |> Price.encode )
+    , ( "price", price |> Price.encode )
     , ( "assetIn", assetIn |> Uint.encode )
     , ( "debtIn", debtIn |> Uint.encode )
     , ( "collateralIn", collateralIn |> Uint.encode )
@@ -61,7 +61,7 @@ decoder =
     Decode.succeed Answer
         |> Pipeline.required "chainId" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
-        |> Pipeline.required "spot" (Uint.decoder |> Decode.nullable)
+        |> Pipeline.required "price" (Uint.decoder |> Decode.nullable)
         |> Pipeline.required "assetIn" Uint.decoder
         |> Pipeline.required "debtIn" Uint.decoder
         |> Pipeline.required "collateralIn" Uint.decoder

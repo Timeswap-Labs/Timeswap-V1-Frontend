@@ -11,6 +11,7 @@ import Data.Remote as Remote exposing (Remote(..))
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Data.Web exposing (Web)
+import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
@@ -45,15 +46,6 @@ hasEnough : Token -> Uint -> Balances -> Bool
 hasEnough token amount balances =
     balances
         |> Dict.get token
-        |> (Maybe.map << Remote.map) (Uint.compare amount)
-        |> (Maybe.map << Remote.map)
-            (\order ->
-                case order of
-                    LT ->
-                        True
-
-                    _ ->
-                        False
-            )
+        |> (Maybe.map << Remote.map) (Uint.hasEnough amount)
         |> (Maybe.map << Remote.withDefault) False
         |> Maybe.withDefault False

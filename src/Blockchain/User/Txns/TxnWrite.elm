@@ -1,4 +1,12 @@
-module Blockchain.User.Txns.TxnWrite exposing (TxnWrite(..), decoder, encode)
+module Blockchain.User.Txns.TxnWrite exposing
+    ( Flag
+    , TxnWrite(..)
+    , decoder
+    , decoderUncomfirmed
+    , encode
+    , encodeUncomfirmed
+    , initUnconfirmed
+    )
 
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Pool as Pool exposing (Pool)
@@ -13,6 +21,33 @@ type TxnWrite
     | Borrow Pool
     | Liquidity Pool
     | Create Pool
+
+
+type alias Flag =
+    { id : Int
+    , write : Value
+    }
+
+
+initUnconfirmed : Flag -> Maybe ( Int, TxnWrite )
+initUnconfirmed flag =
+    flag.write
+        |> Decode.decodeValue decoder
+        |> Result.map
+            (\write ->
+                ( flag.id
+                , write
+                )
+                    |> Just
+            )
+        |> Result.withDefault Nothing
+
+
+decoderUncomfirmed : Decoder ( Int, TxnWrite )
+decoderUncomfirmed =
+    Decode.succeed Tuple.pair
+        |> Pipeline.required "id" Decode.int
+        |> Pipeline.required "write" decoder
 
 
 decoder : Decoder TxnWrite
@@ -133,3 +168,11 @@ encode write =
             , ( "pool", pool |> Pool.encode )
             ]
                 |> Encode.object
+
+
+encodeUncomfirmed : ( Int, TxnWrite ) -> Value
+encodeUncomfirmed ( id, txnWrite ) =
+    [ ( "id", id |> Encode.int )
+    , ( "write", txnWrite |> encode )
+    ]
+        |> Encode.object

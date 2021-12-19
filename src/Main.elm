@@ -21,6 +21,7 @@ import Data.Images as Images exposing (Images)
 import Data.Offset as Offset exposing (Offset)
 import Data.Parameter as Parameter
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
+import Data.Settings as Settings
 import Data.Slippage as Slippage exposing (Slippage)
 import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
@@ -101,7 +102,7 @@ type alias Model =
     , images : Images
     , slippage : Slippage
     , deadline : Deadline
-    , spot : PriceFeed
+    , priceFeed : PriceFeed
     , wallets : Wallets
     , chains : Chains
     , blockchain : Support User.NotSupported Blockchain
@@ -124,7 +125,7 @@ type alias Flags =
     , walletImages : Images.Flags
     , slippage : Slippage.Flag
     , deadline : Deadline.Flag
-    , spot : PriceFeed.Flag
+    , priceFeed : PriceFeed.Flag
     , wallets : Wallets.Flags
     , chains : Chains.Flags
     , user : Maybe User.Flag
@@ -233,7 +234,7 @@ init flags url key =
                             }
                   , slippage = flags.slippage |> Slippage.init
                   , deadline = flags.deadline |> Deadline.init
-                  , spot = flags.spot |> PriceFeed.init
+                  , priceFeed = flags.priceFeed |> PriceFeed.init
                   , wallets = flags.wallets |> Wallets.init
                   , chains = chains
                   , blockchain = blockchain
@@ -604,13 +605,32 @@ modalEffects :
     -> ( Model, Cmd Msg )
 modalEffects effect model =
     case effect of
-        Modal.UpdateSettings slippage deadline spot ->
+        Modal.ClearTxns ->
+            case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.updateClearTxns
+                        |> Tuple.mapBoth
+                            (\updated ->
+                                { model
+                                    | blockchain = Supported updated
+                                }
+                            )
+                            (Cmd.map BlockchainMsg)
+
+                NotSupported _ ->
+                    ( model
+                    , Cmd.none
+                    )
+
+        Modal.UpdateSettings slippage deadline priceFeed ->
             ( { model
                 | slippage = slippage
                 , deadline = deadline
-                , spot = spot
+                , priceFeed = priceFeed
               }
-            , Cmd.none
+            , Settings.encode slippage deadline priceFeed
+                |> cacheSettings
             )
 
         Modal.InputToken tokenParam token ->
@@ -717,6 +737,9 @@ port cacheTheme : Value -> Cmd msg
 port cacheCustom : Value -> Cmd msg
 
 
+port cacheSettings : Value -> Cmd msg
+
+
 port receiveMetamaskInstalled : (() -> msg) -> Sub msg
 
 
@@ -753,7 +776,7 @@ html model =
     layoutWith
         { options = options }
         [ width <| minimum 360 fill
-        , height fill
+        , height shrink
         , model.modal
             |> Maybe.map (Modal.view model)
             |> (Maybe.map << map) ModalMsg
@@ -1235,7 +1258,7 @@ body :
         , offset : Offset
         , chosenZone : ChosenZone
         , backdrop : Backdrop
-        , spot : PriceFeed
+        , priceFeed : PriceFeed
         , images : Images
         , blockchain : Support User.NotSupported Blockchain
         , page : Page

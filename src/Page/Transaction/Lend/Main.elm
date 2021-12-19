@@ -231,10 +231,10 @@ initGivenSpot :
     -> Pool
     -> Price
     -> ( Transaction, Cmd Msg )
-initGivenSpot { time } blockchain pool spot =
+initGivenSpot { time } blockchain pool priceFeed =
     if pool.maturity |> Maturity.isActive time then
         ( { state =
-                DoesNotExist spot
+                DoesNotExist priceFeed
                     |> Success
                     |> Active
                     |> Pool pool
@@ -353,8 +353,8 @@ update model blockchain msg (Transaction transaction) =
                             |> Left
                             |> Just
 
-                    ( Ok (Left spot), _ ) ->
-                        DoesNotExist spot
+                    ( Ok (Left priceFeed), _ ) ->
+                        DoesNotExist priceFeed
                             |> Success
                             |> Left
                             |> Just
@@ -570,8 +570,8 @@ toPoolInfo (Transaction { state }) =
                 |> Right
                 |> Just
 
-        Pool _ (Active (Success (DoesNotExist spot))) ->
-            spot
+        Pool _ (Active (Success (DoesNotExist priceFeed))) ->
+            priceFeed
                 |> Left
                 |> Just
 
@@ -584,7 +584,7 @@ view :
         | time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
-        , spot : PriceFeed
+        , priceFeed : PriceFeed
         , backdrop : Backdrop
         , images : Images
     }

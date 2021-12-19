@@ -1197,7 +1197,7 @@ hasInputZero state =
 
 
 view :
-    { model | spot : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -1307,7 +1307,7 @@ assetInSection model blockchain asset { state, tooltip } =
 
 
 duesInSection :
-    { model | spot : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images }
     -> Blockchain
     -> Pool
     -> { transaction | state : State, tooltip : Maybe Tooltip }

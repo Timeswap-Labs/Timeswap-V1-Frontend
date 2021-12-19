@@ -44,6 +44,25 @@ interface ReceiveUser {
   chainId: int;
   wallet: string;
   address: string;
+  txns: Txns;
+}
+
+interface Txns {
+  confirmed: Confirmed[];
+  uncomfirmed: Uncomfirmed[];
+}
+
+
+interface Confirmed {
+  id: number;
+  hash: string;
+  write: string;
+  state: string;
+}
+
+interface Uncomfirmed {
+  id: number;
+  write: string;
 }
 
 type Uint = string;

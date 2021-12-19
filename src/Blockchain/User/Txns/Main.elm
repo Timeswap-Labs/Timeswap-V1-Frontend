@@ -1,8 +1,12 @@
 module Blockchain.User.Txns.Main exposing
-    ( Txns
+    ( Flags
+    , Txns
     , confirm
+    , decoder
+    , encode
     , getPending
     , init
+    , initEmpty
     , insert
     , isPending
     , toList
@@ -15,6 +19,9 @@ import Blockchain.User.Txns.Txn as Txn exposing (Txn)
 import Blockchain.User.Txns.TxnWrite as TxnWrite exposing (TxnWrite)
 import Data.ERC20 exposing (ERC20)
 import Data.Hash as Hash exposing (Hash)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline as Pipeline
+import Json.Encode as Encode exposing (Value)
 import Sort
 import Sort.Dict as Dict exposing (Dict)
 import Sort.Set as Set exposing (Set)
@@ -27,12 +34,71 @@ type Txns
         }
 
 
-init : Txns
-init =
+type alias Flags =
+    { confirmed : List Txn.Flag
+    , uncomfirmed : List TxnWrite.Flag
+    }
+
+
+init : Flags -> Txns
+init flags =
+    { confirmed =
+        flags.confirmed
+            |> List.map Txn.initConfirmed
+            |> List.filterMap identity
+            |> Dict.fromList Hash.sorter
+    , uncomfirmed =
+        flags.uncomfirmed
+            |> List.map TxnWrite.initUnconfirmed
+            |> List.filterMap identity
+            |> Dict.fromList Sort.increasing
+    }
+        |> Txns
+
+
+initEmpty : Txns
+initEmpty =
     { confirmed = Dict.empty Hash.sorter
     , uncomfirmed = Dict.empty Sort.increasing
     }
         |> Txns
+
+
+decoder : Decoder Txns
+decoder =
+    Decode.succeed
+        (\confirmed uncomfirmed ->
+            { confirmed = confirmed
+            , uncomfirmed = uncomfirmed
+            }
+                |> Txns
+        )
+        |> Pipeline.required "confirmed"
+            (Txn.decoderConfirmed
+                |> Decode.list
+                |> Decode.map (Dict.fromList Hash.sorter)
+            )
+        |> Pipeline.required "uncomfirmed"
+            (TxnWrite.decoderUncomfirmed
+                |> Decode.list
+                |> Decode.map (Dict.fromList Sort.increasing)
+            )
+
+
+encode : Txns -> Value
+encode (Txns { confirmed, uncomfirmed }) =
+    [ ( "confirmed"
+      , confirmed
+            |> Dict.toList
+            |> Encode.list Txn.encodeConfirmed
+      )
+    , ( "uncomfirmed"
+      , uncomfirmed
+            |> Dict.toList
+            |> Encode.list TxnWrite.encodeUncomfirmed
+      )
+    ]
+        |> Encode.object
 
 
 insert : TxnWrite -> Txns -> ( Int, Txns )

@@ -4,6 +4,7 @@ module Data.Pool exposing
     , encode
     , sorter
     , toQueryParameters
+    , toString
     )
 
 import Data.Maturity as Maturity exposing (Maturity)
@@ -54,3 +55,20 @@ sorter =
         |> Sort.by .pair
         |> Sort.tiebreaker
             (Maturity.sorter |> Sort.by .maturity)
+
+
+toString : Pool -> String
+toString pool =
+    [ pool.pair
+        |> Pair.toAsset
+        |> Token.toSymbol
+        |> String.left 5
+    , pool.pair
+        |> Pair.toCollateral
+        |> Token.toSymbol
+        |> String.left 5
+    , pool.maturity
+        |> Maturity.toUnix
+        |> String.fromInt
+    ]
+        |> String.join "-"

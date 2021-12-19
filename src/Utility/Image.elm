@@ -7,6 +7,7 @@ module Utility.Image exposing
     , checkbox
     , checkboxSelected
     , close
+    , copy
     , discloser
     , discord
     , energy
@@ -120,6 +121,11 @@ viewWallet attributes givenWallet images =
             givenWallet
                 |> Wallet.toString
         }
+
+
+copy : List (Attribute msg) -> Images -> Element msg
+copy =
+    view "Copy"
 
 
 plusPositive : List (Attribute msg) -> Images -> Element msg
