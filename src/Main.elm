@@ -1,5 +1,7 @@
 port module Main exposing (main)
 
+import Animator exposing (Animator, Timeline)
+import Animator.Css
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
 import Blockchain.User.Txns.TxnWrite as TxnWrite
@@ -42,6 +44,7 @@ import Element
         , fill
         , focusStyle
         , height
+        , html
         , inFront
         , layoutWith
         , link
@@ -49,6 +52,7 @@ import Element
         , minimum
         , mouseDown
         , mouseOver
+        , noStaticStyleSheet
         , none
         , padding
         , paddingEach
@@ -66,6 +70,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Html exposing (Html)
+import Html.Attributes
 import Json.Encode exposing (Value)
 import Modal.Main as Modal exposing (Modal)
 import Page.Main as Page exposing (Page)
@@ -74,6 +79,7 @@ import Sort.Set as Set
 import Task
 import Time exposing (Posix)
 import Url exposing (Url)
+import Utility.Animated as Animated
 import Utility.Color as Color
 import Utility.Image as Image
 
@@ -109,7 +115,7 @@ type alias Model =
     , chains : Chains
     , blockchain : Support User.NotSupported Blockchain
     , page : Page
-    , modal : Maybe Modal
+    , modal : Timeline (Maybe Modal)
     }
 
 
@@ -149,6 +155,7 @@ type Msg
     | BlockchainMsg Blockchain.Msg
     | PageMsg Page.Msg
     | ModalMsg Modal.Msg
+    | Tick Posix
 
 
 init : Flags -> Url -> Key -> ( Model, Cmd Msg )
@@ -241,7 +248,7 @@ init flags url key =
                   , chains = chains
                   , blockchain = blockchain
                   , page = page
-                  , modal = Nothing
+                  , modal = Animator.init Nothing
                   }
                 , [ Time.now |> Task.perform ReceiveTime
                   , cmd
@@ -274,7 +281,7 @@ update msg model =
                         { model
                             | url = url
                             , page = page
-                            , modal = Nothing
+                            , modal = Animator.init Nothing
                         }
                     )
                     (Cmd.map PageMsg)
@@ -313,14 +320,20 @@ update msg model =
         OpenConnect ->
             ( { model
                 | modal =
-                    Modal.initConnect model.blockchain
-                        |> Just
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (Modal.initConnect model.blockchain |> Just)
               }
             , Cmd.none
             )
 
         OpenChainList ->
-            ( { model | modal = Modal.initChainList |> Just }
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (Modal.initChainList |> Just)
+              }
             , Cmd.none
             )
 
@@ -344,7 +357,11 @@ update msg model =
                                     block |> Supported
                                 , modal =
                                     model.modal
-                                        |> Maybe.andThen Modal.receiveUser
+                                        |> Animator.go Animator.quickly
+                                            (model.modal
+                                                |> Animator.current
+                                                |> Maybe.andThen Modal.receiveUser
+                                            )
                               }
                             , cmd |> Cmd.map BlockchainMsg
                             )
@@ -355,7 +372,11 @@ update msg model =
                                     userNotSupported |> NotSupported
                                 , modal =
                                     model.modal
-                                        |> Maybe.andThen Modal.receiveUser
+                                        |> Animator.go Animator.quickly
+                                            (model.modal
+                                                |> Animator.current
+                                                |> Maybe.andThen Modal.receiveUser
+                                            )
                               }
                             , Cmd.none
                             )
@@ -377,7 +398,11 @@ update msg model =
                                     block |> Supported
                                 , modal =
                                     model.modal
-                                        |> Maybe.andThen Modal.receiveUser
+                                        |> Animator.go Animator.quickly
+                                            (model.modal
+                                                |> Animator.current
+                                                |> Maybe.andThen Modal.receiveUser
+                                            )
                               }
                             , cmd |> Cmd.map BlockchainMsg
                             )
@@ -388,7 +413,11 @@ update msg model =
                                     userNotSupported |> NotSupported
                                 , modal =
                                     model.modal
-                                        |> Maybe.andThen Modal.receiveUser
+                                        |> Animator.go Animator.quickly
+                                            (model.modal
+                                                |> Animator.current
+                                                |> Maybe.andThen Modal.receiveUser
+                                            )
                               }
                             , Cmd.none
                             )
@@ -446,13 +475,18 @@ update msg model =
 
         ModalMsg modalMsg ->
             model.modal
+                |> Animator.current
                 |> Maybe.map (Modal.update model modalMsg)
                 |> Maybe.map
                     (\( updated, cmd, maybeEffect ) ->
                         maybeEffect
                             |> Maybe.map
                                 (\effect ->
-                                    { model | modal = updated }
+                                    { model
+                                        | modal =
+                                            model.modal
+                                                |> Animator.go Animator.quickly updated
+                                    }
                                         |> modalEffects effect
                                         |> Tuple.mapSecond List.singleton
                                         |> Tuple.mapSecond
@@ -460,7 +494,11 @@ update msg model =
                                         |> Tuple.mapSecond Cmd.batch
                                 )
                             |> Maybe.withDefault
-                                ( { model | modal = updated }
+                                ( { model
+                                    | modal =
+                                        model.modal
+                                            |> Animator.go Animator.quickly updated
+                                  }
                                 , cmd |> Cmd.map ModalMsg
                                 )
                     )
@@ -468,6 +506,11 @@ update msg model =
                     ( model
                     , Cmd.none
                     )
+
+        Tick posix ->
+            ( model |> Animator.update posix animator
+            , Cmd.none
+            )
 
 
 pageEffects :
@@ -480,9 +523,12 @@ pageEffects blockchain effect model =
         Page.OpenTokenList tokenParam ->
             ( { model
                 | modal =
-                    tokenParam
-                        |> Modal.initTokenList
-                        |> Just
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (tokenParam
+                                |> Modal.initTokenList
+                                |> Just
+                            )
               }
             , Cmd.none
             )
@@ -493,26 +539,42 @@ pageEffects blockchain effect model =
                     (\maturityList ->
                         { model
                             | modal =
-                                maturityList |> Just
+                                model.modal
+                                    |> Animator.go Animator.quickly
+                                        (maturityList |> Just)
                         }
                     )
                     (Cmd.map ModalMsg)
 
         Page.OpenInputMaturity pair ->
-            ( { model | modal = Modal.initInputMaturity pair |> Just }
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (Modal.initInputMaturity pair |> Just)
+              }
             , Cmd.none
             )
 
         Page.OpenSettings ->
-            ( { model | modal = Modal.initSettings model |> Just }
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (Modal.initSettings model |> Just)
+              }
             , Cmd.none
             )
 
         Page.OpenConnect ->
             ( { model
                 | modal =
-                    Modal.initConnect (Supported blockchain)
-                        |> Just
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (Supported blockchain
+                                |> Modal.initConnect
+                                |> Just
+                            )
               }
             , Cmd.none
             )
@@ -525,9 +587,12 @@ pageEffects blockchain effect model =
                         { model
                             | blockchain = Supported updated
                             , modal =
-                                TxnWrite.Approve erc20
-                                    |> Modal.initConfirm
-                                    |> Just
+                                model.modal
+                                    |> Animator.go Animator.quickly
+                                        (TxnWrite.Approve erc20
+                                            |> Modal.initConfirm
+                                            |> Just
+                                        )
                         }
                     )
                     (Cmd.map BlockchainMsg)
@@ -540,11 +605,14 @@ pageEffects blockchain effect model =
                         { model
                             | blockchain = Supported updated
                             , modal =
-                                writeLend
-                                    |> WriteLend.toPool
-                                    |> TxnWrite.Lend
-                                    |> Modal.initConfirm
-                                    |> Just
+                                model.modal
+                                    |> Animator.go Animator.quickly
+                                        (writeLend
+                                            |> WriteLend.toPool
+                                            |> TxnWrite.Lend
+                                            |> Modal.initConfirm
+                                            |> Just
+                                        )
                         }
                     )
                     (Cmd.map BlockchainMsg)
@@ -557,11 +625,14 @@ pageEffects blockchain effect model =
                         { model
                             | blockchain = Supported updated
                             , modal =
-                                writeBorrow
-                                    |> WriteBorrow.toPool
-                                    |> TxnWrite.Borrow
-                                    |> Modal.initConfirm
-                                    |> Just
+                                model.modal
+                                    |> Animator.go Animator.quickly
+                                        (writeBorrow
+                                            |> WriteBorrow.toPool
+                                            |> TxnWrite.Borrow
+                                            |> Modal.initConfirm
+                                            |> Just
+                                        )
                         }
                     )
                     (Cmd.map BlockchainMsg)
@@ -574,11 +645,14 @@ pageEffects blockchain effect model =
                         { model
                             | blockchain = Supported updated
                             , modal =
-                                writeLiquidity
-                                    |> WriteLiquidity.toPool
-                                    |> TxnWrite.Liquidity
-                                    |> Modal.initConfirm
-                                    |> Just
+                                model.modal
+                                    |> Animator.go Animator.quickly
+                                        (writeLiquidity
+                                            |> WriteLiquidity.toPool
+                                            |> TxnWrite.Liquidity
+                                            |> Modal.initConfirm
+                                            |> Just
+                                        )
                         }
                     )
                     (Cmd.map BlockchainMsg)
@@ -591,11 +665,14 @@ pageEffects blockchain effect model =
                         { model
                             | blockchain = Supported updated
                             , modal =
-                                writeCreate
-                                    |> WriteCreate.toPool
-                                    |> TxnWrite.Create
-                                    |> Modal.initConfirm
-                                    |> Just
+                                model.modal
+                                    |> Animator.go Animator.quickly
+                                        (writeCreate
+                                            |> WriteCreate.toPool
+                                            |> TxnWrite.Create
+                                            |> Modal.initConfirm
+                                            |> Just
+                                        )
                         }
                     )
                     (Cmd.map BlockchainMsg)
@@ -735,6 +812,15 @@ modalEffects effect model =
             )
 
 
+animator : Animator Model
+animator =
+    Animator.animator
+        |> Animator.Css.watching .modal
+            (\updated model ->
+                { model | modal = updated }
+            )
+
+
 port cacheChosenZone : Value -> Cmd msg
 
 
@@ -764,9 +850,11 @@ subscriptions model =
         |> Page.subscriptions
         |> Sub.map PageMsg
     , model.modal
+        |> Animator.current
         |> Maybe.map Modal.subscriptions
         |> (Maybe.map << Sub.map) ModalMsg
         |> Maybe.withDefault Sub.none
+    , Animator.toSubscription Tick model animator
     ]
         |> Sub.batch
 
@@ -774,20 +862,18 @@ subscriptions model =
 view : Model -> Document Msg
 view model =
     { title = "Timeswap"
-    , body = [ html model ]
+    , body = [ viewHtml model ]
     }
 
 
-html : Model -> Html Msg
-html model =
+viewHtml : Model -> Html Msg
+viewHtml model =
     layoutWith
         { options = options }
         [ width <| minimum 360 fill
         , height shrink
         , model.modal
-            |> Maybe.map (Modal.view model)
-            |> (Maybe.map << map) ModalMsg
-            |> Maybe.withDefault none
+            |> fading model
             |> inFront
         , header model
             |> inFront
@@ -812,6 +898,60 @@ options =
       }
         |> focusStyle
     ]
+
+
+fading :
+    { model
+        | backdrop : Backdrop
+        , blockchain : Support User.NotSupported Blockchain
+        , chains : Chains
+        , chosenZone : ChosenZone
+        , device : Device
+        , images : Images
+        , offset : Offset
+        , priceFeed : PriceFeed
+        , time : Posix
+        , wallets : Wallets
+    }
+    -> Timeline (Maybe Modal)
+    -> Element Msg
+fading ({ backdrop } as model) timeline =
+    Animator.Css.div timeline
+        [ Animator.Css.opacity
+            (Maybe.map
+                (\_ -> Animator.at 1)
+                >> Maybe.withDefault
+                    (Animator.at 0)
+            )
+        ]
+        ([ Html.Attributes.style "width" "100%"
+         , Html.Attributes.style "height" "100%"
+         , Html.Attributes.style "pointer-events" "none"
+         ]
+            ++ (case backdrop of
+                    Backdrop.Supported ->
+                        [ "blur(10px)"
+                            |> Html.Attributes.style "-webkit-backdrop-filter"
+                        , "blur(10px)"
+                            |> Html.Attributes.style "backdrop-filter"
+                        ]
+
+                    Backdrop.NotSupported ->
+                        []
+               )
+        )
+        [ layoutWith { options = noStaticStyleSheet :: options }
+            [ width fill
+            , height fill
+            ]
+            (timeline
+                |> Animator.current
+                |> Maybe.map (Modal.view model)
+                |> (Maybe.map << map) ModalMsg
+                |> Maybe.withDefault none
+            )
+        ]
+        |> html
 
 
 header :

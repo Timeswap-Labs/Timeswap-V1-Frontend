@@ -63,6 +63,7 @@ import Modal.MaturityList.Pools as Pools exposing (Pools)
 import Modal.MaturityList.Query as Query
 import Modal.MaturityList.Sorting as Sorting exposing (Sorting)
 import Modal.MaturityList.Tooltip as Tooltip exposing (Tooltip)
+import Modal.Outside as Outside
 import Process
 import Sort.Dict as Dict
 import Task
@@ -269,7 +270,7 @@ view :
     -> Modal
     -> Element Msg
 view ({ time, offset, chosenZone, device } as model) (Modal modal) =
-    Glass.outsideModal model
+    Outside.view model
         { onClick = Exit
         , modal =
             column

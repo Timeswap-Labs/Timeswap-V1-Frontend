@@ -7,6 +7,7 @@ import Element
         ( Element
         , none
         )
+import Modal.Outside as Outside
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 
@@ -55,7 +56,7 @@ reject (Modal modal) =
 
 view : { model | backdrop : Backdrop } -> Element Msg
 view model =
-    Glass.outsideModal model
+    Outside.view model
         { onClick = Exit
         , modal = none
         }

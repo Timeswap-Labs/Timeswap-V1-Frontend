@@ -30,6 +30,7 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Modal.Outside as Outside
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
@@ -66,7 +67,7 @@ view :
     -> Modal
     -> Element Msg
 view model (Modal modal) =
-    Glass.outsideModal model
+    Outside.view model
         { onClick = Exit
         , modal =
             el
