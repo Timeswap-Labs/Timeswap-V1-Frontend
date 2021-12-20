@@ -33,6 +33,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Json.Encode exposing (Value)
+import Modal.Outside as Outside
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
@@ -71,7 +72,7 @@ view :
     }
     -> Element Msg
 view model =
-    Glass.outsideModal model
+    Outside.view model
         { onClick = Exit
         , modal =
             column

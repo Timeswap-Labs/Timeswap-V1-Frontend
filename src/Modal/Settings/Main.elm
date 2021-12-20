@@ -42,6 +42,7 @@ import Element.Input as Input exposing (OptionState)
 import Html.Attributes
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
+import Modal.Outside as Outside
 import Modal.Settings.Tooltip exposing (Tooltip)
 import Utility.Color as Color
 import Utility.Glass as Glass
@@ -328,7 +329,7 @@ view :
     -> Modal
     -> Element Msg
 view model (Modal modal) =
-    Glass.outsideModal model
+    Outside.view model
         { onClick = Exit
         , modal =
             column
