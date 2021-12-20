@@ -725,7 +725,6 @@ viewConnected ({ images } as model) blockchain user =
                 }
             ]
         , walletConnected model blockchain user
-        , recentTransactions
         , viewTxns model blockchain user
         ]
 
@@ -772,39 +771,54 @@ walletConnected { images } blockchain user =
                     )
                 |> text
             )
-        , newTabLink
+        , row
             [ width shrink
             , height shrink
             , centerY
+            , spacing 4
             ]
-            { url =
-                user
-                    |> Etherscan.fromUser
-                        (blockchain |> Blockchain.toChain)
-            , label =
-                images
-                    |> Image.link
-                        [ width <| px 16
-                        , height <| px 16
+            [ newTabLink
+                [ width shrink
+                , height shrink
+                , centerY
+                ]
+                { url =
+                    user
+                        |> Etherscan.fromUser
+                            (blockchain |> Blockchain.toChain)
+                , label =
+                    el
+                        [ width shrink
+                        , height shrink
+                        , padding 4
                         ]
-            }
-        , Input.button
-            [ width shrink
-            , height shrink
-            , centerY
+                        (images
+                            |> Image.link
+                                [ width <| px 16
+                                , height <| px 16
+                                , centerX
+                                , centerY
+                                ]
+                        )
+                }
+            , Input.button
+                [ width shrink
+                , height shrink
+                , centerY
+                ]
+                { onPress =
+                    user
+                        |> User.toAddress
+                        |> CopyAddress
+                        |> Just
+                , label =
+                    images
+                        |> Image.copy
+                            [ width <| px 20
+                            , height <| px 20
+                            ]
+                }
             ]
-            { onPress =
-                user
-                    |> User.toAddress
-                    |> CopyAddress
-                    |> Just
-            , label =
-                images
-                    |> Image.copy
-                        [ width <| px 16
-                        , height <| px 16
-                        ]
-            }
         , Input.button
             [ width shrink
             , height shrink
@@ -818,6 +832,51 @@ walletConnected { images } blockchain user =
             , label = text "Change"
             }
         ]
+
+
+viewTxns :
+    { model | images : Images }
+    -> Blockchain
+    -> User
+    -> Element Msg
+viewTxns model blockchain user =
+    user
+        |> User.toTxnsList
+        |> (\list ->
+                if list |> List.isEmpty then
+                    el
+                        [ width shrink
+                        , height shrink
+                        , Font.size 14
+                        , paddingXY 0 3
+                        , Font.color Color.transparent300
+                        ]
+                        (text "No recent transactions...")
+
+                else
+                    column
+                        [ width fill
+                        , height shrink
+                        , spacing 16
+                        ]
+                        [ recentTransactions
+                        , Keyed.column
+                            [ width fill
+                            , height shrink
+                            , spacing 16
+                            ]
+                            (list
+                                |> List.map
+                                    (\tuple ->
+                                        ( tuple
+                                            |> Tuple.first
+                                            |> Hash.toString
+                                        , tuple |> viewTxn model blockchain
+                                        )
+                                    )
+                            )
+                        ]
+           )
 
 
 recentTransactions : Element Msg
@@ -851,30 +910,6 @@ recentTransactions =
                     (text "clear all")
             }
         ]
-
-
-viewTxns :
-    { model | images : Images }
-    -> Blockchain
-    -> User
-    -> Element msg
-viewTxns model blockchain user =
-    Keyed.column
-        [ width fill
-        , height shrink
-        , spacing 16
-        ]
-        (user
-            |> User.toTxnsList
-            |> List.map
-                (\tuple ->
-                    ( tuple
-                        |> Tuple.first
-                        |> Hash.toString
-                    , tuple |> viewTxn model blockchain
-                    )
-                )
-        )
 
 
 viewTxn :

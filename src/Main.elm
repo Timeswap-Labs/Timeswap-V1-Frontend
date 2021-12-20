@@ -47,8 +47,11 @@ import Element
         , link
         , map
         , minimum
+        , mouseDown
+        , mouseOver
         , none
         , padding
+        , paddingEach
         , paddingXY
         , px
         , row
@@ -786,6 +789,8 @@ html model =
             |> (Maybe.map << map) ModalMsg
             |> Maybe.withDefault none
             |> inFront
+        , header model
+            |> inFront
         , Font.family [ Font.typeface "Supreme" ]
         , (case model.theme of
             Theme.Light ->
@@ -796,14 +801,7 @@ html model =
           )
             |> Background.color
         ]
-        (column
-            [ width fill
-            , height shrink
-            ]
-            [ header model
-            , body model
-            ]
-        )
+        (body model)
 
 
 options : List Option
@@ -1003,6 +1001,8 @@ chainListButton ({ images } as model) =
         , paddingXY 12 0
         , Background.color Color.primary100
         , Border.rounded 8
+        , mouseDown [ Background.color Color.primary300 ]
+        , mouseOver [ Background.color Color.primary200 ]
         ]
         { onPress = Just OpenChainList
         , label =
@@ -1059,16 +1059,22 @@ connectButton ({ images } as model) =
                                 (\_ ->
                                     [ Region.description "account button"
                                     , Background.color Color.primary100
+                                    , mouseDown [ Background.color Color.primary300 ]
+                                    , mouseOver [ Background.color Color.primary200 ]
                                     ]
                                 )
                             |> Maybe.withDefault
                                 [ Region.description "connect button"
                                 , Background.color Color.primary500
+                                , mouseDown [ Background.color Color.primary300 ]
+                                , mouseOver [ Background.color Color.primary400 ]
                                 ]
 
                     NotSupported _ ->
                         [ Region.description "account button"
                         , Background.color Color.primary100
+                        , mouseDown [ Background.color Color.primary300 ]
+                        , mouseOver [ Background.color Color.primary200 ]
                         ]
                )
         )
@@ -1196,6 +1202,8 @@ zoneButton ({ offset, zoneName, chosenZone } as model) =
         , paddingXY 12 0
         , Background.color Color.primary100
         , Border.rounded 8
+        , mouseDown [ Background.color Color.primary300 ]
+        , mouseOver [ Background.color Color.primary200 ]
         ]
         { onPress = Just SwitchZone
         , label =
@@ -1229,6 +1237,8 @@ themeButton ({ theme, images } as model) =
         , height <| px 44
         , Background.color Color.primary100
         , Border.rounded 8
+        , mouseDown [ Background.color Color.primary300 ]
+        , mouseOver [ Background.color Color.primary200 ]
         ]
         { onPress = Just SwitchTheme
         , label =
@@ -1273,7 +1283,12 @@ body ({ page } as model) =
         [ Region.mainContent
         , width fill
         , height shrink
-        , padding 56
+        , paddingEach
+            { top = 136
+            , right = 80
+            , bottom = 56
+            , left = 56
+            }
         ]
         (case model.blockchain of
             Supported blockchain ->

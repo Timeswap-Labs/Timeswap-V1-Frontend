@@ -58,7 +58,7 @@ outsideModal { backdrop } { onClick, modal } =
     el
         [ width fill
         , height fill
-        , paddingXY 0 72
+        , paddingXY 0 80
         , el
             [ width fill
             , height fill

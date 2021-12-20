@@ -411,7 +411,7 @@ view model blockchain ((Modal { state, tooltip }) as modal) =
         { onClick = Exit
         , modal =
             column
-                [ width <| px 350
+                [ width <| px 375
                 , height <| minimum 360 shrink
                 , centerX
                 , centerY

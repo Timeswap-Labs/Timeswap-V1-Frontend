@@ -36,6 +36,7 @@ import Element
         , height
         , maximum
         , minimum
+        , mouseDown
         , mouseOver
         , moveDown
         , moveLeft
@@ -588,6 +589,7 @@ maturityList { images, time, offset, chosenZone, priceFeed } (Modal { pair, pool
                                         , centerY
                                         , Background.color Color.primary100
                                         , Border.rounded 8
+                                        , mouseDown [ Background.color Color.primary300 ]
                                         , mouseOver [ Background.color Color.primary200 ]
                                         ]
                                         [ row [ width <| fillPortion 2, spacing 16 ]
