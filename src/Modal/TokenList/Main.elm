@@ -55,6 +55,7 @@ import Element.Border as Border
 import Element.Font as Font exposing (center)
 import Element.Input as Input
 import Http
+import Modal.Outside as Outside
 import Modal.TokenList.Answer as Answer exposing (Answer)
 import Modal.TokenList.Error as Error exposing (Error)
 import Modal.TokenList.Query as Query
@@ -460,7 +461,7 @@ view :
     -> Modal
     -> Element Msg
 view model blockchain ((Modal { state, tooltip }) as modal) =
-    Glass.outsideModal model
+    Outside.view model
         { onClick = Exit
         , modal =
             column

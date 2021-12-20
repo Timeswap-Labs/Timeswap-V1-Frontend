@@ -53,6 +53,7 @@ import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Modal.Connect.Error as Error exposing (Error)
 import Modal.Connect.Terms as Terms
+import Modal.Outside as Outside
 import Sort.Set as Set
 import Utility.Color as Color
 import Utility.Etherscan as Etherscan
@@ -247,7 +248,7 @@ view :
     -> Modal
     -> Element Msg
 view model modal =
-    Glass.outsideModal model
+    Outside.view model
         { onClick = Exit
         , modal =
             el
