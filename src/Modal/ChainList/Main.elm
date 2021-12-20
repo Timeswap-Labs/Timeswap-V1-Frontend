@@ -32,6 +32,7 @@ import Element
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Json.Encode exposing (Value)
 import Utility.Color as Color
 import Utility.Glass as Glass
@@ -102,7 +103,7 @@ view model =
                         (text "Change Chain")
                     , IconButton.exit model Exit
                     ]
-                , column [ width fill ]
+                , column [ width fill, spacing 12 ]
                     (model.chains
                         |> Chains.toList
                         |> List.map (\chain -> chain |> chainRow model)
@@ -120,31 +121,36 @@ chainRow :
     -> Chain
     -> Element Msg
 chainRow model chain =
-    row
-        [ width fill
-        , height <| px 54
-        , paddingXY 18 0
-        , spacing 8
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
-        [ model.images
-            |> Image.viewChain
-                [ width <| px 24
-                , height <| px 24
-                , centerY
+    Input.button
+        [ width fill ]
+        { onPress = chain |> ClickChain |> Just
+        , label =
+            row
+                [ width fill
+                , height <| px 54
+                , paddingXY 18 0
+                , spacing 8
+                , Background.color Color.primary100
+                , Border.rounded 8
                 ]
-                chain
-        , el
-            [ width shrink
-            , height shrink
-            , centerY
-            , Font.size 16
-            , paddingXY 0 4
-            , Font.color Color.light100
-            ]
-            (chain
-                |> Chain.toString
-                |> text
-            )
-        ]
+                [ model.images
+                    |> Image.viewChain
+                        [ width <| px 24
+                        , height <| px 24
+                        , centerY
+                        ]
+                        chain
+                , el
+                    [ width shrink
+                    , height shrink
+                    , centerY
+                    , Font.size 16
+                    , paddingXY 0 4
+                    , Font.color Color.light100
+                    ]
+                    (chain
+                        |> Chain.toString
+                        |> text
+                    )
+                ]
+        }

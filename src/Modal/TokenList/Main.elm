@@ -28,11 +28,14 @@ import Element
         , alpha
         , centerX
         , centerY
+        , clip
         , column
         , el
         , fill
         , height
+        , maximum
         , minimum
+        , mouseOver
         , none
         , padding
         , paddingEach
@@ -41,6 +44,7 @@ import Element
         , px
         , rotate
         , row
+        , scrollbarY
         , shrink
         , spacing
         , text
@@ -77,7 +81,7 @@ type State
         { input : String
         , erc20 : Maybe (Web (Result Error ERC20))
         }
-    | CustomERC20s
+    | CustomERC20s { input : String }
     | ImportingERC20 ERC20
 
 
@@ -126,14 +130,14 @@ update :
 update { chains } blockchain msg (Modal modal) =
     case ( msg, modal.state ) of
         ( GoToCustomERC20s, AllTokens _ ) ->
-            ( { modal | state = CustomERC20s }
+            ( { modal | state = CustomERC20s { input = "" } }
                 |> Modal
                 |> Just
             , Cmd.none
             , Nothing
             )
 
-        ( GoToAllTokens, CustomERC20s ) ->
+        ( GoToAllTokens, CustomERC20s _ ) ->
             ( { modal
                 | state =
                     { input = ""
@@ -222,6 +226,55 @@ update { chains } blockchain msg (Modal modal) =
                                 , erc20 = Nothing
                                 }
                                     |> AllTokens
+                          }
+                            |> Modal
+                            |> Just
+                        , Cmd.none
+                        , Nothing
+                        )
+
+        ( InputAddress string, CustomERC20s { input } ) ->
+            if string == input then
+                ( modal |> Modal |> Just
+                , Cmd.none
+                , Nothing
+                )
+
+            else
+                string
+                    |> Address.fromString
+                    |> Maybe.map
+                        (\address ->
+                            if address |> Chains.isMemberOf (blockchain |> Blockchain.toChain) chains then
+                                ( { modal
+                                    | state =
+                                        { input = string
+                                        }
+                                            |> CustomERC20s
+                                  }
+                                    |> Modal
+                                    |> Just
+                                , Cmd.none
+                                , Nothing
+                                )
+
+                            else
+                                ( { modal
+                                    | state =
+                                        { input = string
+                                        }
+                                            |> CustomERC20s
+                                  }
+                                    |> Modal
+                                    |> Just
+                                , Cmd.none
+                                , Nothing
+                                )
+                        )
+                    |> Maybe.withDefault
+                        ( { modal
+                            | state =
+                                { input = string } |> CustomERC20s
                           }
                             |> Modal
                             |> Just
@@ -346,13 +399,13 @@ update { chains } blockchain msg (Modal modal) =
             , AddERC20 modal.tokenParam erc20 |> Just
             )
 
-        ( ClearERC20 erc20, CustomERC20s ) ->
+        ( ClearERC20 erc20, CustomERC20s _ ) ->
             ( modal |> Modal |> Just
             , Cmd.none
             , RemoveERC20 erc20 |> Just
             )
 
-        ( ClearAll, CustomERC20s ) ->
+        ( ClearAll, CustomERC20s _ ) ->
             ( modal |> Modal |> Just
             , Cmd.none
             , RemoveAll |> Just
@@ -476,7 +529,7 @@ modalHeader model (Modal { state }) =
                         , text "Import Token"
                         ]
 
-                    CustomERC20s ->
+                    CustomERC20s a ->
                         [ IconButton.back model GoToAllTokens
                         , text "Manage Tokens"
                         ]
@@ -505,6 +558,9 @@ modalHeader model (Modal { state }) =
                             AllTokens { input } ->
                                 input
 
+                            CustomERC20s { input } ->
+                                input
+
                             _ ->
                                 ""
                     , placeholder =
@@ -525,12 +581,14 @@ tokenList :
     -> Blockchain
     -> Modal
     -> Element Msg
-tokenList ({ backdrop, chains } as model) blockchain ((Modal { state }) as modal) =
+tokenList ({ chains } as model) blockchain ((Modal { state }) as modal) =
     column
         [ width fill
-        , height fill
-        , paddingXY 24 16
-        , spacing 20
+        , height <| minimum 278 shrink
+        , paddingXY 12 10
+        , spacing 0
+        , clip
+        , scrollbarY
         ]
         (case state of
             AllTokens { input, erc20 } ->
@@ -561,10 +619,24 @@ tokenList ({ backdrop, chains } as model) blockchain ((Modal { state }) as modal
                                     |> List.map (tokenButton model blockchain modal)
                                 )
 
-            CustomERC20s ->
-                chains
-                    |> Chains.toCustomTokenList (blockchain |> Blockchain.toChain)
-                    |> List.map (customToken model blockchain modal)
+            CustomERC20s { input } ->
+                let
+                    tokens =
+                        chains |> Chains.toCustomTokenList (blockchain |> Blockchain.toChain)
+                in
+                input
+                    |> Address.fromString
+                    |> Maybe.map
+                        (\address ->
+                            tokens
+                                |> List.filter (\token -> (token |> Token.toString) == (address |> Address.toString))
+                                |> List.map (customToken model blockchain modal)
+                        )
+                    |> Maybe.withDefault
+                        (tokens
+                            |> List.filter (\token -> input |> Token.containsString token)
+                            |> List.map (customToken model blockchain modal)
+                        )
 
             _ ->
                 [ none ]
@@ -577,7 +649,7 @@ tokenButton :
     -> Modal
     -> Token
     -> Element Msg
-tokenButton ({ images } as model) blockchain modal token =
+tokenButton model blockchain modal token =
     Input.button
         [ width fill
         , height shrink
@@ -589,6 +661,9 @@ tokenButton ({ images } as model) blockchain modal token =
                 [ width fill
                 , height fill
                 , centerY
+                , paddingXY 12 10
+                , mouseOver [ Background.color Color.primary100 ]
+                , Border.rounded 8
                 ]
                 [ tokenSymbolAndName model modal token
                 , case blockchain |> Blockchain.toUser of
@@ -611,11 +686,12 @@ customToken model blockchain ((Modal { state }) as modal) token =
     row
         [ width fill
         , height shrink
+        , paddingXY 12 10
         , Font.color Color.transparent500
         ]
         [ tokenSymbolAndName model modal token
         , case state of
-            CustomERC20s ->
+            CustomERC20s a ->
                 row
                     [ width shrink
                     , alignRight

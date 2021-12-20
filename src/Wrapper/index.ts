@@ -55,7 +55,7 @@ async function elmInit() {
               name: "Matic TEST TOKEN",
               symbol: "MATIC",
               decimals: 18,
-            },
+            }
           ],
           custom: [
             {
@@ -63,6 +63,12 @@ async function elmInit() {
               "name": "USDC TEST TOKEN with a long name",
               "symbol": "USDC",
               "decimals": 18
+            },
+            {
+              address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+              name: "USDT",
+              symbol: "USDT",
+              decimals: 18,
             }
           ]
         },
