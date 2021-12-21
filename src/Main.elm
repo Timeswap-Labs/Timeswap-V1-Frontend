@@ -281,7 +281,9 @@ update msg model =
                         { model
                             | url = url
                             , page = page
-                            , modal = Animator.init Nothing
+                            , modal =
+                                model.modal
+                                    |> Animator.go Animator.quickly Nothing
                         }
                     )
                     (Cmd.map PageMsg)
@@ -482,22 +484,6 @@ update msg model =
                         maybeEffect
                             |> Maybe.map
                                 (\effect ->
-                                    -- model
-                                    --     |> modalEffects effect
-                                    --     |> Tuple.mapBoth
-                                    --         (\updatedModel ->
-                                    --             { updatedModel
-                                    --                 | modal =
-                                    --                     model.modal
-                                    --                         |> Animator.go Animator.slowly updated
-                                    --             }
-                                    --         )
-                                    --         (\effectCmd ->
-                                    --             [ cmd |> Cmd.map ModalMsg
-                                    --             , effectCmd
-                                    --             ]
-                                    --                 |> Cmd.batch
-                                    --         )
                                     { model
                                         | modal =
                                             model.modal
@@ -508,13 +494,6 @@ update msg model =
                                         |> Tuple.mapSecond
                                             ((::) (cmd |> Cmd.map ModalMsg))
                                         |> Tuple.mapSecond Cmd.batch
-                                 -- ( { model
-                                 --     | modal =
-                                 --         model.modal
-                                 --             |> Animator.go Animator.quickly updated
-                                 --   }
-                                 -- , Cmd.none
-                                 -- )
                                 )
                             |> Maybe.withDefault
                                 ( { model
