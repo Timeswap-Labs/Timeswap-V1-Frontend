@@ -69,6 +69,12 @@ async function elmInit() {
               name: "USDT",
               symbol: "USDT",
               decimals: 18,
+            },
+            {
+              address: "0xdac17f958d2ee523a2206206994597c13d831ff9",
+              name: "DDDT",
+              symbol: "DDDT",
+              decimals: 18,
             }
           ]
         },

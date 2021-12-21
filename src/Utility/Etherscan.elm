@@ -1,9 +1,10 @@
-module Utility.Etherscan exposing (fromHash, fromUser)
+module Utility.Etherscan exposing (fromHash, fromToken, fromUser)
 
 import Blockchain.User.Main as User exposing (User)
 import Data.Address as Address
 import Data.Chain as Chain exposing (Chain)
 import Data.Hash as Hash exposing (Hash)
+import Data.Token as Token exposing (Token)
 import Url.Builder as Builder
 
 
@@ -29,5 +30,16 @@ fromHash chain hash =
         (chain |> Chain.toEtherscan)
         [ "tx"
         , hash |> Hash.toString
+        ]
+        []
+
+
+fromToken : Chain -> Token -> String
+fromToken chain token =
+    Builder.crossOrigin
+        (chain |> Chain.toEtherscan)
+        [ "address"
+        , token
+            |> Token.toString
         ]
         []
