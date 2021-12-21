@@ -68,27 +68,12 @@ view { backdrop } { onClick, modal } =
             |> behindContent
         ]
         (el
-            ([ width shrink
-             , height shrink
-             , centerX
-             , centerY
-             , Html.Attributes.style "pointer-events" "auto"
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Html.Attributes.style "pointer-events" "auto"
                 |> htmlAttribute
-             ]
-                ++ (case backdrop of
-                        Backdrop.Supported ->
-                            [ Background.color Color.background
-                            , "blur(60px)"
-                                |> Html.Attributes.style "-webkit-backdrop-filter"
-                                |> htmlAttribute
-                            , "blur(60px)"
-                                |> Html.Attributes.style "backdrop-filter"
-                                |> htmlAttribute
-                            ]
-
-                        Backdrop.NotSupported ->
-                            [ Background.color Color.solid ]
-                   )
-            )
+            ]
             modal
         )
