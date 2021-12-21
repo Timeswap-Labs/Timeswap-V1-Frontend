@@ -52,8 +52,8 @@ import Utility.Input as Input
 
 type Modal
     = Modal
-        { slippage : Or Slippage.Option String
-        , deadline : Or Deadline.Option String
+        { slippage : Or Slippage String
+        , deadline : Or Deadline String
         , priceFeed : PriceFeed
         , tooltip : Maybe Tooltip
         }
@@ -86,8 +86,8 @@ init :
     }
     -> Modal
 init { slippage, deadline, priceFeed } =
-    { slippage = slippage |> Slippage.toSettings
-    , deadline = deadline |> Deadline.toSettings
+    { slippage = slippage |> Left
+    , deadline = deadline |> Left
     , priceFeed = priceFeed
     , tooltip = Nothing
     }
@@ -99,17 +99,15 @@ update msg (Modal modal) =
     case msg of
         ChooseSlippageOption option ->
             option
-                |> Left
+                |> Slippage.fromOption
                 |> (\slippage ->
-                        ( { modal | slippage = slippage }
+                        ( { modal | slippage = Left slippage }
                             |> Modal
                             |> Just
                         , slippage
-                            |> Slippage.fromSettings
                             |> Slippage.encode
                             |> cacheSlippage
                         , slippage
-                            |> Slippage.fromSettings
                             |> UpdateSlippage
                             |> Just
                         )
@@ -117,17 +115,15 @@ update msg (Modal modal) =
 
         ChooseDeadlineOption option ->
             option
-                |> Left
+                |> Deadline.fromOption
                 |> (\deadline ->
-                        ( { modal | deadline = deadline }
+                        ( { modal | deadline = Left deadline }
                             |> Modal
                             |> Just
                         , deadline
-                            |> Deadline.fromSettings
                             |> Deadline.encode
                             |> cacheDeadline
                         , deadline
-                            |> Deadline.fromSettings
                             |> UpdateDeadline
                             |> Just
                         )
@@ -148,17 +144,15 @@ update msg (Modal modal) =
         InputSlippage input ->
             if input |> Input.isFloat then
                 input
-                    |> Right
+                    |> Slippage.fromString
                     |> (\slippage ->
-                            ( { modal | slippage = slippage }
+                            ( { modal | slippage = Right input }
                                 |> Modal
                                 |> Just
                             , slippage
-                                |> Slippage.fromSettings
                                 |> Slippage.encode
                                 |> cacheSlippage
                             , slippage
-                                |> Slippage.fromSettings
                                 |> UpdateSlippage
                                 |> Just
                             )
@@ -175,17 +169,15 @@ update msg (Modal modal) =
         InputDeadline input ->
             if input |> Input.isInt then
                 input
-                    |> Right
+                    |> Deadline.fromString
                     |> (\deadline ->
-                            ( { modal | deadline = deadline }
+                            ( { modal | deadline = Right input }
                                 |> Modal
                                 |> Just
                             , deadline
-                                |> Deadline.fromSettings
                                 |> Deadline.encode
                                 |> cacheSlippage
                             , deadline
-                                |> Deadline.fromSettings
                                 |> UpdateDeadline
                                 |> Just
                             )
@@ -200,12 +192,18 @@ update msg (Modal modal) =
                 )
 
         ClickOutsideSlippage ->
-            ( { modal
-                | slippage =
-                    modal.slippage
-                        |> Slippage.fromSettings
-                        |> Slippage.toSettings
-              }
+            ( (case modal.slippage of
+                Left _ ->
+                    modal
+
+                Right input ->
+                    { modal
+                        | slippage =
+                            input
+                                |> Slippage.fromString
+                                |> Left
+                    }
+              )
                 |> Modal
                 |> Just
             , Cmd.none
@@ -213,12 +211,18 @@ update msg (Modal modal) =
             )
 
         ClickOutsideDeadline ->
-            ( { modal
-                | deadline =
-                    modal.deadline
-                        |> Deadline.fromSettings
-                        |> Deadline.toSettings
-              }
+            ( (case modal.deadline of
+                Left _ ->
+                    modal
+
+                Right input ->
+                    { modal
+                        | deadline =
+                            input
+                                |> Deadline.fromString
+                                |> Left
+                    }
+              )
                 |> Modal
                 |> Just
             , Cmd.none
@@ -266,18 +270,17 @@ subscriptions (Modal modal) =
 
 
 onClickOutsideSlippage :
-    { modal | slippage : Or Slippage.Option String }
+    { modal | slippage : Or Slippage String }
     -> Sub Msg
 onClickOutsideSlippage { slippage } =
-    slippage
-        |> Slippage.toString
-        |> Maybe.map
-            (\_ ->
-                decoderOutsideSlippage
-                    |> Decode.at [ "target", "id" ]
-                    |> Browser.Events.onClick
-            )
-        |> Maybe.withDefault Sub.none
+    case slippage of
+        Left _ ->
+            Sub.none
+
+        Right _ ->
+            decoderOutsideSlippage
+                |> Decode.at [ "target", "id" ]
+                |> Browser.Events.onClick
 
 
 decoderOutsideSlippage : Decoder Msg
@@ -294,18 +297,17 @@ decoderOutsideSlippage =
 
 
 onClickOutsideDeadline :
-    { modal | deadline : Or Deadline.Option String }
+    { modal | deadline : Or Deadline String }
     -> Sub Msg
 onClickOutsideDeadline { deadline } =
-    deadline
-        |> Deadline.toString
-        |> Maybe.map
-            (\_ ->
-                decoderOutsideDeadline
-                    |> Decode.at [ "target", "id" ]
-                    |> Browser.Events.onClick
-            )
-        |> Maybe.withDefault Sub.none
+    case deadline of
+        Left _ ->
+            Sub.none
+
+        Right _ ->
+            decoderOutsideDeadline
+                |> Decode.at [ "target", "id" ]
+                |> Browser.Events.onClick
 
 
 decoderOutsideDeadline : Decoder Msg
@@ -373,7 +375,7 @@ view model (Modal modal) =
 
 
 slippageSetting :
-    { modal | slippage : Or Slippage.Option String }
+    { modal | slippage : Or Slippage String }
     -> Element Msg
 slippageSetting modal =
     column
@@ -408,7 +410,7 @@ slippageSetting modal =
 
 
 deadlineSetting :
-    { modal | deadline : Or Deadline.Option String }
+    { modal | deadline : Or Deadline String }
     -> Element Msg
 deadlineSetting modal =
     column
@@ -443,7 +445,7 @@ deadlineSetting modal =
 
 
 slippageSwitch :
-    { modal | slippage : Or Slippage.Option String }
+    { modal | slippage : Or Slippage String }
     -> Element Msg
 slippageSwitch { slippage } =
     Input.radioRow
@@ -471,7 +473,7 @@ slippageSwitch { slippage } =
 
 
 deadlineSwitch :
-    { modal | deadline : Or Deadline.Option String }
+    { modal | deadline : Or Deadline String }
     -> Element Msg
 deadlineSwitch { deadline } =
     Input.radioRow
@@ -499,7 +501,7 @@ deadlineSwitch { deadline } =
 
 
 slippageInput :
-    { modal | slippage : Or Slippage.Option String }
+    { modal | slippage : Or Slippage String }
     -> Element Msg
 slippageInput { slippage } =
     row
@@ -513,17 +515,16 @@ slippageInput { slippage } =
             }
         , Border.width 1
         , Border.solid
-        , (slippage
-            |> Slippage.toString
-            |> Maybe.map
-                (\string ->
-                    if string |> Slippage.isCorrect then
-                        Color.transparent100
+        , (case slippage of
+            Left _ ->
+                Color.transparent100
 
-                    else
-                        Color.negative500
-                )
-            |> Maybe.withDefault Color.transparent100
+            Right string ->
+                if string |> Slippage.isCorrect then
+                    Color.transparent100
+
+                else
+                    Color.negative500
           )
             |> Border.color
         , Border.rounded 8
@@ -537,38 +538,33 @@ slippageInput { slippage } =
             , Border.color Color.none
             , Font.bold
             , Font.size 16
-            , (slippage
-                |> Slippage.toString
-                |> Maybe.map
-                    (\string ->
-                        if string |> Slippage.isCorrect then
-                            Color.transparent500
+            , (case slippage of
+                Left _ ->
+                    Color.transparent500
 
-                        else
-                            Color.negative500
-                    )
-                |> Maybe.withDefault Color.transparent500
+                Right string ->
+                    if string |> Slippage.isCorrect then
+                        Color.transparent500
+
+                    else
+                        Color.negative500
               )
                 |> Font.color
             ]
             { onChange = InputSlippage
-            , text =
-                slippage
-                    |> Slippage.toString
-                    |> Maybe.withDefault ""
+            , text = slippage |> Slippage.toString
             , placeholder =
                 Input.placeholder
-                    [ (slippage
-                        |> Slippage.toString
-                        |> Maybe.map
-                            (\string ->
-                                if string |> Slippage.isCorrect then
-                                    Color.transparent100
+                    [ (case slippage of
+                        Left _ ->
+                            Color.transparent100
 
-                                else
-                                    Color.negative500
-                            )
-                        |> Maybe.withDefault Color.transparent100
+                        Right string ->
+                            if string |> Slippage.isCorrect then
+                                Color.transparent100
+
+                            else
+                                Color.negative500
                       )
                         |> Font.color
                     ]
@@ -582,17 +578,16 @@ slippageInput { slippage } =
             , centerY
             , Font.bold
             , Font.size 16
-            , (slippage
-                |> Slippage.toString
-                |> Maybe.map
-                    (\string ->
-                        if string |> Slippage.isCorrect then
-                            Color.transparent500
+            , (case slippage of
+                Left _ ->
+                    Color.transparent500
 
-                        else
-                            Color.negative500
-                    )
-                |> Maybe.withDefault Color.transparent500
+                Right string ->
+                    if string |> Slippage.isCorrect then
+                        Color.transparent500
+
+                    else
+                        Color.negative500
               )
                 |> Font.color
             ]
@@ -601,7 +596,7 @@ slippageInput { slippage } =
 
 
 deadlineInput :
-    { modal | deadline : Or Deadline.Option String }
+    { modal | deadline : Or Deadline String }
     -> Element Msg
 deadlineInput { deadline } =
     row
@@ -615,17 +610,16 @@ deadlineInput { deadline } =
             }
         , Border.width 1
         , Border.solid
-        , (deadline
-            |> Deadline.toString
-            |> Maybe.map
-                (\string ->
-                    if string |> Deadline.isCorrect then
-                        Color.transparent100
+        , (case deadline of
+            Left _ ->
+                Color.transparent100
 
-                    else
-                        Color.negative500
-                )
-            |> Maybe.withDefault Color.transparent100
+            Right string ->
+                if string |> Deadline.isCorrect then
+                    Color.transparent100
+
+                else
+                    Color.negative500
           )
             |> Border.color
         , Border.rounded 8
@@ -639,38 +633,33 @@ deadlineInput { deadline } =
             , Border.color Color.none
             , Font.bold
             , Font.size 16
-            , (deadline
-                |> Deadline.toString
-                |> Maybe.map
-                    (\string ->
-                        if string |> Deadline.isCorrect then
-                            Color.transparent500
+            , (case deadline of
+                Left _ ->
+                    Color.transparent500
 
-                        else
-                            Color.negative500
-                    )
-                |> Maybe.withDefault Color.transparent500
+                Right string ->
+                    if string |> Deadline.isCorrect then
+                        Color.transparent500
+
+                    else
+                        Color.negative500
               )
                 |> Font.color
             ]
             { onChange = InputDeadline
-            , text =
-                deadline
-                    |> Deadline.toString
-                    |> Maybe.withDefault ""
+            , text = deadline |> Deadline.toString
             , placeholder =
                 Input.placeholder
-                    [ (deadline
-                        |> Deadline.toString
-                        |> Maybe.map
-                            (\string ->
-                                if string |> Deadline.isCorrect then
-                                    Color.transparent100
+                    [ (case deadline of
+                        Left _ ->
+                            Color.transparent100
 
-                                else
-                                    Color.negative500
-                            )
-                        |> Maybe.withDefault Color.transparent100
+                        Right string ->
+                            if string |> Deadline.isCorrect then
+                                Color.transparent100
+
+                            else
+                                Color.negative500
                       )
                         |> Font.color
                     ]
@@ -684,17 +673,16 @@ deadlineInput { deadline } =
             , centerY
             , Font.bold
             , Font.size 16
-            , (deadline
-                |> Deadline.toString
-                |> Maybe.map
-                    (\string ->
-                        if string |> Deadline.isCorrect then
-                            Color.transparent500
+            , (case deadline of
+                Left _ ->
+                    Color.transparent500
 
-                        else
-                            Color.negative500
-                    )
-                |> Maybe.withDefault Color.transparent500
+                Right string ->
+                    if string |> Deadline.isCorrect then
+                        Color.transparent500
+
+                    else
+                        Color.negative500
               )
                 |> Font.color
             ]

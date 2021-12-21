@@ -5,7 +5,8 @@ module Data.Slippage exposing
     , decoder
     , encode
     , encodeGivenPercent
-    , fromSettings
+    , fromOption
+    , fromString
     , init
     , isCorrect
     , toOption
@@ -113,54 +114,78 @@ toSettings (Slippage int) =
             |> Right
 
 
-fromSettings : Or Option String -> Slippage
-fromSettings or =
-    case or of
-        Left Small ->
+fromOption : Option -> Slippage
+fromOption option =
+    case option of
+        Small ->
             Slippage 10
 
-        Left Medium ->
+        Medium ->
             Slippage 50
 
-        Left Large ->
+        Large ->
             Slippage 100
+
+
+fromString : String -> Slippage
+fromString string =
+    string
+        |> String.toFloat
+        |> Maybe.map ((*) 100)
+        |> Maybe.map truncate
+        |> Maybe.andThen
+            (\int ->
+                if int > 0 && int <= 5000 then
+                    int
+                        |> Slippage
+                        |> Just
+
+                else
+                    Nothing
+            )
+        |> Maybe.withDefault (Slippage 50)
+
+
+toOption : Or Slippage string -> Maybe Option
+toOption or =
+    case or of
+        Left (Slippage int) ->
+            if int == 10 then
+                Just Small
+
+            else if int == 50 then
+                Just Medium
+
+            else if int == 100 then
+                Just Large
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
+toString : Or Slippage String -> String
+toString or =
+    case or of
+        Left (Slippage int) ->
+            if int == 10 || int == 50 || int == 100 then
+                ""
+
+            else
+                int
+                    |> String.fromInt
+                    |> String.padLeft 3 '0'
+                    |> (\string ->
+                            [ string |> String.dropRight 2
+                            , string |> String.right 2
+                            ]
+                                |> String.join "."
+                       )
 
         Right string ->
             string
-                |> String.toFloat
-                |> Maybe.map ((*) 100)
-                |> Maybe.map floor
-                |> Maybe.andThen
-                    (\int ->
-                        if int > 0 && int <= 5000 then
-                            int
-                                |> Slippage
-                                |> Just
-
-                        else
-                            Nothing
-                    )
-                |> Maybe.withDefault (Slippage 50)
-
-
-toOption : Or Option string -> Maybe Option
-toOption or =
-    case or of
-        Left option ->
-            Just option
-
-        _ ->
-            Nothing
-
-
-toString : Or option String -> Maybe String
-toString or =
-    case or of
-        Right string ->
-            Just string
-
-        _ ->
-            Nothing
 
 
 isCorrect : String -> Bool

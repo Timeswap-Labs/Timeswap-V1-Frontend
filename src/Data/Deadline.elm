@@ -4,7 +4,8 @@ module Data.Deadline exposing
     , Option(..)
     , encode
     , encodeUnix
-    , fromSettings
+    , fromOption
+    , fromString
     , init
     , isCorrect
     , toOption
@@ -86,52 +87,68 @@ toSettings (Deadline minutes) =
             |> Right
 
 
-fromSettings : Or Option String -> Deadline
-fromSettings or =
-    case or of
-        Left Short ->
+fromOption : Option -> Deadline
+fromOption option =
+    case option of
+        Short ->
             Deadline 10
 
-        Left Medium ->
+        Medium ->
             Deadline 20
 
-        Left Long ->
+        Long ->
             Deadline 30
+
+
+fromString : String -> Deadline
+fromString string =
+    string
+        |> String.toInt
+        |> Maybe.andThen
+            (\minutes ->
+                if minutes > 0 && minutes <= 180 then
+                    minutes
+                        |> Deadline
+                        |> Just
+
+                else
+                    Nothing
+            )
+        |> Maybe.withDefault (Deadline 20)
+
+
+toOption : Or Deadline string -> Maybe Option
+toOption or =
+    case or of
+        Left (Deadline int) ->
+            if int == 10 then
+                Just Short
+
+            else if int == 20 then
+                Just Medium
+
+            else if int == 30 then
+                Just Long
+
+            else
+                Nothing
+
+        _ ->
+            Nothing
+
+
+toString : Or Deadline String -> String
+toString or =
+    case or of
+        Left (Deadline int) ->
+            if int == 10 || int == 20 || int == 30 then
+                ""
+
+            else
+                int |> String.fromInt
 
         Right string ->
             string
-                |> String.toInt
-                |> Maybe.andThen
-                    (\minutes ->
-                        if minutes > 0 && minutes <= 180 then
-                            minutes
-                                |> Deadline
-                                |> Just
-
-                        else
-                            Nothing
-                    )
-                |> Maybe.withDefault (Deadline 20)
-
-
-toOption : Or Option string -> Maybe Option
-toOption or =
-    case or of
-        Left option ->
-            Just option
-
-        _ ->
-            Nothing
-
-
-toString : Or option String -> Maybe String
-toString or =
-    case or of
-        Right string ->
-            Just string
-
-        _ ->
-            Nothing
 
 
 isCorrect : String -> Bool
