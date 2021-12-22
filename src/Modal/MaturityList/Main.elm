@@ -57,6 +57,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
+import Html.Attributes
 import Http
 import Modal.MaturityList.Answer as Answer exposing (Answer)
 import Modal.MaturityList.Pools as Pools exposing (Pools)
@@ -80,7 +81,6 @@ type Modal
     = Modal
         { pair : Pair
         , sorting : Sorting
-        , sortOptions : List Sorting
         , sortDropdown : Maybe ()
         , pools : Web Pools
         , tooltip : Maybe Tooltip
@@ -111,7 +111,6 @@ init :
 init blockchain pair =
     ( { pair = pair
       , sorting = Sorting.Liquidity
-      , sortOptions = [ Sorting.Liquidity, Sorting.Maturity ]
       , sortDropdown = Nothing
       , pools = Success Pools.dummy
       , tooltip = Nothing
@@ -130,7 +129,10 @@ update :
 update blockchain msg (Modal modal) =
     case ( msg, modal.sorting ) of
         ( GoToSortMaturity, Sorting.Liquidity ) ->
-            ( { modal | sorting = Sorting.Maturity }
+            ( { modal
+                | sorting = Sorting.Maturity
+                , sortDropdown = Nothing
+              }
                 |> Modal
                 |> Just
             , Cmd.none
@@ -138,7 +140,10 @@ update blockchain msg (Modal modal) =
             )
 
         ( GoToSortLiquidity, Sorting.Maturity ) ->
-            ( { modal | sorting = Sorting.Liquidity }
+            ( { modal
+                | sorting = Sorting.Liquidity
+                , sortDropdown = Nothing
+              }
                 |> Modal
                 |> Just
             , Cmd.none
@@ -450,7 +455,7 @@ sortBy :
     }
     -> Modal
     -> Element Msg
-sortBy { images } (Modal { sorting, sortOptions, sortDropdown }) =
+sortBy { images } (Modal { sorting, sortDropdown }) =
     row
         [ alignRight
         , spacing 14
@@ -469,7 +474,10 @@ sortBy { images } (Modal { sorting, sortOptions, sortDropdown }) =
             , Border.color Color.transparent100
             , Border.rounded 8
             , (if sortDropdown == Just () then
-                sortOptions |> sortOptionsEl
+                [ Sorting.Liquidity
+                , Sorting.Maturity
+                ]
+                    |> sortOptionsEl
 
                else
                 none
@@ -478,10 +486,15 @@ sortBy { images } (Modal { sorting, sortOptions, sortDropdown }) =
             ]
             { onPress =
                 if sortDropdown == Just () then
-                    Just CloseDropdown
+                    Nothing
 
                 else
                     Just OpenDropdown
+
+            -- if sortDropdown == Just () then
+            --     Just CloseDropdown
+            -- else
+            --     Just OpenDropdown
             , label =
                 row
                     [ width fill

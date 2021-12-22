@@ -43,6 +43,7 @@ import Element
         , spacing
         , width
         )
+import Page.Positions.Claims.Main as Claims
 import Page.Route as Route
 import Page.Transaction.Borrow.Main as Borrow
 import Page.Transaction.Lend.Main as Lend

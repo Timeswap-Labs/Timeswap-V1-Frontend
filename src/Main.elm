@@ -487,7 +487,7 @@ update msg model =
                                     { model
                                         | modal =
                                             model.modal
-                                                |> Animator.go Animator.verySlowly updated
+                                                |> Animator.go Animator.quickly updated
                                     }
                                         |> modalEffects effect
                                         |> Tuple.mapSecond List.singleton
@@ -945,6 +945,7 @@ fading ({ backdrop } as model) timeline =
         [ layoutWith { options = noStaticStyleSheet :: options }
             [ width fill
             , height fill
+            , Font.family [ Font.typeface "Supreme" ]
             ]
             (timeline
                 |> Animator.current

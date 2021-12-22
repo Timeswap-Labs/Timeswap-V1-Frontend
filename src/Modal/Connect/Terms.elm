@@ -37,6 +37,6 @@ view =
                 Builder.crossOrigin "https://timeswap.io"
                     [ "terms" ]
                     []
-            , label = text "Terms of Service"
+            , label = text "terms of service"
             }
         ]
