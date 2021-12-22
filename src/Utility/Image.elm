@@ -11,6 +11,7 @@ module Utility.Image exposing
     , discloser
     , discord
     , energy
+    , error
     , faucet
     , gitbook
     , github
@@ -130,6 +131,11 @@ viewWallet attributes givenWallet images =
             givenWallet
                 |> Wallet.toString
         }
+
+
+error : List (Attribute msg) -> Images -> Element msg
+error =
+    view "Error"
 
 
 copy : List (Attribute msg) -> Images -> Element msg
