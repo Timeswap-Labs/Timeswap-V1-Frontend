@@ -20,6 +20,7 @@ module Utility.Image exposing
     , info
     , infoYellow
     , link
+    , linkWhite
     , logo
     , logoPure
     , matured
@@ -86,10 +87,18 @@ viewToken attributes token images =
                         images
                             |> .tokens
                             |> Dict.get symbol
-                            |> Maybe.withDefault "default"
+                            |> Maybe.withDefault (images |> defaultTokenUrl)
                     , description = symbol
                     }
            )
+
+
+defaultTokenUrl : Images -> String
+defaultTokenUrl images =
+    images
+        |> .tokens
+        |> Dict.get "default"
+        |> Maybe.withDefault ""
 
 
 viewChain : List (Attribute msg) -> Chain -> Images -> Element msg
@@ -166,6 +175,11 @@ metamask =
 link : List (Attribute msg) -> Images -> Element msg
 link =
     view "Link"
+
+
+linkWhite : List (Attribute msg) -> Images -> Element msg
+linkWhite =
+    view "LinkWhite"
 
 
 energy : List (Attribute msg) -> Images -> Element msg

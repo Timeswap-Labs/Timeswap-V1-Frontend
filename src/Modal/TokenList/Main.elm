@@ -36,6 +36,7 @@ import Element
         , maximum
         , minimum
         , mouseOver
+        , newTabLink
         , none
         , padding
         , paddingEach
@@ -63,6 +64,7 @@ import Modal.TokenList.Tooltip as Tooltip exposing (Tooltip)
 import Process
 import Task
 import Utility.Color as Color
+import Utility.Etherscan as Etherscan
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
@@ -692,7 +694,7 @@ customToken model blockchain ((Modal { state }) as modal) token =
         ]
         [ tokenSymbolAndName model modal token
         , case state of
-            CustomERC20s a ->
+            CustomERC20s input ->
                 row
                     [ width shrink
                     , alignRight
@@ -718,12 +720,12 @@ customToken model blockchain ((Modal { state }) as modal) token =
                                     , Font.color Color.negative300
                                     ]
                         }
-                    , Input.button
-                        []
-                        { onPress = Nothing
+                    , newTabLink
+                        [ alpha 0.64 ]
+                        { url = token |> Etherscan.fromToken (blockchain |> Blockchain.toChain)
                         , label =
                             model.images
-                                |> Image.link
+                                |> Image.linkWhite
                                     [ width <| px 16
                                     , height <| px 16
                                     ]

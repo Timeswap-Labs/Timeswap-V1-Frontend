@@ -4,22 +4,25 @@ port module Modal.ChainList.Main exposing
     , view
     )
 
-import Blockchain.Main exposing (Blockchain)
+import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User exposing (User)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain as Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
 import Data.Images exposing (Images)
-import Data.Support exposing (Support)
+import Data.Support exposing (Support(..))
 import Element
     exposing
         ( Element
+        , alignRight
         , centerX
         , centerY
         , column
         , el
         , fill
         , height
+        , mouseOver
+        , none
         , padding
         , paddingXY
         , px
@@ -36,7 +39,6 @@ import Element.Input as Input
 import Json.Encode exposing (Value)
 import Modal.Outside as Outside
 import Utility.Color as Color
-import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
 
@@ -70,6 +72,7 @@ view :
         | backdrop : Backdrop
         , images : Images
         , chains : Chains
+        , blockchain : Support User.NotSupported Blockchain
     }
     -> Element Msg
 view model =
@@ -77,7 +80,7 @@ view model =
         { onClick = Exit
         , modal =
             column
-                [ width <| px 335
+                [ width <| px 375
                 , height shrink
                 , padding 24
                 , centerX
@@ -115,43 +118,80 @@ view model =
 
 chainRow :
     { model
-        | backdrop : Backdrop
-        , images : Images
+        | images : Images
         , chains : Chains
+        , blockchain : Support User.NotSupported Blockchain
     }
     -> Chain
     -> Element Msg
 chainRow model chain =
-    Input.button
-        [ width fill ]
-        { onPress = chain |> ClickChain |> Just
-        , label =
-            row
-                [ width fill
-                , height <| px 54
-                , paddingXY 18 0
-                , spacing 8
-                , Background.color Color.primary100
-                , Border.rounded 8
-                ]
-                [ model.images
-                    |> Image.viewChain
-                        [ width <| px 24
-                        , height <| px 24
-                        , centerY
-                        ]
-                        chain
-                , el
-                    [ width shrink
-                    , height shrink
-                    , centerY
+    case model.blockchain of
+        Supported bc ->
+            if (bc |> Blockchain.toChain |> Chain.toChainId) == (chain |> Chain.toChainId) then
+                row
+                    [ width fill
+                    , height <| px 54
+                    , paddingXY 18 0
+                    , spacing 8
                     , Font.size 16
-                    , paddingXY 0 4
                     , Font.color Color.light100
+                    , Background.color Color.primary100
+                    , Border.rounded 8
                     ]
-                    (chain
-                        |> Chain.toString
-                        |> text
-                    )
-                ]
-        }
+                    [ model.images
+                        |> Image.viewChain
+                            [ width <| px 24
+                            , height <| px 24
+                            , centerY
+                            ]
+                            chain
+                    , text (chain |> Chain.toString)
+                    , el
+                        [ width <| px 8
+                        , height <| px 8
+                        , alignRight
+                        , centerY
+                        , Background.color Color.positive500
+                        , Border.rounded 4
+                        ]
+                        none
+                    ]
+
+            else
+                Input.button
+                    [ width fill ]
+                    { onPress = chain |> ClickChain |> Just
+                    , label =
+                        row
+                            [ width fill
+                            , height <| px 54
+                            , paddingXY 18 0
+                            , spacing 8
+                            , Background.color Color.primary100
+                            , mouseOver [ Background.color Color.primary200 ]
+                            , Border.rounded 8
+                            ]
+                            [ model.images
+                                |> Image.viewChain
+                                    [ width <| px 24
+                                    , height <| px 24
+                                    , centerY
+                                    ]
+                                    chain
+                            , el
+                                [ width shrink
+                                , height shrink
+                                , centerY
+                                , Font.size 16
+                                , paddingXY 0 4
+                                , Font.color Color.light100
+                                ]
+                                (chain
+                                    |> Chain.toString
+                                    |> text
+                                )
+                            ]
+                    }
+
+        _ ->
+            none
