@@ -274,25 +274,26 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ time, offset, chosenZone, device } as model) (Modal modal) =
+view ({ backdrop, device } as model) (Modal modal) =
     Outside.view model
         { onClick = Exit
         , modal =
             column
-                [ if device |> Device.isPhoneOrTablet then
+                ([ if device |> Device.isPhoneOrTablet then
                     width <| minimum 375 shrink
 
-                  else
+                   else
                     width <| minimum 622 shrink
-                , height <| maximum 468 shrink
-                , spacing 16
-                , centerX
-                , centerY
-                , Background.color Color.background
-                , Border.rounded 8
-                , Border.color Color.transparent100
-                , Border.width 1
-                ]
+                 , height <| maximum 468 shrink
+                 , spacing 16
+                 , centerX
+                 , centerY
+                 , Border.rounded 8
+                 , Border.color Color.transparent100
+                 , Border.width 1
+                 ]
+                    ++ Glass.background backdrop
+                )
                 [ column
                     [ width fill
                     , spacing 20

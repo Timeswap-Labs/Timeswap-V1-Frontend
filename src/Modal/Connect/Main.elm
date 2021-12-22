@@ -247,21 +247,22 @@ view :
     }
     -> Modal
     -> Element Msg
-view model modal =
+view ({ backdrop } as model) modal =
     Outside.view model
         { onClick = Exit
         , modal =
             el
-                [ width <| px 375
-                , height shrink
-                , padding 24
-                , centerX
-                , centerY
-                , Background.color Color.background
-                , Border.rounded 8
-                , Border.color Color.transparent100
-                , Border.width 1
-                ]
+                ([ width <| px 375
+                 , height shrink
+                 , padding 24
+                 , centerX
+                 , centerY
+                 , Border.rounded 8
+                 , Border.color Color.transparent100
+                 , Border.width 1
+                 ]
+                    ++ Glass.background backdrop
+                )
                 (case
                     ( case model.blockchain of
                         Supported blockchain ->

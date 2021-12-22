@@ -39,6 +39,7 @@ import Element.Input as Input
 import Json.Encode exposing (Value)
 import Modal.Outside as Outside
 import Utility.Color as Color
+import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
 
@@ -75,22 +76,23 @@ view :
         , blockchain : Support User.NotSupported Blockchain
     }
     -> Element Msg
-view model =
+view ({ backdrop } as model) =
     Outside.view model
         { onClick = Exit
         , modal =
             column
-                [ width <| px 375
-                , height shrink
-                , padding 24
-                , centerX
-                , centerY
-                , spacing 16
-                , Background.color Color.background
-                , Border.rounded 8
-                , Border.color Color.transparent100
-                , Border.width 1
-                ]
+                ([ width <| px 375
+                 , height shrink
+                 , padding 24
+                 , centerX
+                 , centerY
+                 , spacing 16
+                 , Border.rounded 8
+                 , Border.color Color.transparent100
+                 , Border.width 1
+                 ]
+                    ++ Glass.background backdrop
+                )
                 [ row
                     [ width fill
                     , height shrink

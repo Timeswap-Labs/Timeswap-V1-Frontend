@@ -66,21 +66,23 @@ view :
     }
     -> Modal
     -> Element Msg
-view model (Modal modal) =
+view ({ backdrop } as model) (Modal modal) =
     Outside.view model
         { onClick = Exit
         , modal =
             el
-                [ width <| px 375
-                , height <| px 200
-                , padding 24
-                , centerX
-                , centerY
-                , Background.color Color.background
-                , Border.rounded 8
-                , Border.color Color.transparent100
-                , Border.width 1
-                ]
+                ([ width <| px 375
+                 , height <| px 200
+                 , padding 24
+                 , centerX
+                 , centerY
+                 , Background.color Color.background
+                 , Border.rounded 8
+                 , Border.color Color.transparent100
+                 , Border.width 1
+                 ]
+                    ++ Glass.background backdrop
+                )
                 (column
                     [ width fill
                     , height shrink

@@ -1273,23 +1273,24 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
     )
         |> (\{ first, second, third, buttons } ->
                 column
-                    [ (case transaction.state of
-                        Add _ ->
-                            "liquidity"
+                    ([ (case transaction.state of
+                            Add _ ->
+                                "liquidity"
 
-                        New _ ->
-                            "create pool"
-                      )
+                            New _ ->
+                                "create pool"
+                       )
                         |> Region.description
-                    , width shrink
-                    , height shrink
-                    , padding 24
-                    , spacing 16
-                    , Border.rounded 8
-                    , Glass.background backdrop
-                    , Border.width 1
-                    , Border.color Color.transparent100
-                    ]
+                     , width shrink
+                     , height shrink
+                     , padding 24
+                     , spacing 16
+                     , Border.rounded 8
+                     , Border.width 1
+                     , Border.color Color.transparent100
+                     ]
+                        ++ Glass.background backdrop
+                    )
                     [ row
                         [ width fill
                         , height shrink

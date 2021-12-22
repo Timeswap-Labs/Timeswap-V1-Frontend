@@ -723,16 +723,17 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
     )
         |> (\{ first, second, buttons } ->
                 column
-                    [ Region.description "lend transaction"
-                    , width shrink
-                    , height shrink
-                    , padding 24
-                    , spacing 16
-                    , Border.rounded 8
-                    , Glass.background backdrop
-                    , Border.width 1
-                    , Border.color Color.transparent100
-                    ]
+                    ([ Region.description "lend transaction"
+                     , width shrink
+                     , height shrink
+                     , padding 24
+                     , spacing 16
+                     , Border.rounded 8
+                     , Border.width 1
+                     , Border.color Color.transparent100
+                     ]
+                        ++ Glass.background backdrop
+                    )
                     [ row
                         [ width fill
                         , height shrink

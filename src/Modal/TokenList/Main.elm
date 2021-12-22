@@ -462,21 +462,22 @@ view :
     -> Blockchain
     -> Modal
     -> Element Msg
-view model blockchain ((Modal { state, tooltip }) as modal) =
+view ({ backdrop } as model) blockchain ((Modal { state, tooltip }) as modal) =
     Outside.view model
         { onClick = Exit
         , modal =
             column
-                [ width <| px 375
-                , height <| minimum 360 shrink
-                , centerX
-                , centerY
-                , padding 0
-                , Background.color Color.background
-                , Border.color Color.transparent100
-                , Border.width 1
-                , Border.rounded 8
-                ]
+                ([ width <| px 375
+                 , height <| minimum 360 shrink
+                 , centerX
+                 , centerY
+                 , padding 0
+                 , Border.color Color.transparent100
+                 , Border.width 1
+                 , Border.rounded 8
+                 ]
+                    ++ Glass.background backdrop
+                )
                 [ modalHeader model modal
                 , case state of
                     ImportingERC20 erc20 ->
