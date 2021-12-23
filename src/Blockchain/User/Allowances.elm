@@ -11,7 +11,6 @@ import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Uint as Uint exposing (Uint)
 import Data.Web exposing (Web)
-import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
@@ -28,7 +27,7 @@ init :
 init chains chain =
     chains
         |> Chains.toListERC20 chain
-        |> List.map (\erc20 -> ( erc20, Loading ))
+        |> List.map (\erc20 -> ( erc20, Remote.loading ))
         |> Dict.fromList ERC20.sorter
 
 

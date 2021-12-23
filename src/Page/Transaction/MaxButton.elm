@@ -1,5 +1,7 @@
 module Page.Transaction.MaxButton exposing (disabled, view)
 
+import Animator exposing (Timeline)
+import Animator.Css
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Token exposing (Token)
 import Data.Uint exposing (Uint)
@@ -7,22 +9,32 @@ import Data.Web exposing (Web)
 import Element
     exposing
         ( Element
+        , Option
         , alignRight
         , centerY
         , el
+        , focusStyle
         , height
+        , html
+        , layoutWith
+        , noStaticStyleSheet
         , none
+        , padding
         , paddingXY
+        , px
         , row
         , shrink
         , spacing
         , text
         , width
         )
+import Element.Background as Background
+import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Utility.Color as Color
+import Utility.Loading as Loading
 import Utility.Truncate as Truncate
 
 
@@ -87,17 +99,16 @@ userBalance param =
                     , balance = balance
                     }
 
-            Loading ->
+            Loading timeline ->
                 el
                     [ width shrink
                     , height shrink
-                    , Font.size 12
-                    , paddingXY 0 2
-                    , Font.color Color.transparent300
+                    , centerY
                     ]
-                    (text "loading")
-                    |> Debug.log "implement loading animation"
+                    (Loading.view timeline)
 
+            -- (text "loading")
+            -- |> Debug.log "implement loading animation"
             Failure error ->
                 el
                     [ width shrink
@@ -179,7 +190,7 @@ disabledUserBalance param =
                     , balance = balance
                     }
 
-            Loading ->
+            Loading _ ->
                 el
                     [ width shrink
                     , height shrink

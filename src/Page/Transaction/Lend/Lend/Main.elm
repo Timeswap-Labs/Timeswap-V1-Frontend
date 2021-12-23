@@ -68,6 +68,7 @@ import Time exposing (Posix)
 import Url.Builder as Builder
 import Utility.Color as Color
 import Utility.Input as Input
+import Utility.Loading as Loading
 
 
 type Transaction
@@ -146,6 +147,7 @@ type Msg
     | ClickApprove
     | ClickLend
     | ReceiveAnswer Value
+    | Tick Posix
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
@@ -213,7 +215,7 @@ fromDisabled model blockchain pool poolInfo ({ assetIn } as transaction) =
                 |> Left
 
         ( Disabled.Default, False ) ->
-            Default Loading
+            Default Remote.loading
                 |> Right
 
         ( Disabled.Slider percent, True ) ->
@@ -227,7 +229,7 @@ fromDisabled model blockchain pool poolInfo ({ assetIn } as transaction) =
 
         ( Disabled.Slider percent, False ) ->
             { percent = percent
-            , claims = Loading
+            , claims = Remote.loading
             }
                 |> Slider
                 |> Right
@@ -245,7 +247,7 @@ fromDisabled model blockchain pool poolInfo ({ assetIn } as transaction) =
         ( Disabled.Bond { percent, bondOut }, False ) ->
             { percent = percent
             , bondOut = bondOut
-            , claims = Loading
+            , claims = Remote.loading
             }
                 |> Bond
                 |> Right
@@ -263,7 +265,7 @@ fromDisabled model blockchain pool poolInfo ({ assetIn } as transaction) =
         ( Disabled.Insurance { percent, insuranceOut }, False ) ->
             { percent = percent
             , insuranceOut = insuranceOut
-            , claims = Loading
+            , claims = Remote.loading
             }
                 |> Insurance
                 |> Right
@@ -1124,6 +1126,51 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.map noCmdAndEffect
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
+        ( Tick posix, Default claims ) ->
+            { transaction
+                | claimsOut =
+                    claims
+                        |> Remote.update posix
+                        |> Default
+            }
+                |> noCmdAndEffect
+
+        ( Tick posix, Slider slider ) ->
+            { transaction
+                | claimsOut =
+                    { slider
+                        | claims =
+                            slider.claims
+                                |> Remote.update posix
+                    }
+                        |> Slider
+            }
+                |> noCmdAndEffect
+
+        ( Tick posix, Bond bond ) ->
+            { transaction
+                | claimsOut =
+                    { bond
+                        | claims =
+                            bond.claims
+                                |> Remote.update posix
+                    }
+                        |> Bond
+            }
+                |> noCmdAndEffect
+
+        ( Tick posix, Insurance insurance ) ->
+            { transaction
+                | claimsOut =
+                    { insurance
+                        | claims =
+                            insurance.claims
+                                |> Remote.update posix
+                    }
+                        |> Insurance
+            }
+                |> noCmdAndEffect
+
         ( OnMouseEnter tooltip, _ ) ->
             ( { transaction | tooltip = Just tooltip }
                 |> Transaction
@@ -1149,7 +1196,7 @@ updateDefault assetIn =
             |> Success
 
      else
-        Loading
+        Remote.loading
     )
         |> Default
 
@@ -1163,7 +1210,7 @@ updateSlider percent assetIn =
                 |> Success
 
         else
-            Loading
+            Remote.loading
     }
         |> Slider
 
@@ -1181,7 +1228,7 @@ updateBond percent bondOut assetIn =
                 |> Success
 
         else
-            Loading
+            Remote.loading
     }
         |> Bond
 
@@ -1199,7 +1246,7 @@ updateInsurance percent insuranceOut assetIn =
                 |> Success
 
         else
-            Loading
+            Remote.loading
     }
         |> Insurance
 
@@ -1490,14 +1537,28 @@ port receiveLendAnswer : (Value -> msg) -> Sub msg
 
 subscriptions : Transaction -> Sub Msg
 subscriptions (Transaction { assetIn, claimsOut }) =
-    if (assetIn |> Input.isZero) && (claimsOut |> hasInputZero) then
+    [ if (assetIn |> Input.isZero) && (claimsOut |> hasInputZero) then
         Sub.none
 
-    else
+      else
         [ Time.every 1000 QueryAgain
         , receiveLendAnswer ReceiveAnswer
         ]
             |> Sub.batch
+    , case claimsOut of
+        Default claims ->
+            claims |> Remote.subscriptions Tick
+
+        Slider { claims } ->
+            claims |> Remote.subscriptions Tick
+
+        Bond { claims } ->
+            claims |> Remote.subscriptions Tick
+
+        Insurance { claims } ->
+            claims |> Remote.subscriptions Tick
+    ]
+        |> Sub.batch
 
 
 hasInputZero : ClaimsOut -> Bool
@@ -1667,39 +1728,26 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
             ]
             ((case claimsOut of
                 Default default ->
-                    case default of
-                        Success { apr, cdp } ->
-                            ( apr, cdp ) |> Just
-
-                        _ ->
-                            Nothing
+                    ( default |> Remote.map .apr
+                    , default |> Remote.map .cdp
+                    )
 
                 Slider { claims } ->
-                    case claims of
-                        Success { apr, cdp } ->
-                            ( apr, cdp ) |> Just
-
-                        _ ->
-                            Nothing
+                    ( claims |> Remote.map .apr
+                    , claims |> Remote.map .cdp
+                    )
 
                 Bond { claims } ->
-                    case claims of
-                        Success { apr, cdp } ->
-                            ( apr, cdp ) |> Just
-
-                        _ ->
-                            Nothing
+                    ( claims |> Remote.map .apr
+                    , claims |> Remote.map .cdp
+                    )
 
                 Insurance { claims } ->
-                    case claims of
-                        Success { apr, cdp } ->
-                            ( apr, cdp ) |> Just
-
-                        _ ->
-                            Nothing
+                    ( claims |> Remote.map .apr
+                    , claims |> Remote.map .cdp
+                    )
              )
-                |> Maybe.map
-                    (\( apr, cdp ) ->
+                |> (\( apr, cdp ) ->
                         [ Info.lendAPR apr
                         , Info.lendCDP model
                             { onMouseEnter = OnMouseEnter
@@ -1711,11 +1759,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                             , cdp = cdp
                             }
                         ]
-                    )
-                |> Maybe.withDefault
-                    [ Info.emptyAPR |> map never
-                    , Info.emptyCDP |> map never
-                    ]
+                   )
             )
         , case claimsOut of
             Default default ->
@@ -1808,14 +1852,31 @@ bondOutSection model asset { tooltip } output =
         , height shrink
         , spacing 10
         ]
-        [ el
+        [ row
             [ width shrink
             , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.primary400
+            , spacing 10
             ]
-            (text "Amount to Receive")
+            [ el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "Amount to Receive")
+            , case output of
+                Loading timeline ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
+
+                _ ->
+                    none
+            ]
         , Output.view model
             { onMouseEnter = OnMouseEnter
             , onMouseLeave = OnMouseLeave
@@ -1840,14 +1901,31 @@ insuranceOutSection model collateral { tooltip } output =
         , height shrink
         , spacing 10
         ]
-        [ el
+        [ row
             [ width shrink
             , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.primary400
+            , spacing 10
             ]
-            (text "Amount Protecting")
+            [ el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "Amount Protecting")
+            , case output of
+                Loading timeline ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
+
+                _ ->
+                    none
+            ]
         , Output.view model
             { onMouseEnter = OnMouseEnter
             , onMouseLeave = OnMouseLeave
@@ -1872,14 +1950,31 @@ advancedBondOutSection model asset { tooltip } or =
         , height shrink
         , spacing 10
         ]
-        [ el
+        [ row
             [ width shrink
             , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.primary400
+            , spacing 10
             ]
-            (text "Amount to Receive")
+            [ el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "Amount to Receive")
+            , case or of
+                Right (Loading timeline) ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
+
+                _ ->
+                    none
+            ]
         , Textbox.view model
             { onMouseEnter = OnMouseEnter
             , onMouseLeave = OnMouseLeave
@@ -1915,14 +2010,31 @@ advancedInsuranceOutSection model collateral { tooltip } or =
         , height shrink
         , spacing 10
         ]
-        [ el
+        [ row
             [ width shrink
             , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.primary400
+            , spacing 10
             ]
-            (text "Amount Protecting")
+            [ el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "Amount Protecting")
+            , case or of
+                Right (Loading timeline) ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
+
+                _ ->
+                    none
+            ]
         , Textbox.view model
             { onMouseEnter = OnMouseEnter
             , onMouseLeave = OnMouseLeave
@@ -1986,7 +2098,7 @@ buttons blockchain asset transaction =
                                 ( Just (Success False), Just (Success True) ) ->
                                     [ Button.notEnoughBalance ]
 
-                                ( Just Loading, Just (Success True) ) ->
+                                ( Just (Loading _), Just (Success True) ) ->
                                     [ Button.checkingBalance |> map never ]
 
                                 ( Just (Success True), Just (Success False) ) ->
@@ -1999,22 +2111,22 @@ buttons blockchain asset transaction =
                                     , disabledLend
                                     ]
 
-                                ( Just Loading, Just (Success False) ) ->
+                                ( Just (Loading _), Just (Success False) ) ->
                                     [ disabledApprove erc20
                                     , Button.checkingBalance |> map never
                                     ]
 
-                                ( Just (Success True), Just Loading ) ->
+                                ( Just (Success True), Just (Loading _) ) ->
                                     [ Button.checkingAllowance |> map never
                                     , disabledLend
                                     ]
 
-                                ( Just (Success False), Just Loading ) ->
+                                ( Just (Success False), Just (Loading _) ) ->
                                     [ Button.checkingAllowance |> map never
                                     , Button.notEnoughBalance |> map never
                                     ]
 
-                                ( Just Loading, Just Loading ) ->
+                                ( Just (Loading _), Just (Loading _) ) ->
                                     [ Button.checkingAllowance |> map never
                                     , Button.checkingBalance |> map never
                                     ]
@@ -2054,12 +2166,12 @@ buttons blockchain asset transaction =
                                     , disabledLend
                                     ]
 
-                                ( Just Loading, Just Loading ) ->
+                                ( Just (Loading _), Just (Loading _) ) ->
                                     [ Button.checkingAllowance |> map never
                                     , Button.checkingBalance |> map never
                                     ]
 
-                                ( _, Just Loading ) ->
+                                ( _, Just (Loading _) ) ->
                                     [ Button.checkingAllowance |> map never
                                     , disabledLend
                                     ]
@@ -2080,7 +2192,7 @@ buttons blockchain asset transaction =
                                 Just (Success False) ->
                                     [ disabledLend ]
 
-                                Just Loading ->
+                                Just (Loading _) ->
                                     [ Button.checkingBalance |> map never ]
 
                                 Just (Failure error) ->
@@ -2102,7 +2214,7 @@ buttons blockchain asset transaction =
                                 Just (Success False) ->
                                     [ disabledLend ]
 
-                                Just Loading ->
+                                Just (Loading _) ->
                                     [ Button.checkingBalance |> map never ]
 
                                 Just (Failure error) ->

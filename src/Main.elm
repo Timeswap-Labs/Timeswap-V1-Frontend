@@ -60,6 +60,7 @@ import Element
         , padding
         , paddingEach
         , paddingXY
+        , paragraph
         , px
         , row
         , shrink
@@ -84,6 +85,7 @@ import Task
 import Time exposing (Posix)
 import Url exposing (Url)
 import Utility.Color as Color
+import Utility.Glass as Glass
 import Utility.Image as Image
 
 
@@ -865,9 +867,14 @@ subscriptions model =
     , Time.every 1000 ReceiveTime
     , receiveMetamaskInstalled ReceiveMetamaskInstalled
     , receiveUser ReceiveUser
-    , model.page
-        |> Page.subscriptions
-        |> Sub.map PageMsg
+    , case model.blockchain of
+        Supported _ ->
+            model.page
+                |> Page.subscriptions
+                |> Sub.map PageMsg
+
+        NotSupported _ ->
+            Sub.none
     , model.modal
         |> Animator.current
         |> Maybe.map Modal.subscriptions
@@ -875,6 +882,14 @@ subscriptions model =
         |> Maybe.withDefault Sub.none
     , Animator.toSubscription Tick model animator
     , onClickOutsideDropdown model
+    , case model.blockchain of
+        Supported blockchain ->
+            blockchain
+                |> Blockchain.subscriptions
+                |> Sub.map BlockchainMsg
+
+        _ ->
+            Sub.none
     ]
         |> Sub.batch
 
@@ -1197,7 +1212,6 @@ chainListButton ({ images } as model) =
                 , paddingXY 0 3
                 , spacing 6
                 , Font.size 16
-                , Font.bold
                 , Font.color Color.primary500
                 ]
                 (case model.blockchain of
@@ -1415,7 +1429,6 @@ zoneButton ({ images, offset, zoneName, chosenZone, zoneDropdown } as model) =
                 , centerY
                 , spacing 8
                 , Font.size 16
-                , Font.bold
                 , Font.color Color.primary500
                 ]
                 [ ChosenZone.toString chosenZone zoneName offset
@@ -1543,5 +1556,82 @@ body ({ page } as model) =
                 Page.view model blockchain page |> map PageMsg
 
             NotSupported _ ->
-                none
+                notSupportedBody model
         )
+
+
+notSupportedBody :
+    { model | backdrop : Backdrop, images : Images }
+    -> Element Msg
+notSupportedBody { backdrop, images } =
+    column
+        ([ width <| px 375
+         , height shrink
+         , padding 24
+         , spacing 36
+         , centerX
+         , centerY
+         , Border.rounded 8
+         , Border.width 1
+         , Border.color Color.transparent100
+         ]
+            ++ Glass.background backdrop
+        )
+        [ el
+            [ width shrink
+            , height shrink
+            , centerX
+            , Font.color Color.light100
+            , Font.size 18
+            , paddingXY 0 3
+            ]
+            (text "Unsupported Network")
+        , column
+            [ width fill
+            , height shrink
+            , spacing 16
+            ]
+            [ images
+                |> Image.error
+                    [ width <| px 30
+                    , height <| px 30
+                    , centerX
+                    ]
+            , paragraph
+                [ width fill
+                , height shrink
+                , Font.center
+                ]
+                [ el
+                    [ width shrink
+                    , height shrink
+                    , Font.size 14
+                    , paddingXY 0 3
+                    , Font.color Color.light100
+                    ]
+                    (text "Please switch to a supported network.")
+                ]
+            , Input.button
+                [ width shrink
+                , height <| px 44
+                , paddingXY 12 0
+                , centerX
+                , Background.color Color.negative500
+                , Border.rounded 8
+                ]
+                { onPress = Just OpenChainList
+                , label =
+                    el
+                        [ width shrink
+                        , height shrink
+                        , Font.color Color.light100
+                        , Font.bold
+                        , Font.size 16
+                        , paddingXY 0 4
+                        , centerX
+                        , centerY
+                        ]
+                        (text "Switch Network")
+                }
+            ]
+        ]

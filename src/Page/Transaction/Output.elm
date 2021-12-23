@@ -8,7 +8,7 @@ module Page.Transaction.Output exposing
     )
 
 import Data.Images exposing (Images)
-import Data.Remote exposing (Remote(..))
+import Data.Remote as Remote exposing (Remote(..))
 import Data.Token exposing (Token)
 import Data.Uint exposing (Uint)
 import Element
@@ -87,7 +87,7 @@ view { images } param =
                     output
                         |> Fade.view param.token
 
-                Loading ->
+                Loading _ ->
                     none |> Debug.log "loading animation"
 
                 _ ->
@@ -269,7 +269,7 @@ liquidity { images } param =
                         output
                             |> Fade.viewLP
 
-                    Loading ->
+                    Loading _ ->
                         none |> Debug.log "loading animation"
 
                     _ ->

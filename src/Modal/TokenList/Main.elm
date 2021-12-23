@@ -212,7 +212,7 @@ update { chains } blockchain msg (Modal modal) =
                                 ( { modal
                                     | state =
                                         { input = string
-                                        , erc20 = Just Loading
+                                        , erc20 = Just Remote.loading
                                         }
                                             |> AllTokens
                                   }
@@ -319,7 +319,7 @@ update { chains } blockchain msg (Modal modal) =
                             ( { modal
                                 | state =
                                     { input = allTokens.input
-                                    , erc20 = Just Loading
+                                    , erc20 = Just Remote.loading
                                     }
                                         |> AllTokens
                               }
@@ -830,7 +830,7 @@ tokenBalance user token (Modal { tooltip }) =
                 ]
                 (balance |> Uint.toString |> text)
 
-        Just Loading ->
+        Just (Loading _) ->
             el
                 [ alignRight
                 , Font.regular

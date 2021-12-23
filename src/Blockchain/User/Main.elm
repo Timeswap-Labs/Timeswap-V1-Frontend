@@ -13,6 +13,7 @@ port module Blockchain.User.Main exposing
     , receiveNotSupported
     , receiveUser
     , receiveUserInit
+    , subscriptions
     , toAddress
     , toAddressNotSupported
     , toName
@@ -47,8 +48,8 @@ import Data.Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.ERC20 exposing (ERC20)
 import Data.Hash exposing (Hash)
-import Data.Remote exposing (Remote(..))
-import Data.Token exposing (Token)
+import Data.Remote as Remote exposing (Remote(..))
+import Data.Token as Token exposing (Token)
 import Data.Uint exposing (Uint)
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Web exposing (Web)
@@ -87,6 +88,7 @@ type alias Flag =
 
 type Msg
     = ReceiveReceipt Value
+    | Tick Posix
 
 
 init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
@@ -159,6 +161,12 @@ update chain msg (User user) =
 
                 Err _ ->
                     user |> noCmd
+
+        Tick posix ->
+            ( { user | balances = user.balances |> Balances.update posix }
+                |> User
+            , Cmd.none
+            )
 
 
 updateClearTxns : Chain -> User -> ( User, Cmd Msg )
@@ -439,6 +447,13 @@ port create : Value -> Cmd msg
 
 
 port receiveReceipt : (Value -> msg) -> Sub msg
+
+
+subscriptions : User -> Sub Msg
+subscriptions (User user) =
+    [ user.balances |> Balances.subscriptions Tick
+    ]
+        |> Sub.batch
 
 
 toWallet : User -> Wallet

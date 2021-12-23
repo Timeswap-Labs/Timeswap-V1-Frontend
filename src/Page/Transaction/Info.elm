@@ -10,6 +10,7 @@ module Page.Transaction.Info exposing
 import Data.CDP exposing (CDP)
 import Data.Pair exposing (Pair)
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
+import Data.Remote as Remote exposing (Remote(..))
 import Element
     exposing
         ( Element
@@ -31,11 +32,12 @@ import Element
 import Element.Font as Font
 import Utility.Calculate as Calculate
 import Utility.Color as Color
+import Utility.Loading as Loading
 import Utility.Truncate as Truncate
 
 
-lendAPR : Float -> Element msg
-lendAPR float =
+lendAPR : Remote failure Float -> Element msg
+lendAPR remote =
     column
         [ width fill
         , height shrink
@@ -49,25 +51,47 @@ lendAPR float =
             , Font.color Color.primary400
             ]
             (text "APR")
-        , el
-            [ width fill
-            , height <| px 24
-            , Font.size 18
-            , paddingXY 0 3
-            , (if float == 0 then
-                Color.transparent200
+        , case remote of
+            Loading timeline ->
+                el
+                    [ width shrink
+                    , height <| px 24
+                    ]
+                    (el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
+                    )
 
-               else
-                Color.positive400
-              )
-                |> Font.color
-            ]
-            (Calculate.apr float)
+            Failure _ ->
+                el
+                    [ width shrink
+                    , height <| px 24
+                    ]
+                    none
+
+            Success float ->
+                el
+                    [ width fill
+                    , height <| px 24
+                    , Font.size 18
+                    , paddingXY 0 3
+                    , (if float == 0 then
+                        Color.transparent200
+
+                       else
+                        Color.positive400
+                      )
+                        |> Font.color
+                    ]
+                    (Calculate.apr float)
         ]
 
 
-borrowAPR : Float -> Element msg
-borrowAPR float =
+borrowAPR : Remote failure Float -> Element msg
+borrowAPR remote =
     column
         [ width fill
         , height shrink
@@ -81,20 +105,42 @@ borrowAPR float =
             , Font.color Color.primary400
             ]
             (text "APR")
-        , el
-            [ width fill
-            , height <| px 24
-            , Font.size 18
-            , paddingXY 0 3
-            , (if float == 0 then
-                Color.transparent200
+        , case remote of
+            Loading timeline ->
+                el
+                    [ width shrink
+                    , height <| px 24
+                    ]
+                    (el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
+                    )
 
-               else
-                Color.negative400
-              )
-                |> Font.color
-            ]
-            (Calculate.apr float)
+            Failure _ ->
+                el
+                    [ width shrink
+                    , height <| px 24
+                    ]
+                    none
+
+            Success float ->
+                el
+                    [ width fill
+                    , height <| px 24
+                    , Font.size 18
+                    , paddingXY 0 3
+                    , (if float == 0 then
+                        Color.transparent200
+
+                       else
+                        Color.negative400
+                      )
+                        |> Font.color
+                    ]
+                    (Calculate.apr float)
         ]
 
 
@@ -107,7 +153,7 @@ lendCDP :
         , symbolTooltip : tooltip
         , opened : Maybe tooltip
         , pair : Pair
-        , cdp : CDP
+        , cdp : Remote foalure CDP
         }
     -> Element msg
 lendCDP { priceFeed } param =
@@ -129,85 +175,112 @@ lendCDP { priceFeed } param =
                 , Font.color Color.primary400
                 ]
                 (text "CDP")
-            , if
-                case priceFeed of
-                    PriceFeed.Ignore ->
-                        False
+            , case param.cdp of
+                Success cdp ->
+                    if
+                        case priceFeed of
+                            PriceFeed.Ignore ->
+                                False
 
-                    PriceFeed.Utilize ->
-                        param.cdp.percent
-                            |> Maybe.map (\_ -> True)
-                            |> Maybe.withDefault False
-              then
-                none
+                            PriceFeed.Utilize ->
+                                cdp.percent
+                                    |> Maybe.map (\_ -> True)
+                                    |> Maybe.withDefault False
+                    then
+                        none
 
-              else
+                    else
+                        el
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            ]
+                            (Truncate.viewCDPSymbol
+                                { onMouseEnter = param.onMouseEnter
+                                , onMouseLeave = param.onMouseLeave
+                                , tooltip = param.symbolTooltip
+                                , opened = param.opened
+                                , pair = param.pair
+                                }
+                            )
+
+                _ ->
+                    none
+            ]
+        , case param.cdp of
+            Loading timeline ->
                 el
                     [ width shrink
-                    , height shrink
-                    , centerY
+                    , height <| px 24
                     ]
-                    (Truncate.viewCDPSymbol
-                        { onMouseEnter = param.onMouseEnter
-                        , onMouseLeave = param.onMouseLeave
-                        , tooltip = param.symbolTooltip
-                        , opened = param.opened
-                        , pair = param.pair
-                        }
+                    (el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
                     )
-            ]
-        , el
-            [ width fill
-            , height <| px 24
-            ]
-            ((case priceFeed of
-                PriceFeed.Ignore ->
-                    Nothing
 
-                PriceFeed.Utilize ->
-                    param.cdp.percent
-             )
-                |> Maybe.map
-                    (\percent ->
-                        el
-                            [ width fill
-                            , height <| px 24
-                            , Font.size 18
-                            , paddingXY 0 3
-                            , (if percent == 0 then
-                                Color.transparent200
+            Failure _ ->
+                el
+                    [ width shrink
+                    , height <| px 24
+                    ]
+                    none
 
-                               else if percent <= 1 then
-                                Color.negative400
+            Success cdp ->
+                el
+                    [ width shrink
+                    , height <| px 24
+                    ]
+                    ((case priceFeed of
+                        PriceFeed.Ignore ->
+                            Nothing
 
-                               else
-                                Color.warning400
-                              )
-                                |> Font.color
-                            ]
-                            ([ percent
-                                |> (*) 10000
-                                |> truncate
-                                |> toFloat
-                                |> (\number -> number / 100)
-                                |> String.fromFloat
-                             , "%"
-                             ]
-                                |> String.concat
-                                |> text
+                        PriceFeed.Utilize ->
+                            cdp.percent
+                     )
+                        |> Maybe.map
+                            (\percent ->
+                                el
+                                    [ width fill
+                                    , height <| px 24
+                                    , Font.size 18
+                                    , paddingXY 0 3
+                                    , (if percent == 0 then
+                                        Color.transparent200
+
+                                       else if percent <= 1 then
+                                        Color.negative400
+
+                                       else
+                                        Color.warning400
+                                      )
+                                        |> Font.color
+                                    ]
+                                    ([ percent
+                                        |> (*) 10000
+                                        |> truncate
+                                        |> toFloat
+                                        |> (\number -> number / 100)
+                                        |> String.fromFloat
+                                     , "%"
+                                     ]
+                                        |> String.concat
+                                        |> text
+                                    )
+                            )
+                        |> Maybe.withDefault
+                            (Truncate.viewCDP
+                                { onMouseEnter = param.onMouseEnter
+                                , onMouseLeave = param.onMouseLeave
+                                , tooltip = param.cdpTooltip
+                                , opened = param.opened
+                                , pair = param.pair
+                                , cdp = cdp.ratio
+                                }
                             )
                     )
-                |> Maybe.withDefault
-                    (Truncate.viewCDP
-                        { onMouseEnter = param.onMouseEnter
-                        , onMouseLeave = param.onMouseLeave
-                        , tooltip = param.cdpTooltip
-                        , opened = param.opened
-                        , pair = param.pair
-                        , cdp = param.cdp.ratio
-                        }
-                    )
-            )
         ]
 
 
@@ -220,7 +293,7 @@ borrowCDP :
         , symbolTooltip : tooltip
         , opened : Maybe tooltip
         , pair : Pair
-        , cdp : CDP
+        , cdp : Remote failure CDP
         }
     -> Element msg
 borrowCDP { priceFeed } param =
@@ -242,85 +315,112 @@ borrowCDP { priceFeed } param =
                 , Font.color Color.primary400
                 ]
                 (text "CDP")
-            , if
-                case priceFeed of
-                    PriceFeed.Ignore ->
-                        False
+            , case param.cdp of
+                Success cdp ->
+                    if
+                        case priceFeed of
+                            PriceFeed.Ignore ->
+                                False
 
-                    PriceFeed.Utilize ->
-                        param.cdp.percent
-                            |> Maybe.map (\_ -> True)
-                            |> Maybe.withDefault False
-              then
-                none
+                            PriceFeed.Utilize ->
+                                cdp.percent
+                                    |> Maybe.map (\_ -> True)
+                                    |> Maybe.withDefault False
+                    then
+                        none
 
-              else
+                    else
+                        el
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            ]
+                            (Truncate.viewCDPSymbol
+                                { onMouseEnter = param.onMouseEnter
+                                , onMouseLeave = param.onMouseLeave
+                                , tooltip = param.symbolTooltip
+                                , opened = param.opened
+                                , pair = param.pair
+                                }
+                            )
+
+                _ ->
+                    none
+            ]
+        , case param.cdp of
+            Loading timeline ->
                 el
                     [ width shrink
-                    , height shrink
-                    , centerY
+                    , height <| px 24
                     ]
-                    (Truncate.viewCDPSymbol
-                        { onMouseEnter = param.onMouseEnter
-                        , onMouseLeave = param.onMouseLeave
-                        , tooltip = param.symbolTooltip
-                        , opened = param.opened
-                        , pair = param.pair
-                        }
+                    (el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
                     )
-            ]
-        , el
-            [ width fill
-            , height <| px 24
-            ]
-            ((case priceFeed of
-                PriceFeed.Ignore ->
-                    Nothing
 
-                PriceFeed.Utilize ->
-                    param.cdp.percent
-             )
-                |> Maybe.map
-                    (\percent ->
-                        el
-                            [ width fill
-                            , height <| px 24
-                            , Font.size 18
-                            , paddingXY 0 3
-                            , (if percent == 0 then
-                                Color.transparent200
+            Failure _ ->
+                el
+                    [ width shrink
+                    , height <| px 24
+                    ]
+                    none
 
-                               else if percent <= 1 then
-                                Color.positive400
+            Success cdp ->
+                el
+                    [ width shrink
+                    , height <| px 24
+                    ]
+                    ((case priceFeed of
+                        PriceFeed.Ignore ->
+                            Nothing
 
-                               else
-                                Color.warning400
-                              )
-                                |> Font.color
-                            ]
-                            ([ percent
-                                |> (*) 10000
-                                |> truncate
-                                |> toFloat
-                                |> (\number -> number / 100)
-                                |> String.fromFloat
-                             , "%"
-                             ]
-                                |> String.concat
-                                |> text
+                        PriceFeed.Utilize ->
+                            cdp.percent
+                     )
+                        |> Maybe.map
+                            (\percent ->
+                                el
+                                    [ width fill
+                                    , height <| px 24
+                                    , Font.size 18
+                                    , paddingXY 0 3
+                                    , (if percent == 0 then
+                                        Color.transparent200
+
+                                       else if percent <= 1 then
+                                        Color.positive400
+
+                                       else
+                                        Color.warning400
+                                      )
+                                        |> Font.color
+                                    ]
+                                    ([ percent
+                                        |> (*) 10000
+                                        |> truncate
+                                        |> toFloat
+                                        |> (\number -> number / 100)
+                                        |> String.fromFloat
+                                     , "%"
+                                     ]
+                                        |> String.concat
+                                        |> text
+                                    )
+                            )
+                        |> Maybe.withDefault
+                            (Truncate.viewCDP
+                                { onMouseEnter = param.onMouseEnter
+                                , onMouseLeave = param.onMouseLeave
+                                , tooltip = param.cdpTooltip
+                                , opened = param.opened
+                                , pair = param.pair
+                                , cdp = cdp.ratio
+                                }
                             )
                     )
-                |> Maybe.withDefault
-                    (Truncate.viewCDP
-                        { onMouseEnter = param.onMouseEnter
-                        , onMouseLeave = param.onMouseLeave
-                        , tooltip = param.cdpTooltip
-                        , opened = param.opened
-                        , pair = param.pair
-                        , cdp = param.cdp.ratio
-                        }
-                    )
-            )
         ]
 
 

@@ -68,6 +68,7 @@ import Time exposing (Posix)
 import Url.Builder as Builder
 import Utility.Color as Color
 import Utility.Input as Input
+import Utility.Loading as Loading
 
 
 type Transaction
@@ -179,6 +180,7 @@ type Msg
     | ClickApprove
     | ClickBorrow
     | ReceiveAnswer Value
+    | Tick Posix
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
@@ -261,7 +263,7 @@ fromDisabled model blockchain pool poolInfo transaction =
 
             else
                 { assetOut = assetOut
-                , dues = Loading
+                , dues = Remote.loading
                 }
                     |> Default
                     |> Right
@@ -276,7 +278,7 @@ fromDisabled model blockchain pool poolInfo transaction =
 
             else
                 { collateralIn = collateralIn
-                , out = Loading
+                , out = Remote.loading
                 }
                     |> DefaultMax
                     |> Right
@@ -293,7 +295,7 @@ fromDisabled model blockchain pool poolInfo transaction =
             else
                 { assetOut = assetOut
                 , percent = percent
-                , dues = Loading
+                , dues = Remote.loading
                 }
                     |> Slider
                     |> Right
@@ -315,7 +317,7 @@ fromDisabled model blockchain pool poolInfo transaction =
                 { assetOut = assetOut
                 , percent = percent
                 , debtIn = debtIn
-                , dues = Loading
+                , dues = Remote.loading
                 }
                     |> Debt
                     |> Right
@@ -337,7 +339,7 @@ fromDisabled model blockchain pool poolInfo transaction =
                 { assetOut = assetOut
                 , percent = percent
                 , collateralIn = collateralIn
-                , dues = Loading
+                , dues = Remote.loading
                 }
                     |> Collateral
                     |> Right
@@ -354,7 +356,7 @@ fromDisabled model blockchain pool poolInfo transaction =
             else
                 { collateralIn = collateralIn
                 , percent = percent
-                , out = Loading
+                , out = Remote.loading
                 }
                     |> AdvancedMax
                     |> Right
@@ -1668,6 +1670,78 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                 |> Maybe.map noCmdAndEffect
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
+        ( Tick posix, Default default ) ->
+            { transaction
+                | state =
+                    { default
+                        | dues =
+                            default.dues
+                                |> Remote.update posix
+                    }
+                        |> Default
+            }
+                |> noCmdAndEffect
+
+        ( Tick posix, DefaultMax defaultMax ) ->
+            { transaction
+                | state =
+                    { defaultMax
+                        | out =
+                            defaultMax.out
+                                |> Remote.update posix
+                    }
+                        |> DefaultMax
+            }
+                |> noCmdAndEffect
+
+        ( Tick posix, Slider slider ) ->
+            { transaction
+                | state =
+                    { slider
+                        | dues =
+                            slider.dues
+                                |> Remote.update posix
+                    }
+                        |> Slider
+            }
+                |> noCmdAndEffect
+
+        ( Tick posix, Debt debt ) ->
+            { transaction
+                | state =
+                    { debt
+                        | dues =
+                            debt.dues
+                                |> Remote.update posix
+                    }
+                        |> Debt
+            }
+                |> noCmdAndEffect
+
+        ( Tick posix, Collateral collateral ) ->
+            { transaction
+                | state =
+                    { collateral
+                        | dues =
+                            collateral.dues
+                                |> Remote.update posix
+                    }
+                        |> Collateral
+            }
+                |> noCmdAndEffect
+
+        ( Tick posix, AdvancedMax advancedMax ) ->
+            { transaction
+                | state =
+                    { advancedMax
+                        | out =
+                            advancedMax.out
+                                |> Remote.update posix
+                    }
+                        |> AdvancedMax
+            }
+                |> noCmdAndEffect
+
         ( OnMouseEnter tooltip, _ ) ->
             { transaction | tooltip = Just tooltip }
                 |> noCmdAndEffect
@@ -1689,7 +1763,7 @@ updateDefault assetOut =
                 |> Success
 
         else
-            Loading
+            Remote.loading
     }
         |> Default
 
@@ -1703,7 +1777,7 @@ updateDefaultMax collateralIn =
                 |> Success
 
         else
-            Loading
+            Remote.loading
     }
         |> DefaultMax
 
@@ -1718,7 +1792,7 @@ updateSlider percent assetOut =
                 |> Success
 
         else
-            Loading
+            Remote.loading
     }
         |> Slider
 
@@ -1737,7 +1811,7 @@ updateDebt percent debtIn assetOut =
                 |> Success
 
         else
-            Loading
+            Remote.loading
     }
         |> Debt
 
@@ -1756,7 +1830,7 @@ updateCollateral percent collateralIn assetOut =
                 |> Success
 
         else
-            Loading
+            Remote.loading
     }
         |> Collateral
 
@@ -1771,7 +1845,7 @@ updateAdvancedMax percent collateralIn =
                 |> Success
 
         else
-            Loading
+            Remote.loading
     }
         |> AdvancedMax
 
@@ -2082,14 +2156,34 @@ port receiveBorrowAnswer : (Value -> msg) -> Sub msg
 
 subscriptions : Transaction -> Sub Msg
 subscriptions (Transaction { state }) =
-    if state |> hasInputZero then
+    [ if state |> hasInputZero then
         Sub.none
 
-    else
+      else
         [ Time.every 1000 QueryAgain
         , receiveBorrowAnswer ReceiveAnswer
         ]
             |> Sub.batch
+    , case state of
+        Default { dues } ->
+            dues |> Remote.subscriptions Tick
+
+        DefaultMax { out } ->
+            out |> Remote.subscriptions Tick
+
+        Slider { dues } ->
+            dues |> Remote.subscriptions Tick
+
+        Debt { dues } ->
+            dues |> Remote.subscriptions Tick
+
+        Collateral { dues } ->
+            dues |> Remote.subscriptions Tick
+
+        AdvancedMax { out } ->
+            out |> Remote.subscriptions Tick
+    ]
+        |> Sub.batch
 
 
 hasInputZero : State -> Bool
@@ -2153,14 +2247,50 @@ assetOutSection model asset { state, tooltip } =
         , Background.color Color.primary100
         , Border.rounded 8
         ]
-        [ el
+        [ row
             [ width shrink
             , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.primary400
+            , spacing 10
             ]
-            (text "Amount to Borrow")
+            [ el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "Amount to Borrow")
+            , (case state of
+                DefaultMax { out } ->
+                    case out of
+                        Loading timeline ->
+                            Just timeline
+
+                        _ ->
+                            Nothing
+
+                AdvancedMax { out } ->
+                    case out of
+                        Loading timeline ->
+                            Just timeline
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+              )
+                |> Maybe.map
+                    (\timeline ->
+                        el
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            ]
+                            (Loading.view timeline)
+                    )
+                |> Maybe.withDefault none
+            ]
         , (case state of
             Default { assetOut } ->
                 Left assetOut
@@ -2283,55 +2413,36 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
             ]
             ((case state of
                 Default { dues } ->
-                    case dues of
-                        Success { apr, cdp } ->
-                            ( apr, cdp ) |> Just
-
-                        _ ->
-                            Nothing
+                    ( dues |> Remote.map .apr
+                    , dues |> Remote.map .cdp
+                    )
 
                 DefaultMax { out } ->
-                    case out of
-                        Success { apr, cdp } ->
-                            ( apr, cdp ) |> Just
-
-                        _ ->
-                            Nothing
+                    ( out |> Remote.map .apr
+                    , out |> Remote.map .cdp
+                    )
 
                 Slider { dues } ->
-                    case dues of
-                        Success { apr, cdp } ->
-                            ( apr, cdp ) |> Just
-
-                        _ ->
-                            Nothing
+                    ( dues |> Remote.map .apr
+                    , dues |> Remote.map .cdp
+                    )
 
                 Debt { dues } ->
-                    case dues of
-                        Success { apr, cdp } ->
-                            ( apr, cdp ) |> Just
-
-                        _ ->
-                            Nothing
+                    ( dues |> Remote.map .apr
+                    , dues |> Remote.map .cdp
+                    )
 
                 Collateral { dues } ->
-                    case dues of
-                        Success { apr, cdp } ->
-                            ( apr, cdp ) |> Just
-
-                        _ ->
-                            Nothing
+                    ( dues |> Remote.map .apr
+                    , dues |> Remote.map .cdp
+                    )
 
                 AdvancedMax { out } ->
-                    case out of
-                        Success { apr, cdp } ->
-                            ( apr, cdp ) |> Just
-
-                        _ ->
-                            Nothing
+                    ( out |> Remote.map .apr
+                    , out |> Remote.map .cdp
+                    )
              )
-                |> Maybe.map
-                    (\( apr, cdp ) ->
+                |> (\( apr, cdp ) ->
                         [ Info.borrowAPR apr
                         , Info.borrowCDP model
                             { onMouseEnter = OnMouseEnter
@@ -2343,11 +2454,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
                             , cdp = cdp
                             }
                         ]
-                    )
-                |> Maybe.withDefault
-                    [ Info.emptyAPR |> map never
-                    , Info.emptyCDP |> map never
-                    ]
+                   )
             )
         , case state of
             Default { dues } ->
@@ -2484,14 +2591,31 @@ debtInSection model asset { tooltip } output =
         , height shrink
         , spacing 10
         ]
-        [ el
+        [ row
             [ width shrink
             , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.primary400
+            , spacing 10
             ]
-            (text "Debt to Repay")
+            [ el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "Debt to Repay")
+            , case output of
+                Loading timeline ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
+
+                _ ->
+                    none
+            ]
         , Output.view model
             { onMouseEnter = OnMouseEnter
             , onMouseLeave = OnMouseLeave
@@ -2523,14 +2647,31 @@ collateralInSection model blockchain collateral { tooltip } or =
             , spacing 6
             , centerY
             ]
-            [ el
+            [ row
                 [ width shrink
                 , height shrink
-                , Font.size 14
-                , paddingXY 0 3
-                , Font.color Color.primary400
+                , spacing 10
                 ]
-                (text "Collateral to Lock")
+                [ el
+                    [ width shrink
+                    , height shrink
+                    , Font.size 14
+                    , paddingXY 0 3
+                    , Font.color Color.primary400
+                    ]
+                    (text "Collateral to Lock")
+                , case or of
+                    Right (Loading timeline) ->
+                        el
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            ]
+                            (Loading.view timeline)
+
+                    _ ->
+                        none
+                ]
             , blockchain
                 |> Blockchain.toUser
                 |> Maybe.andThen (User.getBalance collateral)
@@ -2585,14 +2726,31 @@ advancedDebtInSection model asset { tooltip } or =
         , height shrink
         , spacing 10
         ]
-        [ el
+        [ row
             [ width shrink
             , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.primary400
+            , spacing 10
             ]
-            (text "Debt to Repay")
+            [ el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "Debt to Repay")
+            , case or of
+                Right (Loading timeline) ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
+
+                _ ->
+                    none
+            ]
         , Textbox.view model
             { onMouseEnter = OnMouseEnter
             , onMouseLeave = OnMouseLeave
@@ -2635,14 +2793,31 @@ advancedCollateralInSection model blockchain collateral { tooltip } or =
             , spacing 6
             , centerY
             ]
-            [ el
+            [ row
                 [ width shrink
                 , height shrink
-                , Font.size 14
-                , paddingXY 0 3
-                , Font.color Color.primary400
+                , spacing 10
                 ]
-                (text "Collateral to Lock")
+                [ el
+                    [ width shrink
+                    , height shrink
+                    , Font.size 14
+                    , paddingXY 0 3
+                    , Font.color Color.primary400
+                    ]
+                    (text "Collateral to Lock")
+                , case or of
+                    Right (Loading timeline) ->
+                        el
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            ]
+                            (Loading.view timeline)
+
+                    _ ->
+                        none
+                ]
             , blockchain
                 |> Blockchain.toUser
                 |> Maybe.andThen (User.getBalance collateral)

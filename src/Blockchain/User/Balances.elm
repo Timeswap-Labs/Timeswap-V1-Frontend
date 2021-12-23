@@ -3,6 +3,8 @@ module Blockchain.User.Balances exposing
     , decoder
     , hasEnough
     , init
+    , subscriptions
+    , update
     )
 
 import Data.Chain exposing (Chain)
@@ -11,10 +13,10 @@ import Data.Remote as Remote exposing (Remote(..))
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Data.Web exposing (Web)
-import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
+import Time exposing (Posix)
 
 
 type alias Balances =
@@ -28,7 +30,7 @@ init :
 init chains chain =
     chains
         |> Chains.toTokenList chain
-        |> List.map (\token -> ( token, Loading ))
+        |> List.map (\token -> ( token, Remote.loading ))
         |> Dict.fromList Token.sorter
 
 
@@ -49,3 +51,24 @@ hasEnough token amount balances =
         |> (Maybe.map << Remote.map) (Uint.hasEnough amount)
         |> (Maybe.map << Remote.withDefault) False
         |> Maybe.withDefault False
+
+
+update : Posix -> Balances -> Balances
+update posix balances =
+    balances
+        |> Dict.toList
+        |> List.map
+            (\( token, remote ) ->
+                ( token
+                , remote |> Remote.update posix
+                )
+            )
+        |> Dict.fromList Token.sorter
+
+
+subscriptions : (Posix -> msg) -> Balances -> Sub msg
+subscriptions tick balances =
+    balances
+        |> Dict.values
+        |> List.map (Remote.subscriptions tick)
+        |> Sub.batch

@@ -587,7 +587,7 @@ maturityList { images, time, offset, chosenZone, priceFeed } (Modal { pair, pool
         , spacing 12
         ]
         (case pools of
-            Loading ->
+            Loading _ ->
                 [ el [ centerX, Font.color Color.light100 ] (text "Loading...") ]
 
             Failure err ->

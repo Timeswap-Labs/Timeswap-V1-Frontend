@@ -196,4 +196,37 @@ chainRow model chain =
                     }
 
         _ ->
-            none
+            Input.button
+                [ width fill ]
+                { onPress = chain |> ClickChain |> Just
+                , label =
+                    row
+                        [ width fill
+                        , height <| px 54
+                        , paddingXY 18 0
+                        , spacing 8
+                        , Background.color Color.primary100
+                        , mouseOver [ Background.color Color.primary200 ]
+                        , Border.rounded 8
+                        ]
+                        [ model.images
+                            |> Image.viewChain
+                                [ width <| px 24
+                                , height <| px 24
+                                , centerY
+                                ]
+                                chain
+                        , el
+                            [ width shrink
+                            , height shrink
+                            , centerY
+                            , Font.size 16
+                            , paddingXY 0 4
+                            , Font.color Color.light100
+                            ]
+                            (chain
+                                |> Chain.toString
+                                |> text
+                            )
+                        ]
+                }

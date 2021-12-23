@@ -5,6 +5,7 @@ module Blockchain.Main exposing
     , initDefault
     , receiveUser
     , receiveUserInit
+    , subscriptions
     , toChain
     , toUser
     , update
@@ -16,6 +17,8 @@ module Blockchain.Main exposing
     , updateLiquidity
     )
 
+import Animator exposing (Animator, Timeline)
+import Animator.Css
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.WriteBorrow exposing (WriteBorrow)
 import Blockchain.User.WriteCreate exposing (WriteCreate)
@@ -397,6 +400,19 @@ receiveUser ({ key, url, chains } as model) value (Blockchain blockchain) =
 
         Err _ ->
             Nothing
+
+
+subscriptions : Blockchain -> Sub Msg
+subscriptions blockchain =
+    blockchain
+        |> toUser
+        |> Maybe.map
+            (\user ->
+                user
+                    |> User.subscriptions
+                    |> Sub.map UserMsg
+            )
+        |> Maybe.withDefault Sub.none
 
 
 toUser : Blockchain -> Maybe User

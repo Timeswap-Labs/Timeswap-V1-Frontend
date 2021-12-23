@@ -13,6 +13,8 @@ module Page.Transaction.Lend.Main exposing
     , view
     )
 
+import Animator exposing (Animator)
+import Animator.Css
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.WriteLend exposing (WriteLend)
 import Data.Backdrop exposing (Backdrop)
@@ -27,7 +29,7 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
-import Data.Remote exposing (Remote(..))
+import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
@@ -346,7 +348,7 @@ update model blockchain msg (Transaction transaction) =
                                         |> Just
                                )
 
-                    ( Ok (Right poolInfo), Loading ) ->
+                    ( Ok (Right poolInfo), Loading _ ) ->
                         Lend.init
                             |> Exist poolInfo
                             |> Success
@@ -381,7 +383,7 @@ update model blockchain msg (Transaction transaction) =
                             |> Left
                             |> Just
 
-                    ( Err error, Loading ) ->
+                    ( Err error, Loading _ ) ->
                         { http = error
                         , lend = Disabled.init
                         }
@@ -665,7 +667,7 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         }
                    )
 
-        Pool pool (Active Loading) ->
+        Pool pool (Active (Loading _)) ->
             { asset =
                 pool.pair
                     |> Pair.toAsset

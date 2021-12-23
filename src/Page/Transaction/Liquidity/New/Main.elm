@@ -4,6 +4,7 @@ port module Page.Transaction.Liquidity.New.Main exposing
     , Transaction
     , fromDisabled
     , init
+    , subscriptions
     , toDisabled
     , update
     , view
@@ -58,8 +59,10 @@ import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.Price exposing (Price)
 import Page.Transaction.Textbox as Textbox
+import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Input as Input
+import Utility.Loading as Loading
 
 
 type Transaction
@@ -90,6 +93,7 @@ type Msg
     | ClickApproveCollateral
     | ClickCreate
     | ReceiveAnswer Value
+    | Tick Posix
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
@@ -145,7 +149,7 @@ fromDisabled blockchain pool priceFeed transaction =
         { assetIn = transaction.assetIn
         , debtIn = transaction.debtIn
         , collateralIn = transaction.collateralIn
-        , liquidityOut = Loading
+        , liquidityOut = Remote.loading
         , tooltip = Nothing
         }
             |> initQuery blockchain pool priceFeed
@@ -182,7 +186,7 @@ update blockchain pool priceFeed msg (Transaction transaction) =
                                 |> Success
 
                         else
-                            Loading
+                            Remote.loading
                 }
                     |> query blockchain pool priceFeed
 
@@ -217,7 +221,7 @@ update blockchain pool priceFeed msg (Transaction transaction) =
                                         |> Success
 
                                 else
-                                    Loading
+                                    Remote.loading
                         }
                             |> query blockchain pool priceFeed
                     )
@@ -237,7 +241,7 @@ update blockchain pool priceFeed msg (Transaction transaction) =
                                 |> Success
 
                         else
-                            Loading
+                            Remote.loading
                 }
                     |> query blockchain pool priceFeed
 
@@ -258,7 +262,7 @@ update blockchain pool priceFeed msg (Transaction transaction) =
                                 |> Success
 
                         else
-                            Loading
+                            Remote.loading
                 }
                     |> query blockchain pool priceFeed
 
@@ -293,7 +297,7 @@ update blockchain pool priceFeed msg (Transaction transaction) =
                                         |> Success
 
                                 else
-                                    Loading
+                                    Remote.loading
                         }
                             |> query blockchain pool priceFeed
                     )
@@ -500,6 +504,14 @@ update blockchain pool priceFeed msg (Transaction transaction) =
                 |> Maybe.map noCmdAndEffect
                 |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
+        Tick posix ->
+            { transaction
+                | liquidityOut =
+                    transaction.liquidityOut
+                        |> Remote.update posix
+            }
+                |> noCmdAndEffect
+
         OnMouseEnter tooltip ->
             { transaction | tooltip = Just tooltip }
                 |> noCmdAndEffect
@@ -652,6 +664,12 @@ constructQueryNew givenCmd blockchain pool price transaction =
 port queryCreate : Value -> Cmd msg
 
 
+subscriptions : Transaction -> Sub Msg
+subscriptions (Transaction transaction) =
+    transaction.liquidityOut
+        |> Remote.subscriptions Tick
+
+
 view :
     { model | priceFeed : PriceFeed, images : Images }
     -> Blockchain
@@ -765,17 +783,13 @@ duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tool
             , height shrink
             , spacing 16
             ]
-            ((case liquidityOut of
-                Success { apr, cdp } ->
-                    ( apr, cdp ) |> Just
-
-                _ ->
-                    Nothing
-             )
-                |> Maybe.map
-                    (\( apr, cdp ) ->
-                        [ Info.lendAPR apr
-                        , Info.lendCDP model
+            [ liquidityOut
+                |> Remote.map .apr
+                |> Info.lendAPR
+            , liquidityOut
+                |> Remote.map .cdp
+                |> (\cdp ->
+                        Info.lendCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave
                             , cdpTooltip = Tooltip.CDP
@@ -784,13 +798,8 @@ duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tool
                             , pair = pool.pair
                             , cdp = cdp
                             }
-                        ]
-                    )
-                |> Maybe.withDefault
-                    [ Info.emptyAPR |> map never
-                    , Info.emptyCDP |> map never
-                    ]
-            )
+                   )
+            ]
         , column
             [ width fill
             , height shrink
@@ -916,14 +925,31 @@ liquidityOutSection model pool { liquidityOut } =
         , Background.color Color.primary100
         , Border.rounded 8
         ]
-        [ el
+        [ row
             [ width shrink
             , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.primary400
+            , spacing 10
             ]
-            (text "LP Tokens to Receive")
+            [ el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , Font.color Color.primary400
+                ]
+                (text "LP Tokens to Receive")
+            , case liquidityOut of
+                Loading timeline ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline)
+
+                _ ->
+                    none
+            ]
         , Output.liquidity model
             { asset = pool.pair |> Pair.toAsset
             , collateral = pool.pair |> Pair.toCollateral

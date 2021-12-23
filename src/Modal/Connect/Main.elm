@@ -19,7 +19,7 @@ import Data.ERC20 as ERC20
 import Data.Hash as Hash exposing (Hash)
 import Data.Images exposing (Images)
 import Data.Pool as Pool
-import Data.Remote exposing (Remote(..))
+import Data.Remote as Remote exposing (Remote(..))
 import Data.Support exposing (Support(..))
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Wallets exposing (Wallets)
@@ -123,7 +123,7 @@ update msg modal =
 
         ( Connect wallet, Wallets ) ->
             ( { wallet = wallet
-              , error = Loading
+              , error = Remote.loading
               }
                 |> Waiting
                 |> Just
@@ -134,7 +134,7 @@ update msg modal =
             )
 
         ( TryAgain, Waiting waiting ) ->
-            ( { waiting | error = Loading }
+            ( { waiting | error = Remote.loading }
                 |> Waiting
                 |> Just
             , waiting.wallet
@@ -228,7 +228,7 @@ subscriptions modal =
     case modal of
         Waiting { error } ->
             case error of
-                Loading ->
+                Loading _ ->
                     receiveNoConnect ReceiveNoConnect
 
                 _ ->
@@ -280,7 +280,7 @@ view ({ backdrop } as model) modal =
 
                     ( _, Waiting ({ error } as waiting) ) ->
                         case error of
-                            Loading ->
+                            Loading _ ->
                                 viewInitializing model waiting
 
                             _ ->
