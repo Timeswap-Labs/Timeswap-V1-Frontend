@@ -10,7 +10,6 @@ module Modal.MaturityList.Main exposing
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
-import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
@@ -18,7 +17,7 @@ import Data.Maturity exposing (Maturity)
 import Data.Offset exposing (Offset)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
-import Data.PriceFeed exposing (PriceFeed)
+import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Remote exposing (Remote(..))
 import Data.Token as Token
 import Data.Web as Web exposing (Web)
@@ -274,7 +273,7 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ backdrop, device } as model) (Modal modal) =
+view ({ backdrop, device, priceFeed } as model) ((Modal { pair }) as modal) =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -324,15 +323,16 @@ view ({ backdrop, device } as model) (Modal modal) =
                         , height shrink
                         , centerY
                         ]
-                        [ pairWithPoolCount model (modal |> Modal)
-                        , sortBy model (modal |> Modal)
+                        [ pairWithPoolCount model modal
+                        , sortBy model modal
                         ]
                     ]
                 , row
                     [ width fill
                     , height <| px 34
                     , centerY
-                    , paddingXY 24 0
+                    , paddingXY 44 0
+                    , spacing 16
                     , Background.color Color.list
                     ]
                     [ el
@@ -343,6 +343,7 @@ view ({ backdrop, device } as model) (Modal modal) =
                         , Font.letterSpacing 0.08
                         , Font.color Color.transparent200
                         , Font.center
+                        , moveLeft 16
                         ]
                         (text "MATURITY TIME")
                     , el
@@ -364,9 +365,21 @@ view ({ backdrop, device } as model) (Modal modal) =
                         , Font.color Color.transparent200
                         , Font.center
                         ]
-                        (text "CDP")
+                        (case priceFeed of
+                            PriceFeed.Ignore ->
+                                [ "CDP - "
+                                , pair |> Pair.toCollateral |> Token.toSymbol
+                                , " PER "
+                                , pair |> Pair.toAsset |> Token.toSymbol
+                                ]
+                                    |> String.concat
+                                    |> text
+
+                            PriceFeed.Utilize ->
+                                text "CDP"
+                        )
                     ]
-                , maturityList model (modal |> Modal)
+                , maturityList model modal
                 ]
         }
 

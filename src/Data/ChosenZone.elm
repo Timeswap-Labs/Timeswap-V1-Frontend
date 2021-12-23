@@ -1,5 +1,7 @@
-module Data.ChosenZone exposing (ChosenZone(..), Flag, encode, init, switch)
+module Data.ChosenZone exposing (ChosenZone(..), Flag, encode, init, switch, toString)
 
+import Data.Offset exposing (Offset)
+import Data.ZoneName as ZoneName exposing (ZoneName)
 import Json.Encode as Encode exposing (Value)
 
 
@@ -57,3 +59,17 @@ switch chosenZone =
 
         Unix ->
             Here
+
+
+toString : ChosenZone -> Maybe ZoneName -> Offset -> String
+toString chosenZone zoneName offset =
+    case chosenZone of
+        UTC ->
+            "UTC"
+
+        Here ->
+            zoneName
+                |> ZoneName.toString offset
+
+        Unix ->
+            "Unix"

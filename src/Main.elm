@@ -37,6 +37,7 @@ import Element
         , Option
         , alignLeft
         , alignRight
+        , below
         , centerX
         , centerY
         , column
@@ -45,6 +46,7 @@ import Element
         , focusStyle
         , height
         , html
+        , htmlAttribute
         , inFront
         , layoutWith
         , link
@@ -52,6 +54,7 @@ import Element
         , minimum
         , mouseDown
         , mouseOver
+        , moveDown
         , noStaticStyleSheet
         , none
         , padding
@@ -71,6 +74,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Html exposing (Html)
 import Html.Attributes
+import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Modal.Main as Modal exposing (Modal)
 import Page.Main as Page exposing (Page)
@@ -79,7 +83,6 @@ import Sort.Set as Set
 import Task
 import Time exposing (Posix)
 import Url exposing (Url)
-import Utility.Animated as Animated
 import Utility.Color as Color
 import Utility.Image as Image
 
@@ -103,6 +106,7 @@ type alias Model =
     , offset : Offset
     , zoneName : Maybe ZoneName
     , chosenZone : ChosenZone
+    , zoneDropdown : Maybe ()
     , device : Device
     , visibility : Visibility
     , backdrop : Backdrop
@@ -144,7 +148,9 @@ type Msg
     = RequestUrl UrlRequest
     | ChangeUrl Url
     | ReceiveTime Posix
-    | SwitchZone
+    | SwitchZone ChosenZone
+    | OpenZoneDropdown
+    | CloseZoneDropdown
     | ResizeWindow Int Int
     | VisibilityChange Visibility
     | SwitchTheme
@@ -230,6 +236,7 @@ init flags url key =
                   , offset = flags.offset |> Offset.init
                   , zoneName = flags.zoneName |> ZoneName.init
                   , chosenZone = flags.chosenZone |> ChosenZone.init
+                  , zoneDropdown = Nothing
                   , device = flags.width |> Device.fromWidth
                   , visibility = Browser.Events.Visible
                   , backdrop = flags.hasBackdropSupport |> Backdrop.init
@@ -293,12 +300,22 @@ update msg model =
             , Cmd.none
             )
 
-        SwitchZone ->
-            ( { model | chosenZone = model.chosenZone |> ChosenZone.switch }
+        SwitchZone newZone ->
+            ( { model | chosenZone = newZone }
             , model.chosenZone
                 |> ChosenZone.switch
                 |> ChosenZone.encode
                 |> cacheChosenZone
+            )
+
+        OpenZoneDropdown ->
+            ( { model | zoneDropdown = Just () }
+            , Cmd.none
+            )
+
+        CloseZoneDropdown ->
+            ( { model | zoneDropdown = Nothing }
+            , Cmd.none
             )
 
         ResizeWindow width _ ->
@@ -857,8 +874,32 @@ subscriptions model =
         |> (Maybe.map << Sub.map) ModalMsg
         |> Maybe.withDefault Sub.none
     , Animator.toSubscription Tick model animator
+    , onClickOutsideDropdown model
     ]
         |> Sub.batch
+
+
+onClickOutsideDropdown : { model | zoneDropdown : Maybe () } -> Sub Msg
+onClickOutsideDropdown { zoneDropdown } =
+    zoneDropdown
+        |> Maybe.map
+            (\_ ->
+                Browser.Events.onClick (Decode.at [ "target", "id" ] decoderOutsideDropdown)
+            )
+        |> Maybe.withDefault Sub.none
+
+
+decoderOutsideDropdown : Decoder Msg
+decoderOutsideDropdown =
+    Decode.string
+        |> Decode.andThen
+            (\string ->
+                if string /= "zone-dropdown" then
+                    Decode.succeed CloseZoneDropdown
+
+                else
+                    Decode.fail "Its the zone dropdown"
+            )
 
 
 view : Model -> Document Msg
@@ -962,6 +1003,7 @@ header :
         | offset : Offset
         , zoneName : Maybe ZoneName
         , chosenZone : ChosenZone
+        , zoneDropdown : Maybe ()
         , device : Device
         , backdrop : Backdrop
         , theme : Theme
@@ -1155,7 +1197,8 @@ chainListButton ({ images } as model) =
                 , paddingXY 0 3
                 , spacing 6
                 , Font.size 16
-                , Font.color Color.transparent400
+                , Font.bold
+                , Font.color Color.primary500
                 ]
                 (case model.blockchain of
                     Supported blockchain ->
@@ -1249,7 +1292,8 @@ connectButton ({ images } as model) =
                                             [ width shrink
                                             , height shrink
                                             , Font.size 16
-                                            , Font.color Color.transparent400
+                                            , Font.bold
+                                            , Font.color Color.primary500
                                             ]
                                             (user
                                                 |> User.toName
@@ -1331,13 +1375,15 @@ connectButton ({ images } as model) =
 
 zoneButton :
     { model
-        | offset : Offset
+        | images : Images
+        , offset : Offset
         , zoneName : Maybe ZoneName
         , chosenZone : ChosenZone
         , backdrop : Backdrop
+        , zoneDropdown : Maybe ()
     }
     -> Element Msg
-zoneButton ({ offset, zoneName, chosenZone } as model) =
+zoneButton ({ images, offset, zoneName, chosenZone, zoneDropdown } as model) =
     Input.button
         [ Region.description "zone button"
         , width shrink
@@ -1347,29 +1393,88 @@ zoneButton ({ offset, zoneName, chosenZone } as model) =
         , Border.rounded 8
         , mouseDown [ Background.color Color.primary300 ]
         , mouseOver [ Background.color Color.primary200 ]
+        , el [ width fill, height fill, htmlAttribute <| Html.Attributes.id "zone-dropdown" ] none |> inFront
+        , (if zoneDropdown == Just () then
+            model |> zoneDropdownOptions
+
+           else
+            none
+          )
+            |> below
         ]
-        { onPress = Just SwitchZone
+        { onPress =
+            case zoneDropdown of
+                Just () ->
+                    Just CloseZoneDropdown
+
+                Nothing ->
+                    Just OpenZoneDropdown
         , label =
-            el
+            row
                 [ centerX
                 , centerY
+                , spacing 8
                 , Font.size 16
-                , Font.color Color.transparent400
+                , Font.bold
+                , Font.color Color.primary500
                 ]
-                ((case chosenZone of
-                    ChosenZone.UTC ->
-                        "UTC"
-
-                    ChosenZone.Here ->
-                        zoneName
-                            |> ZoneName.toString offset
-
-                    ChosenZone.Unix ->
-                        "Unix"
-                 )
+                [ ChosenZone.toString chosenZone zoneName offset
                     |> text
-                )
+                , images |> Image.discloser [ width <| px 11, height <| px 7 ]
+                ]
         }
+
+
+zoneDropdownOptions :
+    { model
+        | offset : Offset
+        , zoneName : Maybe ZoneName
+        , chosenZone : ChosenZone
+        , backdrop : Backdrop
+    }
+    -> Element Msg
+zoneDropdownOptions { offset, zoneName, chosenZone } =
+    column
+        [ width shrink
+        , height shrink
+        , moveDown 10
+        , paddingXY 0 5
+        , Background.color Color.dark300
+        , Border.rounded 4
+        , Border.width 1
+        , Border.color Color.transparent100
+        , alignRight
+        ]
+        ([ ChosenZone.Here, ChosenZone.UTC, ChosenZone.Unix ]
+            |> List.map
+                (\zoneOption ->
+                    Input.button
+                        [ width fill
+                        , height shrink
+                        , paddingXY 16 8
+                        , Font.color Color.light100
+                        , Font.size 14
+                        , mouseOver [ Background.color Color.primary100 ]
+                        ]
+                        { onPress =
+                            if chosenZone == zoneOption then
+                                Nothing
+
+                            else
+                                Just (SwitchZone zoneOption)
+                        , label = ChosenZone.toString zoneOption zoneName offset |> text
+                        }
+                )
+            |> List.append
+                [ el
+                    [ width fill
+                    , paddingXY 16 8
+                    , Font.size 12
+                    , Font.color Color.transparent300
+                    ]
+                    ("Timezone" |> text)
+                ]
+        )
 
 
 themeButton : { model | backdrop : Backdrop, theme : Theme, images : Images } -> Element Msg
