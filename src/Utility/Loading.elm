@@ -34,8 +34,8 @@ view timeline =
         , spacing 2
         ]
         [ blinkingCircle 0.2 timeline
-        , blinkingCircle 0.3 timeline
-        , blinkingCircle 0.4 timeline
+        , blinkingCircle 0.1 timeline
+        , blinkingCircle 0 timeline
         ]
 
 
@@ -50,7 +50,7 @@ blinkingCircle offset timeline =
                 (\() ->
                     Animator.wave 0.05 1
                         |> Animator.shift offset
-                        |> Animator.loop (Animator.millis 700)
+                        |> Animator.loop (Animator.millis 1000)
                 )
             ]
             []
