@@ -69,22 +69,38 @@ export async function lendPositionsInit(
 
     if (!(bond.toBigInt() === 0n && insurance.toBigInt() === 0n)) {
       if (maturity <= now) {
-        const { asset: assetOut, collateral: collateralOut } =
+        try {
+          const { asset: assetOut, collateral: collateralOut } =
           await pool.calculateWithdraw({
             bond: new Uint128(bond),
             insurance: new Uint128(insurance),
           });
-        app.ports.sdkPositionsMsg.send([
-          {
-            asset,
-            collateral,
-            maturity,
-            bond: bond.toString(),
-            insurance: insurance.toString(),
-            assetOut: assetOut.toString(),
-            collateralOut: collateralOut.toString(),
-          },
-        ]);
+
+          app.ports.sdkPositionsMsg.send([
+            {
+              asset,
+              collateral,
+              maturity,
+              bond: bond.toString(),
+              insurance: insurance.toString(),
+              assetOut: assetOut.toString(),
+              collateralOut: collateralOut.toString(),
+            },
+          ]);
+        }
+        catch {
+          app.ports.sdkPositionsMsg.send([
+            {
+              asset,
+              collateral,
+              maturity,
+              bond: bond.toString(),
+              insurance: insurance.toString(),
+              assetOut: "0",
+              collateralOut: "0",
+            },
+          ]);
+        }
       } else {
         app.ports.sdkPositionsMsg.send([
           {
