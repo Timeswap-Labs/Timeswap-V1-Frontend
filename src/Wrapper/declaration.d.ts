@@ -67,15 +67,6 @@ interface Uncomfirmed {
 
 type Uint = string;
 
-// interface LendGivenPercent {
-//   chainId: Chain;
-//   pool: Pool;
-//   poolInfo: PoolInfo;
-//   assetIn: Uint;
-//   percent: number;
-//   slippage: number;
-// }
-
 interface Chain {
   chainId: number;
   name: string;
@@ -111,293 +102,294 @@ interface PoolInfo {
   totalBond: Uint;
   totalInsurance: Uint;
   totalDebtCreated: Uint;
-  spot: Uint | null;
+  assetSpot: number | null;
+  collateralSpot: number | null;
 }
 
-interface SdkPoolsMsg {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetLiquidity: string;
-  collateralLiquidity: string;
-  apr: number;
-  cf: string;
-}
+// interface SdkPoolsMsg {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetLiquidity: string;
+//   collateralLiquidity: string;
+//   apr: number;
+//   cf: string;
+// }
 
-interface SdkBalancesMsg {
-  token: string;
-  balance: string;
-}
+// interface SdkBalancesMsg {
+//   token: string;
+//   balance: string;
+// }
 
-interface SdkAllowancesMsg {
-  erc20: string;
-  allowance: string;
-}
+// interface SdkAllowancesMsg {
+//   erc20: string;
+//   allowance: string;
+// }
 
-type SdkPositionsMsg =
-  | SdkPositionsMsg1
-  | SdkPositionsMsg2
-  | SdkPositionsMsg3
-  | SdkPositionsMsg4
-  | SdkPositionsMsg5;
+// type SdkPositionsMsg =
+//   | SdkPositionsMsg1
+//   | SdkPositionsMsg2
+//   | SdkPositionsMsg3
+//   | SdkPositionsMsg4
+//   | SdkPositionsMsg5;
 
-interface SdkPositionsMsg1 {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  bond: string;
-}
+// interface SdkPositionsMsg1 {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   bond: string;
+// }
 
-interface SdkPositionsMsg2 {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  insurance: string;
-}
+// interface SdkPositionsMsg2 {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   insurance: string;
+// }
 
-interface SdkPositionsMsg3 {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  bond: string;
-  assetOut: string;
-}
+// interface SdkPositionsMsg3 {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   bond: string;
+//   assetOut: string;
+// }
 
-interface SdkPositionsMsg4 {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  insurance: string;
-  collateralOut: string;
-}
+// interface SdkPositionsMsg4 {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   insurance: string;
+//   collateralOut: string;
+// }
 
-interface SdkPositionsMsg5 {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  dues: {
-    id: string;
-    debt: string;
-    collateral: string;
-  }[];
-}
+// interface SdkPositionsMsg5 {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   dues: {
+//     id: string;
+//     debt: string;
+//     collateral: string;
+//   }[];
+// }
 
-interface Approve {
-  erc20: string;
-}
+// interface Approve {
+//   erc20: string;
+// }
 
-interface LendQuery {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetIn: string;
-  bondOut?: string;
-  insuranceOut?: string;
-  percent?: number;
-  slippage: number;
-}
+// interface LendQuery {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetIn: string;
+//   bondOut?: string;
+//   insuranceOut?: string;
+//   percent?: number;
+//   slippage: number;
+// }
 
-interface Lend {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  bondTo: string;
-  insuranceTo: string;
-  assetIn: string;
-  bondOut?: string;
-  insuranceOut?: string;
-  percent?: number;
-  minBond?: string;
-  minInsurance?: string;
-  deadline: number;
-}
+// interface Lend {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   bondTo: string;
+//   insuranceTo: string;
+//   assetIn: string;
+//   bondOut?: string;
+//   insuranceOut?: string;
+//   percent?: number;
+//   minBond?: string;
+//   minInsurance?: string;
+//   deadline: number;
+// }
 
-type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
+// type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
 
-interface LendGivenPercent {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetIn: string;
-  percent: number;
-  result:
-    | {
-        bondOut: string;
-        insuranceOut: string;
-        minBond: string;
-        minInsurance: string;
-        apr: number;
-        cf: string;
-      }
-    | number;
-}
+// interface LendGivenPercent {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetIn: string;
+//   percent: number;
+//   result:
+//     | {
+//         bondOut: string;
+//         insuranceOut: string;
+//         minBond: string;
+//         minInsurance: string;
+//         apr: number;
+//         cf: string;
+//       }
+//     | number;
+// }
 
-interface LendGivenBond {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetIn: string;
-  bondOut: string;
-  result:
-    | {
-        percent: number;
-        insuranceOut: string;
-        minInsurance: string;
-        apr: number;
-        cf: string;
-      }
-    | number;
-}
+// interface LendGivenBond {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetIn: string;
+//   bondOut: string;
+//   result:
+//     | {
+//         percent: number;
+//         insuranceOut: string;
+//         minInsurance: string;
+//         apr: number;
+//         cf: string;
+//       }
+//     | number;
+// }
 
-interface LendGivenInsurance {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetIn: string;
-  insuranceOut: string;
-  result:
-    | {
-        percent: number;
-        bondOut: string;
-        minBond: string;
-        apr: number;
-        cf: string;
-      }
-    | number;
-}
+// interface LendGivenInsurance {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetIn: string;
+//   insuranceOut: string;
+//   result:
+//     | {
+//         percent: number;
+//         bondOut: string;
+//         minBond: string;
+//         apr: number;
+//         cf: string;
+//       }
+//     | number;
+// }
 
-interface BorrowQuery {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetOut: string;
-  debtIn?: string;
-  collateralIn?: string;
-  percent?: number;
-  slippage: number;
-}
+// interface BorrowQuery {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetOut: string;
+//   debtIn?: string;
+//   collateralIn?: string;
+//   percent?: number;
+//   slippage: number;
+// }
 
-interface Borrow {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetTo: string;
-  dueTo: string;
-  assetOut: string;
-  debtIn?: string;
-  collateralIn?: string;
-  percent?: number;
-  maxDebt?: string;
-  maxCollateral?: string;
-  deadline: number;
-}
+// interface Borrow {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetTo: string;
+//   dueTo: string;
+//   assetOut: string;
+//   debtIn?: string;
+//   collateralIn?: string;
+//   percent?: number;
+//   maxDebt?: string;
+//   maxCollateral?: string;
+//   deadline: number;
+// }
 
-interface BorrowGivenPercentCalculate {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetOut: string;
-  percent: number;
-  debtIn: string;
-  collateralIn: string;
-  maxDebt?: string;
-  maxCollateral?: string;
-  apr: number;
-  cf: string;
-}
+// interface BorrowGivenPercentCalculate {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetOut: string;
+//   percent: number;
+//   debtIn: string;
+//   collateralIn: string;
+//   maxDebt?: string;
+//   maxCollateral?: string;
+//   apr: number;
+//   cf: string;
+// }
 
-type BorrowCalculate =
-  | BorrowGivenPercent
-  | BorrowGivenDebt
-  | BorrowGivenCollateral;
+// type BorrowCalculate =
+//   | BorrowGivenPercent
+//   | BorrowGivenDebt
+//   | BorrowGivenCollateral;
 
-interface BorrowGivenPercent {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetOut: string;
-  percent: number;
-  result:
-    | {
-        debtIn: string;
-        collateralIn: string;
-        maxDebt: string;
-        maxCollateral: string;
-        apr: number;
-        cf: string;
-      }
-    | number;
-}
+// interface BorrowGivenPercent {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetOut: string;
+//   percent: number;
+//   result:
+//     | {
+//         debtIn: string;
+//         collateralIn: string;
+//         maxDebt: string;
+//         maxCollateral: string;
+//         apr: number;
+//         cf: string;
+//       }
+//     | number;
+// }
 
-interface BorrowGivenDebt {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetOut: string;
-  debtIn: string;
-  result:
-    | {
-        percent: number;
-        collateralIn: string;
-        maxCollateral: string;
-        apr: number;
-        cf: string;
-      }
-    | number;
-}
+// interface BorrowGivenDebt {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetOut: string;
+//   debtIn: string;
+//   result:
+//     | {
+//         percent: number;
+//         collateralIn: string;
+//         maxCollateral: string;
+//         apr: number;
+//         cf: string;
+//       }
+//     | number;
+// }
 
-interface BorrowGivenCollateral {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetOut: string;
-  collateralIn: string;
-  result:
-    | {
-        percent: number;
-        debtIn: string;
-        maxDebt: string;
-        apr: number;
-        cf: string;
-      }
-    | number;
-}
+// interface BorrowGivenCollateral {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetOut: string;
+//   collateralIn: string;
+//   result:
+//     | {
+//         percent: number;
+//         debtIn: string;
+//         maxDebt: string;
+//         apr: number;
+//         cf: string;
+//       }
+//     | number;
+// }
 
-interface PayQuery {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  dues: { id: string; debt: string; collateral: string }[];
-}
+// interface PayQuery {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   dues: { id: string; debt: string; collateral: string }[];
+// }
 
-interface Pay {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  collateralTo: string;
-  ids: string[];
-  maxAssetsIn: string[];
-  deadline: number;
-}
+// interface Pay {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   collateralTo: string;
+//   ids: string[];
+//   maxAssetsIn: string[];
+//   deadline: number;
+// }
 
-interface PayCalculate {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  dues: { id: string; debt: string; collateral: string }[];
-  assetIn: string;
-  collateralOut: string;
-}
+// interface PayCalculate {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   dues: { id: string; debt: string; collateral: string }[];
+//   assetIn: string;
+//   collateralOut: string;
+// }
 
-interface Withdraw {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetTo: string;
-  collateralTo: string;
-  claimsIn: { bond: string; insurance: string };
-}
+// interface Withdraw {
+//   asset: string;
+//   collateral: string;
+//   maturity: number;
+//   assetTo: string;
+//   collateralTo: string;
+//   claimsIn: { bond: string; insurance: string };
+// }
 
-interface Faucet {
-  erc20: string;
-}
+// interface Faucet {
+//   erc20: string;
+// }

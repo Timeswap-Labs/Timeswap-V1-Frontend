@@ -11,6 +11,7 @@ import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
 import { withdrawSigner } from "./withdraw";
 import { faucetSigner } from "./faucet";
+// import { pending } from "./pending";
 import { wallet } from "./wallet";
 
 export declare let window: any;
