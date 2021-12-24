@@ -287,6 +287,11 @@ subscriptions modal =
                 |> Settings.subscriptions
                 |> Sub.map SettingsMsg
 
+        MaturityList maturityList ->
+            maturityList
+                |> MaturityList.subscriptions
+                |> Sub.map MaturityListMsg
+
         _ ->
             Sub.none
 

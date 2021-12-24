@@ -33,7 +33,6 @@ import Element
         , el
         , fill
         , height
-        , maximum
         , minimum
         , mouseOver
         , newTabLink
@@ -43,7 +42,6 @@ import Element
         , paddingXY
         , paragraph
         , px
-        , rotate
         , row
         , scrollbarY
         , shrink
@@ -53,8 +51,9 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
-import Element.Font as Font exposing (center)
+import Element.Font as Font
 import Element.Input as Input
+import Html.Attributes
 import Http
 import Modal.Outside as Outside
 import Modal.TokenList.Answer as Answer exposing (Answer)
@@ -614,13 +613,19 @@ tokenList ({ chains } as model) blockchain ((Modal { state }) as modal) =
                                                 [ tokenButton model blockchain modal (Token.ERC20 erc20Found) ]
                                             )
                                         |> Maybe.withDefault
-                                            [ none ]
+                                            [ noResults model ]
                                 )
                             |> Maybe.withDefault
                                 (chains
                                     |> Chains.toTokenList (blockchain |> Blockchain.toChain)
                                     |> List.filter (\token -> input |> Token.containsString token)
-                                    |> List.map (tokenButton model blockchain modal)
+                                    |> (\list ->
+                                            if (list |> List.length) > 0 then
+                                                List.map (tokenButton model blockchain modal) list
+
+                                            else
+                                                [ noResults model ]
+                                       )
                                 )
 
             CustomERC20s { input } ->
@@ -634,12 +639,24 @@ tokenList ({ chains } as model) blockchain ((Modal { state }) as modal) =
                         (\address ->
                             tokens
                                 |> List.filter (\token -> (token |> Token.toString) == (address |> Address.toString))
-                                |> List.map (customToken model blockchain modal)
+                                |> (\list ->
+                                        if (list |> List.length) > 0 then
+                                            List.map (customToken model blockchain modal) list
+
+                                        else
+                                            [ noResults model ]
+                                   )
                         )
                     |> Maybe.withDefault
                         (tokens
                             |> List.filter (\token -> input |> Token.containsString token)
-                            |> List.map (customToken model blockchain modal)
+                            |> (\list ->
+                                    if (list |> List.length) > 0 then
+                                        List.map (customToken model blockchain modal) list
+
+                                    else
+                                        [ noResults model ]
+                               )
                         )
 
             _ ->
@@ -852,6 +869,35 @@ tokenBalance user token (Modal { tooltip }) =
             none
 
 
+noResults : { model | images : Images } -> Element Msg
+noResults { images } =
+    column
+        [ width fill
+        , height fill
+        , centerY
+        , centerX
+        , Font.center
+        , paddingEach
+            { top = 0
+            , right = 0
+            , bottom = 16
+            , left = 0
+            }
+        , spacing 24
+        , Element.htmlAttribute (Html.Attributes.style "align-items" "center")
+        , Element.htmlAttribute (Html.Attributes.style "justify-content" "center")
+        ]
+        [ images |> Image.warningCircle [ width <| px 30, height <| px 30, Font.center ]
+        , el
+            [ Font.size 14
+            , Font.center
+            , Font.color Color.light100
+            , width fill
+            ]
+            ("No results found" |> text)
+        ]
+
+
 manageTokensBtn : { model | images : Images } -> Element Msg
 manageTokensBtn { images } =
     el
@@ -928,7 +974,7 @@ importTokenWarning { images } erc20 tooltip =
             , Border.rounded 8
             ]
             [ images
-                |> Image.infoYellow
+                |> Image.warningCircle
                     [ width <| px 30
                     , height <| px 30
                     , centerX
@@ -936,7 +982,7 @@ importTokenWarning { images } erc20 tooltip =
                     ]
             , paragraph
                 [ width shrink
-                , center
+                , Font.center
                 ]
                 [ text "You're importing this token at your own risk. Make sure you want to use this token" ]
             ]
@@ -1002,7 +1048,7 @@ importTokenWarning { images } erc20 tooltip =
             [ width fill
             , height <| px 44
             , centerX
-            , center
+            , Font.center
             , padding 10
             , Font.size 16
             , Font.color Color.light100

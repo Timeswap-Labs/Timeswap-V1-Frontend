@@ -19,7 +19,6 @@ module Utility.Image exposing
     , hourglassPrimary
     , hourglassPrimarySmall
     , info
-    , infoYellow
     , link
     , linkWhite
     , logo
@@ -41,6 +40,7 @@ module Utility.Image exposing
     , viewWallet
     , wallet
     , warning
+    , warningCircle
     , whiteSun
     )
 
@@ -263,9 +263,9 @@ info =
     view "Info"
 
 
-infoYellow : List (Attribute msg) -> Images -> Element msg
-infoYellow =
-    view "InfoYellow"
+warningCircle : List (Attribute msg) -> Images -> Element msg
+warningCircle =
+    view "WarningCircle"
 
 
 matured : List (Attribute msg) -> Images -> Element msg

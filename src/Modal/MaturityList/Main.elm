@@ -3,11 +3,13 @@ module Modal.MaturityList.Main exposing
     , Modal
     , Msg
     , init
+    , subscriptions
     , update
     , view
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
+import Browser.Events
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
@@ -28,11 +30,14 @@ import Element
         , below
         , centerX
         , centerY
+        , clipY
         , column
         , el
         , fill
         , fillPortion
         , height
+        , htmlAttribute
+        , inFront
         , maximum
         , minimum
         , mouseDown
@@ -45,9 +50,9 @@ import Element
         , paddingXY
         , px
         , row
+        , scrollbarY
         , shrink
         , spacing
-        , table
         , text
         , width
         )
@@ -58,6 +63,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Html.Attributes
 import Http
+import Json.Decode as Decode exposing (Decoder)
 import Modal.MaturityList.Answer as Answer exposing (Answer)
 import Modal.MaturityList.Pools as Pools exposing (Pools)
 import Modal.MaturityList.Query as Query
@@ -130,7 +136,6 @@ update blockchain msg (Modal modal) =
         ( GoToSortMaturity, Sorting.Liquidity ) ->
             ( { modal
                 | sorting = Sorting.Maturity
-                , sortDropdown = Nothing
               }
                 |> Modal
                 |> Just
@@ -141,7 +146,6 @@ update blockchain msg (Modal modal) =
         ( GoToSortLiquidity, Sorting.Maturity ) ->
             ( { modal
                 | sorting = Sorting.Liquidity
-                , sortDropdown = Nothing
               }
                 |> Modal
                 |> Just
@@ -241,6 +245,37 @@ update blockchain msg (Modal modal) =
             ( modal |> Modal |> Just
             , Cmd.none
             , Nothing
+            )
+
+
+subscriptions : Modal -> Sub Msg
+subscriptions modal =
+    Sub.batch
+        [ onClickOutsideDropdown modal
+        ]
+
+
+onClickOutsideDropdown : Modal -> Sub Msg
+onClickOutsideDropdown (Modal { sortDropdown }) =
+    case sortDropdown of
+        Just _ ->
+            Browser.Events.onClick
+                (Decode.at [ "target", "id" ] decoderOutsideDropdown)
+
+        Nothing ->
+            Sub.none
+
+
+decoderOutsideDropdown : Decoder Msg
+decoderOutsideDropdown =
+    Decode.string
+        |> Decode.andThen
+            (\string ->
+                if string /= "sort-dropdown" then
+                    Decode.succeed CloseDropdown
+
+                else
+                    Decode.fail "Its the sort dropdown"
             )
 
 
@@ -487,6 +522,13 @@ sortBy { images } (Modal { sorting, sortDropdown }) =
             , Border.width 1
             , Border.color Color.transparent100
             , Border.rounded 8
+            , el
+                [ width fill
+                , height fill
+                , Html.Attributes.id "sort-dropdown" |> htmlAttribute
+                ]
+                none
+                |> inFront
             , (if sortDropdown == Just () then
                 [ Sorting.Liquidity
                 , Sorting.Maturity
@@ -504,11 +546,6 @@ sortBy { images } (Modal { sorting, sortDropdown }) =
 
                 else
                     Just OpenDropdown
-
-            -- if sortDropdown == Just () then
-            --     Just CloseDropdown
-            -- else
-            --     Just OpenDropdown
             , label =
                 row
                     [ width fill
@@ -577,7 +614,7 @@ maturityList :
 maturityList { images, time, offset, chosenZone, priceFeed } (Modal { pair, pools, tooltip, sorting }) =
     column
         [ width fill
-        , height shrink
+        , height <| minimum 295 shrink
         , paddingEach
             { top = 0
             , right = 24
@@ -585,6 +622,8 @@ maturityList { images, time, offset, chosenZone, priceFeed } (Modal { pair, pool
             , left = 24
             }
         , spacing 12
+        , clipY
+        , scrollbarY
         ]
         (case pools of
             Loading _ ->
