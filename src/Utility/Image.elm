@@ -2,7 +2,6 @@ module Utility.Image exposing
     ( allPairs
     , arrow
     , arrowDown
-    , blackSun
     , calander
     , checkbox
     , checkboxSelected
@@ -28,11 +27,13 @@ module Utility.Image exposing
     , medium
     , metamask
     , minus
+    , moon
     , openSea
     , option
     , plus
     , plusPositive
     , setting
+    , sun
     , telegram
     , tripleDots
     , twitter
@@ -42,7 +43,6 @@ module Utility.Image exposing
     , wallet
     , warning
     , warningCircle
-    , whiteSun
     )
 
 import Data.Chain exposing (Chain(..))
@@ -154,14 +154,14 @@ plusPositive =
     view "PlusPositive"
 
 
-whiteSun : List (Attribute msg) -> Images -> Element msg
-whiteSun =
-    view "WhiteSun"
+sun : List (Attribute msg) -> Images -> Element msg
+sun =
+    view "Sun"
 
 
-blackSun : List (Attribute msg) -> Images -> Element msg
-blackSun =
-    view "BlackSun"
+moon : List (Attribute msg) -> Images -> Element msg
+moon =
+    view "Moon"
 
 
 openSea : List (Attribute msg) -> Images -> Element msg

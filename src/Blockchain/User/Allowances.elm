@@ -3,6 +3,8 @@ module Blockchain.User.Allowances exposing
     , decoder
     , hasEnough
     , init
+    , subscriptions
+    , update
     )
 
 import Data.Chain exposing (Chain)
@@ -14,6 +16,7 @@ import Data.Web exposing (Web)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
+import Time exposing (Posix)
 
 
 type alias Allowances =
@@ -48,3 +51,19 @@ hasEnough erc20 amount allowances =
         |> (Maybe.map << Remote.map) (Uint.hasEnough amount)
         |> (Maybe.map << Remote.withDefault) False
         |> Maybe.withDefault False
+
+
+update : Posix -> Allowances -> Allowances
+update posix balances =
+    balances
+        |> Dict.toList
+        |> (List.map << Tuple.mapSecond) (Remote.update posix)
+        |> Dict.fromList ERC20.sorter
+
+
+subscriptions : (Posix -> msg) -> Allowances -> Sub msg
+subscriptions tick balances =
+    balances
+        |> Dict.values
+        |> List.map (Remote.subscriptions tick)
+        |> Sub.batch

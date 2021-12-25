@@ -1667,14 +1667,14 @@ themeButton ({ theme, images } as model) =
                 (case theme of
                     Theme.Light ->
                         images
-                            |> Image.blackSun
+                            |> Image.moon
                                 [ width <| px 24
                                 , height <| px 24
                                 ]
 
                     Theme.Dark ->
                         images
-                            |> Image.whiteSun
+                            |> Image.sun
                                 [ width <| px 24
                                 , height <| px 24
                                 ]

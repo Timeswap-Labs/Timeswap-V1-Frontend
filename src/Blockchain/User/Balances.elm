@@ -57,12 +57,7 @@ update : Posix -> Balances -> Balances
 update posix balances =
     balances
         |> Dict.toList
-        |> List.map
-            (\( token, remote ) ->
-                ( token
-                , remote |> Remote.update posix
-                )
-            )
+        |> (List.map << Tuple.mapSecond) (Remote.update posix)
         |> Dict.fromList Token.sorter
 
 

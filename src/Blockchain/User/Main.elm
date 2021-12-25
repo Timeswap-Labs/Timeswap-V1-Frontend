@@ -5,6 +5,9 @@ port module Blockchain.User.Main exposing
     , User
     , getAllowance
     , getBalance
+    , getClaims
+    , getDues
+    , getLiquidities
     , hasEnoughAllowance
     , hasEnoughBalance
     , init
@@ -33,6 +36,10 @@ port module Blockchain.User.Main exposing
 import Blockchain.User.Allowances as Allowances exposing (Allowances)
 import Blockchain.User.Balances as Balances exposing (Balances)
 import Blockchain.User.Cache as Cache
+import Blockchain.User.Claims exposing (Claims)
+import Blockchain.User.Dues exposing (Dues)
+import Blockchain.User.Liquidities exposing (Liquidities)
+import Blockchain.User.Positions as Positions exposing (Positions)
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
 import Blockchain.User.Txns.Txn as Txn exposing (Txn)
 import Blockchain.User.Txns.TxnWrite as TxnWrite
@@ -49,7 +56,7 @@ import Data.Deadline exposing (Deadline)
 import Data.ERC20 exposing (ERC20)
 import Data.Hash exposing (Hash)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Token as Token exposing (Token)
+import Data.Token exposing (Token)
 import Data.Uint exposing (Uint)
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Web exposing (Web)
@@ -67,6 +74,7 @@ type User
         , name : Maybe String
         , balances : Balances
         , allowances : Allowances
+        , positions : Web Positions
         , txns : Txns
         }
 
@@ -88,7 +96,9 @@ type alias Flag =
 
 type Msg
     = ReceiveReceipt Value
-    | Tick Posix
+    | BalancesTick Posix
+    | AllowancesTick Posix
+    | PositionsTick Posix
 
 
 init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
@@ -104,6 +114,7 @@ init chains chain flag =
               , name = Nothing
               , balances = Balances.init chains chain
               , allowances = Allowances.init chains chain
+              , positions = Success Positions.dummy |> Debug.log "replace"
               , txns = flag.txns |> Txns.init
               }
                 |> User
@@ -162,8 +173,29 @@ update chain msg (User user) =
                 Err _ ->
                     user |> noCmd
 
-        Tick posix ->
+        BalancesTick posix ->
             ( { user | balances = user.balances |> Balances.update posix }
+                |> User
+            , Cmd.none
+            )
+
+        AllowancesTick posix ->
+            ( { user | allowances = user.allowances |> Allowances.update posix }
+                |> User
+            , Cmd.none
+            )
+
+        PositionsTick posix ->
+            ( { user
+                | positions =
+                    user.positions
+                        |> Remote.map (Positions.update posix)
+                        |> Remote.map Success
+                        |> Remote.withDefault
+                            (user.positions
+                                |> Remote.update posix
+                            )
+              }
                 |> User
             , Cmd.none
             )
@@ -315,6 +347,7 @@ noCmd :
     , name : Maybe String
     , balances : Balances
     , allowances : Allowances
+    , positions : Web Positions
     , txns : Txns
     }
     -> ( User, Cmd Msg )
@@ -336,6 +369,7 @@ decoder { chains } chain =
             , name = Nothing
             , balances = Balances.init chains chain
             , allowances = Allowances.init chains chain
+            , positions = Success Positions.dummy |> Debug.log "replace"
             , txns = txns
             }
                 |> User
@@ -451,7 +485,13 @@ port receiveReceipt : (Value -> msg) -> Sub msg
 
 subscriptions : User -> Sub Msg
 subscriptions (User user) =
-    [ user.balances |> Balances.subscriptions Tick
+    [ user.balances |> Balances.subscriptions BalancesTick
+    , user.allowances |> Allowances.subscriptions AllowancesTick
+    , user.positions
+        |> Remote.map
+            (Positions.subscriptions PositionsTick)
+        |> Remote.withDefault
+            (user.positions |> Remote.subscriptions PositionsTick)
     ]
         |> Sub.batch
 
@@ -532,3 +572,21 @@ isApprovePending : ERC20 -> User -> Bool
 isApprovePending erc20 (User { txns }) =
     txns
         |> Txns.isPending erc20
+
+
+getClaims : User -> Web Claims
+getClaims (User { positions }) =
+    positions
+        |> Remote.map .claims
+
+
+getDues : User -> Web Dues
+getDues (User { positions }) =
+    positions
+        |> Remote.map .dues
+
+
+getLiquidities : User -> Web Liquidities
+getLiquidities (User { positions }) =
+    positions
+        |> Remote.map .liquidities

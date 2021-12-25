@@ -274,7 +274,7 @@ liquidity { images } param =
                     , Font.color Color.light100
                     , moveLeft 12
                     ]
-                    (text "LP")
+                    (text "LIQ")
                 ]
             , el
                 [ width fill

@@ -12,7 +12,7 @@ module Page.Main exposing
     , view
     )
 
-import Blockchain.Main exposing (Blockchain)
+import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.WriteBorrow exposing (WriteBorrow)
 import Blockchain.User.WriteCreate exposing (WriteCreate)
 import Blockchain.User.WriteLend exposing (WriteLend)
@@ -40,11 +40,14 @@ import Element
         , column
         , height
         , map
+        , none
         , shrink
         , spacing
         , width
         )
 import Page.Positions.Claims.Main as Claims
+import Page.Positions.Dues.Main as Dues
+import Page.Positions.Liquidities.Main as Liquidities
 import Page.Route as Route
 import Page.Transaction.Borrow.Main as Borrow
 import Page.Transaction.Lend.Main as Lend
@@ -65,6 +68,9 @@ type Msg
     = LendMsg Lend.Msg
     | BorrowMsg Borrow.Msg
     | LiquidityMsg Liquidity.Msg
+    | ClaimsMsg Claims.Msg
+    | DuesMsg Dues.Msg
+    | LiquiditiesMsg Liquidities.Msg
 
 
 type Effect
@@ -302,7 +308,7 @@ update model blockchain msg page =
                    )
 
         _ ->
-            ( page, Cmd.none, Nothing )
+            ( page, Cmd.none, Nothing ) |> Debug.log "positions msg"
 
 
 lendEffects :
@@ -479,17 +485,32 @@ view model blockchain page =
                 [ transaction
                     |> Lend.view model blockchain
                     |> map LendMsg
+                , blockchain
+                    |> Blockchain.toUser
+                    |> Maybe.map (Claims.view model)
+                    |> (Maybe.map << map) ClaimsMsg
+                    |> Maybe.withDefault none
                 ]
 
             BorrowPage { transaction } ->
                 [ transaction
                     |> Borrow.view model blockchain
                     |> map BorrowMsg
+                , blockchain
+                    |> Blockchain.toUser
+                    |> Maybe.map (Dues.view model)
+                    |> (Maybe.map << map) DuesMsg
+                    |> Maybe.withDefault none
                 ]
 
             LiquidityPage { transaction } ->
                 [ transaction
                     |> Liquidity.view model blockchain
                     |> map LiquidityMsg
+                , blockchain
+                    |> Blockchain.toUser
+                    |> Maybe.map (Liquidities.view model)
+                    |> (Maybe.map << map) LiquiditiesMsg
+                    |> Maybe.withDefault none
                 ]
         )
