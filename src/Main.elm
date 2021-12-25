@@ -984,7 +984,6 @@ fading ({ backdrop } as model) timeline =
         ]
         ([ Html.Attributes.style "width" "100%"
          , Html.Attributes.style "height" "100%"
-         , Html.Attributes.style "pointer-events" "none"
          ]
             ++ (case backdrop of
                     Backdrop.Supported ->
@@ -996,6 +995,12 @@ fading ({ backdrop } as model) timeline =
 
                     Backdrop.NotSupported ->
                         []
+               )
+            ++ (timeline
+                    |> Animator.current
+                    |> Maybe.map (\_ -> [])
+                    |> Maybe.withDefault
+                        [ Html.Attributes.style "pointer-events" "none" ]
                )
         )
         [ layoutWith { options = noStaticStyleSheet :: options }

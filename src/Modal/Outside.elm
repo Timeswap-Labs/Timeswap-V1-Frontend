@@ -38,32 +38,25 @@ view { backdrop } { onClick, modal } =
         , height fill
         , paddingXY 0 80
         , el
-            [ width fill
-            , height fill
-            , el
-                ([ width fill
-                 , height fill
-                 , Events.onClick onClick
-                 , Background.color Color.outside
-                 ]
-                    ++ (case backdrop of
-                            Backdrop.Supported ->
-                                [ Background.color Color.background
-                                , "blur(10px)"
-                                    |> Html.Attributes.style "-webkit-backdrop-filter"
-                                    |> htmlAttribute
-                                , "blur(10px)"
-                                    |> Html.Attributes.style "backdrop-filter"
-                                    |> htmlAttribute
-                                ]
+            ([ width fill
+             , height fill
+             , Events.onClick onClick
+             ]
+                ++ (case backdrop of
+                        Backdrop.Supported ->
+                            [ Background.color Color.outside
+                            , "blur(10px)"
+                                |> Html.Attributes.style "-webkit-backdrop-filter"
+                                |> htmlAttribute
+                            , "blur(10px)"
+                                |> Html.Attributes.style "backdrop-filter"
+                                |> htmlAttribute
+                            ]
 
-                            Backdrop.NotSupported ->
-                                [ Background.color Color.solid ]
-                       )
-                )
-                none
-                |> behindContent
-            ]
+                        Backdrop.NotSupported ->
+                            [ Background.color Color.solid ]
+                   )
+            )
             none
             |> behindContent
         ]
@@ -72,8 +65,6 @@ view { backdrop } { onClick, modal } =
             , height shrink
             , centerX
             , centerY
-            , Html.Attributes.style "pointer-events" "auto"
-                |> htmlAttribute
             ]
             modal
         )

@@ -86,10 +86,15 @@ type Modal
     = Modal
         { pair : Pair
         , sorting : Sorting
-        , sortDropdown : Maybe ()
+        , dropdown : Dropdown
         , pools : Web Pools
         , tooltip : Maybe Tooltip
         }
+
+
+type Dropdown
+    = Open
+    | Close
 
 
 type Msg
@@ -116,7 +121,7 @@ init :
 init blockchain pair =
     ( { pair = pair
       , sorting = Sorting.Liquidity
-      , sortDropdown = Nothing
+      , dropdown = Close
       , pools = Success Pools.dummy
       , tooltip = Nothing
       }
@@ -132,10 +137,11 @@ update :
     -> Modal
     -> ( Maybe Modal, Cmd Msg, Maybe Effect )
 update blockchain msg (Modal modal) =
-    case ( msg, modal.sorting ) of
-        ( GoToSortMaturity, Sorting.Liquidity ) ->
+    case msg of
+        GoToSortMaturity ->
             ( { modal
                 | sorting = Sorting.Maturity
+                , dropdown = Close
               }
                 |> Modal
                 |> Just
@@ -143,9 +149,10 @@ update blockchain msg (Modal modal) =
             , Nothing
             )
 
-        ( GoToSortLiquidity, Sorting.Maturity ) ->
+        GoToSortLiquidity ->
             ( { modal
                 | sorting = Sorting.Liquidity
+                , dropdown = Close
               }
                 |> Modal
                 |> Just
@@ -153,7 +160,7 @@ update blockchain msg (Modal modal) =
             , Nothing
             )
 
-        ( SelectMaturity maturity, _ ) ->
+        SelectMaturity maturity ->
             case modal.pools of
                 Success pools ->
                     if maturity |> Dict.memberOf pools then
@@ -178,13 +185,13 @@ update blockchain msg (Modal modal) =
                     , Nothing
                     )
 
-        ( QueryAgain, _ ) ->
+        QueryAgain ->
             ( modal |> Modal |> Just
             , get blockchain modal.pair
             , Nothing
             )
 
-        ( ReceiveAnswer chain pair result, _ ) ->
+        ReceiveAnswer chain pair result ->
             if
                 (chain == (blockchain |> Blockchain.toChain))
                     && (pair == modal.pair)
@@ -203,7 +210,7 @@ update blockchain msg (Modal modal) =
                 , Nothing
                 )
 
-        ( OnMouseEnter tooltip, _ ) ->
+        OnMouseEnter tooltip ->
             ( { modal | tooltip = Just tooltip }
                 |> Modal
                 |> Just
@@ -211,7 +218,7 @@ update blockchain msg (Modal modal) =
             , Nothing
             )
 
-        ( OnMouseLeave, _ ) ->
+        OnMouseLeave ->
             ( { modal | tooltip = Nothing }
                 |> Modal
                 |> Just
@@ -219,30 +226,24 @@ update blockchain msg (Modal modal) =
             , Nothing
             )
 
-        ( OpenDropdown, _ ) ->
-            ( { modal | sortDropdown = Just () }
+        OpenDropdown ->
+            ( { modal | dropdown = Open }
                 |> Modal
                 |> Just
             , Cmd.none
             , Nothing
             )
 
-        ( CloseDropdown, _ ) ->
-            ( { modal | sortDropdown = Nothing }
+        CloseDropdown ->
+            ( { modal | dropdown = Close }
                 |> Modal
                 |> Just
             , Cmd.none
             , Nothing
             )
 
-        ( Exit, _ ) ->
+        Exit ->
             ( Nothing
-            , Cmd.none
-            , Nothing
-            )
-
-        _ ->
-            ( modal |> Modal |> Just
             , Cmd.none
             , Nothing
             )
@@ -250,19 +251,18 @@ update blockchain msg (Modal modal) =
 
 subscriptions : Modal -> Sub Msg
 subscriptions modal =
-    Sub.batch
-        [ onClickOutsideDropdown modal
-        ]
+    onClickOutsideDropdown modal
 
 
 onClickOutsideDropdown : Modal -> Sub Msg
-onClickOutsideDropdown (Modal { sortDropdown }) =
-    case sortDropdown of
-        Just _ ->
-            Browser.Events.onClick
-                (Decode.at [ "target", "id" ] decoderOutsideDropdown)
+onClickOutsideDropdown (Modal { dropdown }) =
+    case dropdown of
+        Open ->
+            decoderOutsideDropdown
+                |> Decode.at [ "target", "id" ]
+                |> Browser.Events.onClick
 
-        Nothing ->
+        Close ->
             Sub.none
 
 
@@ -463,7 +463,8 @@ pairWithPoolCount { images } (Modal { pair, pools }) =
             , paddingXY 0 3
             , Font.color Color.light100
             ]
-            ((collateral |> Token.toSymbol)
+            (collateral
+                |> Token.toSymbol
                 |> String.append "/"
                 |> String.append (asset |> Token.toSymbol)
                 |> text
@@ -499,37 +500,29 @@ pairWithPoolCount { images } (Modal { pair, pools }) =
 
 
 sortBy :
-    { model
-        | images : Images
-    }
+    { model | images : Images }
     -> Modal
     -> Element Msg
-sortBy { images } (Modal { sorting, sortDropdown }) =
+sortBy { images } (Modal { sorting, dropdown }) =
     row
         [ alignRight
         , spacing 14
         , centerY
-        , Font.color Color.primary400
-        , Font.size 14
         ]
-        [ text "Sort by"
+        [ el
+            [ Font.color Color.primary400
+            , Font.size 14
+            ]
+            (text "Sort by")
         , Input.button
-            [ Region.description
-                "sort by"
+            [ Region.description "sort by"
             , width <| px 130
             , height <| px 38
             , Background.color Color.primary100
             , Border.width 1
             , Border.color Color.transparent100
             , Border.rounded 8
-            , el
-                [ width fill
-                , height fill
-                , Html.Attributes.id "sort-dropdown" |> htmlAttribute
-                ]
-                none
-                |> inFront
-            , (if sortDropdown == Just () then
+            , (if dropdown == Open then
                 [ Sorting.Liquidity
                 , Sorting.Maturity
                 ]
@@ -541,7 +534,7 @@ sortBy { images } (Modal { sorting, sortDropdown }) =
                 |> below
             ]
             { onPress =
-                if sortDropdown == Just () then
+                if dropdown == Open then
                     Nothing
 
                 else
@@ -553,6 +546,7 @@ sortBy { images } (Modal { sorting, sortDropdown }) =
                     , paddingXY 12 0
                     , spacing 6
                     , Font.color Color.light100
+                    , Font.size 14
                     ]
                     [ sorting |> Sorting.toString |> text
                     , images
@@ -586,7 +580,15 @@ sortOptionsEl sortList =
                         , height shrink
                         , paddingXY 12 10
                         , Font.color Color.light100
+                        , Font.size 14
                         , mouseOver [ Background.color Color.primary100 ]
+                        , el
+                            [ width fill
+                            , height fill
+                            , Html.Attributes.id "sort-dropdown" |> htmlAttribute
+                            ]
+                            none
+                            |> inFront
                         ]
                         { onPress =
                             case sortOption of
@@ -595,7 +597,10 @@ sortOptionsEl sortList =
 
                                 Sorting.Maturity ->
                                     Just GoToSortMaturity
-                        , label = sortOption |> Sorting.toString |> text
+                        , label =
+                            sortOption
+                                |> Sorting.toString
+                                |> text
                         }
                 )
         )
