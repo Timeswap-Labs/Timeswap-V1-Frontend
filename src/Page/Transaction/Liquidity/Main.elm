@@ -19,6 +19,7 @@ import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
+import Data.Device exposing (Device(..))
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
@@ -993,6 +994,7 @@ view :
         | time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
+        , device : Device
         , backdrop : Backdrop
         , priceFeed : PriceFeed
         , images : Images
@@ -1000,7 +1002,7 @@ view :
     -> Blockchain
     -> Transaction
     -> Element Msg
-view ({ backdrop } as model) blockchain (Transaction transaction) =
+view ({ device, backdrop } as model) blockchain (Transaction transaction) =
     (case transaction.state of
         Add None ->
             { asset = Nothing
@@ -1288,7 +1290,14 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                         |> Region.description
                      , width shrink
                      , height shrink
-                     , padding 24
+                     , (case device of
+                            Desktop ->
+                                24
+
+                            _ ->
+                                16
+                       )
+                        |> padding
                      , spacing 16
                      , Border.rounded 8
                      , Border.width 1
@@ -1332,31 +1341,46 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                                 none
                         , settingsButton model
                         ]
-                    , row
-                        [ width shrink
-                        , height shrink
-                        , spacing 24
-                        ]
-                        [ column
-                            [ width <| px 343
-                            , height shrink
-                            , spacing 16
-                            , alignTop
-                            ]
-                            [ parameters model transaction
-                            , first
-                            ]
-                        , column
-                            [ width <| px 343
-                            , height shrink
-                            , spacing 16
-                            , alignTop
-                            ]
-                            [ second
-                            , third
-                            , buttons
-                            ]
-                        ]
+                    , case device of
+                        Desktop ->
+                            row
+                                [ width shrink
+                                , height shrink
+                                , spacing 24
+                                ]
+                                [ column
+                                    [ width <| px 343
+                                    , height shrink
+                                    , spacing 16
+                                    , alignTop
+                                    ]
+                                    [ parameters model transaction
+                                    , first
+                                    ]
+                                , column
+                                    [ width <| px 343
+                                    , height shrink
+                                    , spacing 16
+                                    , alignTop
+                                    ]
+                                    [ second
+                                    , third
+                                    , buttons
+                                    ]
+                                ]
+
+                        _ ->
+                            column
+                                [ width <| px 343
+                                , height shrink
+                                , spacing 16
+                                ]
+                                [ parameters model transaction
+                                , first
+                                , second
+                                , third
+                                , buttons
+                                ]
                     ]
            )
 

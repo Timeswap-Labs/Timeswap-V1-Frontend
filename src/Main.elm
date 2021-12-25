@@ -958,7 +958,7 @@ viewHtml : Model -> Html Msg
 viewHtml model =
     layoutWith
         { options = options }
-        [ width <| minimum 360 fill
+        [ width <| minimum 375 fill
         , height shrink
         , model.modal
             |> fading model
