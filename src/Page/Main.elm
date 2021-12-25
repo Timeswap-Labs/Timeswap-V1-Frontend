@@ -20,6 +20,7 @@ import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
+import Data.Device exposing (Device)
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Offset exposing (Offset)
@@ -457,6 +458,7 @@ view :
         | time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
+        , device : Device
         , priceFeed : PriceFeed
         , backdrop : Backdrop
         , images : Images

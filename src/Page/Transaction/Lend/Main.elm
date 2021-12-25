@@ -13,13 +13,12 @@ module Page.Transaction.Lend.Main exposing
     , view
     )
 
-import Animator exposing (Animator)
-import Animator.Css
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.WriteLend exposing (WriteLend)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
+import Data.Device exposing (Device(..))
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
@@ -29,7 +28,7 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
-import Data.Remote as Remote exposing (Remote(..))
+import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
@@ -586,6 +585,7 @@ view :
         | time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
+        , device : Device
         , priceFeed : PriceFeed
         , backdrop : Backdrop
         , images : Images
@@ -593,7 +593,7 @@ view :
     -> Blockchain
     -> Transaction
     -> Element Msg
-view ({ backdrop } as model) blockchain (Transaction transaction) =
+view ({ device, backdrop } as model) blockchain (Transaction transaction) =
     (case transaction.state of
         None ->
             { asset = Nothing
@@ -728,7 +728,14 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                     ([ Region.description "lend transaction"
                      , width shrink
                      , height shrink
-                     , padding 24
+                     , (case device of
+                            Desktop ->
+                                24
+
+                            _ ->
+                                16
+                       )
+                        |> padding
                      , spacing 16
                      , Border.rounded 8
                      , Border.width 1
@@ -751,30 +758,44 @@ view ({ backdrop } as model) blockchain (Transaction transaction) =
                             (text "Lend")
                         , settingsButton model
                         ]
-                    , row
-                        [ width shrink
-                        , height shrink
-                        , spacing 24
-                        ]
-                        [ column
-                            [ width <| px 343
-                            , height shrink
-                            , spacing 16
-                            , alignTop
-                            ]
-                            [ parameters model transaction
-                            , first
-                            ]
-                        , column
-                            [ width <| px 343
-                            , height shrink
-                            , spacing 16
-                            , alignTop
-                            ]
-                            [ second
-                            , buttons
-                            ]
-                        ]
+                    , case device of
+                        Desktop ->
+                            row
+                                [ width shrink
+                                , height shrink
+                                , spacing 24
+                                ]
+                                [ column
+                                    [ width <| px 343
+                                    , height shrink
+                                    , spacing 16
+                                    , alignTop
+                                    ]
+                                    [ parameters model transaction
+                                    , first
+                                    ]
+                                , column
+                                    [ width <| px 343
+                                    , height shrink
+                                    , spacing 16
+                                    , alignTop
+                                    ]
+                                    [ second
+                                    , buttons
+                                    ]
+                                ]
+
+                        _ ->
+                            column
+                                [ width <| px 343
+                                , height shrink
+                                , spacing 16
+                                ]
+                                [ parameters model transaction
+                                , first
+                                , second
+                                , buttons
+                                ]
                     ]
            )
 

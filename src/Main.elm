@@ -19,6 +19,7 @@ import Data.Chains as Chains exposing (Chains)
 import Data.ChosenZone as ChosenZone exposing (ChosenZone)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device(..))
+import Data.HeaderGlass as HeaderGlass exposing (HeaderGlass)
 import Data.Images as Images exposing (Images)
 import Data.Offset as Offset exposing (Offset)
 import Data.Parameter as Parameter
@@ -35,8 +36,10 @@ import Element
     exposing
         ( Element
         , Option
+        , alignBottom
         , alignLeft
         , alignRight
+        , behindContent
         , below
         , centerX
         , centerY
@@ -110,6 +113,7 @@ type alias Model =
     , chosenZone : ChosenZone
     , zoneDropdown : Maybe ()
     , device : Device
+    , headerGlass : Timeline HeaderGlass
     , visibility : Visibility
     , backdrop : Backdrop
     , theme : Theme
@@ -154,6 +158,7 @@ type Msg
     | OpenZoneDropdown
     | CloseZoneDropdown
     | ResizeWindow Int Int
+    | ChangeHeaderGlass Value
     | VisibilityChange Visibility
     | SwitchTheme
     | OpenConnect
@@ -240,6 +245,7 @@ init flags url key =
                   , chosenZone = flags.chosenZone |> ChosenZone.init
                   , zoneDropdown = Nothing
                   , device = flags.width |> Device.fromWidth
+                  , headerGlass = Animator.init HeaderGlass.Hidden
                   , visibility = Browser.Events.Visible
                   , backdrop = flags.hasBackdropSupport |> Backdrop.init
                   , theme = flags.theme |> Theme.init
@@ -324,6 +330,22 @@ update msg model =
             ( { model | device = width |> Device.fromWidth }
             , Cmd.none
             )
+
+        ChangeHeaderGlass value ->
+            case value |> Decode.decodeValue HeaderGlass.decoder of
+                Ok headerGlass ->
+                    ( { model
+                        | headerGlass =
+                            model.headerGlass
+                                |> Animator.go Animator.quickly headerGlass
+                      }
+                    , Cmd.none
+                    )
+
+                _ ->
+                    ( model
+                    , Cmd.none
+                    )
 
         VisibilityChange visibility ->
             ( { model | visibility = visibility }
@@ -840,6 +862,10 @@ animator =
             (\updated model ->
                 { model | modal = updated }
             )
+        |> Animator.Css.watching .headerGlass
+            (\updated model ->
+                { model | headerGlass = updated }
+            )
 
 
 port cacheChosenZone : Value -> Cmd msg
@@ -854,6 +880,9 @@ port cacheCustom : Value -> Cmd msg
 port cacheSettings : Value -> Cmd msg
 
 
+port changeHeaderGlass : (Value -> msg) -> Sub msg
+
+
 port receiveMetamaskInstalled : (() -> msg) -> Sub msg
 
 
@@ -863,6 +892,7 @@ port receiveUser : (Value -> msg) -> Sub msg
 subscriptions : Model -> Sub Msg
 subscriptions model =
     [ Browser.Events.onResize ResizeWindow
+    , changeHeaderGlass ChangeHeaderGlass
     , Browser.Events.onVisibilityChange VisibilityChange
     , Time.every 1000 ReceiveTime
     , receiveMetamaskInstalled ReceiveMetamaskInstalled
@@ -934,6 +964,14 @@ viewHtml model =
             |> fading model
             |> inFront
         , header model
+            |> inFront
+        , (case model.device of
+            Phone ->
+                footer model
+
+            _ ->
+                none
+          )
             |> inFront
         , Font.family [ Font.typeface "Supreme" ]
         , (case model.theme of
@@ -1025,6 +1063,7 @@ header :
         , chosenZone : ChosenZone
         , zoneDropdown : Maybe ()
         , device : Device
+        , headerGlass : Timeline HeaderGlass
         , backdrop : Backdrop
         , theme : Theme
         , images : Images
@@ -1032,49 +1071,99 @@ header :
         , page : Page
     }
     -> Element Msg
-header ({ device } as model) =
-    if device |> Device.isPhoneOrTablet then
-        column
-            [ Region.navigation
-            , width fill
-            , height shrink
-            , spacing 40
-            ]
-            [ row
-                [ width fill
-                , height <| px 55
-                ]
-                [ logo model |> map never ]
-            , row
-                [ width fill
-                , height <| px 45
-                ]
-                [ tabs model |> map never ]
-            ]
+header ({ device, backdrop } as model) =
+    row
+        [ Region.navigation
+        , width fill
+        , height <| px 80
+        , spacing 76
+        , paddingXY 16 0
+        , Animator.Css.div model.headerGlass
+            [ Animator.Css.opacity
+                (\headerGlass ->
+                    case headerGlass of
+                        HeaderGlass.Show ->
+                            Animator.at 1
 
-    else
-        row
-            [ Region.navigation
-            , width fill
-            , height <| px 80
-            , spacing 76
-            , paddingXY 16 0
+                        HeaderGlass.Hidden ->
+                            Animator.at 0
+                )
             ]
-            [ logo model |> map never
-            , tabs model |> map never
-            , row
-                [ width shrink
-                , height shrink
-                , spacing 10
-                , alignRight
-                , centerY
-                ]
-                [ chainListButton model
-                , connectButton model
-                , zoneButton model
-                , themeButton model
-                ]
+            [ Html.Attributes.style "width" "100%"
+            , Html.Attributes.style "height" "100%"
             ]
+            [ layoutWith { options = noStaticStyleSheet :: options }
+                ([ width fill
+                 , height fill
+                 , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                 , Border.color Color.transparent100
+                 ]
+                    ++ (case backdrop of
+                            Backdrop.Supported ->
+                                [ Background.color Color.background
+                                , "blur(10px)"
+                                    |> Html.Attributes.style "-webkit-backdrop-filter"
+                                    |> htmlAttribute
+                                , "blur(10px)"
+                                    |> Html.Attributes.style "backdrop-filter"
+                                    |> htmlAttribute
+                                ]
+
+                            Backdrop.NotSupported ->
+                                [ Border.color Color.transparent100
+                                , Background.color Color.solid
+                                ]
+                       )
+                )
+                none
+            ]
+            |> html
+            |> behindContent
+        ]
+        [ logo model |> map never
+        , case device of
+            Phone ->
+                none
+
+            _ ->
+                tabs model |> map never
+        , row
+            [ width shrink
+            , height shrink
+            , spacing 10
+            , alignRight
+            , centerY
+            ]
+            [ chainListButton model
+            , connectButton model
+            , zoneButton model
+            , themeButton model
+            ]
+        ]
+
+
+footer :
+    { model
+        | device : Device
+        , backdrop : Backdrop
+        , page : Page
+    }
+    -> Element msg
+footer model =
+    row
+        [ Region.footer
+        , width fill
+        , height <| px 80
+        , alignBottom
+        , spacing 12
+        , paddingXY 16 0
+        ]
+        [ tabs model |> map never ]
 
 
 logo : { model | device : Device, images : Images } -> Element Never
@@ -1085,19 +1174,14 @@ logo { device, images } =
         , centerY
         ]
         [ case device of
-            Phone ->
-                images
-                    |> Image.logoPure
-                        [ height <| px 32 ]
-
-            Tablet ->
+            Desktop ->
                 images
                     |> Image.logo
                         [ height <| px 32 ]
 
             _ ->
                 images
-                    |> Image.logo
+                    |> Image.logoPure
                         [ height <| px 32 ]
         , el
             [ width shrink
@@ -1129,17 +1213,38 @@ tabs :
         , page : Page
     }
     -> Element Never
-tabs ({ device } as model) =
+tabs ({ device, backdrop } as model) =
     row
-        [ Region.description "tabs"
-        , width shrink
-        , height <| px 44
-        , alignLeft
-        , padding 4
-        , spacing 4
-        , Background.color Color.primary100
-        , Border.rounded 8
-        ]
+        ([ Region.description "tabs"
+         , width shrink
+         , height <| px 44
+         , case device of
+            Phone ->
+                centerX
+
+            _ ->
+                alignLeft
+         , padding 4
+         , spacing 4
+         , Background.color Color.primary100
+         , Border.rounded 8
+         ]
+            ++ (case ( device, backdrop ) of
+                    ( Phone, Backdrop.Supported ) ->
+                        [ Border.width 1
+                        , Border.color Color.transparent100
+                        , "blur(10px)"
+                            |> Html.Attributes.style "-webkit-backdrop-filter"
+                            |> htmlAttribute
+                        , "blur(10px)"
+                            |> Html.Attributes.style "backdrop-filter"
+                            |> htmlAttribute
+                        ]
+
+                    _ ->
+                        []
+               )
+        )
         [ tab model Tab.Lend
         , tab model Tab.Borrow
         , tab model Tab.Liquidity
@@ -1193,12 +1298,13 @@ tab { device, page } givenTab =
 
 chainListButton :
     { model
-        | backdrop : Backdrop
+        | device : Device
+        , backdrop : Backdrop
         , images : Images
         , blockchain : Support User.NotSupported Blockchain
     }
     -> Element Msg
-chainListButton ({ images } as model) =
+chainListButton ({ device, images } as model) =
     Input.button
         [ Region.description "chains button"
         , width shrink
@@ -1230,26 +1336,44 @@ chainListButton ({ images } as model) =
                                 (blockchain
                                     |> Blockchain.toChain
                                 )
-                        , blockchain
-                            |> Blockchain.toChain
-                            |> Chain.toString
-                            |> text
+                        , case device of
+                            Desktop ->
+                                blockchain
+                                    |> Blockchain.toChain
+                                    |> Chain.toString
+                                    |> text
+
+                            _ ->
+                                none
                         ]
 
                     NotSupported _ ->
-                        [ "Not Supported" |> text ]
+                        [ images
+                            |> Image.default
+                                [ width <| px 24
+                                , height <| px 24
+                                , centerY
+                                ]
+                        , case device of
+                            Desktop ->
+                                "Not Supported" |> text
+
+                            _ ->
+                                none
+                        ]
                 )
         }
 
 
 connectButton :
     { model
-        | backdrop : Backdrop
+        | device : Device
+        , backdrop : Backdrop
         , images : Images
         , blockchain : Support User.NotSupported Blockchain
     }
     -> Element Msg
-connectButton ({ images } as model) =
+connectButton ({ device, images } as model) =
     Input.button
         ([ width shrink
          , height <| px 44
@@ -1307,21 +1431,26 @@ connectButton ({ images } as model) =
                                                 , centerY
                                                 ]
                                                 (user |> User.toWallet)
-                                        , el
-                                            [ width shrink
-                                            , height shrink
-                                            , Font.size 16
-                                            , Font.color Color.primary500
-                                            ]
-                                            (user
-                                                |> User.toName
-                                                |> Maybe.withDefault
+                                        , case device of
+                                            Desktop ->
+                                                el
+                                                    [ width shrink
+                                                    , height shrink
+                                                    , Font.size 16
+                                                    , Font.color Color.primary500
+                                                    ]
                                                     (user
-                                                        |> User.toAddress
-                                                        |> Address.toStringShort
+                                                        |> User.toName
+                                                        |> Maybe.withDefault
+                                                            (user
+                                                                |> User.toAddress
+                                                                |> Address.toStringShort
+                                                            )
+                                                        |> text
                                                     )
-                                                |> text
-                                            )
+
+                                            _ ->
+                                                none
                                         , user
                                             |> User.toPendingSize
                                             |> (\size ->
@@ -1353,13 +1482,30 @@ connectButton ({ images } as model) =
                                         ]
                                 )
                             |> Maybe.withDefault
-                                (el
+                                (row
                                     [ width shrink
                                     , height shrink
-                                    , Font.size 16
-                                    , Font.color Color.transparent400
+                                    , spacing 6
                                     ]
-                                    (text "Connect Wallet")
+                                    [ images
+                                        |> Image.wallet
+                                            [ width <| px 18
+                                            , height <| px 18
+                                            , centerY
+                                            ]
+                                    , case device of
+                                        Desktop ->
+                                            el
+                                                [ width shrink
+                                                , height shrink
+                                                , Font.size 16
+                                                , Font.color Color.transparent400
+                                                ]
+                                                (text "Connect Wallet")
+
+                                        _ ->
+                                            none
+                                    ]
                                 )
 
                     NotSupported user ->
@@ -1375,17 +1521,22 @@ connectButton ({ images } as model) =
                                     , centerY
                                     ]
                                     (user |> User.toWalletNotSupported)
-                            , el
-                                [ width shrink
-                                , height shrink
-                                , Font.size 16
-                                , Font.color Color.transparent400
-                                ]
-                                (user
-                                    |> User.toAddressNotSupported
-                                    |> Address.toStringShort
-                                    |> text
-                                )
+                            , case device of
+                                Desktop ->
+                                    el
+                                        [ width shrink
+                                        , height shrink
+                                        , Font.size 16
+                                        , Font.color Color.transparent400
+                                        ]
+                                        (user
+                                            |> User.toAddressNotSupported
+                                            |> Address.toStringShort
+                                            |> text
+                                        )
+
+                                _ ->
+                                    none
                             ]
                 )
         }
@@ -1536,6 +1687,7 @@ body :
         | time : Posix
         , offset : Offset
         , chosenZone : ChosenZone
+        , device : Device
         , backdrop : Backdrop
         , priceFeed : PriceFeed
         , images : Images
@@ -1543,17 +1695,34 @@ body :
         , page : Page
     }
     -> Element Msg
-body ({ page } as model) =
+body ({ device, page } as model) =
     el
         [ Region.mainContent
         , width fill
         , height shrink
-        , paddingEach
-            { top = 136
-            , right = 80
-            , bottom = 56
-            , left = 56
-            }
+        , (case device of
+            Desktop ->
+                { top = 136
+                , right = 80
+                , bottom = 56
+                , left = 80
+                }
+
+            Tablet ->
+                { top = 136
+                , right = 40
+                , bottom = 56
+                , left = 40
+                }
+
+            Phone ->
+                { top = 136
+                , right = 0
+                , bottom = 56
+                , left = 0
+                }
+          )
+            |> paddingEach
         ]
         (case model.blockchain of
             Supported blockchain ->

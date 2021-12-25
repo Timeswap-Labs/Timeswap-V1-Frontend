@@ -5,22 +5,18 @@ type Device
     = Phone
     | Tablet
     | Desktop
-    | BigDesktop
 
 
 fromWidth : Int -> Device
 fromWidth width =
-    if width < 600 then
+    if width < 875 then
         Phone
 
-    else if width < 1080 + 278 then
+    else if width < 1185 then
         Tablet
 
-    else if width < 1366 + 278 then
-        Desktop
-
     else
-        BigDesktop
+        Desktop
 
 
 isPhoneOrTablet : Device -> Bool

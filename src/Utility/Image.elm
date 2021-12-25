@@ -8,6 +8,7 @@ module Utility.Image exposing
     , checkboxSelected
     , close
     , copy
+    , default
     , discloser
     , discord
     , energy
@@ -131,6 +132,11 @@ viewWallet attributes givenWallet images =
             givenWallet
                 |> Wallet.toString
         }
+
+
+default : List (Attribute msg) -> Images -> Element msg
+default =
+    view "Default"
 
 
 error : List (Attribute msg) -> Images -> Element msg
