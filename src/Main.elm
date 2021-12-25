@@ -1702,23 +1702,23 @@ body ({ device, page } as model) =
         , height shrink
         , (case device of
             Desktop ->
-                { top = 136
+                { top = 100
                 , right = 80
-                , bottom = 56
+                , bottom = 80
                 , left = 80
                 }
 
             Tablet ->
-                { top = 136
+                { top = 100
                 , right = 40
-                , bottom = 56
+                , bottom = 80
                 , left = 40
                 }
 
             Phone ->
-                { top = 136
+                { top = 100
                 , right = 0
-                , bottom = 56
+                , bottom = 80
                 , left = 0
                 }
           )
