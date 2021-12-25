@@ -22,6 +22,7 @@ import Element
         , moveLeft
         , moveRight
         , none
+        , paddingXY
         , px
         , row
         , shrink
@@ -241,23 +242,39 @@ liquidity { images } param =
             , centerY
             ]
             [ row
-                [ width <| px 40
+                [ width <| px 80
                 , height <| px 24
+                , spacing 6
                 ]
-                [ images
-                    |> Image.viewToken
-                        [ width <| px 24
-                        , height <| px 24
-                        , moveRight 12
-                        ]
-                        param.collateral
-                , images
-                    |> Image.viewToken
-                        [ width <| px 24
-                        , height <| px 24
-                        , moveLeft 24
-                        ]
-                        param.asset
+                [ row
+                    [ width shrink
+                    , height shrink
+                    ]
+                    [ images
+                        |> Image.viewToken
+                            [ width <| px 24
+                            , height <| px 24
+                            , moveRight 12
+                            ]
+                            param.collateral
+                    , images
+                        |> Image.viewToken
+                            [ width <| px 24
+                            , height <| px 24
+                            , moveLeft 24
+                            ]
+                            param.asset
+                    ]
+                , el
+                    [ width shrink
+                    , height shrink
+                    , centerY
+                    , Font.size 16
+                    , paddingXY 0 4
+                    , Font.color Color.light100
+                    , moveLeft 12
+                    ]
+                    (text "LP")
                 ]
             , el
                 [ width fill

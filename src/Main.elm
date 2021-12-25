@@ -1311,7 +1311,6 @@ connectButton ({ images } as model) =
                                             [ width shrink
                                             , height shrink
                                             , Font.size 16
-                                            , Font.bold
                                             , Font.color Color.primary500
                                             ]
                                             (user

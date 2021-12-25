@@ -11,14 +11,14 @@ import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User exposing (User)
 import Data.Address as Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
-import Data.Chain as Chain exposing (Chain)
+import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Token as Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
-import Data.Uint as Uint exposing (Uint)
+import Data.Uint as Uint
 import Data.Web as Web exposing (Web)
 import Element
     exposing
@@ -33,6 +33,7 @@ import Element
         , el
         , fill
         , height
+        , htmlAttribute
         , minimum
         , mouseOver
         , newTabLink
@@ -67,6 +68,7 @@ import Utility.Etherscan as Etherscan
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
+import Utility.Loading as Loading
 import Utility.Truncate as Truncate
 
 
@@ -815,7 +817,10 @@ tokenSymbolAndName { images } (Modal { tooltip }) token =
             , Font.size 22
             , Font.color Color.transparent300
             ]
-            (text (String.fromChar (Char.fromCode 0x2022)))
+            (Char.fromCode 0x2022
+                |> String.fromChar
+                |> text
+            )
         , el
             [ Font.size 12
             , Font.color Color.transparent300
@@ -847,14 +852,14 @@ tokenBalance user token (Modal { tooltip }) =
                 ]
                 (balance |> Uint.toString |> text)
 
-        Just (Loading _) ->
+        Just (Loading timeline) ->
             el
-                [ alignRight
-                , Font.regular
-                , Font.size 16
+                [ width shrink
+                , height shrink
+                , alignRight
+                , centerY
                 ]
-                (text "loading")
-                |> Debug.log "implement loading animation"
+                (Loading.view timeline)
 
         Just (Failure error) ->
             el
@@ -884,8 +889,8 @@ noResults { images } =
             , left = 0
             }
         , spacing 24
-        , Element.htmlAttribute (Html.Attributes.style "align-items" "center")
-        , Element.htmlAttribute (Html.Attributes.style "justify-content" "center")
+        , htmlAttribute (Html.Attributes.style "align-items" "center")
+        , htmlAttribute (Html.Attributes.style "justify-content" "center")
         ]
         [ images |> Image.warningCircle [ width <| px 30, height <| px 30, Font.center ]
         , el

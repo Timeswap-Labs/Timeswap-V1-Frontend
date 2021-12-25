@@ -9,6 +9,7 @@ port module Modal.Connect.Main exposing
     , view
     )
 
+import Animator exposing (Timeline)
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.Txns.Txn as Txn exposing (Txn)
@@ -55,11 +56,13 @@ import Modal.Connect.Error as Error exposing (Error)
 import Modal.Connect.Terms as Terms
 import Modal.Outside as Outside
 import Sort.Set as Set
+import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Etherscan as Etherscan
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
+import Utility.Loading as Loading
 
 
 type Modal
@@ -80,6 +83,7 @@ type Msg
     | CopyAddress Address
     | ClearAll
     | ReceiveNoConnect Value
+    | Tick Posix
     | Exit
 
 
@@ -184,6 +188,16 @@ update msg modal =
             , Nothing
             )
 
+        ( Tick posix, Waiting waiting ) ->
+            ( { waiting
+                | error = waiting.error |> Remote.update posix
+              }
+                |> Waiting
+                |> Just
+            , Cmd.none
+            , Nothing
+            )
+
         ( Exit, _ ) ->
             ( Nothing
             , Cmd.none
@@ -227,12 +241,15 @@ subscriptions : Modal -> Sub Msg
 subscriptions modal =
     case modal of
         Waiting { error } ->
-            case error of
+            [ case error of
                 Loading _ ->
                     receiveNoConnect ReceiveNoConnect
 
                 _ ->
                     Sub.none
+            , error |> Remote.subscriptions Tick
+            ]
+                |> Sub.batch
 
         _ ->
             Sub.none
@@ -280,8 +297,8 @@ view ({ backdrop } as model) modal =
 
                     ( _, Waiting ({ error } as waiting) ) ->
                         case error of
-                            Loading _ ->
-                                viewInitializing model waiting
+                            Loading timeline ->
+                                viewInitializing model waiting timeline
 
                             _ ->
                                 viewError model waiting
@@ -523,8 +540,9 @@ metamaskButton ({ images, wallets } as model) =
 viewInitializing :
     { model | images : Images }
     -> { waiting | wallet : Wallet }
+    -> Timeline ()
     -> Element Msg
-viewInitializing model waiting =
+viewInitializing model waiting timeline =
     column
         [ width fill
         , height shrink
@@ -547,7 +565,7 @@ viewInitializing model waiting =
                 (text "Connect Wallet")
             , IconButton.exit model Exit
             ]
-        , walletWaiting model waiting
+        , walletWaiting model waiting timeline
         , Terms.view
         ]
 
@@ -587,8 +605,9 @@ viewError model waiting =
 walletWaiting :
     { model | images : Images }
     -> { waiting | wallet : Wallet }
+    -> Timeline ()
     -> Element msg
-walletWaiting { images } { wallet } =
+walletWaiting { images } { wallet } timeline =
     row
         [ width fill
         , height <| px 54
@@ -624,8 +643,7 @@ walletWaiting { images } { wallet } =
             , Font.color Color.light100
             , Font.size 16
             ]
-            (text "Loading")
-            |> Debug.log "loading symbol"
+            (Loading.view timeline)
         ]
 
 
