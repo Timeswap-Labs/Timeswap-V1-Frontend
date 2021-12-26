@@ -16,6 +16,7 @@ import Element
         , centerY
         , el
         , height
+        , htmlAttribute
         , none
         , padding
         , paddingXY
@@ -30,6 +31,7 @@ import Element
 import Element.Border as Border
 import Element.Font as Font
 import Element.Region as Region
+import Html.Attributes
 import Sort.Dict as Dict
 import Utility.Color as Color
 import Utility.Glass as Glass
@@ -72,6 +74,7 @@ view ({ device, backdrop } as model) user =
          , Border.rounded 8
          , Border.width 1
          , Border.color Color.transparent100
+         , Html.Attributes.id "positions" |> htmlAttribute
          ]
             ++ Glass.background backdrop
         )

@@ -93,6 +93,11 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
   // app.ports.disconnect.subscribe(() => {
   //   app.ports.receiveUser.send(null);
   // });
+
+  window.addEventListener("scroll", () => {
+    console.log("scrolling");
+    app.ports.scroll.send;
+  });
 }
 
 function receiveUser(

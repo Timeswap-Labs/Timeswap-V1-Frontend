@@ -38,6 +38,8 @@ declare interface Ports {
   withdraw: PortFromElm<Withdraw>;
 
   faucetMint: PortFromElm<Faucet>;
+
+  scroll: PortsToElm;
 }
 
 interface ReceiveUser {

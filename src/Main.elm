@@ -19,7 +19,6 @@ import Data.Chains as Chains exposing (Chains)
 import Data.ChosenZone as ChosenZone exposing (ChosenZone)
 import Data.Deadline as Deadline exposing (Deadline)
 import Data.Device as Device exposing (Device(..))
-import Data.HeaderGlass as HeaderGlass exposing (HeaderGlass)
 import Data.Images as Images exposing (Images)
 import Data.Offset as Offset exposing (Offset)
 import Data.Parameter as Parameter
@@ -90,6 +89,7 @@ import Url exposing (Url)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
+import Utility.Scroll as Scroll
 
 
 main : Program Flags Model Msg
@@ -113,7 +113,8 @@ type alias Model =
     , chosenZone : ChosenZone
     , zoneDropdown : Maybe ()
     , device : Device
-    , headerGlass : Timeline HeaderGlass
+    , headerGlass : Timeline Visibility
+    , scrollToPositions : Timeline Visibility
     , visibility : Visibility
     , backdrop : Backdrop
     , theme : Theme
@@ -158,7 +159,10 @@ type Msg
     | OpenZoneDropdown
     | CloseZoneDropdown
     | ResizeWindow Int Int
-    | ChangeHeaderGlass Value
+    | Scroll ()
+    | ReceiveVisibility Scroll.Visibility
+    | ClickScroll
+    | ScrollToPositions ()
     | VisibilityChange Visibility
     | SwitchTheme
     | OpenConnect
@@ -245,7 +249,8 @@ init flags url key =
                   , chosenZone = flags.chosenZone |> ChosenZone.init
                   , zoneDropdown = Nothing
                   , device = flags.width |> Device.fromWidth
-                  , headerGlass = Animator.init HeaderGlass.Hidden
+                  , headerGlass = Animator.init Browser.Events.Hidden
+                  , scrollToPositions = Animator.init Browser.Events.Hidden |> Debug.log "edit"
                   , visibility = Browser.Events.Visible
                   , backdrop = flags.hasBackdropSupport |> Backdrop.init
                   , theme = flags.theme |> Theme.init
@@ -266,6 +271,7 @@ init flags url key =
                   , modal = Animator.init Nothing
                   }
                 , [ Time.now |> Task.perform ReceiveTime
+                  , Scroll.visibility ReceiveVisibility
                   , cmd
                   ]
                     |> Cmd.batch
@@ -328,24 +334,35 @@ update msg model =
 
         ResizeWindow width _ ->
             ( { model | device = width |> Device.fromWidth }
+            , Scroll.visibility ReceiveVisibility
+            )
+
+        Scroll () ->
+            ( model
+            , Scroll.visibility ReceiveVisibility
+            )
+
+        ReceiveVisibility { headerGlass, scrollToPositions } ->
+            ( { model
+                | headerGlass =
+                    model.headerGlass
+                        |> Animator.go Animator.quickly headerGlass
+                , scrollToPositions =
+                    model.scrollToPositions
+                        |> Animator.go Animator.quickly scrollToPositions
+              }
             , Cmd.none
             )
 
-        ChangeHeaderGlass value ->
-            case value |> Decode.decodeValue HeaderGlass.decoder of
-                Ok headerGlass ->
-                    ( { model
-                        | headerGlass =
-                            model.headerGlass
-                                |> Animator.go Animator.quickly headerGlass
-                      }
-                    , Cmd.none
-                    )
+        ClickScroll ->
+            ( model
+            , Scroll.toPositions ScrollToPositions
+            )
 
-                _ ->
-                    ( model
-                    , Cmd.none
-                    )
+        ScrollToPositions () ->
+            ( model
+            , Cmd.none
+            )
 
         VisibilityChange visibility ->
             ( { model | visibility = visibility }
@@ -507,7 +524,10 @@ update msg model =
                                         )
                                     |> Maybe.withDefault
                                         ( { model | page = updated }
-                                        , cmd |> Cmd.map PageMsg
+                                        , [ cmd |> Cmd.map PageMsg
+                                          , Scroll.visibility ReceiveVisibility
+                                          ]
+                                            |> Cmd.batch
                                         )
                            )
 
@@ -866,6 +886,10 @@ animator =
             (\updated model ->
                 { model | headerGlass = updated }
             )
+        |> Animator.Css.watching .scrollToPositions
+            (\updated model ->
+                { model | scrollToPositions = updated }
+            )
 
 
 port cacheChosenZone : Value -> Cmd msg
@@ -880,7 +904,7 @@ port cacheCustom : Value -> Cmd msg
 port cacheSettings : Value -> Cmd msg
 
 
-port changeHeaderGlass : (Value -> msg) -> Sub msg
+port scroll : (() -> msg) -> Sub msg
 
 
 port receiveMetamaskInstalled : (() -> msg) -> Sub msg
@@ -892,7 +916,7 @@ port receiveUser : (Value -> msg) -> Sub msg
 subscriptions : Model -> Sub Msg
 subscriptions model =
     [ Browser.Events.onResize ResizeWindow
-    , changeHeaderGlass ChangeHeaderGlass
+    , scroll Scroll
     , Browser.Events.onVisibilityChange VisibilityChange
     , Time.every 1000 ReceiveTime
     , receiveMetamaskInstalled ReceiveMetamaskInstalled
@@ -963,16 +987,8 @@ viewHtml model =
         , model.modal
             |> fading model
             |> inFront
-        , header model
-            |> inFront
-        , (case model.device of
-            Phone ->
-                footer model
-
-            _ ->
-                none
-          )
-            |> inFront
+        , header model |> inFront
+        , footer model |> inFront
         , Font.family [ Font.typeface "Supreme" ]
         , (case model.theme of
             Theme.Light ->
@@ -1063,7 +1079,7 @@ header :
         , chosenZone : ChosenZone
         , zoneDropdown : Maybe ()
         , device : Device
-        , headerGlass : Timeline HeaderGlass
+        , headerGlass : Timeline Visibility
         , backdrop : Backdrop
         , theme : Theme
         , images : Images
@@ -1082,44 +1098,47 @@ header ({ device, backdrop } as model) =
             [ Animator.Css.opacity
                 (\headerGlass ->
                     case headerGlass of
-                        HeaderGlass.Show ->
+                        Browser.Events.Visible ->
                             Animator.at 1
 
-                        HeaderGlass.Hidden ->
+                        Browser.Events.Hidden ->
                             Animator.at 0
                 )
             ]
-            [ Html.Attributes.style "width" "100%"
-            , Html.Attributes.style "height" "100%"
-            ]
+            ([ Html.Attributes.style "width" "100%"
+             , Html.Attributes.style "height" "100%"
+             ]
+                ++ (case backdrop of
+                        Backdrop.Supported ->
+                            [ "blur(10px)"
+                                |> Html.Attributes.style "-webkit-backdrop-filter"
+                            , "blur(10px)"
+                                |> Html.Attributes.style "backdrop-filter"
+                            ]
+
+                        Backdrop.NotSupported ->
+                            []
+                   )
+            )
             [ layoutWith { options = noStaticStyleSheet :: options }
-                ([ width fill
-                 , height fill
-                 , Border.widthEach
+                [ width fill
+                , height fill
+                , Border.widthEach
                     { top = 0
                     , right = 0
                     , bottom = 1
                     , left = 0
                     }
-                 , Border.color Color.transparent100
-                 ]
-                    ++ (case backdrop of
-                            Backdrop.Supported ->
-                                [ Background.color Color.background
-                                , "blur(10px)"
-                                    |> Html.Attributes.style "-webkit-backdrop-filter"
-                                    |> htmlAttribute
-                                , "blur(10px)"
-                                    |> Html.Attributes.style "backdrop-filter"
-                                    |> htmlAttribute
-                                ]
+                , Border.color Color.transparent100
+                , (case backdrop of
+                    Backdrop.Supported ->
+                        Color.background
 
-                            Backdrop.NotSupported ->
-                                [ Border.color Color.transparent100
-                                , Background.color Color.solid
-                                ]
-                       )
-                )
+                    Backdrop.NotSupported ->
+                        Color.solid
+                  )
+                    |> Background.color
+                ]
                 none
             ]
             |> html
@@ -1150,10 +1169,12 @@ header ({ device, backdrop } as model) =
 footer :
     { model
         | device : Device
+        , scrollToPositions : Timeline Visibility
         , backdrop : Backdrop
+        , images : Images
         , page : Page
     }
-    -> Element msg
+    -> Element Msg
 footer model =
     row
         [ Region.footer
@@ -1163,7 +1184,110 @@ footer model =
         , spacing 12
         , paddingXY 16 0
         ]
-        [ tabs model |> map never ]
+        [ case model.device of
+            Phone ->
+                tabs model |> map never
+
+            _ ->
+                none
+        , scrollButton model
+        ]
+
+
+scrollButton :
+    { model
+        | device : Device
+        , backdrop : Backdrop
+        , scrollToPositions : Timeline Visibility
+        , images : Images
+    }
+    -> Element Msg
+scrollButton ({ device, backdrop, images } as model) =
+    el
+        [ width shrink
+        , height shrink
+        , alignRight
+        , centerY
+        ]
+        (Animator.Css.div model.scrollToPositions
+            [ Animator.Css.opacity
+                (\scrollToPositions ->
+                    case scrollToPositions of
+                        Browser.Events.Visible ->
+                            Animator.at 1
+
+                        Browser.Events.Hidden ->
+                            Animator.at 0
+                )
+            ]
+            (Html.Attributes.style "height" "100%"
+                :: (case backdrop of
+                        Backdrop.Supported ->
+                            [ "blur(10px)"
+                                |> Html.Attributes.style "-webkit-backdrop-filter"
+                            , "blur(10px)"
+                                |> Html.Attributes.style "backdrop-filter"
+                            ]
+
+                        Backdrop.NotSupported ->
+                            []
+                   )
+            )
+            [ layoutWith { options = noStaticStyleSheet :: options }
+                [ width shrink
+                , height shrink
+                , Font.family [ Font.typeface "Supreme" ]
+                ]
+                (Input.button
+                    [ width shrink
+                    , height <| px 44
+                    , paddingXY 12 0
+                    , Border.width 1
+                    , Border.color Color.transparent100
+                    , Border.rounded 8
+                    , (case backdrop of
+                        Backdrop.Supported ->
+                            Color.primary100
+
+                        Backdrop.NotSupported ->
+                            Color.solid
+                      )
+                        |> Background.color
+                    ]
+                    { onPress = Just ClickScroll
+                    , label =
+                        row
+                            [ width shrink
+                            , height shrink
+                            , centerX
+                            , centerY
+                            , spacing 8
+                            ]
+                            [ case device of
+                                Phone ->
+                                    none
+
+                                _ ->
+                                    el
+                                        [ width shrink
+                                        , height shrink
+                                        , centerX
+                                        , centerY
+                                        , Font.color Color.light100
+                                        , Font.size 16
+                                        ]
+                                        (text "Your Positions")
+                            , images
+                                |> Image.discloser
+                                    [ width <| px 11
+                                    , height <| px 7
+                                    ]
+                            ]
+                    }
+                )
+            ]
+            |> html
+        )
 
 
 logo : { model | device : Device, images : Images } -> Element Never
