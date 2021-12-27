@@ -44,6 +44,8 @@ declare interface Ports {
   copyToClipboard: PortFromElm<string>;
 
   cacheChosenZone: PortFromElm<string>;
+
+  changeChain: PortFromElm<Chain>;
 }
 
 interface ReceiveUser {

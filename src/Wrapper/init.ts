@@ -81,7 +81,6 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
 
 function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
   app.ports.connect.subscribe((walletName) => {
-
     if (wallet[walletName]) {
       gp.metamaskProvider = wallet[walletName];
       receiveUser(app, whitelist, gp, walletName);
@@ -107,6 +106,16 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
 
   app.ports.cacheChosenZone.subscribe((zone) => {
     localStorage.setItem("chosen-zone", zone);
+  });
+
+  app.ports.changeChain.subscribe(chain => {
+    if (window.ethereum && ethereum) {
+      gp.metamaskProvider = window.ethereum;
+
+      gp.metamaskProvider.send("wallet_switchEthereumChain", [
+        { chainId: chain.chainId.toString().startsWith("0x") ? chain.chainId : "0x" + chain.chainId },
+      ]);
+    }
   });
 
   window.addEventListener("scroll", () => {
@@ -150,6 +159,7 @@ function metamaskConnected(
   gp: GlobalParams
 ) {
   gp.metamaskProvider.send("eth_accounts", []).then((accounts: string[]) => {
+
     if (accounts[0]) {
       app.ports.receiveUser.send({
         chainId: Number(ethereum.chainId),
