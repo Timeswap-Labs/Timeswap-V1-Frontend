@@ -15,6 +15,7 @@
             "elm/svg": "1.0.1",
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
+            "linuss/smooth-scroll": "1.1.0",
             "mdgriffith/elm-animator": "1.1.1",
             "mdgriffith/elm-ui": "1.1.8",
             "prozacchiwawa/elm-keccak": "2.0.0",
@@ -26,6 +27,7 @@
             "elm/bytes": "1.0.8",
             "elm/file": "1.0.5",
             "elm/virtual-dom": "1.0.2",
+            "elm-community/easing-functions": "2.0.0",
             "elm-community/list-extra": "8.5.1",
             "ianmackenzie/elm-units": "2.9.0"
         }

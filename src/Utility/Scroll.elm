@@ -2,6 +2,7 @@ module Utility.Scroll exposing (Visibility, toPositions, visibility)
 
 import Browser.Dom as Dom
 import Browser.Events
+import SmoothScroll exposing (Config)
 import Task
 
 
@@ -49,17 +50,20 @@ visibility msg =
 
 toPositions : (() -> msg) -> Cmd msg
 toPositions msg =
-    Dom.getElement "positions"
-        |> Task.map Just
-        |> Task.onError (\_ -> Task.succeed Nothing)
-        |> Task.andThen
-            (\positions ->
-                positions
-                    |> Maybe.map
-                        (\{ element } ->
-                            Dom.setViewport 0 (element.y - 80)
-                        )
-                    |> Maybe.withDefault
-                        (Task.succeed ())
-            )
+    "positions"
+        |> SmoothScroll.scrollToWithOptions config
+        |> Debug.log "check"
+        |> Task.map (\_ -> ())
+        |> Task.onError (\_ -> Task.succeed ())
         |> Task.perform msg
+
+
+config : Config
+config =
+    SmoothScroll.defaultConfig
+        |> (\defaultConfig ->
+                { defaultConfig
+                    | offset = 100
+                    , speed = 30
+                }
+           )
