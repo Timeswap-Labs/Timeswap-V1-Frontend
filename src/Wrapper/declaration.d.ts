@@ -40,6 +40,10 @@ declare interface Ports {
   faucetMint: PortFromElm<Faucet>;
 
   scroll: PortsToElm;
+
+  copyToClipboard: PortFromElm<string>;
+
+  cacheChosenZone: PortFromElm<string>;
 }
 
 interface ReceiveUser {

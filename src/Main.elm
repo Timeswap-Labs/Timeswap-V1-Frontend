@@ -316,8 +316,7 @@ update msg model =
 
         SwitchZone newZone ->
             ( { model | chosenZone = newZone }
-            , model.chosenZone
-                |> ChosenZone.switch
+            , newZone
                 |> ChosenZone.encode
                 |> cacheChosenZone
             )

@@ -19,7 +19,7 @@ async function elmInit() {
       time: Date.now(),
       offset: new Date().getTimezoneOffset(),
       zoneName: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      chosenZone: null,
+      chosenZone: localStorage.getItem("chosen-zone"),
       width: window.innerWidth,
       hasBackdropSupport:
         CSS.supports("-webkit-backdrop-filter: none") ||

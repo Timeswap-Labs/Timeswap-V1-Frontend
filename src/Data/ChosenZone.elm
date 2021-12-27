@@ -27,6 +27,9 @@ init maybeString =
                     "utc" ->
                         Just UTC
 
+                    "unix" ->
+                        Just Unix
+
                     _ ->
                         Nothing
             )

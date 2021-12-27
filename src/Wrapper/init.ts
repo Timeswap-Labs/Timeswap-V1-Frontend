@@ -71,17 +71,24 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
   // faucetSigner(app, gp);
 
   portsInit(app, whitelist, gp);
-  metamaskConnected(app, whitelist, gp);
-  metamaskChainChange(app, whitelist, gp);
-  metamaskAccountsChange(app, whitelist, gp);
+
+  if (gp.metamaskProvider) {
+    metamaskConnected(app, whitelist, gp);
+    metamaskChainChange(app, whitelist, gp);
+    metamaskAccountsChange(app, whitelist, gp);
+  }
 }
 
 function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
   app.ports.connect.subscribe((walletName) => {
-    console.log("Wrapper", walletName);
-    console.log("Wrapper", wallet);
-    gp.metamaskProvider = wallet[walletName];
-    receiveUser(app, whitelist, gp, walletName);
+
+    if (wallet[walletName]) {
+      gp.metamaskProvider = wallet[walletName];
+      receiveUser(app, whitelist, gp, walletName);
+    } else {
+      app.ports.receiveNoConnect.send(walletName);
+    }
+
     // if (wallet == "metamask" && window.ethereum && ethereum) {
     //   gp.metamaskProvider = window.ethereum;
     //   receiveUser(app, whitelist, gp);
@@ -93,6 +100,14 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
   // app.ports.disconnect.subscribe(() => {
   //   app.ports.receiveUser.send(null);
   // });
+
+  app.ports.copyToClipboard.subscribe((copyStr) => {
+    navigator.clipboard.writeText(copyStr);
+  });
+
+  app.ports.cacheChosenZone.subscribe((zone) => {
+    localStorage.setItem("chosen-zone", zone);
+  });
 
   window.addEventListener("scroll", () => {
     console.log("scrolling");
