@@ -16,7 +16,6 @@ import Element
         , el
         , fill
         , height
-        , htmlAttribute
         , padding
         , paddingXY
         , paragraph
@@ -30,9 +29,9 @@ import Element
 import Element.Border as Border
 import Element.Font as Font
 import Element.Region as Region
-import Html.Attributes
 import Utility.Color as Color
 import Utility.Glass as Glass
+import Utility.Id as Id
 import Utility.Image as Image
 
 
@@ -53,10 +52,10 @@ view { device, backdrop, images } user =
         ([ Region.description "liquidity positions"
          , (case device of
                 Desktop ->
-                    760
+                    758
 
                 _ ->
-                    377
+                    375
            )
             |> px
             |> width
@@ -72,7 +71,7 @@ view { device, backdrop, images } user =
          , Border.rounded 8
          , Border.width 1
          , Border.color Color.transparent100
-         , Html.Attributes.id "positions" |> htmlAttribute
+         , Id.is "positions"
          ]
             ++ Glass.background backdrop
         )

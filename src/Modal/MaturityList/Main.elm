@@ -36,7 +36,6 @@ import Element
         , fill
         , fillPortion
         , height
-        , htmlAttribute
         , inFront
         , maximum
         , minimum
@@ -61,7 +60,6 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
-import Html.Attributes
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Modal.MaturityList.Answer as Answer exposing (Answer)
@@ -79,6 +77,7 @@ import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
+import Utility.Id as Id
 import Utility.Image as Image
 
 
@@ -585,7 +584,7 @@ sortOptionsEl sortList =
                         , el
                             [ width fill
                             , height fill
-                            , Html.Attributes.id "sort-dropdown" |> htmlAttribute
+                            , Id.is "sort-dropdown"
                             ]
                             none
                             |> inFront

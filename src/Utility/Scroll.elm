@@ -33,7 +33,7 @@ visibility msg =
                                 positions
                                     |> Maybe.map
                                         (\{ element } ->
-                                            if element.y > viewport.y + viewport.height then
+                                            if element.y + 80 > viewport.y + viewport.height then
                                                 Browser.Events.Visible
 
                                             else

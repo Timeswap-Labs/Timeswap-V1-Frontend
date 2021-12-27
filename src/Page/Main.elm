@@ -541,10 +541,10 @@ warning { device, backdrop } =
         ([ Region.description "borrow positions"
          , (case device of
                 Desktop ->
-                    760
+                    758
 
                 _ ->
-                    377
+                    375
            )
             |> px
             |> width

@@ -230,10 +230,6 @@ port installMetamask : () -> Cmd msg
 port copyToClipboard : String -> Cmd msg
 
 
-
--- NOTE: Wallet exist check along with user denied check
-
-
 port receiveNoConnect : (Value -> msg) -> Sub msg
 
 

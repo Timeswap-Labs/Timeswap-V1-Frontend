@@ -48,7 +48,6 @@ import Element
         , focusStyle
         , height
         , html
-        , htmlAttribute
         , inFront
         , layoutWith
         , link
@@ -76,7 +75,6 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Html exposing (Html)
-import Html.Attributes
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Modal.Main as Modal exposing (Modal)
@@ -86,9 +84,13 @@ import Sort.Set as Set
 import Task
 import Time exposing (Posix)
 import Url exposing (Url)
+import Utility.Blur as Blur
 import Utility.Color as Color
 import Utility.Glass as Glass
+import Utility.Id as Id
 import Utility.Image as Image
+import Utility.Length as Length
+import Utility.Pointer as Pointer
 import Utility.Scroll as Scroll
 
 
@@ -1035,16 +1037,12 @@ fading ({ backdrop } as model) timeline =
                     (Animator.at 0)
             )
         ]
-        ([ Html.Attributes.style "width" "100%"
-         , Html.Attributes.style "height" "100%"
+        ([ Length.widthFill
+         , Length.heightFill
          ]
             ++ (case backdrop of
                     Backdrop.Supported ->
-                        [ "blur(10px)"
-                            |> Html.Attributes.style "-webkit-backdrop-filter"
-                        , "blur(10px)"
-                            |> Html.Attributes.style "backdrop-filter"
-                        ]
+                        Blur.tenHtml
 
                     Backdrop.NotSupported ->
                         []
@@ -1053,7 +1051,7 @@ fading ({ backdrop } as model) timeline =
                     |> Animator.current
                     |> Maybe.map (\_ -> [])
                     |> Maybe.withDefault
-                        [ Html.Attributes.style "pointer-events" "none" ]
+                        [ Pointer.offHtml ]
                )
         )
         [ layoutWith { options = noStaticStyleSheet :: options }
@@ -1091,7 +1089,14 @@ header ({ device, backdrop } as model) =
         [ Region.navigation
         , width fill
         , height <| px 80
-        , spacing 76
+        , (case device of
+            Phone ->
+                12
+
+            _ ->
+                76
+          )
+            |> spacing
         , paddingXY 16 0
         , Animator.Css.div model.headerGlass
             [ Animator.Css.opacity
@@ -1104,16 +1109,12 @@ header ({ device, backdrop } as model) =
                             Animator.at 0
                 )
             ]
-            ([ Html.Attributes.style "width" "100%"
-             , Html.Attributes.style "height" "100%"
+            ([ Length.widthFill
+             , Length.heightFill
              ]
                 ++ (case backdrop of
                         Backdrop.Supported ->
-                            [ "blur(10px)"
-                                |> Html.Attributes.style "-webkit-backdrop-filter"
-                            , "blur(10px)"
-                                |> Html.Attributes.style "backdrop-filter"
-                            ]
+                            Blur.tenHtml
 
                         Backdrop.NotSupported ->
                             []
@@ -1182,6 +1183,7 @@ footer model =
         , alignBottom
         , spacing 12
         , paddingXY 16 0
+        , Pointer.off
         ]
         [ case model.device of
             Phone ->
@@ -1207,6 +1209,7 @@ scrollButton ({ device, backdrop, images } as model) =
         , height shrink
         , alignRight
         , centerY
+        , Pointer.on
         ]
         (Animator.Css.div model.scrollToPositions
             [ Animator.Css.opacity
@@ -1219,17 +1222,20 @@ scrollButton ({ device, backdrop, images } as model) =
                             Animator.at 0
                 )
             ]
-            (Html.Attributes.style "height" "100%"
+            (Length.heightFill
                 :: (case backdrop of
                         Backdrop.Supported ->
-                            [ "blur(10px)"
-                                |> Html.Attributes.style "-webkit-backdrop-filter"
-                            , "blur(10px)"
-                                |> Html.Attributes.style "backdrop-filter"
-                            ]
+                            Blur.tenHtml
 
                         Backdrop.NotSupported ->
                             []
+                   )
+                ++ (case model.scrollToPositions |> Animator.current of
+                        Browser.Events.Visible ->
+                            []
+
+                        Browser.Events.Hidden ->
+                            [ Pointer.offHtml ]
                    )
             )
             [ layoutWith { options = noStaticStyleSheet :: options }
@@ -1351,18 +1357,14 @@ tabs ({ device, backdrop } as model) =
          , spacing 4
          , Background.color Color.primary100
          , Border.rounded 8
+         , Pointer.on
          ]
             ++ (case ( device, backdrop ) of
                     ( Phone, Backdrop.Supported ) ->
                         [ Border.width 1
                         , Border.color Color.transparent100
-                        , "blur(10px)"
-                            |> Html.Attributes.style "-webkit-backdrop-filter"
-                            |> htmlAttribute
-                        , "blur(10px)"
-                            |> Html.Attributes.style "backdrop-filter"
-                            |> htmlAttribute
                         ]
+                            ++ Blur.ten
 
                     _ ->
                         []
@@ -1685,7 +1687,13 @@ zoneButton ({ images, offset, zoneName, chosenZone, zoneDropdown } as model) =
         , Border.rounded 8
         , mouseDown [ Background.color Color.primary300 ]
         , mouseOver [ Background.color Color.primary200 ]
-        , el [ width fill, height fill, htmlAttribute <| Html.Attributes.id "zone-dropdown" ] none |> inFront
+        , el
+            [ width fill
+            , height fill
+            , Id.is "zone-dropdown"
+            ]
+            none
+            |> inFront
         , (if zoneDropdown == Just () then
             model |> zoneDropdownOptions
 
@@ -1768,8 +1776,13 @@ zoneDropdownOptions { offset, zoneName, chosenZone } =
         )
 
 
-themeButton : { model | backdrop : Backdrop, theme : Theme, images : Images } -> Element Msg
-themeButton ({ theme, images } as model) =
+themeButton :
+    { model
+        | theme : Theme
+        , images : Images
+    }
+    -> Element Msg
+themeButton { theme, images } =
     Input.button
         [ Region.description "theme button"
         , width <| px 44

@@ -16,7 +16,6 @@ import Element
         , centerY
         , el
         , height
-        , htmlAttribute
         , none
         , padding
         , paddingXY
@@ -31,10 +30,10 @@ import Element
 import Element.Border as Border
 import Element.Font as Font
 import Element.Region as Region
-import Html.Attributes
 import Sort.Dict as Dict
 import Utility.Color as Color
 import Utility.Glass as Glass
+import Utility.Id as Id
 import Utility.Image as Image
 
 
@@ -55,10 +54,10 @@ view ({ device, backdrop } as model) user =
         ([ Region.description "lend positions"
          , (case device of
                 Desktop ->
-                    760
+                    758
 
                 _ ->
-                    377
+                    375
            )
             |> px
             |> width
@@ -74,7 +73,7 @@ view ({ device, backdrop } as model) user =
          , Border.rounded 8
          , Border.width 1
          , Border.color Color.transparent100
-         , Html.Attributes.id "positions" |> htmlAttribute
+         , Id.is "positions"
          ]
             ++ Glass.background backdrop
         )

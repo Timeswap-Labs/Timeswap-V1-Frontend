@@ -730,10 +730,10 @@ view ({ device, backdrop } as model) blockchain (Transaction transaction) =
                      , height shrink
                      , (case device of
                             Desktop ->
-                                24
+                                23
 
                             _ ->
-                                16
+                                15
                        )
                         |> padding
                      , spacing 16

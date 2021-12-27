@@ -24,7 +24,6 @@ import Element
         , el
         , fill
         , height
-        , htmlAttribute
         , padding
         , paddingEach
         , paddingXY
@@ -39,7 +38,6 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input exposing (OptionState)
-import Html.Attributes
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Modal.Outside as Outside
@@ -47,6 +45,7 @@ import Modal.Settings.Tooltip exposing (Tooltip)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
+import Utility.Id as Id
 import Utility.Input as Input
 
 
@@ -529,7 +528,7 @@ slippageInput { slippage } =
           )
             |> Border.color
         , Border.rounded 8
-        , htmlAttribute <| Html.Attributes.id "slippage"
+        , Id.is "slippage"
         ]
         [ Input.text
             [ width fill
@@ -624,7 +623,7 @@ deadlineInput { deadline } =
           )
             |> Border.color
         , Border.rounded 8
-        , htmlAttribute <| Html.Attributes.id "deadline"
+        , Id.is "deadline"
         ]
         [ Input.text
             [ width fill
