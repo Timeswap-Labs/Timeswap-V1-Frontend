@@ -4,31 +4,31 @@
   "convenience": "0x3b91607a09e8b461d7e31871e6c8480a3442cfae",
   "erc20s": [
     {
-      "address": "0x7d0690ac7112148E6084909b19CcFD125d55d5C9",
+      "address": "0x7d0690ac7112148e6084909b19ccfd125d55d5c9",
       "name": "TS Dai Stablecoin",
       "symbol": "TS-DAI",
       "decimals": 18
     },
     {
-      "address": "0x408A2da72B14cA97e824bAAfD9c0ffBa63d6cdcd",
+      "address": "0x408a2da72b14ca97e824baafd9c0ffba63d6cdcd",
       "name": "TS Matic Token",
       "symbol": "TS-MATIC",
       "decimals": 18
     },
     {
-      "address": "0xAFB3BE940C1499750d1292D28820c7E479C9Dbd0",
+      "address": "0xafb3be940c1499750d1292d28820c7e479c9dbd0",
       "name": "TS Ethereum",
       "symbol": "TS-ETH",
       "decimals": 18
     },
     {
-      "address": "0x3C067c8f7ecb674c6329EAcb0B155b6c65A8e90C",
+      "address": "0x3c067c8f7ecb674c6329eacb0b155b6c65a8e90c",
       "name": "TS Shiba-Inu",
       "symbol": "TS-SHIB",
       "decimals": 18
     },
     {
-      "address": "0xDB6433fd6b05991Bc1EC2BDb8c9b1AdD577F37DA",
+      "address": "0xdb6433fd6b05991bc1ec2bdb8c9b1add577f37da",
       "name": "TS Dogecoin",
       "symbol": "TS-DOGE",
       "decimals": 18
