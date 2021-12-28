@@ -32,7 +32,7 @@ view { backdrop } { onClick, modal } =
     el
         [ width fill
         , height fill
-        , paddingXY 0 80
+        , paddingXY 0 100
         , el
             ([ width fill
              , height fill

@@ -875,6 +875,14 @@ modalEffects effect model =
                 |> Navigation.pushUrl model.key
             )
 
+        Modal.ChangeChain chain ->
+            Blockchain.initGivenChain chain
+                |> Tuple.mapBoth
+                    (\blockchain ->
+                        { model | blockchain = Supported blockchain }
+                    )
+                    (Cmd.map BlockchainMsg)
+
 
 animator : Animator Model
 animator =
@@ -985,11 +993,11 @@ viewHtml model =
         { options = options }
         [ width <| minimum 375 fill
         , height shrink
+        , header model |> inFront
+        , footer model |> inFront
         , model.modal
             |> fading model
             |> inFront
-        , header model |> inFront
-        , footer model |> inFront
         , Font.family [ Font.typeface "Supreme" ]
         , (case model.theme of
             Theme.Light ->

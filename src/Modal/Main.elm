@@ -19,6 +19,7 @@ import Blockchain.Main exposing (Blockchain)
 import Blockchain.User.Main as User
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Data.Backdrop exposing (Backdrop)
+import Data.Chain exposing (Chain)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
@@ -80,6 +81,7 @@ type Effect
     | RemoveAll
     | InputPool Pool
     | ClearTxns
+    | ChangeChain Chain
 
 
 initConnect : Support User.NotSupported Blockchain -> Modal
@@ -165,11 +167,11 @@ update model msg modal =
                    )
 
         ( ChainListMsg chainListMsg, ChainList, _ ) ->
-            ChainList.update chainListMsg
-                |> (\( updated, cmd ) ->
-                        ( updated |> Maybe.map never
+            ChainList.update model.blockchain chainListMsg
+                |> (\( updated, cmd, maybeEffect ) ->
+                        ( updated |> Maybe.map (\_ -> ChainList)
                         , cmd |> Cmd.map ChainListMsg
-                        , Nothing
+                        , maybeEffect |> Maybe.map chainListEffect
                         )
                    )
 
@@ -237,6 +239,13 @@ settingsEffect effect =
 
         Settings.UpdatePriceFeed priceFeed ->
             UpdatePriceFeed priceFeed
+
+
+chainListEffect : ChainList.Effect -> Effect
+chainListEffect effect =
+    case effect of
+        ChainList.ChangeChain chain ->
+            ChangeChain chain
 
 
 tokenListEffect : TokenList.Effect -> Effect

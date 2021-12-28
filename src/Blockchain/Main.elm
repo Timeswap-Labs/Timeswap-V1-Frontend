@@ -3,6 +3,7 @@ module Blockchain.Main exposing
     , Msg
     , init
     , initDefault
+    , initGivenChain
     , receiveUser
     , receiveUserInit
     , subscriptions
@@ -82,14 +83,17 @@ initDefault : Chains -> ( Blockchain, Cmd Msg )
 initDefault chains =
     chains
         |> Chains.head
-        |> (\chain ->
-                ( { chain = chain
-                  , user = Nothing
-                  }
-                    |> Blockchain
-                , Cmd.none |> Debug.log "cmd"
-                )
-           )
+        |> initGivenChain
+
+
+initGivenChain : Chain -> ( Blockchain, Cmd Msg )
+initGivenChain chain =
+    ( { chain = chain
+      , user = Nothing
+      }
+        |> Blockchain
+    , Cmd.none |> Debug.log "cmd"
+    )
 
 
 update : Msg -> Blockchain -> ( Blockchain, Cmd Msg )

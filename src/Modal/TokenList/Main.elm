@@ -472,7 +472,6 @@ view ({ backdrop } as model) blockchain ((Modal { state, tooltip }) as modal) =
                  , height <| minimum 360 shrink
                  , centerX
                  , centerY
-                 , padding 0
                  , Border.color Color.transparent100
                  , Border.width 1
                  , Border.rounded 8

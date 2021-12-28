@@ -1,11 +1,12 @@
 port module Modal.ChainList.Main exposing
-    ( Msg
+    ( Effect(..)
+    , Msg
     , update
     , view
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User exposing (User)
+import Blockchain.User.Main as User
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain as Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
@@ -49,19 +50,57 @@ type Msg
     | Exit
 
 
-update : Msg -> ( Maybe Never, Cmd Msg )
-update msg =
+type Effect
+    = ChangeChain Chain
+
+
+update :
+    Support User.NotSupported Blockchain
+    -> Msg
+    -> ( Maybe (), Cmd Msg, Maybe Effect )
+update support msg =
     case msg of
         ClickChain chain ->
-            ( Nothing
-            , chain
-                |> Chain.encode
-                |> changeChain
-            )
+            case support of
+                Supported blockchain ->
+                    case
+                        ( blockchain |> Blockchain.toUser
+                        , (blockchain |> Blockchain.toChain) == chain
+                        )
+                    of
+                        ( _, True ) ->
+                            ( Just ()
+                            , Cmd.none
+                            , Nothing
+                            )
+
+                        ( Just _, False ) ->
+                            ( Nothing
+                            , chain
+                                |> Chain.encode
+                                |> changeChain
+                            , Nothing
+                            )
+
+                        ( Nothing, False ) ->
+                            ( Nothing
+                            , Cmd.none
+                            , ChangeChain chain
+                                |> Just
+                            )
+
+                _ ->
+                    ( Nothing
+                    , chain
+                        |> Chain.encode
+                        |> changeChain
+                    , Nothing
+                    )
 
         Exit ->
             ( Nothing
             , Cmd.none
+            , Nothing
             )
 
 
