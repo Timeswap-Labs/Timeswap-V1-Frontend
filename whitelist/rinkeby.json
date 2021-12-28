@@ -1,101 +1,79 @@
 {
   "chain": "rinkeby",
   "chainId": "0x4",
-  "convenience": "0xef7d805cda3bccb3516d582f6ef9554d3e1edee5",
+  "convenience": "0x3b91607a09e8b461d7e31871e6c8480a3442cfae",
   "erc20s": [
     {
-      "address": "0xb6d18698d77ca8b9c916f04e542b55f19644bc96",
-      "name": "TS Dogecoin",
-      "symbol": "TS-DOGE",
+      "address": "0x7d0690ac7112148E6084909b19CcFD125d55d5C9",
+      "name": "TS Dai Stablecoin",
+      "symbol": "TS-DAI",
       "decimals": 18
     },
     {
-      "address": "0xb0d4159a32d6c81c485a6359caafaaa155afd4c0",
+      "address": "0x408A2da72B14cA97e824bAAfD9c0ffBa63d6cdcd",
+      "name": "TS Matic Token",
+      "symbol": "TS-MATIC",
+      "decimals": 18
+    },
+    {
+      "address": "0xAFB3BE940C1499750d1292D28820c7E479C9Dbd0",
+      "name": "TS Ethereum",
+      "symbol": "TS-ETH",
+      "decimals": 18
+    },
+    {
+      "address": "0x3C067c8f7ecb674c6329EAcb0B155b6c65A8e90C",
       "name": "TS Shiba-Inu",
       "symbol": "TS-SHIB",
       "decimals": 18
     },
     {
-      "address": "0xff53530367e30395e78a6b772935259ee67c3568",
-      "name": "TS USDC",
-      "symbol": "TS-USDC",
-      "decimals": 18
-    },
-    {
-      "address": "0x218ccf91103dbfbaec3bd26ce6faa6236c62fbf1",
-      "name": "TS Ethereum",
-      "symbol": "TS-ETH",
+      "address": "0xDB6433fd6b05991Bc1EC2BDb8c9b1AdD577F37DA",
+      "name": "TS Dogecoin",
+      "symbol": "TS-DOGE",
       "decimals": 18
     }
   ],
   "pairs": [
     {
-      "pair": "0xf5fd04dda2a27718bfb7f9851405fa1a3042ed4e",
-      "asset": "0x218ccf91103dbfbaec3bd26ce6faa6236c62fbf1",
-      "collateral": "0xb6d18698d77ca8b9c916f04e542b55f19644bc96",
+      "pair": "0xcf9f072a1680b78f004acc9eb99822519943c189",
+      "asset": "0x7d0690ac7112148e6084909b19ccfd125d55d5c9",
+      "collateral": "0xafb3be940c1499750d1292d28820c7e479c9dbd0",
       "pools": [
         {
-          "maturity": 1639663200,
-          "liquidity": "0xa4c5ffb336eb4ff7135e1ab0b3c49eec67753e9a",
-          "bond": "0x618ac0eff22d27c3e575fa6334a268c7b0a44f91",
-          "insurance": "0x9be7511b7978ac3afd71b96c0c9a3cdef54699e7",
-          "collateralizedDebt": "0xa0851552346decb9e2d927b54be933dd3ed3ecea"
+          "maturity": 1640703600,
+          "liquidity": "0xcdcb7673b61cf1fedd41c68fc867786fc4dd0835",
+          "bond": "0xda5878b9c5994ebd182d4b8ee84eda11f05f6874",
+          "insurance": "0xef429282bdd5442b18ee96b031e34b5732e2964b",
+          "collateralizedDebt": "0x24bceb8bbefcd017474d5b4e7b8b8d1ddc1cb65d"
         }
       ]
     },
     {
-      "pair": "0x819aeeeb8d38afe3185a27ac6f69c177c11a3de6",
-      "asset": "0xb6d18698d77ca8b9c916f04e542b55f19644bc96",
-      "collateral": "0x218ccf91103dbfbaec3bd26ce6faa6236c62fbf1",
+      "pair": "0xb51b288a7d8cfe692c75f74df9f4bcf6c47e016a",
+      "asset": "0x7d0690ac7112148e6084909b19ccfd125d55d5c9",
+      "collateral": "0x408a2da72b14ca97e824baafd9c0ffba63d6cdcd",
       "pools": [
         {
-          "maturity": 1639663200,
-          "liquidity": "0xd491d8c6421694bbc5bd26a60e154372473147ad",
-          "bond": "0x3ec6d859b0014ba7a9c5adc5b5ca60f9dc861087",
-          "insurance": "0x2410bf50e37fbc504995777d8d3604384d8f1464",
-          "collateralizedDebt": "0x1883c3671eb296d03334a9030a3ae37620256771"
+          "maturity": 1640703600,
+          "liquidity": "0x547c4ed006b4d63cd5f57fd080afa1dc4408bbde",
+          "bond": "0xbe81536e99d975d21879a67f2b557da5db4a75a7",
+          "insurance": "0x45723af92bc88e26a0c709fa5d1da48ca0e30dc9",
+          "collateralizedDebt": "0xfc2412c1d6598107754ee07f95b36c950bd2244d"
         }
       ]
     },
     {
-      "pair": "0x77f1cc2d5477740b065581553df53edab2fb641c",
-      "asset": "0xb6d18698d77ca8b9c916f04e542b55f19644bc96",
-      "collateral": "0xb0d4159a32d6c81c485a6359caafaaa155afd4c0",
+      "pair": "0x5b7eec7731c5cdc7cada13915c8ab52ddb890d81",
+      "asset": "0x3c067c8f7ecb674c6329eacb0b155b6c65a8e90c",
+      "collateral": "0xdb6433fd6b05991bc1ec2bdb8c9b1add577f37da",
       "pools": [
         {
-          "maturity": 1639663200,
-          "liquidity": "0x3b0311ce37e185e6dd3c821a4dbe5af698ffb05d",
-          "bond": "0x1a53ba816f9ac4addb8939f5c6acce2d49aa00a6",
-          "insurance": "0x46c1c2028d7979a08df4bd1487dfd9b9b55d07b3",
-          "collateralizedDebt": "0x1210a461d5c8754a13088cf999e2d17ceba144bc"
-        }
-      ]
-    },
-    {
-      "pair": "0x223cdc0b7cee06c2a6d20559446b8ee1abff1da8",
-      "asset": "0xb0d4159a32d6c81c485a6359caafaaa155afd4c0",
-      "collateral": "0xb6d18698d77ca8b9c916f04e542b55f19644bc96",
-      "pools": [
-        {
-          "maturity": 1639663200,
-          "liquidity": "0x187f5ace0a57834a34f995dc432a6167c1bfc4be",
-          "bond": "0x782dd48e8467d22fde8d220ae7971327182117eb",
-          "insurance": "0xc7237d06b15e47dbc2b51358b9d59901b57418cf",
-          "collateralizedDebt": "0x338cf8c892bb1b88020293a67beb5f2616ccd076"
-        }
-      ]
-    },
-    {
-      "pair": "0xc50270e9208db12e8c6590f29aaff74545ab7332",
-      "asset": "0xff53530367e30395e78a6b772935259ee67c3568",
-      "collateral": "0x218ccf91103dbfbaec3bd26ce6faa6236c62fbf1",
-      "pools": [
-        {
-          "maturity": 1639663200,
-          "liquidity": "0xdece604d490a4134100169f23eab5e9ec23453bb",
-          "bond": "0xb1765a57ac762c256579634149ca35edb12e476e",
-          "insurance": "0xbc50dedcd9245e0c02405ea3edf6c4f2e88d6c13",
-          "collateralizedDebt": "0x1ee5c747164967cec80a4fa5a2c88f29f03a6e2f"
+          "maturity": 1640703600,
+          "liquidity": "0x0849cc1aa4cdc31e18c8df3464f8382a441a1455",
+          "bond": "0x04032d567afcec4067badfd03a37e9ae6e061649",
+          "insurance": "0x010b8c2d9b27cb45a8a1ea165160c78e71c73fb0",
+          "collateralizedDebt": "0x7cbb33863ed121a82f3e34ca620ec8aa5c3634db"
         }
       ]
     }
