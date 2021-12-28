@@ -393,40 +393,40 @@ buttons msgs ({ user } as model) =
         , centerY
         , spacing 10
         ]
-        ((user
-            |> User.toChain
-            |> (\chain ->
-                    case chain of
-                        Mainnet ->
-                            []
+        -- ((user
+        --     |> User.toChain
+        --     |> (\chain ->
+        --             case chain of
+        --                 Mainnet ->
+        --                     []
+        --                 Rinkeby ->
+        --                     [ case user of
+        --                         Success { address } ->
+        --                             if
+        --                                 Address.participantAddresses
+        --                                     |> List.member address
+        --                             then
+        --                                 swapButton model
+        --                             else
+        --                                 none
+        --                         _ ->
+        --                             none
+        --                     ]
+        --        )
+        --  )
+        [ case user of
+            Success successUser ->
+                walletButton model successUser
 
-                        Rinkeby ->
-                            [ case user of
-                                Success { address } ->
-                                    if
-                                        Address.participantAddresses
-                                            |> List.member address
-                                    then
-                                        swapButton model
+            _ ->
+                connectButton model
+        , settingsButton model
+        , linksButton msgs model
+        ]
 
-                                    else
-                                        none
 
-                                _ ->
-                                    none
-                            ]
-               )
-         )
-            ++ [ case user of
-                    Success successUser ->
-                        walletButton model successUser
 
-                    _ ->
-                        connectButton model
-               , settingsButton model
-               , linksButton msgs model
-               ]
-        )
+-- )
 
 
 swapButton :

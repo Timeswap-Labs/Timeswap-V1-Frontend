@@ -423,34 +423,31 @@ view msgs ({ device, user } as model) service =
                 (Lazy.lazy4 Settings.view msgs model settingsService settings)
                 |> (Element.map << Or.mapEither) SettingsMsg
 
-        ( Swap swap, Success successUser ) ->
-            if
-                Address.participantAddresses
-                    |> List.member successUser.address
-            then
-                el
-                    [ width fill
-                    , height fill
-                    , if Device.isPhone device then
-                        paddingEach
-                            { top = 160
-                            , right = 0
-                            , bottom = 0
-                            , left = 0
-                            }
-
-                      else
-                        padding 80
-                    , scrollbarY
-                    , Background.color Color.modal
-                    , Font.family Typography.supreme
-                    ]
-                    (Lazy.lazy3 Swap.view model successUser swap)
-                    |> Element.map SwapMsg
-                    |> Element.map Either
-
-            else
-                none
-
+        -- ( Swap swap, Success successUser ) ->
+        --     if
+        --         Address.participantAddresses
+        --             |> List.member successUser.address
+        --     then
+        --         el
+        --             [ width fill
+        --             , height fill
+        --             , if Device.isPhone device then
+        --                 paddingEach
+        --                     { top = 160
+        --                     , right = 0
+        --                     , bottom = 0
+        --                     , left = 0
+        --                     }
+        --               else
+        --                 padding 80
+        --             , scrollbarY
+        --             , Background.color Color.modal
+        --             , Font.family Typography.supreme
+        --             ]
+        --             (Lazy.lazy3 Swap.view model successUser swap)
+        --             |> Element.map SwapMsg
+        --             |> Element.map Either
+        --     else
+        --         none
         _ ->
             none
