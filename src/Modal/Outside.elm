@@ -10,8 +10,10 @@ import Element
         , el
         , fill
         , height
+        , inFront
         , none
         , paddingXY
+        , scrollbars
         , shrink
         , width
         )
@@ -32,11 +34,9 @@ view { backdrop } { onClick, modal } =
     el
         [ width fill
         , height fill
-        , paddingXY 0 100
         , el
             ([ width fill
              , height fill
-             , Events.onClick onClick
              ]
                 ++ (case backdrop of
                         Backdrop.Supported ->
@@ -49,12 +49,21 @@ view { backdrop } { onClick, modal } =
             )
             none
             |> behindContent
-        ]
-        (el
-            [ width shrink
-            , height shrink
-            , centerX
-            , centerY
+        , el
+            [ width fill
+            , height fill
+            , paddingXY 0 100
+            , scrollbars
+            , Events.onClick onClick
             ]
-            modal
-        )
+            (el
+                [ width shrink
+                , height shrink
+                , centerX
+                , centerY
+                ]
+                modal
+            )
+            |> inFront
+        ]
+        none
