@@ -56,6 +56,8 @@ import Element
         , mouseDown
         , mouseOver
         , moveDown
+        , moveLeft
+        , moveUp
         , noStaticStyleSheet
         , none
         , padding
@@ -994,7 +996,7 @@ viewHtml model =
         [ width <| minimum 375 fill
         , height shrink
         , header model |> inFront
-        , footer model |> inFront
+        , scrollButton model |> inFront
         , model.modal
             |> fading model
             |> inFront
@@ -1093,113 +1095,136 @@ header :
     }
     -> Element Msg
 header ({ device, backdrop } as model) =
-    row
-        [ Region.navigation
-        , width fill
-        , height <| px 80
-        , (case device of
-            Phone ->
-                12
-
-            _ ->
-                76
-          )
-            |> spacing
-        , paddingXY 16 0
-        , Animator.Css.div model.headerGlass
-            [ Animator.Css.opacity
-                (\headerGlass ->
-                    case headerGlass of
-                        Browser.Events.Visible ->
-                            Animator.at 1
-
-                        Browser.Events.Hidden ->
-                            Animator.at 0
-                )
-            ]
-            ([ Length.widthFill
-             , Length.heightFill
-             ]
-                ++ (case backdrop of
-                        Backdrop.Supported ->
-                            Blur.tenHtml
-
-                        Backdrop.NotSupported ->
-                            []
-                   )
-            )
-            [ layoutWith { options = noStaticStyleSheet :: options }
-                [ width fill
-                , height fill
-                , Border.widthEach
-                    { top = 0
-                    , right = 0
-                    , bottom = 1
-                    , left = 0
-                    }
-                , Border.color Color.transparent100
-                , (case backdrop of
-                    Backdrop.Supported ->
-                        Color.background
-
-                    Backdrop.NotSupported ->
-                        Color.solid
-                  )
-                    |> Background.color
-                ]
-                none
-            ]
-            |> html
-            |> behindContent
-        ]
-        [ logo model |> map never
-        , case device of
-            Phone ->
-                none
-
-            _ ->
-                tabs model |> map never
-        , row
-            [ width shrink
-            , height shrink
-            , spacing 10
-            , alignRight
-            , centerY
-            ]
-            [ chainListButton model
-            , connectButton model
-            , zoneButton model
-            , themeButton model
-            ]
-        ]
-
-
-footer :
-    { model
-        | device : Device
-        , scrollToPositions : Timeline Visibility
-        , backdrop : Backdrop
-        , images : Images
-        , page : Page
-    }
-    -> Element Msg
-footer model =
-    row
-        [ Region.footer
-        , width fill
-        , height <| px 80
-        , alignBottom
-        , spacing 12
-        , paddingXY 16 0
+    column
+        [ width fill
+        , height shrink
         , Pointer.off
         ]
-        [ case model.device of
+        [ column
+            [ width fill
+            , height shrink
+            , Pointer.on
+            , Animator.Css.div model.headerGlass
+                [ Animator.Css.opacity
+                    (\headerGlass ->
+                        case headerGlass of
+                            Browser.Events.Visible ->
+                                Animator.at 1
+
+                            Browser.Events.Hidden ->
+                                Animator.at 0
+                    )
+                ]
+                ([ Length.widthFill
+                 , Length.heightFill
+                 ]
+                    ++ (case backdrop of
+                            Backdrop.Supported ->
+                                Blur.tenHtml
+
+                            Backdrop.NotSupported ->
+                                []
+                       )
+                )
+                [ layoutWith { options = noStaticStyleSheet :: options }
+                    [ width fill
+                    , height fill
+                    , Border.widthEach
+                        { top = 0
+                        , right = 0
+                        , bottom = 1
+                        , left = 0
+                        }
+                    , Border.color Color.transparent100
+                    , (case backdrop of
+                        Backdrop.Supported ->
+                            Color.background
+
+                        Backdrop.NotSupported ->
+                            Color.solid
+                      )
+                        |> Background.color
+                    ]
+                    none
+                ]
+                |> html
+                |> behindContent
+            ]
+            [ warning model
+            , row
+                [ Region.navigation
+                , width fill
+                , height <| px 80
+                , (case device of
+                    Desktop ->
+                        76
+
+                    _ ->
+                        12
+                  )
+                    |> spacing
+                , paddingXY 16 0
+                ]
+                [ logo model |> map never
+                , case device of
+                    Phone ->
+                        none
+
+                    _ ->
+                        tabs model |> map never
+                , row
+                    [ width shrink
+                    , height shrink
+                    , spacing 10
+                    , alignRight
+                    , centerY
+                    ]
+                    [ chainListButton model
+                    , connectButton model
+                    , zoneButton model
+                    , themeButton model
+                    ]
+                ]
+            ]
+        , case device of
             Phone ->
-                tabs model |> map never
+                el
+                    [ width fill
+                    , height <| px 80
+                    ]
+                    (tabs model |> map never)
 
             _ ->
                 none
-        , scrollButton model
+        ]
+
+
+warning : { model | images : Images } -> Element msg
+warning { images } =
+    row
+        [ width fill
+        , height shrink
+        , paddingXY 12 7
+        , Background.color Color.negative200
+        , spacing 6
+        ]
+        [ images
+            |> Image.info
+                [ width <| px 20
+                , height <| px 20
+                , centerX
+                , centerY
+                ]
+        , el
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.size 14
+            , paddingXY 0 3
+            , Font.color Color.transparent500
+            ]
+            (text "We are in alpha. Use tokens you are willing to lose.")
         ]
 
 
@@ -1216,8 +1241,9 @@ scrollButton ({ device, backdrop, images } as model) =
         [ width shrink
         , height shrink
         , alignRight
-        , centerY
-        , Pointer.on
+        , alignBottom
+        , moveUp 16
+        , moveLeft 16
         ]
         (Animator.Css.div model.scrollToPositions
             [ Animator.Css.opacity
@@ -1276,20 +1302,15 @@ scrollButton ({ device, backdrop, images } as model) =
                             , centerY
                             , spacing 8
                             ]
-                            [ case device of
-                                Phone ->
-                                    none
-
-                                _ ->
-                                    el
-                                        [ width shrink
-                                        , height shrink
-                                        , centerX
-                                        , centerY
-                                        , Font.color Color.light100
-                                        , Font.size 16
-                                        ]
-                                        (text "Your Positions")
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , centerX
+                                , centerY
+                                , Font.color Color.light100
+                                , Font.size 16
+                                ]
+                                (text "Your Positions")
                             , images
                                 |> Image.discloser
                                     [ width <| px 11
@@ -1361,6 +1382,7 @@ tabs ({ device, backdrop } as model) =
 
             _ ->
                 alignLeft
+         , centerY
          , padding 4
          , spacing 4
          , Background.color Color.primary100
@@ -1846,21 +1868,21 @@ body ({ device, page } as model) =
         , height shrink
         , (case device of
             Desktop ->
-                { top = 100
+                { top = 134
                 , right = 80
                 , bottom = 80
                 , left = 80
                 }
 
             Tablet ->
-                { top = 100
+                { top = 134
                 , right = 40
                 , bottom = 80
                 , left = 40
                 }
 
             Phone ->
-                { top = 100
+                { top = 194
                 , right = 0
                 , bottom = 80
                 , left = 0
@@ -1878,13 +1900,35 @@ body ({ device, page } as model) =
 
 
 notSupportedBody :
-    { model | backdrop : Backdrop, images : Images }
+    { model | device : Device, backdrop : Backdrop, images : Images }
     -> Element Msg
-notSupportedBody { backdrop, images } =
+notSupportedBody { device, backdrop, images } =
     column
         ([ width <| px 375
          , height shrink
-         , padding 24
+         , (case device of
+                Desktop ->
+                    { top = 134
+                    , right = 80
+                    , bottom = 80
+                    , left = 80
+                    }
+
+                Tablet ->
+                    { top = 134
+                    , right = 40
+                    , bottom = 80
+                    , left = 40
+                    }
+
+                Phone ->
+                    { top = 194
+                    , right = 0
+                    , bottom = 80
+                    , left = 0
+                    }
+           )
+            |> paddingEach
          , spacing 36
          , centerX
          , centerY

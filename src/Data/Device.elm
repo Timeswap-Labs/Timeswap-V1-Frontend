@@ -9,7 +9,7 @@ type Device
 
 fromWidth : Int -> Device
 fromWidth width =
-    if width < 875 then
+    if width < 675 then
         Phone
 
     else if width < 1185 then

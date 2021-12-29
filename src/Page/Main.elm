@@ -492,84 +492,37 @@ view model blockchain page =
         , centerX
         , alignTop
         ]
-        (warning model
-            :: (case page of
-                    LendPage { transaction } ->
-                        [ transaction
-                            |> Lend.view model blockchain
-                            |> map LendMsg
-                        , blockchain
-                            |> Blockchain.toUser
-                            |> Maybe.map (Claims.view model)
-                            |> (Maybe.map << map) ClaimsMsg
-                            |> Maybe.withDefault none
-                        ]
+        (case page of
+            LendPage { transaction } ->
+                [ transaction
+                    |> Lend.view model blockchain
+                    |> map LendMsg
+                , blockchain
+                    |> Blockchain.toUser
+                    |> Maybe.map (Claims.view model)
+                    |> (Maybe.map << map) ClaimsMsg
+                    |> Maybe.withDefault none
+                ]
 
-                    BorrowPage { transaction } ->
-                        [ transaction
-                            |> Borrow.view model blockchain
-                            |> map BorrowMsg
-                        , blockchain
-                            |> Blockchain.toUser
-                            |> Maybe.map (Dues.view model)
-                            |> (Maybe.map << map) DuesMsg
-                            |> Maybe.withDefault none
-                        ]
+            BorrowPage { transaction } ->
+                [ transaction
+                    |> Borrow.view model blockchain
+                    |> map BorrowMsg
+                , blockchain
+                    |> Blockchain.toUser
+                    |> Maybe.map (Dues.view model)
+                    |> (Maybe.map << map) DuesMsg
+                    |> Maybe.withDefault none
+                ]
 
-                    LiquidityPage { transaction } ->
-                        [ transaction
-                            |> Liquidity.view model blockchain
-                            |> map LiquidityMsg
-                        , blockchain
-                            |> Blockchain.toUser
-                            |> Maybe.map (Liquidities.view model)
-                            |> (Maybe.map << map) LiquiditiesMsg
-                            |> Maybe.withDefault none
-                        ]
-               )
-        )
-
-
-warning :
-    { model
-        | device : Device
-        , backdrop : Backdrop
-    }
-    -> Element msg
-warning { device, backdrop } =
-    el
-        ([ Region.description "borrow positions"
-         , (case device of
-                Desktop ->
-                    758
-
-                _ ->
-                    375
-           )
-            |> px
-            |> width
-         , height shrink
-         , (case device of
-                Desktop ->
-                    24
-
-                _ ->
-                    16
-           )
-            |> padding
-         , Border.rounded 8
-         , Border.width 1
-         , Border.color Color.warning100
-         ]
-            ++ Glass.warning backdrop
-        )
-        (paragraph
-            [ width fill
-            , height fill
-            , Font.center
-            , Font.size 14
-            , paddingXY 0 3
-            , Font.color Color.warning400
-            ]
-            [ text "Timeswap is in alpha. Only transact tokens you are willing to lose." ]
+            LiquidityPage { transaction } ->
+                [ transaction
+                    |> Liquidity.view model blockchain
+                    |> map LiquidityMsg
+                , blockchain
+                    |> Blockchain.toUser
+                    |> Maybe.map (Liquidities.view model)
+                    |> (Maybe.map << map) LiquiditiesMsg
+                    |> Maybe.withDefault none
+                ]
         )
