@@ -1099,104 +1099,88 @@ header ({ device, backdrop } as model) =
     column
         [ width fill
         , height shrink
-        , Pointer.off
-        ]
-        [ column
-            [ width fill
-            , height shrink
-            , Pointer.on
-            , Animator.Css.div model.headerGlass
-                [ Animator.Css.opacity
-                    (\headerGlass ->
-                        case headerGlass of
-                            Browser.Events.Visible ->
-                                Animator.at 1
+        , Pointer.on
+        , Animator.Css.div model.headerGlass
+            [ Animator.Css.opacity
+                (\headerGlass ->
+                    case headerGlass of
+                        Browser.Events.Visible ->
+                            Animator.at 1
 
-                            Browser.Events.Hidden ->
-                                Animator.at 0
-                    )
-                ]
-                ([ Length.widthFill
-                 , Length.heightFill
-                 ]
-                    ++ (case backdrop of
-                            Backdrop.Supported ->
-                                Blur.tenHtml
-
-                            Backdrop.NotSupported ->
-                                []
-                       )
+                        Browser.Events.Hidden ->
+                            Animator.at 0
                 )
-                [ layoutWith { options = noStaticStyleSheet :: options }
-                    [ width fill
-                    , height fill
-                    , Border.widthEach
-                        { top = 0
-                        , right = 0
-                        , bottom = 1
-                        , left = 0
-                        }
-                    , Border.color Color.transparent100
-                    , (case backdrop of
+            ]
+            ([ Length.widthFill
+             , Length.heightFill
+             ]
+                ++ (case backdrop of
                         Backdrop.Supported ->
-                            Color.background
+                            Blur.tenHtml
 
                         Backdrop.NotSupported ->
-                            Color.solid
-                      )
-                        |> Background.color
-                    ]
-                    none
-                ]
-                |> html
-                |> behindContent
-            ]
-            [ warning model
-            , row
-                [ Region.navigation
-                , width fill
-                , height <| px 80
-                , (case device of
-                    Desktop ->
-                        76
+                            []
+                   )
+            )
+            [ layoutWith { options = noStaticStyleSheet :: options }
+                [ width fill
+                , height fill
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.color Color.transparent100
+                , (case backdrop of
+                    Backdrop.Supported ->
+                        Color.background
 
-                    _ ->
-                        12
+                    Backdrop.NotSupported ->
+                        Color.solid
                   )
-                    |> spacing
-                , paddingXY 16 0
+                    |> Background.color
                 ]
-                [ logo model |> map never
-                , case device of
-                    Phone ->
-                        none
+                none
+            ]
+            |> html
+            |> behindContent
+        ]
+        [ warning model
+        , row
+            [ Region.navigation
+            , width fill
+            , height <| px 80
+            , (case device of
+                Desktop ->
+                    76
 
-                    _ ->
-                        tabs model |> map never
-                , row
-                    [ width shrink
-                    , height shrink
-                    , spacing 10
-                    , alignRight
-                    , centerY
-                    ]
-                    [ chainListButton model
-                    , connectButton model
-                    , zoneButton model
-                    , themeButton model
-                    ]
+                _ ->
+                    12
+              )
+                |> spacing
+            , paddingXY 16 0
+            ]
+            [ logo model |> map never
+            , case device of
+                Phone ->
+                    none
+
+                _ ->
+                    tabs model |> map never
+            , row
+                [ width shrink
+                , height shrink
+                , spacing 10
+                , alignRight
+                , centerY
+                ]
+                [ chainListButton model
+                , connectButton model
+                , zoneButton model
+                , themeButton model
                 ]
             ]
-        , case device of
-            Phone ->
-                el
-                    [ width fill
-                    , height <| px 80
-                    ]
-                    (tabs model |> map never)
-
-            _ ->
-                none
         ]
 
 
@@ -1864,7 +1848,7 @@ body :
     }
     -> Element Msg
 body ({ device, page } as model) =
-    el
+    column
         [ Region.mainContent
         , width fill
         , height shrink
@@ -1884,53 +1868,37 @@ body ({ device, page } as model) =
                 }
 
             Phone ->
-                { top = 194
+                { top = 134
                 , right = 0
                 , bottom = 80
                 , left = 0
                 }
           )
             |> paddingEach
+        , spacing 20
         ]
-        (case model.blockchain of
+        [ case device of
+            Phone ->
+                tabs model |> map never
+
+            _ ->
+                none
+        , case model.blockchain of
             Supported blockchain ->
                 Page.view model blockchain page |> map PageMsg
 
             NotSupported _ ->
                 notSupportedBody model
-        )
+        ]
 
 
 notSupportedBody :
-    { model | device : Device, backdrop : Backdrop, images : Images }
+    { model | backdrop : Backdrop, images : Images }
     -> Element Msg
-notSupportedBody { device, backdrop, images } =
+notSupportedBody { backdrop, images } =
     column
         ([ width <| px 375
          , height shrink
-         , (case device of
-                Desktop ->
-                    { top = 134
-                    , right = 80
-                    , bottom = 80
-                    , left = 80
-                    }
-
-                Tablet ->
-                    { top = 134
-                    , right = 40
-                    , bottom = 80
-                    , left = 40
-                    }
-
-                Phone ->
-                    { top = 194
-                    , right = 0
-                    , bottom = 80
-                    , left = 0
-                    }
-           )
-            |> paddingEach
          , spacing 36
          , centerX
          , centerY
