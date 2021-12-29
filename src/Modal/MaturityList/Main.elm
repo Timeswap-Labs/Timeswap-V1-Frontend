@@ -21,6 +21,7 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Remote exposing (Remote(..))
+import Data.Theme exposing (Theme)
 import Data.Token as Token
 import Data.Web as Web exposing (Web)
 import Element
@@ -304,6 +305,7 @@ view :
         , images : Images
         , device : Device
         , priceFeed : PriceFeed
+        , theme : Theme
     }
     -> Modal
     -> Element Msg
@@ -612,10 +614,11 @@ maturityList :
         , offset : Offset
         , chosenZone : ChosenZone
         , priceFeed : PriceFeed
+        , theme : Theme
     }
     -> Modal
     -> Element Msg
-maturityList { images, time, offset, chosenZone, priceFeed } (Modal { pair, pools, tooltip, sorting }) =
+maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pair, pools, tooltip, sorting }) =
     column
         [ width fill
         , height <| minimum 295 shrink
@@ -680,6 +683,7 @@ maturityList { images, time, offset, chosenZone, priceFeed } (Modal { pair, pool
                                                     , offset = offset
                                                     , chosenZone = chosenZone
                                                     , maturity = maturity
+                                                    , theme = theme
                                                     }
                                                 ]
                                             ]

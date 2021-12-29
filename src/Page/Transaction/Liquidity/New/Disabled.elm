@@ -9,6 +9,7 @@ import Blockchain.User.Main as User
 import Data.Images exposing (Images)
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Element
     exposing
@@ -56,7 +57,7 @@ init =
 
 
 view :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -77,7 +78,7 @@ view model blockchain pool transaction =
 
 
 assetInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Token
     -> Transaction
@@ -128,7 +129,7 @@ assetInSection model blockchain asset { assetIn } =
 
 
 duesInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -169,7 +170,7 @@ duesInSection model blockchain pool transaction =
 
 
 debtInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> Transaction
     -> Element Never
@@ -196,7 +197,7 @@ debtInSection model asset { debtIn } =
 
 
 collateralInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Token
     -> Transaction

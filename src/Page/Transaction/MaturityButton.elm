@@ -4,6 +4,7 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Images exposing (Images)
 import Data.Maturity exposing (Maturity)
 import Data.Offset exposing (Offset)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -28,9 +29,9 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Time exposing (Posix)
-import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Image as Image
+import Utility.ThemeColor as Color
 
 
 view :
@@ -39,6 +40,7 @@ view :
         , offset : Offset
         , chosenZone : ChosenZone
         , images : Images
+        , theme : Theme
     }
     ->
         { onPress : msg
@@ -49,7 +51,7 @@ view :
         , maturity : Maybe Maturity
         }
     -> Element msg
-view { time, offset, chosenZone, images } param =
+view { time, offset, chosenZone, images, theme } param =
     param.maturity
         |> Maybe.map
             (\maturity ->
@@ -57,7 +59,7 @@ view { time, offset, chosenZone, images } param =
                     [ Region.description "maturity button"
                     , width fill
                     , height <| px 44
-                    , Background.color Color.primary100
+                    , theme |> Color.primary100 |> Background.color
                     , Border.width 1
                     , Border.color Color.transparent100
                     , Border.rounded 8
@@ -79,10 +81,12 @@ view { time, offset, chosenZone, images } param =
                                 , offset = offset
                                 , chosenZone = chosenZone
                                 , maturity = maturity
+                                , theme = theme
                                 }
                             , images
                                 |> Image.discloser
-                                    [ width <| px 9
+                                    [ width <| px 11
+                                    , height <| px 7
                                     , alignRight
                                     , centerY
                                     ]
@@ -94,7 +98,7 @@ view { time, offset, chosenZone, images } param =
                 [ Region.description "maturity button"
                 , width fill
                 , height <| px 44
-                , Background.color Color.primary500
+                , theme |> Color.primary500 |> Background.color
                 , Border.rounded 8
                 ]
                 { onPress = param.onPress |> Just
@@ -135,14 +139,14 @@ view { time, offset, chosenZone, images } param =
             )
 
 
-disabled : Element Never
-disabled =
+disabled : Theme -> Element Never
+disabled theme =
     el
         [ width fill
         , height <| px 44
         , paddingXY 12 0
         , spacing 6
-        , Background.color Color.primary100
+        , theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
         (el

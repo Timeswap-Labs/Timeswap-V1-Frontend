@@ -14,7 +14,6 @@ import Data.Remote as Remote exposing (Remote(..))
 import Element
     exposing
         ( Element
-        , alignRight
         , centerY
         , column
         , el

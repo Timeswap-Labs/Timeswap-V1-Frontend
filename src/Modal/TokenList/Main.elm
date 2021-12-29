@@ -16,6 +16,7 @@ import Data.Chains as Chains exposing (Chains)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Remote as Remote exposing (Remote(..))
+import Data.Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
 import Data.Uint as Uint
@@ -459,7 +460,7 @@ get blockchain address =
 
 
 view :
-    { model | backdrop : Backdrop, images : Images, chains : Chains }
+    { model | backdrop : Backdrop, images : Images, chains : Chains, theme : Theme }
     -> Blockchain
     -> Modal
     -> Element Msg
@@ -581,7 +582,7 @@ modalHeader model (Modal { state }) =
 
 
 tokenList :
-    { model | backdrop : Backdrop, images : Images, chains : Chains }
+    { model | backdrop : Backdrop, images : Images, chains : Chains, theme : Theme }
     -> Blockchain
     -> Modal
     -> Element Msg
@@ -666,7 +667,7 @@ tokenList ({ chains } as model) blockchain ((Modal { state }) as modal) =
 
 
 tokenButton :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Modal
     -> Token
@@ -699,7 +700,7 @@ tokenButton model blockchain modal token =
 
 
 customToken :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Modal
     -> Token
@@ -773,11 +774,11 @@ customToken model blockchain ((Modal { state }) as modal) token =
 
 
 tokenSymbolAndName :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Modal
     -> Token
     -> Element Msg
-tokenSymbolAndName { images } (Modal { tooltip }) token =
+tokenSymbolAndName { images, theme } (Modal { tooltip }) token =
     row
         [ width fill
         , height fill
@@ -808,6 +809,7 @@ tokenSymbolAndName { images } (Modal { tooltip }) token =
                 , tooltip = Tooltip.Symbol token
                 , opened = tooltip
                 , token = token
+                , theme = theme
                 }
             )
         , el
@@ -957,8 +959,12 @@ manageTokensBtn { images } =
         )
 
 
-importTokenWarning : { model | images : Images } -> ERC20 -> Maybe Tooltip -> Element Msg
-importTokenWarning { images } erc20 tooltip =
+importTokenWarning :
+    { model | images : Images, theme : Theme }
+    -> ERC20
+    -> Maybe Tooltip
+    -> Element Msg
+importTokenWarning { images, theme } erc20 tooltip =
     column
         [ width fill
         , height shrink
@@ -1014,6 +1020,7 @@ importTokenWarning { images } erc20 tooltip =
                     , tooltip = Tooltip.Symbol (erc20 |> Token.ERC20)
                     , opened = tooltip
                     , token = erc20 |> Token.ERC20
+                    , theme = theme
                     }
                 )
             , el

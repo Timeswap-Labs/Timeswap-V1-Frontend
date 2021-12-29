@@ -1,6 +1,7 @@
 module Page.Transaction.Switch exposing (disabled, empty, view)
 
 import Data.Mode as Mode exposing (Mode)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -20,12 +21,13 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Utility.Color as Color
+import Utility.ThemeColor as Color
 
 
 view :
     { onChange : Mode -> msg
     , mode : Mode
+    , theme : Theme
     }
     -> Element msg
 view param =
@@ -34,7 +36,7 @@ view param =
         , height <| px 44
         , padding 4
         , spacing 16
-        , Background.color Color.primary100
+        , param.theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
         [ viewRecommended param
@@ -42,49 +44,50 @@ view param =
         ]
 
 
-disabled : Mode -> Element Never
-disabled mode =
+disabled : { mode : Mode, theme : Theme } -> Element Never
+disabled ({ mode, theme } as model) =
     row
         [ width fill
         , height <| px 44
         , padding 4
         , spacing 16
-        , Background.color Color.primary100
+        , theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
-        [ disabledRecommended mode
-        , disabledAdvanced mode
+        [ disabledRecommended model
+        , disabledAdvanced model
         ]
 
 
-empty : Element Never
-empty =
+empty : Theme -> Element Never
+empty theme =
     row
         [ width fill
         , height <| px 44
         , padding 4
         , spacing 16
-        , Background.color Color.primary100
+        , theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
-        [ emptyRecommended
-        , emptyAdvanced
+        [ emptyRecommended theme
+        , emptyAdvanced theme
         ]
 
 
 viewRecommended :
     { onChange : Mode -> msg
     , mode : Mode
+    , theme : Theme
     }
     -> Element msg
-viewRecommended { onChange, mode } =
+viewRecommended { onChange, mode, theme } =
     Input.button
         ([ width fill
          , height fill
          ]
             ++ (case mode of
                     Mode.Recommended ->
-                        [ Background.color Color.primary500
+                        [ theme |> Color.primary500 |> Background.color
                         , Border.rounded 4
                         ]
 
@@ -103,22 +106,26 @@ viewRecommended { onChange, mode } =
             el
                 [ centerX
                 , centerY
-                , Font.color Color.light100
+                , theme |> Color.light100 |> Font.color
                 , Font.size 14
                 ]
                 (text "Recommended")
         }
 
 
-disabledRecommended : Mode -> Element Never
-disabledRecommended mode =
+disabledRecommended :
+    { mode : Mode
+    , theme : Theme
+    }
+    -> Element Never
+disabledRecommended { mode, theme } =
     el
         ([ width fill
          , height fill
          ]
             ++ (case mode of
                     Mode.Recommended ->
-                        [ Background.color Color.primary500
+                        [ theme |> Color.primary500 |> Background.color
                         , Border.rounded 4
                         ]
 
@@ -129,25 +136,25 @@ disabledRecommended mode =
         (el
             [ centerX
             , centerY
-            , Font.color Color.light100
+            , theme |> Color.light100 |> Font.color
             , Font.size 14
             ]
             (text "Recommended")
         )
 
 
-emptyRecommended : Element Never
-emptyRecommended =
+emptyRecommended : Theme -> Element Never
+emptyRecommended theme =
     el
         [ width fill
         , height fill
-        , Background.color Color.primary500
+        , theme |> Color.primary500 |> Background.color
         , Border.rounded 4
         ]
         (el
             [ centerX
             , centerY
-            , Font.color Color.light100
+            , theme |> Color.light100 |> Font.color
             , Font.size 14
             ]
             (text "Recommended")
@@ -157,16 +164,17 @@ emptyRecommended =
 viewAdvanced :
     { onChange : Mode -> msg
     , mode : Mode
+    , theme : Theme
     }
     -> Element msg
-viewAdvanced { onChange, mode } =
+viewAdvanced { onChange, mode, theme } =
     Input.button
         ([ width fill
          , height fill
          ]
             ++ (case mode of
                     Mode.Advanced ->
-                        [ Background.color Color.primary500
+                        [ theme |> Color.primary500 |> Background.color
                         , Border.rounded 4
                         ]
 
@@ -185,15 +193,15 @@ viewAdvanced { onChange, mode } =
             el
                 [ centerX
                 , centerY
-                , Font.color Color.light100
+                , theme |> Color.light100 |> Font.color
                 , Font.size 14
                 ]
                 (text "Advanced")
         }
 
 
-disabledAdvanced : Mode -> Element Never
-disabledAdvanced mode =
+disabledAdvanced : { mode : Mode, theme : Theme } -> Element Never
+disabledAdvanced { mode, theme } =
     el
         ([ width fill
          , height fill
@@ -203,7 +211,7 @@ disabledAdvanced mode =
                         []
 
                     Mode.Advanced ->
-                        [ Background.color Color.primary500
+                        [ theme |> Color.primary500 |> Background.color
                         , Border.rounded 4
                         ]
                )
@@ -211,15 +219,15 @@ disabledAdvanced mode =
         (el
             [ centerX
             , centerY
-            , Font.color Color.light100
+            , theme |> Color.light100 |> Font.color
             , Font.size 14
             ]
             (text "Advanced")
         )
 
 
-emptyAdvanced : Element Never
-emptyAdvanced =
+emptyAdvanced : Theme -> Element Never
+emptyAdvanced theme =
     el
         [ width fill
         , height fill
@@ -227,7 +235,7 @@ emptyAdvanced =
         (el
             [ centerX
             , centerY
-            , Font.color Color.light100
+            , theme |> Color.light100 |> Font.color
             , Font.size 14
             ]
             (text "Advanced")

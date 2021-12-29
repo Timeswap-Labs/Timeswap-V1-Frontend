@@ -1,6 +1,7 @@
 module Page.Transaction.TokenButton exposing (view)
 
 import Data.Images exposing (Images)
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
 import Element
@@ -25,13 +26,13 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
-import Utility.Color as Color
 import Utility.Image as Image
+import Utility.ThemeColor as Color
 import Utility.Truncate as Truncate
 
 
 view :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { onPress : TokenParam -> msg
         , onMouseEnter : tooltip -> msg
@@ -42,7 +43,7 @@ view :
         , token : Maybe Token
         }
     -> Element msg
-view { images } param =
+view { images, theme } param =
     param.token
         |> Maybe.map
             (\token ->
@@ -57,7 +58,7 @@ view { images } param =
                         )
                     , width fill
                     , height <| px 44
-                    , Background.color Color.primary100
+                    , theme |> Color.primary100 |> Background.color
                     , Border.width 1
                     , Border.color Color.transparent100
                     , Border.rounded 8
@@ -83,10 +84,12 @@ view { images } param =
                                 , tooltip = param.tooltip param.tokenParam
                                 , opened = param.opened
                                 , token = token
+                                , theme = theme
                                 }
                             , images
                                 |> Image.discloser
-                                    [ width <| px 9
+                                    [ width <| px 11
+                                    , height <| px 7
                                     , alignRight
                                     , centerY
                                     ]
@@ -105,7 +108,7 @@ view { images } param =
                     )
                 , width fill
                 , height <| px 44
-                , Background.color Color.primary500
+                , theme |> Color.primary500 |> Background.color
                 , Border.rounded 8
                 ]
                 { onPress = param.onPress param.tokenParam |> Just
@@ -121,7 +124,7 @@ view { images } param =
                             , alignLeft
                             , centerY
                             , Font.size 14
-                            , Font.color Color.light100
+                            , theme |> Color.light100 |> Font.color
                             ]
                             (text "Select Token")
                         , images

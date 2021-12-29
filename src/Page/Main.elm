@@ -31,6 +31,7 @@ import Data.PriceFeed exposing (PriceFeed)
 import Data.Slippage exposing (Slippage)
 import Data.Support exposing (Support(..))
 import Data.Tab as Tab exposing (Tab)
+import Data.Theme exposing (Theme)
 import Data.TokenParam exposing (TokenParam)
 import Element
     exposing
@@ -43,10 +44,6 @@ import Element
         , height
         , map
         , none
-        , padding
-        , paddingXY
-        , paragraph
-        , px
         , shrink
         , spacing
         , text
@@ -480,6 +477,7 @@ view :
         , priceFeed : PriceFeed
         , backdrop : Backdrop
         , images : Images
+        , theme : Theme
     }
     -> Blockchain
     -> Page

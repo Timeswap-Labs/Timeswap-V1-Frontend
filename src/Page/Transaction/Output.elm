@@ -9,6 +9,7 @@ module Page.Transaction.Output exposing
 
 import Data.Images exposing (Images)
 import Data.Remote as Remote exposing (Remote(..))
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.Uint exposing (Uint)
 import Element
@@ -39,7 +40,7 @@ import Utility.Truncate as Truncate
 
 
 view :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { onMouseEnter : tooltip -> msg
         , onMouseLeave : msg
@@ -50,7 +51,7 @@ view :
         , description : String
         }
     -> Element msg
-view { images } param =
+view { images, theme } param =
     row
         [ Region.description param.description
         , width fill
@@ -76,6 +77,7 @@ view { images } param =
                 , tooltip = param.tooltip
                 , opened = param.opened
                 , token = param.token
+                , theme = theme
                 }
             ]
         , el
@@ -98,7 +100,7 @@ view { images } param =
 
 
 viewCollateral :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { onMouseEnter : tooltip -> msg
         , onMouseLeave : msg
@@ -109,7 +111,7 @@ viewCollateral :
         , description : String
         }
     -> Element msg
-viewCollateral { images } param =
+viewCollateral { images, theme } param =
     row
         [ Region.description param.description
         , width fill
@@ -135,6 +137,7 @@ viewCollateral { images } param =
                 , tooltip = param.tooltip
                 , opened = param.opened
                 , token = param.token
+                , theme = theme
                 }
             ]
         , el
@@ -149,14 +152,14 @@ viewCollateral { images } param =
 
 
 disabledCollateral :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { token : Token
         , input : String
         , description : String
         }
     -> Element Never
-disabledCollateral { images } param =
+disabledCollateral { images, theme } param =
     row
         [ Region.description param.description
         , width fill
@@ -176,7 +179,7 @@ disabledCollateral { images } param =
                     , height <| px 24
                     ]
                     param.token
-            , Truncate.disabledSymbol param.token
+            , Truncate.disabledSymbol param.token theme
             ]
         , el
             [ width shrink
@@ -188,13 +191,13 @@ disabledCollateral { images } param =
 
 
 empty :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { token : Token
         , description : String
         }
     -> Element Never
-empty { images } param =
+empty { images, theme } param =
     el
         [ Region.description param.description
         , width fill
@@ -213,7 +216,7 @@ empty { images } param =
                     , height <| px 24
                     ]
                     param.token
-            , Truncate.disabledSymbol param.token
+            , Truncate.disabledSymbol param.token theme
             ]
         )
 

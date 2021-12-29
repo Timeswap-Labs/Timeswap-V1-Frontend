@@ -1035,6 +1035,7 @@ fading :
         , priceFeed : PriceFeed
         , time : Posix
         , wallets : Wallets
+        , theme : Theme
     }
     -> Timeline (Maybe Modal)
     -> Element Msg
@@ -1859,6 +1860,7 @@ body :
         , images : Images
         , blockchain : Support User.NotSupported Blockchain
         , page : Page
+        , theme : Theme
     }
     -> Element Msg
 body ({ device, page } as model) =

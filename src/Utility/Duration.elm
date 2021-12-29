@@ -3,6 +3,7 @@ module Utility.Duration exposing (viewMaturity)
 import Data.ChosenZone as ChosenZone exposing (ChosenZone)
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Offset as Offset exposing (Offset)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -19,7 +20,7 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Time exposing (Posix)
-import Utility.Color as Color
+import Utility.ThemeColor as Color
 import Utility.Tooltip as Tooltip
 
 
@@ -32,6 +33,7 @@ viewMaturity :
     , offset : Offset
     , chosenZone : ChosenZone
     , maturity : Maturity
+    , theme : Theme
     }
     -> Element msg
 viewMaturity param =
@@ -86,7 +88,7 @@ viewMaturity param =
           )
             |> below
         , Font.size 14
-        , Font.color Color.light100
+        , param.theme |> Color.light100 |> Font.color
         ]
         ((case param.chosenZone of
             ChosenZone.Here ->

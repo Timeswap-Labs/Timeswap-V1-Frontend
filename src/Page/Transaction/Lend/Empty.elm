@@ -1,6 +1,7 @@
 module Page.Transaction.Lend.Empty exposing (view)
 
 import Data.Images exposing (Images)
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Element
     exposing
@@ -28,11 +29,11 @@ import Page.Transaction.Info as Info
 import Page.Transaction.Output as Output
 import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
-import Utility.Color as Color
+import Utility.ThemeColor as Color
 
 
 view :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { asset : Maybe Token
         , collateral : Maybe Token
@@ -48,7 +49,7 @@ view model { asset, collateral } =
 
 
 assetInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Element Never
 assetInSection model token =
@@ -59,7 +60,7 @@ assetInSection model token =
         , padding 16
         , spacing 10
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
         [ el
@@ -67,7 +68,7 @@ assetInSection model token =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , model.theme |> Color.primary400 |> Font.color
             ]
             (text "Amount to Lend")
         , token
@@ -85,7 +86,7 @@ assetInSection model token =
 
 
 claimsOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Maybe Token
     -> Element Never
@@ -97,10 +98,10 @@ claimsOutSection model asset collateral =
         , padding 16
         , spacing 12
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
-        [ Switch.empty
+        [ Switch.empty model.theme
         , row
             [ width fill
             , height shrink
@@ -121,7 +122,7 @@ claimsOutSection model asset collateral =
 
 
 bondOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Element Never
 bondOutSection model asset =
@@ -134,7 +135,7 @@ bondOutSection model asset =
             [ width shrink
             , height shrink
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> Color.primary400 |> Font.color
             ]
             (text "Amount to Receive")
         , asset
@@ -156,7 +157,7 @@ bondOutSection model asset =
 
 
 insuranceOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Element Never
 insuranceOutSection model collateral =
@@ -169,7 +170,7 @@ insuranceOutSection model collateral =
             [ width shrink
             , height shrink
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> Color.primary400 |> Font.color
             ]
             (text "Amount Protecting")
         , collateral

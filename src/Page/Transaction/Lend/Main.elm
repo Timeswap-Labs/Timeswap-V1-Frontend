@@ -30,6 +30,7 @@ import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
 import Element
@@ -72,9 +73,9 @@ import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
 import Process
 import Task
 import Time exposing (Posix)
-import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
+import Utility.ThemeColor as Color
 
 
 type Transaction
@@ -589,11 +590,12 @@ view :
         , priceFeed : PriceFeed
         , backdrop : Backdrop
         , images : Images
+        , theme : Theme
     }
     -> Blockchain
     -> Transaction
     -> Element Msg
-view ({ device, backdrop } as model) blockchain (Transaction transaction) =
+view ({ device, backdrop, theme } as model) blockchain (Transaction transaction) =
     (case transaction.state of
         None ->
             { asset = Nothing
@@ -752,7 +754,7 @@ view ({ device, backdrop } as model) blockchain (Transaction transaction) =
                             , height shrink
                             , paddingXY 0 4
                             , Font.size 24
-                            , Font.color Color.light100
+                            , theme |> Color.light100 |> Font.color
                             , Font.bold
                             ]
                             (text "Lend")
@@ -827,6 +829,7 @@ parameters :
         , chosenZone : ChosenZone
         , backdrop : Backdrop
         , images : Images
+        , theme : Theme
     }
     ->
         { transaction
@@ -841,7 +844,7 @@ parameters model transaction =
         , height shrink
         , padding 16
         , spacing 12
-        , Background.color Color.primary100
+        , model.theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
         [ pairParameters model transaction
@@ -850,7 +853,7 @@ parameters model transaction =
 
 
 pairParameters :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { transaction
             | state : State
@@ -869,7 +872,7 @@ pairParameters model transaction =
 
 
 tokenParameter :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { transaction
             | state : State
@@ -888,7 +891,7 @@ tokenParameter model transaction tokenParam =
             , height shrink
             , paddingXY 0 3
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> Color.primary400 |> Font.color
             ]
             ((case tokenParam of
                 TokenParam.Asset ->
@@ -904,7 +907,7 @@ tokenParameter model transaction tokenParam =
 
 
 tokenButton :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { transaction
             | state : State
@@ -962,6 +965,7 @@ maturityParameter :
         , offset : Offset
         , chosenZone : ChosenZone
         , images : Images
+        , theme : Theme
     }
     ->
         { transaction
@@ -980,7 +984,7 @@ maturityParameter model { state, tooltip } =
             , height shrink
             , paddingXY 0 3
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> Color.primary400 |> Font.color
             ]
             (text "Maturity")
         , case state of
@@ -1005,6 +1009,7 @@ maturityParameter model { state, tooltip } =
                     }
 
             _ ->
-                MaturityButton.disabled
+                model.theme
+                    |> MaturityButton.disabled
                     |> map never
         ]

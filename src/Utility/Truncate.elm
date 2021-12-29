@@ -10,6 +10,7 @@ module Utility.Truncate exposing
     )
 
 import Data.Pair as Pair exposing (Pair)
+import Data.Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -28,7 +29,7 @@ import Element
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
-import Utility.Color as Color
+import Utility.ThemeColor as Color
 import Utility.Tooltip as Tooltip
 
 
@@ -38,6 +39,7 @@ viewSymbol :
     , tooltip : tooltip
     , opened : Maybe tooltip
     , token : Token
+    , theme : Theme
     }
     -> Element msg
 viewSymbol param =
@@ -80,7 +82,7 @@ viewSymbol param =
                   )
                     |> below
                 , Font.size 16
-                , Font.color Color.light100
+                , param.theme |> Color.light100 |> Font.color
                 ]
                 (text short)
 
@@ -106,7 +108,7 @@ viewSymbol param =
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
                 , Font.size 16
-                , Font.color Color.light100
+                , param.theme |> Color.light100 |> Font.color
                 ]
                 (text short)
 
@@ -116,7 +118,7 @@ viewSymbol param =
                 , height shrink
                 , paddingXY 0 4
                 , Font.size 16
-                , Font.color Color.light100
+                , param.theme |> Color.light100 |> Font.color
                 ]
                 (text full)
 
@@ -404,6 +406,7 @@ viewAmount :
     , opened : Maybe tooltip
     , token : Token
     , amount : Uint
+    , theme : Theme
     }
     -> Element msg
 viewAmount param =
@@ -446,7 +449,7 @@ viewAmount param =
                   )
                     |> below
                 , Font.size 16
-                , Font.color Color.light100
+                , param.theme |> Color.light100 |> Font.color
                 ]
                 (text short)
 
@@ -472,7 +475,7 @@ viewAmount param =
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
                 , Font.size 16
-                , Font.color Color.light100
+                , param.theme |> Color.light100 |> Font.color
                 ]
                 (text short)
 
@@ -482,7 +485,7 @@ viewAmount param =
                 , height shrink
                 , paddingXY 0 4
                 , Font.size 16
-                , Font.color Color.light100
+                , param.theme |> Color.light100 |> Font.color
                 ]
                 (text full)
 
@@ -577,8 +580,8 @@ viewBalance param =
                 (text full)
 
 
-disabledSymbol : Token -> Element Never
-disabledSymbol token =
+disabledSymbol : Token -> Theme -> Element Never
+disabledSymbol token theme =
     case token |> fromSymbol of
         ( _, Just short ) ->
             el
@@ -599,7 +602,7 @@ disabledSymbol token =
                 , Border.dashed
                 , Border.color Color.transparent200
                 , Font.size 16
-                , Font.color Color.light100
+                , theme |> Color.light100 |> Font.color
                 ]
                 (text short)
 
@@ -609,7 +612,7 @@ disabledSymbol token =
                 , height shrink
                 , paddingXY 0 4
                 , Font.size 16
-                , Font.color Color.light100
+                , theme |> Color.light100 |> Font.color
                 ]
                 (text full)
 

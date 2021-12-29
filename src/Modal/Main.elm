@@ -32,6 +32,7 @@ import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Slippage exposing (Slippage)
 import Data.Support exposing (Support(..))
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
 import Data.Wallets exposing (Wallets)
@@ -317,6 +318,7 @@ view :
         , blockchain : Support User.NotSupported Blockchain
         , device : Device
         , priceFeed : PriceFeed
+        , theme : Theme
     }
     -> Modal
     -> Element Msg

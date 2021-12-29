@@ -11,6 +11,7 @@ import Data.Mode as Mode
 import Data.Pair as Pair
 import Data.Percent exposing (Percent)
 import Data.Pool exposing (Pool)
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Element
     exposing
@@ -85,7 +86,7 @@ init =
 
 
 view :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -106,7 +107,7 @@ view model blockchain pool transaction =
 
 
 assetOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> Transaction
     -> Element Never
@@ -156,7 +157,7 @@ assetOutSection model asset transaction =
 
 
 duesInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -172,16 +173,18 @@ duesInSection model blockchain pool transaction =
         , Background.color Color.primary100
         , Border.rounded 8
         ]
-        [ (case transaction of
-            Default _ ->
-                Mode.Recommended
+        [ { mode =
+                case transaction of
+                    Default _ ->
+                        Mode.Recommended
 
-            DefaultMax _ ->
-                Mode.Recommended
+                    DefaultMax _ ->
+                        Mode.Recommended
 
-            _ ->
-                Mode.Advanced
-          )
+                    _ ->
+                        Mode.Advanced
+          , theme = model.theme
+          }
             |> Switch.disabled
         , (case transaction of
             Default _ ->
@@ -315,7 +318,7 @@ duesInSection model blockchain pool transaction =
 
 
 debtInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Element Never
 debtInSection model asset =
@@ -350,7 +353,7 @@ debtInSection model asset =
 
 
 collateralInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> String
     -> Maybe Token
@@ -412,7 +415,7 @@ collateralInSection model blockchain collateralIn maybeCollateral =
 
 
 advancedDebtInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> Maybe String
     -> Element Never
@@ -438,7 +441,7 @@ advancedDebtInSection model asset input =
 
 
 advancedCollateralInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Token
     -> Maybe String

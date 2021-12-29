@@ -24,6 +24,7 @@ import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
+import Data.Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -66,9 +67,9 @@ import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Url.Builder as Builder
-import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
+import Utility.ThemeColor as Color
 
 
 type Transaction
@@ -1575,7 +1576,7 @@ hasInputZero claimsOut =
 
 
 view :
-    { model | priceFeed : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -1601,7 +1602,7 @@ view model blockchain pool (Transaction transaction) =
 
 
 assetInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Token
     -> { transaction | assetIn : String, tooltip : Maybe Tooltip }
@@ -1613,7 +1614,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
         , height shrink
         , padding 16
         , spacing 10
-        , Background.color Color.primary100
+        , model.theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -1627,7 +1628,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> Color.primary400 |> Font.color
                 ]
                 (text "Amount to Lend")
             , blockchain
@@ -1662,7 +1663,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
 
 
 claimsOutSection :
-    { model | priceFeed : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Pool
     -> { transaction | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element Msg
@@ -1673,7 +1674,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
         , height shrink
         , padding 16
         , spacing 12
-        , Background.color Color.primary100
+        , model.theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
         [ (case claimsOut of
@@ -1687,6 +1688,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                     Switch.view
                         { onChange = SwitchMode
                         , mode = mode
+                        , theme = model.theme
                         }
                )
         , (case claimsOut of
@@ -1841,7 +1843,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
 
 
 bondOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Remote Error Uint
@@ -1862,7 +1864,7 @@ bondOutSection model asset { tooltip } output =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> Color.primary400 |> Font.color
                 ]
                 (text "Amount to Receive")
             , case output of
@@ -1890,7 +1892,7 @@ bondOutSection model asset { tooltip } output =
 
 
 insuranceOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Remote Error Uint
@@ -1911,7 +1913,7 @@ insuranceOutSection model collateral { tooltip } output =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> Color.primary400 |> Font.color
                 ]
                 (text "Amount Protecting")
             , case output of
@@ -1939,7 +1941,7 @@ insuranceOutSection model collateral { tooltip } output =
 
 
 advancedBondOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Or String (Remote Error Uint)
@@ -1960,7 +1962,7 @@ advancedBondOutSection model asset { tooltip } or =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> Color.primary400 |> Font.color
                 ]
                 (text "Amount to Receive")
             , case or of
@@ -1999,7 +2001,7 @@ advancedBondOutSection model asset { tooltip } or =
 
 
 advancedInsuranceOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Or String (Remote Error Uint)
@@ -2020,7 +2022,7 @@ advancedInsuranceOutSection model collateral { tooltip } or =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> Color.primary400 |> Font.color
                 ]
                 (text "Amount Protecting")
             , case or of

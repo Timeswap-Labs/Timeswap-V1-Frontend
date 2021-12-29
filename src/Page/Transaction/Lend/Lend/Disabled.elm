@@ -14,6 +14,7 @@ import Data.Mode as Mode exposing (Mode)
 import Data.Pair as Pair
 import Data.Percent exposing (Percent)
 import Data.Pool exposing (Pool)
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Element
     exposing
@@ -46,7 +47,7 @@ import Page.Transaction.Output as Output
 import Page.Transaction.Slider as Slider
 import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
-import Utility.Color as Color
+import Utility.ThemeColor as Color
 
 
 type alias Transaction =
@@ -82,7 +83,7 @@ init =
 
 
 view :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -104,7 +105,7 @@ view model blockchain pool transaction =
 
 
 assetInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Token
     -> { transaction | assetIn : String }
@@ -117,7 +118,7 @@ assetInSection model blockchain asset transaction =
         , padding 16
         , spacing 10
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -131,7 +132,7 @@ assetInSection model blockchain asset transaction =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> Color.primary400 |> Font.color
                 ]
                 (text "Amount to Lend")
             , blockchain
@@ -155,7 +156,7 @@ assetInSection model blockchain asset transaction =
 
 
 claimsOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Pool
     -> { transaction | claimsOut : ClaimsOut }
     -> Element Never
@@ -167,16 +168,18 @@ claimsOutSection model pool { claimsOut } =
         , padding 16
         , spacing 12
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> Color.primary100 |> Background.color
         , Border.rounded 8
         ]
-        [ (case claimsOut of
-            Default ->
-                Mode.Recommended
+        [ { mode =
+                case claimsOut of
+                    Default ->
+                        Mode.Recommended
 
-            _ ->
-                Mode.Advanced
-          )
+                    _ ->
+                        Mode.Advanced
+          , theme = model.theme
+          }
             |> Switch.disabled
         , (case claimsOut of
             Default ->
@@ -265,7 +268,7 @@ claimsOutSection model pool { claimsOut } =
 
 
 bondOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Element Never
 bondOutSection model asset =
@@ -278,7 +281,7 @@ bondOutSection model asset =
             [ width shrink
             , height shrink
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> Color.primary400 |> Font.color
             ]
             (text "Amount to Receive")
         , asset
@@ -300,7 +303,7 @@ bondOutSection model asset =
 
 
 insuranceOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Element Never
 insuranceOutSection model collateral =
@@ -313,7 +316,7 @@ insuranceOutSection model collateral =
             [ width shrink
             , height shrink
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> Color.primary400 |> Font.color
             ]
             (text "Amount Protecting")
         , collateral
@@ -335,7 +338,7 @@ insuranceOutSection model collateral =
 
 
 advancedBondOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> Maybe String
     -> Element Never
@@ -349,7 +352,7 @@ advancedBondOutSection model asset input =
             [ width shrink
             , height shrink
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> Color.primary400 |> Font.color
             ]
             (text "Amount to Receive")
         , Textbox.disabled model
@@ -361,7 +364,7 @@ advancedBondOutSection model asset input =
 
 
 advancedInsuranceOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> Maybe String
     -> Element Never
@@ -375,7 +378,7 @@ advancedInsuranceOutSection model collateral input =
             [ width shrink
             , height shrink
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> Color.primary400 |> Font.color
             ]
             (text "Amount Protecting")
         , Textbox.disabled model

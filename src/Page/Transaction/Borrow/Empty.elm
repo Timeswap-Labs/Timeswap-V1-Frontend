@@ -1,6 +1,7 @@
 module Page.Transaction.Borrow.Empty exposing (view)
 
 import Data.Images exposing (Images)
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Element
     exposing
@@ -32,7 +33,7 @@ import Utility.Color as Color
 
 
 view :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { asset : Maybe Token
         , collateral : Maybe Token
@@ -48,7 +49,7 @@ view model { asset, collateral } =
 
 
 assetOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Element Never
 assetOutSection model token =
@@ -85,7 +86,7 @@ assetOutSection model token =
 
 
 duesOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Maybe Token
     -> Element Never
@@ -100,7 +101,7 @@ duesOutSection model asset collateral =
         , Background.color Color.primary100
         , Border.rounded 8
         ]
-        [ Switch.empty
+        [ Switch.empty model.theme
         , row
             [ width fill
             , height shrink
@@ -121,7 +122,7 @@ duesOutSection model asset collateral =
 
 
 debtOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Element Never
 debtOutSection model asset =
@@ -156,7 +157,7 @@ debtOutSection model asset =
 
 
 collateralOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Element Never
 collateralOutSection model collateral =

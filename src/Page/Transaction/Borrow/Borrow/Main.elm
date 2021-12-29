@@ -24,6 +24,7 @@ import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
+import Data.Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -2211,7 +2212,7 @@ hasInputZero state =
 
 
 view :
-    { model | priceFeed : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -2233,7 +2234,7 @@ view model blockchain pool (Transaction transaction) =
 
 
 assetOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> { transaction | state : State, tooltip : Maybe Tooltip }
     -> Element Msg
@@ -2337,7 +2338,7 @@ assetOutSection model asset { state, tooltip } =
 
 
 duesInSection :
-    { model | priceFeed : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
     -> { transaction | state : State, tooltip : Maybe Tooltip }
@@ -2366,6 +2367,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
                     Switch.view
                         { onChange = SwitchMode
                         , mode = mode
+                        , theme = model.theme
                         }
                )
         , (case state of
@@ -2580,7 +2582,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
 
 
 debtInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Remote Error Uint
@@ -2629,7 +2631,7 @@ debtInSection model asset { tooltip } output =
 
 
 collateralInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
@@ -2715,7 +2717,7 @@ collateralInSection model blockchain collateral { tooltip } or =
 
 
 advancedDebtInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Or String (Remote Error Uint)
@@ -2775,7 +2777,7 @@ advancedDebtInSection model asset { tooltip } or =
 
 
 advancedCollateralInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }

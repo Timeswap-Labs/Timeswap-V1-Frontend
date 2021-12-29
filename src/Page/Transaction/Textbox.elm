@@ -2,6 +2,7 @@ module Page.Transaction.Textbox exposing (disabled, empty, view)
 
 import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -36,7 +37,7 @@ import Utility.Truncate as Truncate
 
 
 view :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { onMouseEnter : tooltip -> msg
         , onMouseLeave : msg
@@ -49,7 +50,7 @@ view :
         , description : String
         }
     -> Element msg
-view { images } param =
+view { images, theme } param =
     el
         [ Region.description param.description
         , width fill
@@ -126,6 +127,7 @@ view { images } param =
                             , tooltip = param.tooltip
                             , opened = param.opened
                             , token = param.token
+                            , theme = theme
                             }
                         ]
                     )
@@ -134,14 +136,14 @@ view { images } param =
 
 
 disabled :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { token : Token
         , text : String
         , description : String
         }
     -> Element Never
-disabled { images } param =
+disabled { images, theme } param =
     row
         [ Region.description param.description
         , width fill
@@ -166,7 +168,7 @@ disabled { images } param =
                     , height <| px 24
                     ]
                     param.token
-            , Truncate.disabledSymbol param.token
+            , Truncate.disabledSymbol param.token theme
             ]
         , el
             [ width fill

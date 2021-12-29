@@ -21,6 +21,7 @@ import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
+import Data.Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -671,7 +672,7 @@ subscriptions (Transaction transaction) =
 
 
 view :
-    { model | priceFeed : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
     -> Transaction
@@ -696,7 +697,7 @@ view model blockchain pool (Transaction transaction) =
 
 
 assetInSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Token
     -> { transaction | assetIn : String, tooltip : Maybe Tooltip }
@@ -757,7 +758,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
 
 
 duesOutSection :
-    { model | priceFeed : PriceFeed, images : Images }
+    { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
     ->
@@ -819,7 +820,7 @@ duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tool
 
 
 debtOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> String
@@ -853,7 +854,7 @@ debtOutSection model asset { tooltip } input =
 
 
 collateralOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }

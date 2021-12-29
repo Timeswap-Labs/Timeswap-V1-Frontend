@@ -31,6 +31,7 @@ import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
 import Element
@@ -998,6 +999,7 @@ view :
         , backdrop : Backdrop
         , priceFeed : PriceFeed
         , images : Images
+        , theme : Theme
     }
     -> Blockchain
     -> Transaction
@@ -1448,6 +1450,7 @@ parameters :
         , chosenZone : ChosenZone
         , backdrop : Backdrop
         , images : Images
+        , theme : Theme
     }
     ->
         { transaction
@@ -1471,7 +1474,7 @@ parameters model transaction =
 
 
 pairParameters :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { transaction
             | state : State
@@ -1490,7 +1493,7 @@ pairParameters model transaction =
 
 
 tokenParameter :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { transaction
             | state : State
@@ -1525,7 +1528,7 @@ tokenParameter model transaction tokenParam =
 
 
 tokenButton :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { transaction
             | state : State
@@ -1609,6 +1612,7 @@ maturityParameter :
         , offset : Offset
         , chosenZone : ChosenZone
         , images : Images
+        , theme : Theme
     }
     ->
         { transaction
@@ -1672,6 +1676,7 @@ maturityParameter model { state, tooltip } =
                     }
 
             _ ->
-                MaturityButton.disabled
+                model.theme
+                    |> MaturityButton.disabled
                     |> map never
         ]
