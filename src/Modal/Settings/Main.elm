@@ -15,6 +15,7 @@ import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Slippage as Slippage exposing (Slippage)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -326,6 +327,7 @@ view :
     { model
         | backdrop : Backdrop
         , images : Images
+        , theme : Theme
     }
     -> Modal
     -> Element Msg
@@ -344,7 +346,7 @@ view ({ backdrop } as model) (Modal modal) =
                  , Border.color Color.transparent100
                  , Border.width 1
                  ]
-                    ++ Glass.background backdrop
+                    ++ Glass.background backdrop model.theme
                 )
                 [ column
                     [ width fill

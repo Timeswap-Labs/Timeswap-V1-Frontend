@@ -743,7 +743,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                      , Border.width 1
                      , Border.color Color.transparent100
                      ]
-                        ++ Glass.background backdrop
+                        ++ Glass.background backdrop theme
                     )
                     [ row
                         [ width fill

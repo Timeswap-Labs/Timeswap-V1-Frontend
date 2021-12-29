@@ -1004,7 +1004,7 @@ view :
     -> Blockchain
     -> Transaction
     -> Element Msg
-view ({ device, backdrop } as model) blockchain (Transaction transaction) =
+view ({ device, backdrop, theme } as model) blockchain (Transaction transaction) =
     (case transaction.state of
         Add None ->
             { asset = Nothing
@@ -1305,7 +1305,7 @@ view ({ device, backdrop } as model) blockchain (Transaction transaction) =
                      , Border.width 1
                      , Border.color Color.transparent100
                      ]
-                        ++ Glass.background backdrop
+                        ++ Glass.background backdrop theme
                     )
                     [ row
                         [ width fill

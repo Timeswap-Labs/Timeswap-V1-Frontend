@@ -22,6 +22,7 @@ import Data.Images exposing (Images)
 import Data.Pool as Pool
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Support exposing (Support(..))
+import Data.Theme exposing (Theme)
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Wallets exposing (Wallets)
 import Element
@@ -257,10 +258,11 @@ view :
         , images : Images
         , wallets : Wallets
         , blockchain : Support User.NotSupported Blockchain
+        , theme : Theme
     }
     -> Modal
     -> Element Msg
-view ({ backdrop } as model) modal =
+view ({ backdrop, theme } as model) modal =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -274,7 +276,7 @@ view ({ backdrop } as model) modal =
                  , Border.color Color.transparent100
                  , Border.width 1
                  ]
-                    ++ Glass.background backdrop
+                    ++ Glass.background backdrop theme
                 )
                 (case
                     ( case model.blockchain of

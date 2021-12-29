@@ -309,7 +309,7 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ backdrop, device, priceFeed } as model) ((Modal { pair }) as modal) =
+view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as modal) =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -327,7 +327,7 @@ view ({ backdrop, device, priceFeed } as model) ((Modal { pair }) as modal) =
                  , Border.color Color.transparent100
                  , Border.width 1
                  ]
-                    ++ Glass.background backdrop
+                    ++ Glass.background backdrop theme
                 )
                 [ column
                     [ width fill

@@ -72,7 +72,7 @@ background theme =
             rgba255 28 45 59 0.3
 
         Theme.Light ->
-            light200
+            rgba255 118 175 204 0.12
 
 
 solid : Color

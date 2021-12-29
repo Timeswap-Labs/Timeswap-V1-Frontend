@@ -8,6 +8,7 @@ import Data.Backdrop exposing (Backdrop)
 import Data.Device exposing (Device(..))
 import Data.Images exposing (Images)
 import Data.Remote as Remote exposing (Remote(..))
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -46,10 +47,11 @@ view :
         | device : Device
         , backdrop : Backdrop
         , images : Images
+        , theme : Theme
     }
     -> User
     -> Element Msg
-view ({ device, backdrop } as model) user =
+view ({ device, backdrop, theme } as model) user =
     el
         ([ Region.description "lend positions"
          , (case device of
@@ -75,7 +77,7 @@ view ({ device, backdrop } as model) user =
          , Border.color Color.transparent100
          , Id.is "positions"
          ]
-            ++ Glass.background backdrop
+            ++ Glass.background backdrop theme
         )
         (case user |> User.getClaims of
             Loading timeline ->

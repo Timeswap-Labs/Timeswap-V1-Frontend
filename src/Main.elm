@@ -1003,7 +1003,7 @@ viewHtml model =
         , Font.family [ Font.typeface "Supreme" ]
         , (case model.theme of
             Theme.Light ->
-                Color.light100
+                Color.light200
 
             Theme.Dark ->
                 Color.dark500
@@ -1893,9 +1893,9 @@ body ({ device, page } as model) =
 
 
 notSupportedBody :
-    { model | backdrop : Backdrop, images : Images }
+    { model | backdrop : Backdrop, images : Images, theme : Theme }
     -> Element Msg
-notSupportedBody { backdrop, images } =
+notSupportedBody { backdrop, images, theme } =
     column
         ([ width <| px 375
          , height shrink
@@ -1906,7 +1906,7 @@ notSupportedBody { backdrop, images } =
          , Border.width 1
          , Border.color Color.transparent100
          ]
-            ++ Glass.background backdrop
+            ++ Glass.background backdrop theme
         )
         [ el
             [ width shrink

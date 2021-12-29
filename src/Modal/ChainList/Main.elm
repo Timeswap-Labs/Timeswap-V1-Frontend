@@ -12,6 +12,7 @@ import Data.Chain as Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
 import Data.Images exposing (Images)
 import Data.Support exposing (Support(..))
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -113,9 +114,10 @@ view :
         , images : Images
         , chains : Chains
         , blockchain : Support User.NotSupported Blockchain
+        , theme : Theme
     }
     -> Element Msg
-view ({ backdrop } as model) =
+view ({ backdrop, theme } as model) =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -130,7 +132,7 @@ view ({ backdrop } as model) =
                  , Border.color Color.transparent100
                  , Border.width 1
                  ]
-                    ++ Glass.background backdrop
+                    ++ Glass.background backdrop theme
                 )
                 [ row
                     [ width fill

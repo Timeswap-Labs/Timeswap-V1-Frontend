@@ -7,6 +7,7 @@ import Blockchain.User.Main exposing (User)
 import Data.Backdrop exposing (Backdrop)
 import Data.Device exposing (Device(..))
 import Data.Images exposing (Images)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -44,10 +45,11 @@ view :
         | device : Device
         , backdrop : Backdrop
         , images : Images
+        , theme : Theme
     }
     -> User
     -> Element Msg
-view { device, backdrop, images } user =
+view { device, backdrop, images, theme } user =
     el
         ([ Region.description "borrow positions"
          , (case device of
@@ -73,7 +75,7 @@ view { device, backdrop, images } user =
          , Border.color Color.transparent100
          , Id.is "positions"
          ]
-            ++ Glass.background backdrop
+            ++ Glass.background backdrop theme
         )
         (row
             [ (case device of

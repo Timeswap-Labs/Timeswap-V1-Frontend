@@ -9,6 +9,7 @@ module Modal.InputMaturity.Main exposing
 import Data.Backdrop exposing (Backdrop)
 import Data.Images exposing (Images)
 import Data.Pair exposing (Pair)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -63,10 +64,11 @@ view :
     { model
         | backdrop : Backdrop
         , images : Images
+        , theme : Theme
     }
     -> Modal
     -> Element Msg
-view ({ backdrop } as model) (Modal modal) =
+view ({ backdrop, theme } as model) (Modal modal) =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -81,7 +83,7 @@ view ({ backdrop } as model) (Modal modal) =
                  , Border.color Color.transparent100
                  , Border.width 1
                  ]
-                    ++ Glass.background backdrop
+                    ++ Glass.background backdrop theme
                 )
                 (column
                     [ width fill

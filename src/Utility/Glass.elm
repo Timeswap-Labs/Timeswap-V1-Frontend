@@ -1,6 +1,7 @@
 module Utility.Glass exposing (background, warning)
 
 import Data.Backdrop as Backdrop exposing (Backdrop)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Attribute
@@ -8,14 +9,14 @@ import Element
         )
 import Element.Background as Background
 import Html.Attributes
-import Utility.Color as Color
+import Utility.ThemeColor as Color
 
 
-background : Backdrop -> List (Attribute msg)
-background backdrop =
+background : Backdrop -> Theme -> List (Attribute msg)
+background backdrop theme =
     case backdrop of
         Backdrop.Supported ->
-            [ Background.color Color.background
+            [ theme |> Color.background |> Background.color
             , "blur(60px)"
                 |> Html.Attributes.style "-webkit-backdrop-filter"
                 |> htmlAttribute

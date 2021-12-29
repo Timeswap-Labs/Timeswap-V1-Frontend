@@ -477,7 +477,7 @@ view ({ backdrop } as model) blockchain ((Modal { state, tooltip }) as modal) =
                  , Border.width 1
                  , Border.rounded 8
                  ]
-                    ++ Glass.background backdrop
+                    ++ Glass.background backdrop model.theme
                 )
                 [ modalHeader model modal
                 , case state of
