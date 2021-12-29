@@ -68,7 +68,10 @@ import Utility.Glass as Glass
 
 
 type Page
-    = LendPage { transaction : Lend.Transaction }
+    = LendPage
+        { transaction : Lend.Transaction
+        , positions : Claims.Positions
+        }
     | BorrowPage { transaction : Borrow.Transaction }
     | LiquidityPage { transaction : Liquidity.Transaction }
 
@@ -143,7 +146,9 @@ construct ({ chains } as model) url maybePage =
                 |> Lend.initGivenPoolInfo model blockchain pool
                 |> Tuple.mapBoth
                     (\transaction ->
-                        { transaction = transaction }
+                        { transaction = transaction
+                        , positions = Claims.init
+                        }
                             |> LendPage
                     )
                     (Cmd.map LendMsg)
@@ -153,7 +158,9 @@ construct ({ chains } as model) url maybePage =
                 |> Lend.initGivenSpot model blockchain pool
                 |> Tuple.mapBoth
                     (\transaction ->
-                        { transaction = transaction }
+                        { transaction = transaction
+                        , positions = Claims.init
+                        }
                             |> LendPage
                     )
                     (Cmd.map LendMsg)
@@ -163,7 +170,9 @@ construct ({ chains } as model) url maybePage =
                 |> Lend.init model blockchain
                 |> Tuple.mapBoth
                     (\transaction ->
-                        { transaction = transaction }
+                        { transaction = transaction
+                        , positions = Claims.init
+                        }
                             |> LendPage
                     )
                     (Cmd.map LendMsg)
@@ -233,13 +242,17 @@ construct ({ chains } as model) url maybePage =
                 |> Lend.init model blockchain
                 |> Tuple.mapBoth
                     (\transaction ->
-                        { transaction = transaction }
+                        { transaction = transaction
+                        , positions = Claims.init
+                        }
                             |> LendPage
                     )
                     (Cmd.map LendMsg)
 
         ( Just (Route.Lend _), NotSupported _, _ ) ->
-            ( { transaction = Lend.notSupported }
+            ( { transaction = Lend.notSupported
+              , positions = Claims.init
+              }
                 |> LendPage
             , Cmd.none
             )
@@ -257,7 +270,9 @@ construct ({ chains } as model) url maybePage =
             )
 
         _ ->
-            ( { transaction = Lend.notSupported }
+            ( { transaction = Lend.notSupported
+              , positions = Claims.init
+              }
                 |> LendPage
             , Cmd.none
             )
@@ -491,13 +506,14 @@ view model blockchain page =
         , alignTop
         ]
         (case page of
-            LendPage { transaction } ->
+            LendPage { transaction, positions } ->
                 [ transaction
                     |> Lend.view model blockchain
                     |> map LendMsg
                 , blockchain
                     |> Blockchain.toUser
-                    |> Maybe.map (Claims.view model)
+                    |> Maybe.map
+                        (\user -> Claims.view model user positions)
                     |> (Maybe.map << map) ClaimsMsg
                     |> Maybe.withDefault none
                 ]

@@ -266,8 +266,7 @@ liquidityOutSection model pool =
             ]
             (text "LP Tokens to Receive")
         , Output.disabledLiquidity model
-            { asset = pool.pair |> Pair.toAsset
-            , collateral = pool.pair |> Pair.toCollateral
+            { pair = pool.pair
             , description = "liquidity out"
             }
         ]

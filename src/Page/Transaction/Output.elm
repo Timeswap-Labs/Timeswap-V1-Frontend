@@ -8,7 +8,8 @@ module Page.Transaction.Output exposing
     )
 
 import Data.Images exposing (Images)
-import Data.Remote as Remote exposing (Remote(..))
+import Data.Pair exposing (Pair)
+import Data.Remote exposing (Remote(..))
 import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.Uint exposing (Uint)
@@ -21,7 +22,6 @@ import Element
         , fill
         , height
         , moveLeft
-        , moveRight
         , none
         , paddingXY
         , px
@@ -36,6 +36,7 @@ import Element.Region as Region
 import Utility.Color as Color
 import Utility.Fade as Fade
 import Utility.Image as Image
+import Utility.PairImage as PairImage
 import Utility.Truncate as Truncate
 
 
@@ -224,8 +225,7 @@ empty { images, theme } param =
 liquidity :
     { model | images : Images }
     ->
-        { asset : Token
-        , collateral : Token
+        { pair : Pair
         , output : Remote error Uint
         , description : String
         }
@@ -249,25 +249,7 @@ liquidity { images } param =
                 , height <| px 24
                 , spacing 6
                 ]
-                [ row
-                    [ width shrink
-                    , height shrink
-                    ]
-                    [ images
-                        |> Image.viewToken
-                            [ width <| px 24
-                            , height <| px 24
-                            , moveRight 12
-                            ]
-                            param.collateral
-                    , images
-                        |> Image.viewToken
-                            [ width <| px 24
-                            , height <| px 24
-                            , moveLeft 24
-                            ]
-                            param.asset
-                    ]
+                [ PairImage.view images param.pair
                 , el
                     [ width shrink
                     , height shrink
@@ -302,8 +284,7 @@ liquidity { images } param =
 disabledLiquidity :
     { model | images : Images }
     ->
-        { asset : Token
-        , collateral : Token
+        { pair : Pair
         , description : String
         }
     -> Element Never
@@ -321,24 +302,5 @@ disabledLiquidity { images } param =
             , spacing 6
             , centerY
             ]
-            [ row
-                [ width <| px 80
-                , height <| px 24
-                ]
-                [ images
-                    |> Image.viewToken
-                        [ width <| px 24
-                        , height <| px 24
-                        , moveRight 12
-                        ]
-                        param.collateral
-                , images
-                    |> Image.viewToken
-                        [ width <| px 24
-                        , height <| px 24
-                        , moveLeft 24
-                        ]
-                        param.asset
-                ]
-            ]
+            [ PairImage.view images param.pair ]
         )

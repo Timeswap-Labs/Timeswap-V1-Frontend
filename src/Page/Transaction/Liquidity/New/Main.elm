@@ -952,8 +952,7 @@ liquidityOutSection model pool { liquidityOut } =
                     none
             ]
         , Output.liquidity model
-            { asset = pool.pair |> Pair.toAsset
-            , collateral = pool.pair |> Pair.toCollateral
+            { pair = pool.pair
             , output =
                 liquidityOut
                     |> Remote.map .liquidityOut

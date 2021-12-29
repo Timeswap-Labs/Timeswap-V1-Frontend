@@ -1,6 +1,7 @@
 module Page.Transaction.Liquidity.Empty exposing (view)
 
 import Data.Images exposing (Images)
+import Data.Pair as Pair
 import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Element
@@ -212,14 +213,18 @@ liquidityOutSection model maybeAsset maybeCollateral =
             (text "LP Tokens to Receive")
         , Just
             (\asset collateral ->
-                Output.disabledLiquidity model
-                    { asset = asset
-                    , collateral = collateral
-                    , description = "liquidity out"
-                    }
+                Pair.init asset collateral
+                    |> Maybe.map
+                        (\pair ->
+                            Output.disabledLiquidity model
+                                { pair = pair
+                                , description = "liquidity out"
+                                }
+                        )
             )
             |> Maybe.apply maybeAsset
             |> Maybe.apply maybeCollateral
+            |> Maybe.andThen identity
             |> Maybe.withDefault
                 (el
                     [ width fill

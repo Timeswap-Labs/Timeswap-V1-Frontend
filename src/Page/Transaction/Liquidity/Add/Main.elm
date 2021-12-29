@@ -1690,8 +1690,7 @@ liquidityOutSection model pool { state } =
                 |> Maybe.withDefault none
             ]
         , Output.liquidity model
-            { asset = pool.pair |> Pair.toAsset
-            , collateral = pool.pair |> Pair.toCollateral
+            { pair = pool.pair
             , output =
                 case state of
                     Asset { out } ->

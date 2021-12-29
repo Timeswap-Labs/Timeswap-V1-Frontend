@@ -6,6 +6,7 @@ module Utility.Truncate exposing
     , viewCDP
     , viewCDPSymbol
     , viewName
+    , viewPairSymbol
     , viewSymbol
     )
 
@@ -31,6 +32,95 @@ import Element.Events as Events
 import Element.Font as Font
 import Utility.ThemeColor as Color
 import Utility.Tooltip as Tooltip
+
+
+viewPairSymbol :
+    { onMouseEnter : tooltip -> msg
+    , onMouseLeave : msg
+    , tooltip : tooltip
+    , opened : Maybe tooltip
+    , pair : Pair
+    }
+    -> Element msg
+viewPairSymbol param =
+    case
+        ( fromPairSymbol param.pair
+        , param.opened
+        )
+    of
+        ( ( full, Just short ), Just opened ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 3
+                    , right = 0
+                    , bottom = 2
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , (if opened == param.tooltip then
+                    el
+                        [ Font.size 14
+                        , Font.color Color.transparent300
+                        ]
+                        (text full)
+                        |> Tooltip.belowAlignLeft
+
+                   else
+                    none
+                  )
+                    |> below
+                , Font.size 14
+                , Font.color Color.transparent500
+                ]
+                (text short)
+
+        ( ( _, Just short ), Nothing ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 3
+                    , right = 0
+                    , bottom = 2
+                    , left = 0
+                    }
+                , Border.widthEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 1
+                    , left = 0
+                    }
+                , Border.dashed
+                , Border.color Color.transparent200
+                , Events.onMouseEnter
+                    (param.onMouseEnter param.tooltip)
+                , Events.onMouseLeave param.onMouseLeave
+                , Font.size 14
+                , Font.color Color.transparent500
+                ]
+                (text short)
+
+        ( ( full, Nothing ), _ ) ->
+            el
+                [ width shrink
+                , height shrink
+                , paddingXY 0 3
+                , Font.size 14
+                , Font.color Color.transparent500
+                ]
+                (text full)
 
 
 viewSymbol :
@@ -882,6 +972,33 @@ fromCDPSymbol pair =
             , asset |> String.left 5
             ]
                 |> String.join " "
+                |> Just
+
+          else
+            Nothing
+        )
+    )
+        (pair |> Pair.toCollateral |> Token.toSymbol)
+        (pair |> Pair.toAsset |> Token.toSymbol)
+
+
+fromPairSymbol : Pair -> ( String, Maybe String )
+fromPairSymbol pair =
+    (\collateral asset ->
+        ( [ collateral
+          , asset
+          ]
+            |> String.join " - "
+        , if
+            (collateral |> String.length)
+                > 5
+                || (asset |> String.length)
+                > 5
+          then
+            [ collateral |> String.left 5
+            , asset |> String.left 5
+            ]
+                |> String.join " - "
                 |> Just
 
           else
