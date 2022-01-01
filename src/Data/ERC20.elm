@@ -1,16 +1,14 @@
 module Data.ERC20 exposing
     ( ERC20
-    , axie
+    , avalanche
     , compare
     , daiRinkeby
     , decoder
-    , doge
     , encode
     , eth
     , fromString
     , matic
     , maticRinkeby
-    , shiba
     , sorter
     , toAddress
     , toDecimals
@@ -41,34 +39,24 @@ type ERC20
         }
 
 
-doge : ERC20
-doge =
-    { id = 0, address = Address.doge, name = "Dogecoin", symbol = "TS-DOGE", decimals = 18 } |> ERC20
-
-
-shiba : ERC20
-shiba =
-    { id = 1, address = Address.shiba, name = "Shiba Inu", symbol = "TS-SHIB", decimals = 18 } |> ERC20
-
-
 usdc : ERC20
 usdc =
-    { id = 2, address = Address.usdc, name = "USDC", symbol = "TS-USDC", decimals = 18 } |> ERC20
+    { id = 0, address = Address.usdc, name = "USDC", symbol = "TS-USDC", decimals = 18 } |> ERC20
+
+
+matic : ERC20
+matic =
+    { id = 1, address = Address.matic, name = "Polygon", symbol = "TS-MATIC", decimals = 18 } |> ERC20
+
+
+avalanche : ERC20
+avalanche =
+    { id = 2, address = Address.avalanche, name = "Avalanche", symbol = "TS-AVAX", decimals = 18 } |> ERC20
 
 
 eth : ERC20
 eth =
     { id = 3, address = Address.eth, name = "Ethereum", symbol = "TS-ETH", decimals = 18 } |> ERC20
-
-
-axie : ERC20
-axie =
-    { id = 4, address = Address.axie, name = "Axie Infinity", symbol = "TS-AXS", decimals = 18 } |> ERC20
-
-
-matic : ERC20
-matic =
-    { id = 5, address = Address.matic, name = "Polygon", symbol = "TS-MATIC", decimals = 18 } |> ERC20
 
 
 fromString : Set ERC20 -> String -> Maybe ERC20

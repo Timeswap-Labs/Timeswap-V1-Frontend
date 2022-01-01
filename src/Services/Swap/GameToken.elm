@@ -6,11 +6,9 @@ import Json.Encode as Encode exposing (Value)
 
 
 type GameToken
-    = Matic
-    | Axie
-    | Shiba
-    | Doge
-    | USDC
+    = USDC
+    | Matic
+    | Avalanche
     | ETH
 
 
@@ -24,20 +22,14 @@ encode gameToken =
 toApiTokenId : GameToken -> String
 toApiTokenId gameToken =
     case gameToken of
+        USDC ->
+            "usd-coin"
+
         Matic ->
             "matic-network"
 
-        Axie ->
-            "axie-infinity"
-
-        Shiba ->
-            "shiba-inu"
-
-        Doge ->
-            "dogecoin"
-
-        USDC ->
-            "usd-coin"
+        Avalanche ->
+            "avalanche-2"
 
         ETH ->
             "ethereum"
@@ -46,20 +38,14 @@ toApiTokenId gameToken =
 toERC20 : GameToken -> ERC20
 toERC20 gameToken =
     case gameToken of
+        USDC ->
+            ERC20.usdc
+
         Matic ->
             ERC20.matic
 
-        Axie ->
-            ERC20.axie
-
-        Shiba ->
-            ERC20.shiba
-
-        Doge ->
-            ERC20.doge
-
-        USDC ->
-            ERC20.usdc
+        Avalanche ->
+            ERC20.avalanche
 
         ETH ->
             ERC20.eth

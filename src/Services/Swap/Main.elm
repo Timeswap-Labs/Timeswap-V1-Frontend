@@ -106,15 +106,15 @@ type ErrorDetailed
 init : ( Service, Cmd Msg )
 init =
     ( { inToken = GameToken.USDC
-      , outToken = GameToken.Matic
+      , outToken = GameToken.ETH
       , dropdown = Nothing
-      , options = [ GameToken.ETH, GameToken.Axie, GameToken.Matic, GameToken.USDC ]
+      , options = [ GameToken.USDC, GameToken.Matic, GameToken.Avalanche, GameToken.ETH ]
       , input = "0"
       , notification = Nothing
       , cache = Loading
       }
         |> Service
-    , fetchPrice { inToken = GameToken.USDC, outToken = GameToken.Matic }
+    , fetchPrice { inToken = GameToken.USDC, outToken = GameToken.ETH }
     )
 
 
