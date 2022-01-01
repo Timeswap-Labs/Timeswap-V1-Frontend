@@ -41,22 +41,22 @@ type ERC20
 
 usdc : ERC20
 usdc =
-    { id = 0, address = Address.usdc, name = "USDC", symbol = "TS-USDC", decimals = 18 } |> ERC20
+    { id = 0, address = Address.usdc, name = "TS-USDC", symbol = "TS-USDC", decimals = 18 } |> ERC20
 
 
 matic : ERC20
 matic =
-    { id = 1, address = Address.matic, name = "Polygon", symbol = "TS-MATIC", decimals = 18 } |> ERC20
+    { id = 1, address = Address.matic, name = "TS-MATIC", symbol = "TS-MATIC", decimals = 18 } |> ERC20
 
 
 avalanche : ERC20
 avalanche =
-    { id = 2, address = Address.avalanche, name = "Avalanche", symbol = "TS-AVAX", decimals = 18 } |> ERC20
+    { id = 2, address = Address.avalanche, name = "TS-AVAX", symbol = "TS-AVAX", decimals = 18 } |> ERC20
 
 
 eth : ERC20
 eth =
-    { id = 3, address = Address.eth, name = "Ethereum", symbol = "TS-ETH", decimals = 18 } |> ERC20
+    { id = 3, address = Address.eth, name = "TS-ETH", symbol = "TS-ETH", decimals = 18 } |> ERC20
 
 
 fromString : Set ERC20 -> String -> Maybe ERC20
