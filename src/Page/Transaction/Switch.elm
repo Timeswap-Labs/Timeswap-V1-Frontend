@@ -21,7 +21,8 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Utility.ThemeColor as Color
+import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
 view :
@@ -36,7 +37,7 @@ view param =
         , height <| px 44
         , padding 4
         , spacing 16
-        , param.theme |> Color.primary100 |> Background.color
+        , param.theme |> ThemeColor.border |> Background.color
         , Border.rounded 8
         ]
         [ viewRecommended param
@@ -51,7 +52,7 @@ disabled ({ mode, theme } as model) =
         , height <| px 44
         , padding 4
         , spacing 16
-        , theme |> Color.primary100 |> Background.color
+        , theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ disabledRecommended model
@@ -66,7 +67,7 @@ empty theme =
         , height <| px 44
         , padding 4
         , spacing 16
-        , theme |> Color.primary100 |> Background.color
+        , theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ emptyRecommended theme
@@ -87,7 +88,7 @@ viewRecommended { onChange, mode, theme } =
          ]
             ++ (case mode of
                     Mode.Recommended ->
-                        [ theme |> Color.primary500 |> Background.color
+                        [ theme |> ThemeColor.primaryBtn |> Background.color
                         , Border.rounded 4
                         ]
 
@@ -106,7 +107,7 @@ viewRecommended { onChange, mode, theme } =
             el
                 [ centerX
                 , centerY
-                , theme |> Color.light100 |> Font.color
+                , Color.light100 |> Font.color
                 , Font.size 14
                 ]
                 (text "Recommended")
@@ -125,7 +126,7 @@ disabledRecommended { mode, theme } =
          ]
             ++ (case mode of
                     Mode.Recommended ->
-                        [ theme |> Color.primary500 |> Background.color
+                        [ theme |> ThemeColor.primaryBtn |> Background.color
                         , Border.rounded 4
                         ]
 
@@ -136,7 +137,7 @@ disabledRecommended { mode, theme } =
         (el
             [ centerX
             , centerY
-            , theme |> Color.light100 |> Font.color
+            , Color.light100 |> Font.color
             , Font.size 14
             ]
             (text "Recommended")
@@ -148,13 +149,13 @@ emptyRecommended theme =
     el
         [ width fill
         , height fill
-        , theme |> Color.primary500 |> Background.color
+        , theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
         ]
         (el
             [ centerX
             , centerY
-            , theme |> Color.light100 |> Font.color
+            , Color.light100 |> Font.color
             , Font.size 14
             ]
             (text "Recommended")
@@ -174,7 +175,7 @@ viewAdvanced { onChange, mode, theme } =
          ]
             ++ (case mode of
                     Mode.Advanced ->
-                        [ theme |> Color.primary500 |> Background.color
+                        [ theme |> ThemeColor.primaryBtn |> Background.color
                         , Border.rounded 4
                         ]
 
@@ -193,7 +194,7 @@ viewAdvanced { onChange, mode, theme } =
             el
                 [ centerX
                 , centerY
-                , theme |> Color.light100 |> Font.color
+                , Color.light100 |> Font.color
                 , Font.size 14
                 ]
                 (text "Advanced")
@@ -211,7 +212,7 @@ disabledAdvanced { mode, theme } =
                         []
 
                     Mode.Advanced ->
-                        [ theme |> Color.primary500 |> Background.color
+                        [ theme |> ThemeColor.primaryBtn |> Background.color
                         , Border.rounded 4
                         ]
                )
@@ -219,7 +220,7 @@ disabledAdvanced { mode, theme } =
         (el
             [ centerX
             , centerY
-            , theme |> Color.light100 |> Font.color
+            , Color.light100 |> Font.color
             , Font.size 14
             ]
             (text "Advanced")
@@ -235,7 +236,7 @@ emptyAdvanced theme =
         (el
             [ centerX
             , centerY
-            , theme |> Color.light100 |> Font.color
+            , Color.light100 |> Font.color
             , Font.size 14
             ]
             (text "Advanced")

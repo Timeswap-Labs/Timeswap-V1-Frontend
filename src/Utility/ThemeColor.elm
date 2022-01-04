@@ -1,20 +1,9 @@
 module Utility.ThemeColor exposing
-    ( background
+    ( actionElemLabel
+    , background
+    , border
     , completelyTransparent
-    , dark100
-    , dark200
-    , dark300
-    , dark400
-    , dark500
-    , darkModal
-    , light100
-    , light200
-    , light300
-    , light400
-    , light500
-    , lightModal
-    , list
-    , modal
+    , dropdownBtnBackground
     , negative100
     , negative200
     , negative300
@@ -27,22 +16,16 @@ module Utility.ThemeColor exposing
     , positive300
     , positive400
     , positive500
-    , primary100
     , primary200
     , primary300
-    , primary400
-    , primary500
+    , primaryBtn
     , secondary100
     , secondary200
     , secondary300
     , secondary400
     , secondary500
-    , solid
-    , transparent100
-    , transparent200
-    , transparent300
-    , transparent400
-    , transparent500
+    , sectionBackground
+    , text
     , transparentVery
     , warning100
     , warning200
@@ -53,6 +36,7 @@ module Utility.ThemeColor exposing
 
 import Data.Theme as Theme exposing (Theme)
 import Element exposing (Color, rgba255)
+import Utility.Color as Color
 
 
 none : Color
@@ -69,125 +53,50 @@ background : Theme -> Color
 background theme =
     case theme of
         Theme.Dark ->
-            rgba255 28 45 59 0.3
+            Color.background
 
         Theme.Light ->
-            rgba255 118 175 204 0.12
+            Color.primaryLight
 
 
-solid : Color
-solid =
-    rgba255 28 45 59 1
-
-
-list : Color
-list =
-    rgba255 0 0 0 0.21
-
-
-modal : Color
-modal =
-    rgba255 0 0 0 0.4
-
-
-dark100 : Color
-dark100 =
-    rgba255 67 72 89 1
-
-
-dark200 : Color
-dark200 =
-    rgba255 54 59 77 1
-
-
-dark300 : Color
-dark300 =
-    rgba255 38 44 64 1
-
-
-dark400 : Color
-dark400 =
-    rgba255 26 31 51 1
-
-
-dark500 : Color
-dark500 =
-    rgba255 15 20 38 1
-
-
-darkModal : Color
-darkModal =
-    rgba255 26 31 51 1
-
-
-light100 : Theme -> Color
-light100 theme =
+text : Theme -> Color
+text theme =
     case theme of
         Theme.Dark ->
-            rgba255 255 255 255 1
+            Color.light100
 
         Theme.Light ->
-            rgba255 15 20 38 1
+            Color.dark500
 
 
-light200 : Color
-light200 =
-    rgba255 242 243 247 1
-
-
-light300 : Color
-light300 =
-    rgba255 230 232 239 1
-
-
-light400 : Color
-light400 =
-    rgba255 219 221 230 1
-
-
-light500 : Color
-light500 =
-    rgba255 208 211 221 1
-
-
-lightModal : Color
-lightModal =
-    rgba255 219 221 230 1
-
-
-transparent100 : Color
-transparent100 =
-    rgba255 255 255 255 0.12
-
-
-transparent200 : Color
-transparent200 =
-    rgba255 255 255 255 0.32
-
-
-transparent300 : Color
-transparent300 =
-    rgba255 255 255 255 0.64
-
-
-transparent400 : Color
-transparent400 =
-    rgba255 255 255 255 0.88
-
-
-transparent500 : Color
-transparent500 =
-    rgba255 255 255 255 1
-
-
-primary100 : Theme -> Color
-primary100 theme =
+sectionBackground : Theme -> Color
+sectionBackground theme =
     case theme of
         Theme.Dark ->
-            rgba255 160 210 235 0.12
+            Color.primary100
 
         Theme.Light ->
-            rgba255 255 255 255 0.32
+            Color.transparent200
+
+
+dropdownBtnBackground : Theme -> Color
+dropdownBtnBackground theme =
+    case theme of
+        Theme.Dark ->
+            Color.primary100
+
+        Theme.Light ->
+            Color.secondary100
+
+
+border : Theme -> Color
+border theme =
+    case theme of
+        Theme.Dark ->
+            Color.transparent100
+
+        Theme.Light ->
+            Color.secondary100
 
 
 primary200 : Color
@@ -200,24 +109,24 @@ primary300 =
     rgba255 160 210 235 0.64
 
 
-primary400 : Theme -> Color
-primary400 theme =
+actionElemLabel : Theme -> Color
+actionElemLabel theme =
     case theme of
         Theme.Dark ->
-            rgba255 160 210 235 1
+            Color.primary400
 
         Theme.Light ->
-            rgba255 84 82 204 1
+            Color.secondary500
 
 
-primary500 : Theme -> Color
-primary500 theme =
+primaryBtn : Theme -> Color
+primaryBtn theme =
     case theme of
         Theme.Dark ->
-            rgba255 118 175 204 1
+            Color.primary500
 
         Theme.Light ->
-            rgba255 84 82 204 1
+            Color.secondary500
 
 
 secondary100 : Color

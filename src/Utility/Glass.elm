@@ -9,14 +9,15 @@ import Element
         )
 import Element.Background as Background
 import Html.Attributes
-import Utility.ThemeColor as Color
+import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
 background : Backdrop -> Theme -> List (Attribute msg)
 background backdrop theme =
     case backdrop of
         Backdrop.Supported ->
-            [ theme |> Color.background |> Background.color
+            [ theme |> ThemeColor.background |> Background.color
             , "blur(60px)"
                 |> Html.Attributes.style "-webkit-backdrop-filter"
                 |> htmlAttribute

@@ -30,7 +30,8 @@ import Element
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
-import Utility.ThemeColor as Color
+import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 import Utility.Tooltip as Tooltip
 
 
@@ -172,7 +173,7 @@ viewSymbol param =
                   )
                     |> below
                 , Font.size 16
-                , param.theme |> Color.light100 |> Font.color
+                , param.theme |> ThemeColor.text |> Font.color
                 ]
                 (text short)
 
@@ -198,7 +199,7 @@ viewSymbol param =
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
                 , Font.size 16
-                , param.theme |> Color.light100 |> Font.color
+                , param.theme |> ThemeColor.text |> Font.color
                 ]
                 (text short)
 
@@ -208,7 +209,7 @@ viewSymbol param =
                 , height shrink
                 , paddingXY 0 4
                 , Font.size 16
-                , param.theme |> Color.light100 |> Font.color
+                , param.theme |> ThemeColor.text |> Font.color
                 ]
                 (text full)
 
@@ -539,7 +540,7 @@ viewAmount param =
                   )
                     |> below
                 , Font.size 16
-                , param.theme |> Color.light100 |> Font.color
+                , param.theme |> ThemeColor.text |> Font.color
                 ]
                 (text short)
 
@@ -565,7 +566,7 @@ viewAmount param =
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
                 , Font.size 16
-                , param.theme |> Color.light100 |> Font.color
+                , param.theme |> ThemeColor.text |> Font.color
                 ]
                 (text short)
 
@@ -575,7 +576,7 @@ viewAmount param =
                 , height shrink
                 , paddingXY 0 4
                 , Font.size 16
-                , param.theme |> Color.light100 |> Font.color
+                , param.theme |> ThemeColor.text |> Font.color
                 ]
                 (text full)
 
@@ -692,7 +693,7 @@ disabledSymbol token theme =
                 , Border.dashed
                 , Border.color Color.transparent200
                 , Font.size 16
-                , theme |> Color.light100 |> Font.color
+                , theme |> ThemeColor.text |> Font.color
                 ]
                 (text short)
 
@@ -702,7 +703,7 @@ disabledSymbol token theme =
                 , height shrink
                 , paddingXY 0 4
                 , Font.size 16
-                , theme |> Color.light100 |> Font.color
+                , theme |> ThemeColor.text |> Font.color
                 ]
                 (text full)
 

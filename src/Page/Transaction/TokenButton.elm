@@ -26,8 +26,9 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
+import Utility.Color as Color
 import Utility.Image as Image
-import Utility.ThemeColor as Color
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
@@ -58,9 +59,9 @@ view { images, theme } param =
                         )
                     , width fill
                     , height <| px 44
-                    , theme |> Color.primary100 |> Background.color
+                    , theme |> ThemeColor.dropdownBtnBackground |> Background.color
                     , Border.width 1
-                    , Border.color Color.transparent100
+                    , theme |> ThemeColor.border |> Border.color
                     , Border.rounded 8
                     ]
                     { onPress = param.onPress param.tokenParam |> Just
@@ -108,7 +109,7 @@ view { images, theme } param =
                     )
                 , width fill
                 , height <| px 44
-                , theme |> Color.primary500 |> Background.color
+                , theme |> ThemeColor.primaryBtn |> Background.color
                 , Border.rounded 8
                 ]
                 { onPress = param.onPress param.tokenParam |> Just
@@ -124,7 +125,7 @@ view { images, theme } param =
                             , alignLeft
                             , centerY
                             , Font.size 14
-                            , theme |> Color.light100 |> Font.color
+                            , Color.light100 |> Font.color
                             ]
                             (text "Select Token")
                         , images

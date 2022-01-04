@@ -73,9 +73,10 @@ import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
 import Process
 import Task
 import Time exposing (Posix)
+import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
-import Utility.ThemeColor as Color
+import Utility.ThemeColor as ThemeColor
 
 
 type Transaction
@@ -741,7 +742,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                      , spacing 16
                      , Border.rounded 8
                      , Border.width 1
-                     , Border.color Color.transparent100
+                     , theme |> ThemeColor.border |> Border.color
                      ]
                         ++ Glass.background backdrop theme
                     )
@@ -754,7 +755,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                             , height shrink
                             , paddingXY 0 4
                             , Font.size 24
-                            , theme |> Color.light100 |> Font.color
+                            , theme |> ThemeColor.text |> Font.color
                             , Font.bold
                             ]
                             (text "Lend")
@@ -844,7 +845,7 @@ parameters model transaction =
         , height shrink
         , padding 16
         , spacing 12
-        , model.theme |> Color.primary100 |> Background.color
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ pairParameters model transaction
@@ -891,7 +892,7 @@ tokenParameter model transaction tokenParam =
             , height shrink
             , paddingXY 0 3
             , Font.size 14
-            , model.theme |> Color.primary400 |> Font.color
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             ((case tokenParam of
                 TokenParam.Asset ->
@@ -984,7 +985,7 @@ maturityParameter model { state, tooltip } =
             , height shrink
             , paddingXY 0 3
             , Font.size 14
-            , model.theme |> Color.primary400 |> Font.color
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Maturity")
         , case state of

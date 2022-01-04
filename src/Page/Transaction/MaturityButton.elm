@@ -29,9 +29,10 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Time exposing (Posix)
+import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Image as Image
-import Utility.ThemeColor as Color
+import Utility.ThemeColor as ThemeColor
 
 
 view :
@@ -59,9 +60,9 @@ view { time, offset, chosenZone, images, theme } param =
                     [ Region.description "maturity button"
                     , width fill
                     , height <| px 44
-                    , theme |> Color.primary100 |> Background.color
+                    , theme |> ThemeColor.dropdownBtnBackground |> Background.color
                     , Border.width 1
-                    , Border.color Color.transparent100
+                    , theme |> ThemeColor.border |> Border.color
                     , Border.rounded 8
                     ]
                     { onPress = param.onPress |> Just
@@ -98,7 +99,7 @@ view { time, offset, chosenZone, images, theme } param =
                 [ Region.description "maturity button"
                 , width fill
                 , height <| px 44
-                , theme |> Color.primary500 |> Background.color
+                , theme |> ThemeColor.primaryBtn |> Background.color
                 , Border.rounded 8
                 ]
                 { onPress = param.onPress |> Just
@@ -146,7 +147,7 @@ disabled theme =
         , height <| px 44
         , paddingXY 12 0
         , spacing 6
-        , theme |> Color.primary100 |> Background.color
+        , theme |> ThemeColor.dropdownBtnBackground |> Background.color
         , Border.rounded 8
         ]
         (el

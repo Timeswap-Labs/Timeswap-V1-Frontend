@@ -32,6 +32,7 @@ module Utility.Color exposing
     , primary300
     , primary400
     , primary500
+    , primaryLight
     , secondary100
     , secondary200
     , secondary300
@@ -192,6 +193,11 @@ primary400 =
 primary500 : Color
 primary500 =
     rgba255 118 175 204 1
+
+
+primaryLight : Color
+primaryLight =
+    rgba255 118 175 204 0.12
 
 
 secondary100 : Color

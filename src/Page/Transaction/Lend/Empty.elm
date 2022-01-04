@@ -29,7 +29,8 @@ import Page.Transaction.Info as Info
 import Page.Transaction.Output as Output
 import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
-import Utility.ThemeColor as Color
+import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
 view :
@@ -60,7 +61,7 @@ assetInSection model token =
         , padding 16
         , spacing 10
         , alpha 0.2
-        , model.theme |> Color.primary100 |> Background.color
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ el
@@ -68,7 +69,7 @@ assetInSection model token =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , model.theme |> Color.primary400 |> Font.color
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Amount to Lend")
         , token
@@ -98,7 +99,7 @@ claimsOutSection model asset collateral =
         , padding 16
         , spacing 12
         , alpha 0.2
-        , model.theme |> Color.primary100 |> Background.color
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ Switch.empty model.theme
@@ -135,7 +136,7 @@ bondOutSection model asset =
             [ width shrink
             , height shrink
             , Font.size 14
-            , model.theme |> Color.primary400 |> Font.color
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Amount to Receive")
         , asset
@@ -170,7 +171,7 @@ insuranceOutSection model collateral =
             [ width shrink
             , height shrink
             , Font.size 14
-            , model.theme |> Color.primary400 |> Font.color
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Amount Protecting")
         , collateral

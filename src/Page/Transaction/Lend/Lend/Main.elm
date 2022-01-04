@@ -67,9 +67,10 @@ import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Url.Builder as Builder
+import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
-import Utility.ThemeColor as Color
+import Utility.ThemeColor as ThemeColor
 
 
 type Transaction
@@ -1614,7 +1615,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
         , height shrink
         , padding 16
         , spacing 10
-        , model.theme |> Color.primary100 |> Background.color
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -1628,7 +1629,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , model.theme |> Color.primary400 |> Font.color
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Amount to Lend")
             , blockchain
@@ -1674,7 +1675,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
         , height shrink
         , padding 16
         , spacing 12
-        , model.theme |> Color.primary100 |> Background.color
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ (case claimsOut of
@@ -1864,7 +1865,7 @@ bondOutSection model asset { tooltip } output =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , model.theme |> Color.primary400 |> Font.color
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Amount to Receive")
             , case output of
@@ -1913,7 +1914,7 @@ insuranceOutSection model collateral { tooltip } output =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , model.theme |> Color.primary400 |> Font.color
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Amount Protecting")
             , case output of
@@ -1962,7 +1963,7 @@ advancedBondOutSection model asset { tooltip } or =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , model.theme |> Color.primary400 |> Font.color
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Amount to Receive")
             , case or of
@@ -2022,7 +2023,7 @@ advancedInsuranceOutSection model collateral { tooltip } or =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , model.theme |> Color.primary400 |> Font.color
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Amount Protecting")
             , case or of

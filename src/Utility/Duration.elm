@@ -20,7 +20,8 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Time exposing (Posix)
-import Utility.ThemeColor as Color
+import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 import Utility.Tooltip as Tooltip
 
 
@@ -88,7 +89,7 @@ viewMaturity param =
           )
             |> below
         , Font.size 14
-        , param.theme |> Color.light100 |> Font.color
+        , param.theme |> ThemeColor.text |> Font.color
         ]
         ((case param.chosenZone of
             ChosenZone.Here ->
