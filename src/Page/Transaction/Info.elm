@@ -11,6 +11,7 @@ import Data.CDP exposing (CDP)
 import Data.Pair exposing (Pair)
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -32,11 +33,12 @@ import Element.Font as Font
 import Utility.Calculate as Calculate
 import Utility.Color as Color
 import Utility.Loading as Loading
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
-lendAPR : Remote failure Float -> Element msg
-lendAPR remote =
+lendAPR : Remote failure Float -> Theme -> Element msg
+lendAPR remote theme =
     column
         [ width fill
         , height shrink
@@ -47,7 +49,7 @@ lendAPR remote =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             (text "APR")
         , case remote of
@@ -78,7 +80,7 @@ lendAPR remote =
                     , Font.size 18
                     , paddingXY 0 3
                     , (if float == 0 then
-                        Color.transparent200
+                        theme |> ThemeColor.textLight
 
                        else
                         Color.positive400
@@ -89,8 +91,8 @@ lendAPR remote =
         ]
 
 
-borrowAPR : Remote failure Float -> Element msg
-borrowAPR remote =
+borrowAPR : Remote failure Float -> Theme -> Element msg
+borrowAPR remote theme =
     column
         [ width fill
         , height shrink
@@ -101,7 +103,7 @@ borrowAPR remote =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             (text "APR")
         , case remote of
@@ -132,7 +134,7 @@ borrowAPR remote =
                     , Font.size 18
                     , paddingXY 0 3
                     , (if float == 0 then
-                        Color.transparent200
+                        theme |> ThemeColor.textLight
 
                        else
                         Color.negative400
@@ -144,7 +146,7 @@ borrowAPR remote =
 
 
 lendCDP :
-    { model | priceFeed : PriceFeed }
+    { model | priceFeed : PriceFeed, theme : Theme }
     ->
         { onMouseEnter : tooltip -> msg
         , onMouseLeave : msg
@@ -155,7 +157,7 @@ lendCDP :
         , cdp : Remote foalure CDP
         }
     -> Element msg
-lendCDP { priceFeed } param =
+lendCDP { priceFeed, theme } param =
     column
         [ width fill
         , height shrink
@@ -171,7 +173,7 @@ lendCDP { priceFeed } param =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "CDP")
             , case param.cdp of
@@ -247,7 +249,7 @@ lendCDP { priceFeed } param =
                                     , Font.size 18
                                     , paddingXY 0 3
                                     , (if percent == 0 then
-                                        Color.transparent200
+                                        theme |> ThemeColor.textLight
 
                                        else if percent <= 1 then
                                         Color.negative400
@@ -284,7 +286,7 @@ lendCDP { priceFeed } param =
 
 
 borrowCDP :
-    { model | priceFeed : PriceFeed }
+    { model | priceFeed : PriceFeed, theme : Theme }
     ->
         { onMouseEnter : tooltip -> msg
         , onMouseLeave : msg
@@ -295,7 +297,7 @@ borrowCDP :
         , cdp : Remote failure CDP
         }
     -> Element msg
-borrowCDP { priceFeed } param =
+borrowCDP { priceFeed, theme } param =
     column
         [ width fill
         , height shrink
@@ -311,7 +313,7 @@ borrowCDP { priceFeed } param =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "CDP")
             , case param.cdp of
@@ -423,8 +425,8 @@ borrowCDP { priceFeed } param =
         ]
 
 
-emptyAPR : Element Never
-emptyAPR =
+emptyAPR : Theme -> Element Never
+emptyAPR theme =
     column
         [ width fill
         , height shrink
@@ -435,7 +437,7 @@ emptyAPR =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             (text "APR")
         , el
@@ -446,8 +448,8 @@ emptyAPR =
         ]
 
 
-emptyCDP : Element Never
-emptyCDP =
+emptyCDP : Theme -> Element Never
+emptyCDP theme =
     column
         [ width fill
         , height shrink
@@ -458,7 +460,7 @@ emptyCDP =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             (text "CDP")
         , el

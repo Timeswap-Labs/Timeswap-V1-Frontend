@@ -11,6 +11,7 @@ module Utility.ThemeColor exposing
     , negative500
     , none
     , outside
+    , placeholder
     , positive100
     , positive200
     , positive300
@@ -26,6 +27,8 @@ module Utility.ThemeColor exposing
     , secondary500
     , sectionBackground
     , text
+    , textLight
+    , textboxBorder
     , transparentVery
     , warning100
     , warning200
@@ -69,6 +72,26 @@ text theme =
             Color.dark500
 
 
+textLight : Theme -> Color
+textLight theme =
+    case theme of
+        Theme.Dark ->
+            Color.transparent300
+
+        Theme.Light ->
+            Color.dark100
+
+
+placeholder : Theme -> Color
+placeholder theme =
+    case theme of
+        Theme.Dark ->
+            Color.transparent200
+
+        Theme.Light ->
+            Color.dark100
+
+
 sectionBackground : Theme -> Color
 sectionBackground theme =
     case theme of
@@ -97,6 +120,16 @@ border theme =
 
         Theme.Light ->
             Color.secondary100
+
+
+textboxBorder : Theme -> Color
+textboxBorder theme =
+    case theme of
+        Theme.Dark ->
+            Color.transparent100
+
+        Theme.Light ->
+            Color.secondary200
 
 
 primary200 : Color

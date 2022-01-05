@@ -20,6 +20,7 @@ module Page.Transaction.Button exposing
     )
 
 import Data.ERC20 as ERC20 exposing (ERC20)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -40,6 +41,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Http
 import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
 view :
@@ -53,7 +55,7 @@ view params =
         , width fill
         , height <| px 44
         , Background.color Color.primary500
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         { onPress = Just params.onPress
         , label =
@@ -75,7 +77,7 @@ disabled string =
         , width fill
         , height <| px 44
         , Background.color Color.primary100
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -104,7 +106,7 @@ approve params =
         , width fill
         , height <| px 44
         , Background.color Color.primary500
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         { onPress = Just params.onPress
         , label =
@@ -133,7 +135,7 @@ checkingAllowance =
         , width fill
         , height <| px 44
         , Background.color Color.primary100
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -153,7 +155,7 @@ checkingBalance =
         , width fill
         , height <| px 44
         , Background.color Color.primary100
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -178,7 +180,7 @@ disabledApprove erc20 =
         , width fill
         , height <| px 44
         , Background.color Color.primary100
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -210,7 +212,7 @@ pendingApprove erc20 =
         , width fill
         , height <| px 44
         , Background.color Color.primary100
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -230,14 +232,14 @@ pendingApprove erc20 =
         )
 
 
-connect : msg -> Element msg
-connect msg =
+connect : Theme -> msg -> Element msg
+connect theme msg =
     Input.button
         [ Region.description "connect wallet"
         , width fill
         , height <| px 44
-        , Background.color Color.primary500
-        , Border.rounded 8
+        , theme |> ThemeColor.primaryBtn |> Background.color
+        , Border.rounded 4
         ]
         { onPress = Just msg
         , label =
@@ -259,7 +261,7 @@ approveAsset msg =
         , width fill
         , height <| px 44
         , Background.color Color.primary500
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         { onPress = Just msg
         , label =
@@ -281,7 +283,7 @@ approveCollateral msg =
         , width fill
         , height <| px 44
         , Background.color Color.primary500
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         { onPress = Just msg
         , label =
@@ -343,7 +345,7 @@ loading =
         , width fill
         , height <| px 44
         , Background.color Color.primary100
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -363,7 +365,7 @@ matured =
         , width fill
         , height <| px 44
         , Background.color Color.primary100
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -383,7 +385,7 @@ doesNotExist =
         , width fill
         , height <| px 44
         , Background.color Color.primary100
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -403,7 +405,7 @@ exist =
         , width fill
         , height <| px 44
         , Background.color Color.primary100
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -412,7 +414,7 @@ exist =
             , paddingXY 0 4
             , Font.color Color.transparent100
             ]
-            (text "Pool Already Exist")
+            (text "Pool Already Exists")
         )
 
 
@@ -422,7 +424,7 @@ error httpError =
         [ width fill
         , height <| px 44
         , Background.color Color.negative500
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -441,7 +443,7 @@ notEnoughBalance =
         [ width fill
         , height <| px 44
         , Background.color Color.negative500
-        , Border.rounded 8
+        , Border.rounded 4
         ]
         (el
             [ centerX

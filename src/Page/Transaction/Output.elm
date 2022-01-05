@@ -89,7 +89,7 @@ view { images, theme } param =
             (case param.output of
                 Success output ->
                     output
-                        |> Fade.view param.token
+                        |> Fade.view theme param.token
 
                 Loading _ ->
                     none |> Debug.log "loading animation"

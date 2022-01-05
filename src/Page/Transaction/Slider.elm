@@ -1,6 +1,7 @@
 module Page.Transaction.Slider exposing (disabled, view)
 
 import Data.Percent as Percent exposing (Percent)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -29,6 +30,7 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
 view :
@@ -37,6 +39,7 @@ view :
     , percent : Percent
     , min : Float
     , max : Float
+    , theme : Theme
     , learnMore : String
     }
     -> Element msg
@@ -55,13 +58,13 @@ view param =
             [ el
                 [ alignLeft
                 , Font.regular
-                , Font.color Color.transparent500
+                , param.theme |> ThemeColor.primaryBtn |> Font.color
                 ]
                 (text "Adjust your APR")
             , newTabLink
                 [ alignRight
                 , Font.regular
-                , Font.color Color.primary500
+                , param.theme |> ThemeColor.primaryBtn |> Font.color
                 ]
                 { url = param.learnMore
                 , label = text "Learn more"
@@ -78,7 +81,7 @@ view param =
                 , height shrink
                 , paddingXY 0 2
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 [ el
                     [ alignLeft
@@ -102,9 +105,10 @@ slider :
         , percent : Percent
         , min : Float
         , max : Float
+        , theme : Theme
     }
     -> Element msg
-slider { onChange, click, percent, min, max } =
+slider { onChange, click, percent, min, max, theme } =
     Input.slider
         [ width fill
         , height <| px 20
@@ -127,7 +131,7 @@ slider { onChange, click, percent, min, max } =
             Input.thumb
                 [ width <| px 20
                 , height <| px 20
-                , Background.color Color.primary500
+                , theme |> ThemeColor.primaryBtn |> Background.color
                 , Border.rounded 999
                 , Border.width 2
                 , Border.color Color.transparent500
@@ -136,8 +140,8 @@ slider { onChange, click, percent, min, max } =
         }
 
 
-disabled : Percent -> Element Never
-disabled percent =
+disabled : Theme -> Percent -> Element Never
+disabled theme percent =
     column
         [ width fill
         , height shrink
@@ -173,7 +177,7 @@ disabled percent =
                 , height shrink
                 , paddingXY 0 2
                 , Font.size 12
-                , Font.color Color.transparent300
+                , theme |> ThemeColor.textLight |> Font.color
                 ]
                 [ el
                     [ alignLeft

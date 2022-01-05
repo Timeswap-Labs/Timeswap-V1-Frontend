@@ -1266,7 +1266,7 @@ view model blockchain pool (Transaction transaction) =
         transaction
             |> liqOutSection model
                 pool
-    , buttons = buttons blockchain
+    , buttons = buttons model.theme blockchain
     }
 
 
@@ -1424,7 +1424,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
                     )
              )
                 |> (\( apr, cdp ) ->
-                        [ Info.lendAPR apr
+                        [ Info.lendAPR apr model.theme
                         , Info.lendCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave
@@ -1709,8 +1709,8 @@ liqOutSection model pool { state } =
         ]
 
 
-buttons : Blockchain -> Element Msg
-buttons blockchain =
+buttons : Theme -> Blockchain -> Element Msg
+buttons theme blockchain =
     column
         [ width fill
         , height shrink
@@ -1721,5 +1721,5 @@ buttons blockchain =
             |> Maybe.map
                 (\_ -> [])
             |> Maybe.withDefault
-                [ Button.connect ClickConnect ]
+                [ Button.connect theme ClickConnect ]
         )

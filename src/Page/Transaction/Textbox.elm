@@ -9,6 +9,7 @@ import Element
     exposing
         ( Element
         , alignLeft
+        , alignRight
         , behindContent
         , centerY
         , el
@@ -16,6 +17,7 @@ import Element
         , height
         , none
         , padding
+        , paddingEach
         , paddingXY
         , px
         , row
@@ -33,6 +35,7 @@ import Element.Region as Region
 import Utility.Color as Color
 import Utility.Fade as Fade
 import Utility.Image as Image
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
@@ -57,19 +60,20 @@ view { images, theme } param =
         , height <| px 44
         , paddingXY 12 0
         , Border.width 1
-        , Border.color Color.primary100
+        , theme |> ThemeColor.textboxBorder |> Border.color
         , Border.rounded 8
         ]
         (Input.text
             ([ width fill
              , height shrink
              , centerY
+             , Font.alignRight
              , spacing 12
              , Background.color Color.none
              , Border.width 0
-             , Font.size 16
+             , Font.size 18
              , paddingXY 0 4
-             , Font.color Color.light100
+             , theme |> ThemeColor.text |> Font.color
              ]
                 ++ (param.onClick
                         |> Maybe.map Events.onClick
@@ -91,7 +95,8 @@ view { images, theme } param =
                         Input.placeholder
                             [ Font.size 16
                             , centerY
-                            , Font.color Color.transparent200
+                            , Font.alignRight
+                            , theme |> ThemeColor.placeholder |> Font.color
                             ]
                             (text "0.0")
 
@@ -100,8 +105,9 @@ view { images, theme } param =
                             [ width fill
                             , height fill
                             , centerY
+                            , Font.alignRight
                             ]
-                            (Fade.view param.token uint)
+                            (Fade.view theme param.token uint)
                 )
                     |> Just
             , label =

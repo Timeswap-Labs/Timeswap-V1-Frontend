@@ -692,7 +692,7 @@ view model blockchain pool (Transaction transaction) =
     , third =
         transaction
             |> liqOutSection model pool
-    , buttons = buttons blockchain
+    , buttons = buttons model.theme blockchain
     }
 
 
@@ -784,9 +784,11 @@ duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tool
             , height shrink
             , spacing 16
             ]
-            [ liquidityOut
-                |> Remote.map .apr
+            [ model.theme
                 |> Info.lendAPR
+                    (liquidityOut
+                        |> Remote.map .apr
+                    )
             , liquidityOut
                 |> Remote.map .cdp
                 |> (\cdp ->
@@ -961,8 +963,8 @@ liqOutSection model pool { liquidityOut } =
         ]
 
 
-buttons : Blockchain -> Element Msg
-buttons blockchain =
+buttons : Theme -> Blockchain -> Element Msg
+buttons theme blockchain =
     column
         [ width fill
         , height shrink
@@ -973,5 +975,5 @@ buttons blockchain =
             |> Maybe.map
                 (\_ -> [])
             |> Maybe.withDefault
-                [ Button.connect ClickConnect ]
+                [ Button.connect theme ClickConnect ]
         )

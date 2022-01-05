@@ -155,8 +155,8 @@ duesInSection model blockchain pool transaction =
             , height shrink
             , spacing 16
             ]
-            [ Info.emptyAPR
-            , Info.emptyCDP
+            [ Info.emptyAPR model.theme
+            , Info.emptyCDP model.theme
             ]
         , column
             [ width fill

@@ -2229,7 +2229,7 @@ view model blockchain pool (Transaction transaction) =
     , second =
         transaction
             |> duesInSection model blockchain pool
-    , buttons = buttons blockchain
+    , buttons = buttons model.theme blockchain
     }
 
 
@@ -2397,6 +2397,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
                         , percent = percent
                         , min = 8
                         , max = 120
+                        , theme = model.theme
                         , learnMore =
                             Builder.crossOrigin
                                 "https://timeswap.gitbook.io"
@@ -2445,7 +2446,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
                     )
              )
                 |> (\( apr, cdp ) ->
-                        [ Info.borrowAPR apr
+                        [ Info.borrowAPR apr model.theme
                         , Info.borrowCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave
@@ -2860,8 +2861,8 @@ advancedCollateralInSection model blockchain collateral { tooltip } or =
         ]
 
 
-buttons : Blockchain -> Element Msg
-buttons blockchain =
+buttons : Theme -> Blockchain -> Element Msg
+buttons theme blockchain =
     column
         [ width fill
         , height shrink
@@ -2872,5 +2873,5 @@ buttons blockchain =
             |> Maybe.map
                 (\_ -> [])
             |> Maybe.withDefault
-                [ Button.connect ClickConnect ]
+                [ Button.connect theme ClickConnect ]
         )

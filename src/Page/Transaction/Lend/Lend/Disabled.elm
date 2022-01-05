@@ -195,15 +195,15 @@ claimsOutSection model pool { claimsOut } =
             Insurance { percent } ->
                 Just percent
           )
-            |> Maybe.map Slider.disabled
+            |> Maybe.map (Slider.disabled model.theme)
             |> Maybe.withDefault none
         , row
             [ width fill
             , height shrink
             , spacing 16
             ]
-            [ Info.emptyAPR
-            , Info.emptyCDP
+            [ Info.emptyAPR model.theme
+            , Info.emptyCDP model.theme
             ]
         , case claimsOut of
             Default ->

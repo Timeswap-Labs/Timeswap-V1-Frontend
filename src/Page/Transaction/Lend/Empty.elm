@@ -108,8 +108,8 @@ claimsOutSection model asset collateral =
             , height shrink
             , spacing 16
             ]
-            [ Info.emptyAPR
-            , Info.emptyCDP
+            [ Info.emptyAPR model.theme
+            , Info.emptyCDP model.theme
             ]
         , column
             [ width fill

@@ -1597,7 +1597,8 @@ view model blockchain pool (Transaction transaction) =
             |> claimsOutSection model pool
     , buttons =
         transaction
-            |> buttons blockchain
+            |> buttons model.theme
+                blockchain
                 (pool.pair |> Pair.toAsset)
     }
 
@@ -1674,7 +1675,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
         , width fill
         , height shrink
         , padding 16
-        , spacing 12
+        , spacing 16
         , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
@@ -1713,6 +1714,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                         , percent = percent
                         , min = 0
                         , max = 128
+                        , theme = model.theme
                         , learnMore =
                             Builder.crossOrigin
                                 "https://timeswap.gitbook.io"
@@ -1751,7 +1753,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                     )
              )
                 |> (\( apr, cdp ) ->
-                        [ Info.lendAPR apr
+                        [ Info.lendAPR apr model.theme
                         , Info.lendCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave
@@ -1769,7 +1771,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                 column
                     [ width fill
                     , height shrink
-                    , spacing 12
+                    , spacing 16
                     ]
                     [ default
                         |> Remote.map .bondOut
@@ -1865,7 +1867,7 @@ bondOutSection model asset { tooltip } output =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , model.theme |> ThemeColor.actionElemLabel |> Font.color
+                , model.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "Amount to Receive")
             , case output of
@@ -1914,7 +1916,7 @@ insuranceOutSection model collateral { tooltip } output =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , model.theme |> ThemeColor.actionElemLabel |> Font.color
+                , model.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "Amount Protecting")
             , case output of
@@ -2062,11 +2064,12 @@ advancedInsuranceOutSection model collateral { tooltip } or =
 
 
 buttons :
-    Blockchain
+    Theme
+    -> Blockchain
     -> Token
     -> { transaction | assetIn : String, claimsOut : ClaimsOut }
     -> Element Msg
-buttons blockchain asset transaction =
+buttons theme blockchain asset transaction =
     column
         [ width fill
         , height shrink
@@ -2230,7 +2233,7 @@ buttons blockchain asset transaction =
                             []
                 )
             |> Maybe.withDefault
-                [ Button.connect ClickConnect ]
+                [ Button.connect theme ClickConnect ]
         )
 
 

@@ -107,8 +107,16 @@ viewRecommended { onChange, mode, theme } =
             el
                 [ centerX
                 , centerY
-                , Color.light100 |> Font.color
-                , Font.size 14
+                , (case mode of
+                    Mode.Recommended ->
+                        Color.light100
+
+                    Mode.Advanced ->
+                        theme |> ThemeColor.textLight
+                  )
+                    |> Font.color
+                , Font.size 16
+                , Font.bold
                 ]
                 (text "Recommended")
         }
@@ -137,8 +145,16 @@ disabledRecommended { mode, theme } =
         (el
             [ centerX
             , centerY
-            , Color.light100 |> Font.color
-            , Font.size 14
+            , (case mode of
+                Mode.Recommended ->
+                    Color.light100
+
+                Mode.Advanced ->
+                    theme |> ThemeColor.textLight
+              )
+                |> Font.color
+            , Font.size 16
+            , Font.bold
             ]
             (text "Recommended")
         )
@@ -156,7 +172,8 @@ emptyRecommended theme =
             [ centerX
             , centerY
             , Color.light100 |> Font.color
-            , Font.size 14
+            , Font.size 16
+            , Font.bold
             ]
             (text "Recommended")
         )
@@ -194,8 +211,16 @@ viewAdvanced { onChange, mode, theme } =
             el
                 [ centerX
                 , centerY
-                , Color.light100 |> Font.color
-                , Font.size 14
+                , (case mode of
+                    Mode.Recommended ->
+                        theme |> ThemeColor.textLight
+
+                    Mode.Advanced ->
+                        Color.light100
+                  )
+                    |> Font.color
+                , Font.size 16
+                , Font.bold
                 ]
                 (text "Advanced")
         }
@@ -220,8 +245,16 @@ disabledAdvanced { mode, theme } =
         (el
             [ centerX
             , centerY
-            , Color.light100 |> Font.color
-            , Font.size 14
+            , (case mode of
+                Mode.Recommended ->
+                    theme |> ThemeColor.textLight
+
+                Mode.Advanced ->
+                    Color.light100
+              )
+                |> Font.color
+            , Font.size 16
+            , Font.bold
             ]
             (text "Advanced")
         )
@@ -237,7 +270,8 @@ emptyAdvanced theme =
             [ centerX
             , centerY
             , Color.light100 |> Font.color
-            , Font.size 14
+            , Font.size 16
+            , Font.bold
             ]
             (text "Advanced")
         )

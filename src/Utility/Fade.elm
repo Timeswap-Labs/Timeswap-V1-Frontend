@@ -1,5 +1,6 @@
 module Utility.Fade exposing (view, viewLP)
 
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
@@ -16,15 +17,16 @@ import Element
         )
 import Element.Font as Font
 import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
-view : Token -> Uint -> Element msg
-view token amount =
+view : Theme -> Token -> Uint -> Element msg
+view theme token amount =
     if amount |> Uint.isZero then
         el
             [ width shrink
             , height shrink
-            , Font.color Color.transparent200
+            , theme |> ThemeColor.textLight |> Font.color
             , Font.size 16
             ]
             (text "0.0")
