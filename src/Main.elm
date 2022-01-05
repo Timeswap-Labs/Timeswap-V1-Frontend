@@ -96,6 +96,7 @@ import Utility.Image as Image
 import Utility.Length as Length
 import Utility.Pointer as Pointer
 import Utility.Scroll as Scroll
+import Utility.ThemeColor as ThemeColor
 
 
 main : Program Flags Model Msg
@@ -1235,8 +1236,8 @@ header ({ device, backdrop } as model) =
         ]
 
 
-warning : { model | images : Images } -> Element msg
-warning { images } =
+warning : { model | images : Images, theme : Theme } -> Element msg
+warning { images, theme } =
     row
         [ width fill
         , height shrink
@@ -1245,7 +1246,13 @@ warning { images } =
         , spacing 6
         ]
         [ images
-            |> Image.info
+            |> (case theme of
+                    Theme.Dark ->
+                        Image.info
+
+                    Theme.Light ->
+                        Image.error
+               )
                 [ width <| px 20
                 , height <| px 20
                 , centerX
@@ -1258,7 +1265,7 @@ warning { images } =
             , centerY
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.transparent500
+            , theme |> ThemeColor.textError |> Font.color
             ]
             (text "We are in alpha. Use tokens you are willing to lose.")
         ]
@@ -1360,17 +1367,23 @@ scrollButton ({ device, backdrop, images } as model) =
         )
 
 
-logo : { model | device : Device, images : Images } -> Element Never
-logo { device, images } =
+logo : { model | device : Device, images : Images, theme : Theme } -> Element Never
+logo { device, images, theme } =
     row
         [ Region.description "logo"
-        , spacing 6
+        , spacing 12
         , centerY
         ]
         [ case device of
             Desktop ->
                 images
-                    |> Image.logo
+                    |> (case theme of
+                            Theme.Dark ->
+                                Image.logoText
+
+                            Theme.Light ->
+                                Image.logoTextDark
+                       )
                         [ height <| px 32 ]
 
             _ ->
@@ -1383,7 +1396,7 @@ logo { device, images } =
             , padding 5
             , alignLeft
             , centerY
-            , Background.color Color.primary500
+            , theme |> ThemeColor.primaryBtn |> Background.color
             , Border.rounded 4
             ]
             (el
@@ -1405,9 +1418,10 @@ tabs :
         | device : Device
         , backdrop : Backdrop
         , page : Page
+        , theme : Theme
     }
     -> Element Never
-tabs ({ device, backdrop } as model) =
+tabs ({ device, backdrop, theme } as model) =
     row
         ([ Region.description "tabs"
          , width shrink
@@ -1421,7 +1435,7 @@ tabs ({ device, backdrop } as model) =
          , centerY
          , padding 4
          , spacing 4
-         , Background.color Color.primary100
+         , theme |> ThemeColor.border |> Background.color
          , Border.rounded 8
          , Pointer.on
          ]
@@ -1442,13 +1456,13 @@ tabs ({ device, backdrop } as model) =
         ]
 
 
-tab : { model | device : Device, page : Page } -> Tab -> Element Never
-tab { device, page } givenTab =
+tab : { model | device : Device, page : Page, theme : Theme } -> Tab -> Element Never
+tab { device, page, theme } givenTab =
     if (page |> Page.toTab) == givenTab then
         el
             [ width <| px 84
             , height fill
-            , Background.color Color.primary500
+            , theme |> ThemeColor.primaryBtn |> Background.color
             , Border.rounded 4
             ]
             (el
@@ -1456,6 +1470,7 @@ tab { device, page } givenTab =
                 , centerY
                 , Font.color Color.light100
                 , Font.size 16
+                , Font.bold
                 ]
                 (givenTab
                     |> Tab.toString
@@ -1477,8 +1492,9 @@ tab { device, page } givenTab =
                 el
                     [ centerX
                     , centerY
-                    , Font.color Color.light100
+                    , theme |> ThemeColor.textLight |> Font.color
                     , Font.size 16
+                    , Font.bold
                     ]
                     (givenTab
                         |> Tab.toString
@@ -1493,18 +1509,19 @@ chainListButton :
         , backdrop : Backdrop
         , images : Images
         , blockchain : Support User.NotSupported Blockchain
+        , theme : Theme
     }
     -> Element Msg
-chainListButton ({ device, images } as model) =
+chainListButton ({ device, images, theme } as model) =
     Input.button
         [ Region.description "chains button"
         , width shrink
         , height <| px 44
         , paddingXY 12 0
-        , Background.color Color.primary100
-        , Border.rounded 8
+        , theme |> ThemeColor.btnBackground |> Background.color
+        , Border.rounded 4
         , mouseDown [ Background.color Color.primary300 ]
-        , mouseOver [ Background.color Color.primary200 ]
+        , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
         ]
         { onPress = Just OpenChainList
         , label =
@@ -1514,7 +1531,7 @@ chainListButton ({ device, images } as model) =
                 , paddingXY 0 3
                 , spacing 6
                 , Font.size 16
-                , Font.color Color.primary500
+                , theme |> ThemeColor.primaryBtn |> Font.color
                 ]
                 (case model.blockchain of
                     Supported blockchain ->
@@ -1562,14 +1579,15 @@ connectButton :
         , backdrop : Backdrop
         , images : Images
         , blockchain : Support User.NotSupported Blockchain
+        , theme : Theme
     }
     -> Element Msg
-connectButton ({ device, images } as model) =
+connectButton ({ device, images, theme } as model) =
     Input.button
         ([ width shrink
          , height <| px 44
          , paddingXY 12 0
-         , Border.rounded 8
+         , Border.rounded 4
          ]
             ++ (case model.blockchain of
                     Supported blockchain ->
@@ -1578,23 +1596,23 @@ connectButton ({ device, images } as model) =
                             |> Maybe.map
                                 (\_ ->
                                     [ Region.description "account button"
-                                    , Background.color Color.primary100
+                                    , theme |> ThemeColor.btnBackground |> Background.color
                                     , mouseDown [ Background.color Color.primary300 ]
-                                    , mouseOver [ Background.color Color.primary200 ]
+                                    , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
                                     ]
                                 )
                             |> Maybe.withDefault
                                 [ Region.description "connect button"
-                                , Background.color Color.primary500
+                                , theme |> ThemeColor.primaryBtn |> Background.color
                                 , mouseDown [ Background.color Color.primary300 ]
                                 , mouseOver [ Background.color Color.primary400 ]
                                 ]
 
                     NotSupported _ ->
                         [ Region.description "account button"
-                        , Background.color Color.primary100
+                        , theme |> ThemeColor.btnBackground |> Background.color
                         , mouseDown [ Background.color Color.primary300 ]
-                        , mouseOver [ Background.color Color.primary200 ]
+                        , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
                         ]
                )
         )
@@ -1628,7 +1646,7 @@ connectButton ({ device, images } as model) =
                                                     [ width shrink
                                                     , height shrink
                                                     , Font.size 16
-                                                    , Font.color Color.primary500
+                                                    , theme |> ThemeColor.primaryBtn |> Font.color
                                                     ]
                                                     (user
                                                         |> User.toName
@@ -1741,18 +1759,19 @@ zoneButton :
         , chosenZone : ChosenZone
         , backdrop : Backdrop
         , zoneDropdown : Maybe ()
+        , theme : Theme
     }
     -> Element Msg
-zoneButton ({ images, offset, zoneName, chosenZone, zoneDropdown } as model) =
+zoneButton ({ images, offset, zoneName, chosenZone, zoneDropdown, theme } as model) =
     Input.button
         [ Region.description "zone button"
         , width shrink
         , height <| px 44
         , paddingXY 12 0
-        , Background.color Color.primary100
-        , Border.rounded 8
+        , theme |> ThemeColor.btnBackground |> Background.color
+        , Border.rounded 4
         , mouseDown [ Background.color Color.primary300 ]
-        , mouseOver [ Background.color Color.primary200 ]
+        , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
         , el
             [ width fill
             , height fill
@@ -1781,11 +1800,19 @@ zoneButton ({ images, offset, zoneName, chosenZone, zoneDropdown } as model) =
                 , centerY
                 , spacing 8
                 , Font.size 16
-                , Font.color Color.primary500
+                , theme |> ThemeColor.primaryBtn |> Font.color
                 ]
                 [ ChosenZone.toString chosenZone zoneName offset
                     |> text
-                , images |> Image.discloser [ width <| px 11, height <| px 7 ]
+                , images
+                    |> (case theme of
+                            Theme.Dark ->
+                                Image.discloser
+
+                            Theme.Light ->
+                                Image.arrowDownDark
+                       )
+                        [ width <| px 11, height <| px 7 ]
                 ]
         }
 
@@ -1853,10 +1880,10 @@ themeButton { theme, images } =
         [ Region.description "theme button"
         , width <| px 44
         , height <| px 44
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 8
         , mouseDown [ Background.color Color.primary300 ]
-        , mouseOver [ Background.color Color.primary200 ]
+        , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
         ]
         { onPress = Just SwitchTheme
         , label =

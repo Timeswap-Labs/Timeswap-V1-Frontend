@@ -2123,17 +2123,17 @@ buttons theme blockchain asset transaction =
                                     ]
 
                                 ( Just (Success True), Just (Loading _) ) ->
-                                    [ Button.checkingAllowance |> map never
+                                    [ theme |> Button.checkingAllowance |> map never
                                     , disabledLend
                                     ]
 
                                 ( Just (Success False), Just (Loading _) ) ->
-                                    [ Button.checkingAllowance |> map never
+                                    [ theme |> Button.checkingAllowance |> map never
                                     , Button.notEnoughBalance |> map never
                                     ]
 
                                 ( Just (Loading _), Just (Loading _) ) ->
-                                    [ Button.checkingAllowance |> map never
+                                    [ theme |> Button.checkingAllowance |> map never
                                     , Button.checkingBalance |> map never
                                     ]
 
@@ -2173,12 +2173,12 @@ buttons theme blockchain asset transaction =
                                     ]
 
                                 ( Just (Loading _), Just (Loading _) ) ->
-                                    [ Button.checkingAllowance |> map never
+                                    [ theme |> Button.checkingAllowance |> map never
                                     , Button.checkingBalance |> map never
                                     ]
 
                                 ( _, Just (Loading _) ) ->
-                                    [ Button.checkingAllowance |> map never
+                                    [ theme |> Button.checkingAllowance |> map never
                                     , disabledLend
                                     ]
 

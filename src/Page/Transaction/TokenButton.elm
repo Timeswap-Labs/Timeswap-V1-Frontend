@@ -1,7 +1,7 @@
 module Page.Transaction.TokenButton exposing (view)
 
 import Data.Images exposing (Images)
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
 import Element
@@ -59,7 +59,7 @@ view { images, theme } param =
                         )
                     , width fill
                     , height <| px 44
-                    , theme |> ThemeColor.dropdownBtnBackground |> Background.color
+                    , theme |> ThemeColor.btnBackground |> Background.color
                     , Border.width 1
                     , theme |> ThemeColor.border |> Border.color
                     , Border.rounded 8
@@ -88,7 +88,13 @@ view { images, theme } param =
                                 , theme = theme
                                 }
                             , images
-                                |> Image.discloser
+                                |> (case theme of
+                                        Theme.Dark ->
+                                            Image.discloser
+
+                                        Theme.Light ->
+                                            Image.arrowDownDark
+                                   )
                                     [ width <| px 11
                                     , height <| px 7
                                     , alignRight
@@ -129,7 +135,13 @@ view { images, theme } param =
                             ]
                             (text "Select Token")
                         , images
-                            |> Image.discloser
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.discloser
+
+                                    Theme.Light ->
+                                        Image.arrowDownDark
+                               )
                                 [ width <| px 9
                                 , alignRight
                                 , centerY

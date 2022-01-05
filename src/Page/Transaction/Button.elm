@@ -128,13 +128,13 @@ approve params =
         }
 
 
-checkingAllowance : Element Never
-checkingAllowance =
+checkingAllowance : Theme -> Element Never
+checkingAllowance theme =
     el
         [ Region.description "checking allowance"
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
         ]
         (el
@@ -142,7 +142,7 @@ checkingAllowance =
             , centerY
             , Font.size 16
             , paddingXY 0 4
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.border |> Font.color
             ]
             (text "Checking Allowance")
         )

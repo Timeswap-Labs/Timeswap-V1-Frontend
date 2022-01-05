@@ -2,8 +2,9 @@ module Utility.ThemeColor exposing
     ( actionElemLabel
     , background
     , border
+    , btnBackground
+    , btnHoverBG
     , completelyTransparent
-    , dropdownBtnBackground
     , negative100
     , negative200
     , negative300
@@ -27,6 +28,7 @@ module Utility.ThemeColor exposing
     , secondary500
     , sectionBackground
     , text
+    , textError
     , textLight
     , textboxBorder
     , transparentVery
@@ -82,6 +84,16 @@ textLight theme =
             Color.dark100
 
 
+textError : Theme -> Color
+textError theme =
+    case theme of
+        Theme.Dark ->
+            Color.transparent500
+
+        Theme.Light ->
+            Color.negative400
+
+
 placeholder : Theme -> Color
 placeholder theme =
     case theme of
@@ -102,14 +114,24 @@ sectionBackground theme =
             Color.transparent200
 
 
-dropdownBtnBackground : Theme -> Color
-dropdownBtnBackground theme =
+btnBackground : Theme -> Color
+btnBackground theme =
     case theme of
         Theme.Dark ->
             Color.primary100
 
         Theme.Light ->
             Color.secondary100
+
+
+btnHoverBG : Theme -> Color
+btnHoverBG theme =
+    case theme of
+        Theme.Dark ->
+            Color.primary200
+
+        Theme.Light ->
+            Color.secondary200
 
 
 border : Theme -> Color

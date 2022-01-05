@@ -30,7 +30,7 @@ import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
 import Element
@@ -804,9 +804,9 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
 
 
 settingsButton :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Element Msg
-settingsButton { images } =
+settingsButton { images, theme } =
     Input.button
         [ width shrink
         , height shrink
@@ -816,7 +816,13 @@ settingsButton { images } =
         { onPress = Just ClickSettings
         , label =
             images
-                |> Image.option
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.option
+
+                        Theme.Light ->
+                            Image.settingsSecondary
+                   )
                     [ width <| px 20
                     , height <| px 20
                     ]

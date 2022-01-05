@@ -4,7 +4,7 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Images exposing (Images)
 import Data.Maturity exposing (Maturity)
 import Data.Offset exposing (Offset)
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -60,7 +60,7 @@ view { time, offset, chosenZone, images, theme } param =
                     [ Region.description "maturity button"
                     , width fill
                     , height <| px 44
-                    , theme |> ThemeColor.dropdownBtnBackground |> Background.color
+                    , theme |> ThemeColor.btnBackground |> Background.color
                     , Border.width 1
                     , theme |> ThemeColor.border |> Border.color
                     , Border.rounded 8
@@ -85,7 +85,13 @@ view { time, offset, chosenZone, images, theme } param =
                                 , theme = theme
                                 }
                             , images
-                                |> Image.discloser
+                                |> (case theme of
+                                        Theme.Dark ->
+                                            Image.discloser
+
+                                        Theme.Light ->
+                                            Image.arrowDownDark
+                                   )
                                     [ width <| px 11
                                     , height <| px 7
                                     , alignRight
@@ -130,7 +136,13 @@ view { time, offset, chosenZone, images, theme } param =
                             ]
                             (text "Select Maturity")
                         , images
-                            |> Image.discloser
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.discloser
+
+                                    Theme.Light ->
+                                        Image.arrowDownDark
+                               )
                                 [ width <| px 9
                                 , alignRight
                                 , centerY
@@ -147,7 +159,7 @@ disabled theme =
         , height <| px 44
         , paddingXY 12 0
         , spacing 6
-        , theme |> ThemeColor.dropdownBtnBackground |> Background.color
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 8
         ]
         (el

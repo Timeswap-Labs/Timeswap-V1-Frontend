@@ -2,6 +2,7 @@ module Utility.Image exposing
     ( allPairs
     , arrow
     , arrowDown
+    , arrowDownDark
     , calander
     , checkbox
     , checkboxSelected
@@ -21,8 +22,9 @@ module Utility.Image exposing
     , info
     , link
     , linkWhite
-    , logo
     , logoPure
+    , logoText
+    , logoTextDark
     , matured
     , medium
     , metamask
@@ -33,6 +35,7 @@ module Utility.Image exposing
     , plus
     , plusPositive
     , setting
+    , settingsSecondary
     , sun
     , telegram
     , tripleDots
@@ -169,9 +172,14 @@ openSea =
     view "OpenSea"
 
 
-logo : List (Attribute msg) -> Images -> Element msg
-logo =
-    view "Logo"
+logoText : List (Attribute msg) -> Images -> Element msg
+logoText =
+    view "LogoText"
+
+
+logoTextDark : List (Attribute msg) -> Images -> Element msg
+logoTextDark =
+    view "LogoTextDark"
 
 
 logoPure : List (Attribute msg) -> Images -> Element msg
@@ -259,6 +267,11 @@ arrowDown =
     view "ArrowDown"
 
 
+arrowDownDark : List (Attribute msg) -> Images -> Element msg
+arrowDownDark =
+    view "ArrowDownDark"
+
+
 hourglass : List (Attribute msg) -> Images -> Element msg
 hourglass =
     view "Hourglass"
@@ -287,6 +300,11 @@ calander =
 setting : List (Attribute msg) -> Images -> Element msg
 setting =
     view "Setting"
+
+
+settingsSecondary : List (Attribute msg) -> Images -> Element msg
+settingsSecondary =
+    view "SettingsSecondary"
 
 
 checkbox : List (Attribute msg) -> Images -> Element msg
