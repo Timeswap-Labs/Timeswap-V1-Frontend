@@ -16,24 +16,24 @@ import Element
 import Utility.Image as Image
 
 
-view : Images -> Pair -> Element msg
-view images pair =
+view : { pair : Pair, length : Int } -> Images -> Element msg
+view { pair, length } images =
     row
-        [ width <| px 36
+        [ width <| px (length * 3 // 2)
         , height shrink
         ]
         [ images
             |> Image.viewToken
-                [ width <| px 24
-                , height <| px 24
-                , moveRight 12
+                [ width <| px length
+                , height <| px length
+                , moveRight ((length // 2) |> toFloat)
                 ]
                 (pair |> Pair.toCollateral)
         , images
             |> Image.viewToken
-                [ width <| px 24
-                , height <| px 24
-                , moveLeft 24
+                [ width <| px length
+                , height <| px length
+                , moveLeft (length |> toFloat)
                 ]
                 (pair |> Pair.toAsset)
         ]

@@ -18,8 +18,8 @@ import Data.Uint as Uint exposing (Uint)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode exposing (Value)
+import Page.PoolInfo as PoolInfo exposing (PoolInfo)
 import Page.Transaction.Liquidity.Add.Error as Error exposing (Error)
-import Page.Transaction.PoolInfo as PoolInfo exposing (PoolInfo)
 
 
 type alias QueryAsset =

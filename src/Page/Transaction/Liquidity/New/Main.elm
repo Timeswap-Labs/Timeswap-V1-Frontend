@@ -691,7 +691,7 @@ view model blockchain pool (Transaction transaction) =
             |> duesOutSection model blockchain pool
     , third =
         transaction
-            |> liquidityOutSection model pool
+            |> liqOutSection model pool
     , buttons = buttons blockchain
     }
 
@@ -911,12 +911,12 @@ collateralOutSection model blockchain collateral { tooltip } input =
         ]
 
 
-liquidityOutSection :
+liqOutSection :
     { model | images : Images }
     -> Pool
     -> { transaction | liquidityOut : Remote Error LiquidityGivenNew }
     -> Element Msg
-liquidityOutSection model pool { liquidityOut } =
+liqOutSection model pool { liquidityOut } =
     column
         [ Region.description "liquidity output"
         , width fill

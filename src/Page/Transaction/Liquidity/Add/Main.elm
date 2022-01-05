@@ -51,6 +51,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
+import Page.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.Liquidity.Add.Disabled as Disabled
@@ -59,7 +60,6 @@ import Page.Transaction.Liquidity.Add.Query as Query
 import Page.Transaction.Liquidity.Add.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
-import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -1264,7 +1264,7 @@ view model blockchain pool (Transaction transaction) =
                 pool
     , third =
         transaction
-            |> liquidityOutSection model
+            |> liqOutSection model
                 pool
     , buttons = buttons blockchain
     }
@@ -1625,12 +1625,12 @@ collateralInSection model blockchain collateral { tooltip } or =
         ]
 
 
-liquidityOutSection :
+liqOutSection :
     { model | images : Images }
     -> Pool
     -> { transaction | state : State }
     -> Element Msg
-liquidityOutSection model pool { state } =
+liqOutSection model pool { state } =
     column
         [ Region.description "liquidity output"
         , width fill

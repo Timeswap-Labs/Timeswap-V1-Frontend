@@ -12,19 +12,21 @@ module Blockchain.Main exposing
     , update
     , updateApprove
     , updateBorrow
+    , updateBurn
     , updateClearTxns
     , updateCreate
     , updateLend
     , updateLiquidity
+    , updateWithdraw
     )
 
-import Animator exposing (Animator, Timeline)
-import Animator.Css
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.WriteBorrow exposing (WriteBorrow)
+import Blockchain.User.WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate exposing (WriteCreate)
 import Blockchain.User.WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
+import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
@@ -241,6 +243,52 @@ updateCreate model writeCreate (Blockchain ({ chain } as blockchain)) =
             (\user ->
                 user
                     |> User.updateCreate model chain writeCreate
+                    |> Tuple.mapBoth
+                        (\updated ->
+                            { blockchain | user = Just updated }
+                                |> Blockchain
+                        )
+                        (Cmd.map UserMsg)
+            )
+        |> Maybe.withDefault
+            ( blockchain |> Blockchain
+            , Cmd.none
+            )
+
+
+updateWithdraw :
+    WriteWithdraw
+    -> Blockchain
+    -> ( Blockchain, Cmd Msg )
+updateWithdraw writeWithdraw (Blockchain ({ chain } as blockchain)) =
+    blockchain.user
+        |> Maybe.map
+            (\user ->
+                user
+                    |> User.updateWithdraw chain writeWithdraw
+                    |> Tuple.mapBoth
+                        (\updated ->
+                            { blockchain | user = Just updated }
+                                |> Blockchain
+                        )
+                        (Cmd.map UserMsg)
+            )
+        |> Maybe.withDefault
+            ( blockchain |> Blockchain
+            , Cmd.none
+            )
+
+
+updateBurn :
+    WriteBurn
+    -> Blockchain
+    -> ( Blockchain, Cmd Msg )
+updateBurn writeBurn (Blockchain ({ chain } as blockchain)) =
+    blockchain.user
+        |> Maybe.map
+            (\user ->
+                user
+                    |> User.updateBurn chain writeBurn
                     |> Tuple.mapBoth
                         (\updated ->
                             { blockchain | user = Just updated }

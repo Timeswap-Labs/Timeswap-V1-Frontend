@@ -69,7 +69,7 @@ view model blockchain pool transaction =
             (pool.pair |> Pair.toAsset)
             transaction
     , second = duesInSection model blockchain pool transaction
-    , third = liquidityOutSection model pool
+    , third = liqOutSection model pool
     }
 
 
@@ -265,11 +265,11 @@ collateralInSection model blockchain collateral transaction =
         ]
 
 
-liquidityOutSection :
+liqOutSection :
     { model | images : Images }
     -> Pool
     -> Element Never
-liquidityOutSection model pool =
+liqOutSection model pool =
     column
         [ Region.description "liquidity output"
         , width <| px 343

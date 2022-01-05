@@ -53,6 +53,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
+import Page.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Borrow.Borrow.Disabled as Disabled
 import Page.Transaction.Borrow.Borrow.Error exposing (Error)
 import Page.Transaction.Borrow.Borrow.Query as Query
@@ -61,7 +62,6 @@ import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
-import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Slider as Slider
 import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox

@@ -1,4 +1,4 @@
-module Page.Transaction.PoolInfo exposing (PoolInfo, decoder, dummy, encode)
+module Page.PoolInfo exposing (PoolInfo, decoder, dummy, encode)
 
 import Data.Uint as Uint exposing (Uint)
 import Json.Decode as Decode exposing (Decoder)

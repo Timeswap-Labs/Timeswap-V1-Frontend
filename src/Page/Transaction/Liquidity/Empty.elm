@@ -47,7 +47,7 @@ view :
 view model { asset, collateral } =
     { first = assetInSection model asset
     , second = duesOutSection model asset collateral
-    , third = liquidityOutSection model asset collateral
+    , third = liqOutSection model asset collateral
     }
 
 
@@ -187,12 +187,12 @@ collateralOutSection model collateral =
         ]
 
 
-liquidityOutSection :
+liqOutSection :
     { model | images : Images }
     -> Maybe Token
     -> Maybe Token
     -> Element Never
-liquidityOutSection model maybeAsset maybeCollateral =
+liqOutSection model maybeAsset maybeCollateral =
     column
         [ Region.description "liquidity output"
         , width <| px 343

@@ -1011,6 +1011,27 @@ viewTxn { images } blockchain ( hash, txn ) =
                     , "pool"
                     ]
                         |> String.join " "
+
+                TxnWrite.Withdraw pool ->
+                    [ "Withdraw from"
+                    , pool |> Pool.toString
+                    , "pool"
+                    ]
+                        |> String.join " "
+
+                TxnWrite.Pay pool ->
+                    [ "Pay to"
+                    , pool |> Pool.toString
+                    , "pool"
+                    ]
+                        |> String.join " "
+
+                TxnWrite.Burn pool ->
+                    [ "Withdraw Liquidity from"
+                    , pool |> Pool.toString
+                    , "pool"
+                    ]
+                        |> String.join " "
              )
                 |> text
             )

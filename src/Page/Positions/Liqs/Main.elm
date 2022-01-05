@@ -1,4 +1,4 @@
-module Page.Positions.Claims.Main exposing
+module Page.Positions.Liqs.Main exposing
     ( Effect(..)
     , Msg
     , Positions
@@ -8,8 +8,8 @@ module Page.Positions.Claims.Main exposing
     )
 
 import Animator exposing (Timeline)
-import Blockchain.User.Claim exposing (Claim)
-import Blockchain.User.Claims as Claims exposing (Claims)
+import Blockchain.User.Liq exposing (Liq)
+import Blockchain.User.Liqs as Liqs exposing (Liqs)
 import Blockchain.User.Main as User exposing (User)
 import Data.Backdrop exposing (Backdrop)
 import Data.ChosenZone exposing (ChosenZone)
@@ -49,7 +49,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import Element.Region as Region
-import Page.Positions.Claims.Tooltip as Tooltip exposing (Tooltip)
+import Page.Positions.Liqs.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Dict as Dict
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -67,13 +67,13 @@ type Positions
 
 
 type Msg
-    = ClickClaim Pool
+    = ClickLiq Pool
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
 
 type Effect
-    = OpenClaim Pool
+    = OpenLiq Pool
 
 
 init : Positions
@@ -84,9 +84,9 @@ init =
 update : Msg -> Positions -> ( Positions, Maybe Effect )
 update msg positions =
     case msg of
-        ClickClaim pool ->
+        ClickLiq pool ->
             ( positions
-            , OpenClaim pool
+            , OpenLiq pool
                 |> Just
             )
 
@@ -114,9 +114,9 @@ view :
     -> User
     -> Positions
     -> Element Msg
-view ({ theme, device, backdrop } as model) user (Positions tooltip) =
+view ({ device, backdrop, theme } as model) user (Positions tooltip) =
     el
-        ([ Region.description "lend positions"
+        ([ Region.description "liquidity positions"
          , (case device of
                 Desktop ->
                     758
@@ -142,19 +142,19 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
          ]
             ++ Glass.background backdrop theme
         )
-        (case user |> User.getClaims of
+        (case user |> User.getLiqs of
             Loading timeline ->
                 loading model timeline
 
             Failure error ->
                 none |> Debug.log "error view"
 
-            Success claims ->
-                if claims |> Dict.isEmpty then
-                    noClaims model
+            Success liqs ->
+                if liqs |> Dict.isEmpty then
+                    noLiqs model
 
                 else
-                    viewClaims model tooltip claims
+                    viewLiqs model tooltip liqs
         )
 
 
@@ -190,10 +190,17 @@ loading { images } timeline =
         ]
 
 
-noClaims : { model | images : Images } -> Element msg
-noClaims { images } =
+noLiqs : { model | device : Device, images : Images } -> Element msg
+noLiqs { device, images } =
     row
-        [ width shrink
+        [ (case device of
+            Desktop ->
+                shrink
+
+            _ ->
+                fill
+          )
+            |> width
         , height shrink
         , centerX
         , centerY
@@ -207,7 +214,7 @@ noClaims { images } =
                 , alignTop
                 ]
         , paragraph
-            [ width shrink
+            [ width fill
             , height shrink
             , centerX
             , centerY
@@ -215,11 +222,11 @@ noClaims { images } =
             , paddingXY 0 3
             , Font.color Color.transparent300
             ]
-            [ text "Your Lend positions will appear here..." ]
+            [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section. Your Liquidity positions will appear here..." ]
         ]
 
 
-viewClaims :
+viewLiqs :
     { model
         | time : Posix
         , offset : Offset
@@ -228,34 +235,34 @@ viewClaims :
         , images : Images
     }
     -> Maybe Tooltip
-    -> Claims
+    -> Liqs
     -> Element Msg
-viewClaims ({ time } as model) tooltip claims =
+viewLiqs ({ time } as model) tooltip liqs =
     column
         [ width fill
         , height shrink
         , spacing 20
         ]
-        [ title claims
+        [ title liqs
         , Keyed.column
             [ width fill
             , height shrink
             , spacing 12
             ]
-            (claims
-                |> Claims.toList time
+            (liqs
+                |> Liqs.toList time
                 |> List.map
                     (\(( pool, _ ) as tuple) ->
                         ( pool |> Pool.toString
-                        , tuple |> viewClaim model tooltip
+                        , tuple |> viewLiq model tooltip
                         )
                     )
             )
         ]
 
 
-title : Claims -> Element msg
-title claims =
+title : Liqs -> Element msg
+title liqs =
     el
         [ width shrink
         , height shrink
@@ -263,9 +270,9 @@ title claims =
         , paddingXY 0 2
         , Font.color Color.transparent500
         ]
-        ([ "Your Lend Positions"
+        ([ "Your Liquidity Positions"
          , "("
-         , claims
+         , liqs
             |> Dict.size
             |> String.fromInt
          , ")"
@@ -275,7 +282,7 @@ title claims =
         )
 
 
-viewClaim :
+viewLiq :
     { model
         | time : Posix
         , offset : Offset
@@ -284,14 +291,14 @@ viewClaim :
         , images : Images
     }
     -> Maybe Tooltip
-    -> ( Pool, Claim )
+    -> ( Pool, Liq )
     -> Element Msg
-viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
+viewLiq { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
     Input.button
         [ width fill
         , height <| px 56
         ]
-        { onPress = ClickClaim pool |> Just
+        { onPress = ClickLiq pool |> Just
         , label =
             row
                 [ width fill

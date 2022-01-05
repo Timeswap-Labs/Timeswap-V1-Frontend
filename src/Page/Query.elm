@@ -1,4 +1,4 @@
-module Page.Transaction.Query exposing (toUrlString)
+module Page.Query exposing (toUrlString)
 
 import Data.Chain as Chain exposing (Chain)
 import Data.Maturity as Maturity

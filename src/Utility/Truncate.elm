@@ -41,6 +41,8 @@ viewPairSymbol :
     , tooltip : tooltip
     , opened : Maybe tooltip
     , pair : Pair
+    , fontSize : Int
+    , fontPadding : Int
     }
     -> Element msg
 viewPairSymbol param =
@@ -54,9 +56,9 @@ viewPairSymbol param =
                 [ width shrink
                 , height shrink
                 , paddingEach
-                    { top = 3
+                    { top = param.fontPadding
                     , right = 0
-                    , bottom = 2
+                    , bottom = param.fontPadding - 1
                     , left = 0
                     }
                 , Border.widthEach
@@ -72,7 +74,7 @@ viewPairSymbol param =
                 , Events.onMouseLeave param.onMouseLeave
                 , (if opened == param.tooltip then
                     el
-                        [ Font.size 14
+                        [ Font.size param.fontSize
                         , Font.color Color.transparent300
                         ]
                         (text full)
@@ -92,9 +94,9 @@ viewPairSymbol param =
                 [ width shrink
                 , height shrink
                 , paddingEach
-                    { top = 3
+                    { top = param.fontPadding
                     , right = 0
-                    , bottom = 2
+                    , bottom = param.fontPadding - 1
                     , left = 0
                     }
                 , Border.widthEach
@@ -108,7 +110,7 @@ viewPairSymbol param =
                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
-                , Font.size 14
+                , Font.size param.fontSize
                 , Font.color Color.transparent500
                 ]
                 (text short)
@@ -117,8 +119,8 @@ viewPairSymbol param =
             el
                 [ width shrink
                 , height shrink
-                , paddingXY 0 3
-                , Font.size 14
+                , paddingXY 0 param.fontPadding
+                , Font.size param.fontSize
                 , Font.color Color.transparent500
                 ]
                 (text full)

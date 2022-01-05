@@ -80,6 +80,7 @@ import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Id as Id
 import Utility.Image as Image
+import Utility.PairImage as PairImage
 
 
 type Modal
@@ -440,22 +441,11 @@ pairWithPoolCount { images } (Modal { pair, pools }) =
         , height shrink
         , spacing 8
         ]
-        [ row [ width <| px 52 ]
-            [ images
-                |> Image.viewToken
-                    [ width <| px 32
-                    , height <| px 32
-                    , moveRight 16
-                    ]
-                    collateral
-            , images
-                |> Image.viewToken
-                    [ width <| px 32
-                    , height <| px 32
-                    , moveLeft 32
-                    ]
-                    asset
-            ]
+        [ images
+            |> PairImage.view
+                { pair = pair
+                , length = 32
+                }
         , el
             [ width shrink
             , height shrink

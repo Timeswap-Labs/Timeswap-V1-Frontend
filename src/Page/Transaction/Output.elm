@@ -249,7 +249,11 @@ liquidity { images } param =
                 , height <| px 24
                 , spacing 6
                 ]
-                [ PairImage.view images param.pair
+                [ images
+                    |> PairImage.view
+                        { pair = param.pair
+                        , length = 24
+                        }
                 , el
                     [ width shrink
                     , height shrink
@@ -302,5 +306,10 @@ disabledLiquidity { images } param =
             , spacing 6
             , centerY
             ]
-            [ PairImage.view images param.pair ]
+            [ images
+                |> PairImage.view
+                    { pair = param.pair
+                    , length = 24
+                    }
+            ]
         )

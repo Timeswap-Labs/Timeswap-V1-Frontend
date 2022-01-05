@@ -59,15 +59,15 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Http
-import Page.Transaction.Answer as Answer exposing (Answer)
+import Page.Answer as Answer exposing (Answer)
+import Page.PoolInfo as PoolInfo exposing (PoolInfo)
+import Page.Query as Query
 import Page.Transaction.Borrow.Borrow.Disabled as Disabled
 import Page.Transaction.Borrow.Borrow.Main as Borrow
 import Page.Transaction.Borrow.Empty as Empty
 import Page.Transaction.Button as Button
 import Page.Transaction.MaturityButton as MaturityButton
-import Page.Transaction.PoolInfo as PoolInfo exposing (PoolInfo)
 import Page.Transaction.Price exposing (Price)
-import Page.Transaction.Query as Query
 import Page.Transaction.TokenButton as TokenButton
 import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
 import Process

@@ -6,9 +6,11 @@ import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
 import Blockchain.User.Txns.TxnWrite as TxnWrite
 import Blockchain.User.WriteBorrow as WriteBorrow
+import Blockchain.User.WriteBurn as WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate as WriteCreate
 import Blockchain.User.WriteLend as WriteLend
 import Blockchain.User.WriteLiquidity as WriteLiquidity
+import Blockchain.User.WriteWithdraw as WriteWithdraw
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events exposing (Visibility)
 import Browser.Navigation as Navigation exposing (Key)
@@ -645,6 +647,15 @@ pageEffects blockchain effect model =
             , Cmd.none
             )
 
+        Page.InputPool pool ->
+            ( model
+            , Route.fromTab
+                (model.page |> Page.toTab)
+                (Parameter.Pool pool |> Just)
+                |> Route.toUrlString
+                |> Navigation.pushUrl model.key
+            )
+
         Page.Approve erc20 ->
             blockchain
                 |> Blockchain.updateApprove erc20
@@ -736,6 +747,46 @@ pageEffects blockchain effect model =
                                         (writeCreate
                                             |> WriteCreate.toPool
                                             |> TxnWrite.Create
+                                            |> Modal.initConfirm
+                                            |> Just
+                                        )
+                        }
+                    )
+                    (Cmd.map BlockchainMsg)
+
+        Page.Withdraw writeWithdraw ->
+            blockchain
+                |> Blockchain.updateWithdraw writeWithdraw
+                |> Tuple.mapBoth
+                    (\updated ->
+                        { model
+                            | blockchain = Supported updated
+                            , modal =
+                                model.modal
+                                    |> Animator.go Animator.quickly
+                                        (writeWithdraw
+                                            |> WriteWithdraw.toPool
+                                            |> TxnWrite.Withdraw
+                                            |> Modal.initConfirm
+                                            |> Just
+                                        )
+                        }
+                    )
+                    (Cmd.map BlockchainMsg)
+
+        Page.Burn writeBurn ->
+            blockchain
+                |> Blockchain.updateBurn writeBurn
+                |> Tuple.mapBoth
+                    (\updated ->
+                        { model
+                            | blockchain = Supported updated
+                            , modal =
+                                model.modal
+                                    |> Animator.go Animator.quickly
+                                        (writeBurn
+                                            |> WriteBurn.toPool
+                                            |> TxnWrite.Burn
                                             |> Modal.initConfirm
                                             |> Just
                                         )

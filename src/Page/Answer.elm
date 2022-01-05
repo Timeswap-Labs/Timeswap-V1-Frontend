@@ -1,8 +1,8 @@
-module Page.Transaction.Answer exposing (Answer, decoder)
+module Page.Answer exposing (Answer, decoder)
 
 import Data.Or exposing (Or(..))
 import Json.Decode as Decode exposing (Decoder)
-import Page.Transaction.PoolInfo as PoolInfo exposing (PoolInfo)
+import Page.PoolInfo as PoolInfo exposing (PoolInfo)
 import Page.Transaction.Price as Price exposing (Price)
 
 

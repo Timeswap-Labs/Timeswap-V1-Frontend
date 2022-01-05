@@ -7,7 +7,7 @@ port module Blockchain.User.Main exposing
     , getBalance
     , getClaims
     , getDues
-    , getLiquidities
+    , getLiqs
     , hasEnoughAllowance
     , hasEnoughBalance
     , init
@@ -27,10 +27,12 @@ port module Blockchain.User.Main exposing
     , update
     , updateApprove
     , updateBorrow
+    , updateBurn
     , updateClearTxns
     , updateCreate
     , updateLend
     , updateLiquidity
+    , updateWithdraw
     )
 
 import Blockchain.User.Allowances as Allowances exposing (Allowances)
@@ -38,7 +40,7 @@ import Blockchain.User.Balances as Balances exposing (Balances)
 import Blockchain.User.Cache as Cache
 import Blockchain.User.Claims exposing (Claims)
 import Blockchain.User.Dues exposing (Dues)
-import Blockchain.User.Liquidities exposing (Liquidities)
+import Blockchain.User.Liqs exposing (Liqs)
 import Blockchain.User.Positions as Positions exposing (Positions)
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
 import Blockchain.User.Txns.Txn as Txn exposing (Txn)
@@ -46,9 +48,11 @@ import Blockchain.User.Txns.TxnWrite as TxnWrite
 import Blockchain.User.Write as Write
 import Blockchain.User.WriteApprove as WriteApprove
 import Blockchain.User.WriteBorrow as WriteBorrow exposing (WriteBorrow)
+import Blockchain.User.WriteBurn as WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate as WriteCreate exposing (WriteCreate)
 import Blockchain.User.WriteLend as WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity as WriteLiquidity exposing (WriteLiquidity)
+import Blockchain.User.WriteWithdraw as WriteWithdraw exposing (WriteWithdraw)
 import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain)
 import Data.Chains exposing (Chains)
@@ -98,7 +102,6 @@ type Msg
     = ReceiveReceipt Value
     | BalancesTick Posix
     | AllowancesTick Posix
-    | PositionsTick Posix
 
 
 init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
@@ -181,21 +184,6 @@ update chain msg (User user) =
 
         AllowancesTick posix ->
             ( { user | allowances = user.allowances |> Allowances.update posix }
-                |> User
-            , Cmd.none
-            )
-
-        PositionsTick posix ->
-            ( { user
-                | positions =
-                    user.positions
-                        |> Remote.map (Positions.update posix)
-                        |> Remote.map Success
-                        |> Remote.withDefault
-                            (user.positions
-                                |> Remote.update posix
-                            )
-              }
                 |> User
             , Cmd.none
             )
@@ -332,6 +320,60 @@ updateCreate model chain writeCreate (User user) =
                         |> WriteCreate.encode model user.address
                         |> Write.encode id chain user.address
                         |> create
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                )
+           )
+
+
+updateWithdraw :
+    Chain
+    -> WriteWithdraw
+    -> User
+    -> ( User, Cmd Msg )
+updateWithdraw chain writeWithdraw (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.Withdraw
+                (writeWithdraw |> WriteWithdraw.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ writeWithdraw
+                        |> WriteWithdraw.encode user.address
+                        |> Write.encode id chain user.address
+                        |> withdraw
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                )
+           )
+
+
+updateBurn :
+    Chain
+    -> WriteBurn
+    -> User
+    -> ( User, Cmd Msg )
+updateBurn chain writeBurn (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.Burn
+                (writeBurn |> WriteBurn.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ writeBurn
+                        |> WriteBurn.encode user.address
+                        |> Write.encode id chain user.address
+                        |> withdraw
                   , txns
                         |> Cache.encodeTxns chain user.address
                         |> cacheTxns
@@ -480,6 +522,9 @@ port liquidity : Value -> Cmd msg
 port create : Value -> Cmd msg
 
 
+port withdraw : Value -> Cmd msg
+
+
 port receiveReceipt : (Value -> msg) -> Sub msg
 
 
@@ -487,11 +532,6 @@ subscriptions : User -> Sub Msg
 subscriptions (User user) =
     [ user.balances |> Balances.subscriptions BalancesTick
     , user.allowances |> Allowances.subscriptions AllowancesTick
-    , user.positions
-        |> Remote.map
-            (Positions.subscriptions PositionsTick)
-        |> Remote.withDefault
-            (user.positions |> Remote.subscriptions PositionsTick)
     ]
         |> Sub.batch
 
@@ -586,7 +626,7 @@ getDues (User { positions }) =
         |> Remote.map .dues
 
 
-getLiquidities : User -> Web Liquidities
-getLiquidities (User { positions }) =
+getLiqs : User -> Web Liqs
+getLiqs (User { positions }) =
     positions
         |> Remote.map .liquidities

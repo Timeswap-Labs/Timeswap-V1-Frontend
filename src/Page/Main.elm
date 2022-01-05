@@ -13,10 +13,13 @@ module Page.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
+import Blockchain.User.Claim as Claim
 import Blockchain.User.WriteBorrow exposing (WriteBorrow)
+import Blockchain.User.WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate exposing (WriteCreate)
 import Blockchain.User.WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
+import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
@@ -27,6 +30,7 @@ import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
 import Data.Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
+import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Slippage exposing (Slippage)
 import Data.Support exposing (Support(..))
@@ -39,50 +43,55 @@ import Element
         , alignTop
         , centerX
         , column
-        , el
-        , fill
         , height
         , map
         , none
         , shrink
         , spacing
-        , text
         , width
         )
-import Element.Border as Border
-import Element.Font as Font
-import Element.Region as Region
+import Page.PoolInfo exposing (PoolInfo)
+import Page.Position.Claim.Main as Claim
+import Page.Position.Liq.Main as Liq
 import Page.Positions.Claims.Main as Claims
 import Page.Positions.Dues.Main as Dues
-import Page.Positions.Liquidities.Main as Liquidities
+import Page.Positions.Liqs.Main as Liqs
 import Page.Route as Route
 import Page.Transaction.Borrow.Main as Borrow
 import Page.Transaction.Lend.Main as Lend
 import Page.Transaction.Liquidity.Main as Liquidity
-import Page.Transaction.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Price exposing (Price)
 import Time exposing (Posix)
 import Url exposing (Url)
-import Utility.Color as Color
-import Utility.Glass as Glass
+import Utility.Maybe as Maybe
 
 
 type Page
     = LendPage
         { transaction : Lend.Transaction
         , positions : Claims.Positions
+        , position : Maybe Claim.Position
         }
-    | BorrowPage { transaction : Borrow.Transaction }
-    | LiquidityPage { transaction : Liquidity.Transaction }
+    | BorrowPage
+        { transaction : Borrow.Transaction
+        , positions : Dues.Positions
+        }
+    | LiquidityPage
+        { transaction : Liquidity.Transaction
+        , positions : Liqs.Positions
+        , position : Maybe Liq.Position
+        }
 
 
 type Msg
     = LendMsg Lend.Msg
-    | BorrowMsg Borrow.Msg
-    | LiquidityMsg Liquidity.Msg
     | ClaimsMsg Claims.Msg
+    | ClaimMsg Claim.Msg
+    | BorrowMsg Borrow.Msg
     | DuesMsg Dues.Msg
-    | LiquiditiesMsg Liquidities.Msg
+    | LiquidityMsg Liquidity.Msg
+    | LiqsMsg Liqs.Msg
+    | LiqMsg Liq.Msg
 
 
 type Effect
@@ -91,11 +100,14 @@ type Effect
     | OpenInputMaturity Pair
     | OpenSettings
     | OpenConnect
+    | InputPool Pool
     | Approve ERC20
     | Lend WriteLend
     | Borrow WriteBorrow
     | Liquidity WriteLiquidity
     | Create WriteCreate
+    | Withdraw WriteWithdraw
+    | Burn WriteBurn
 
 
 init :
@@ -148,6 +160,12 @@ construct ({ chains } as model) url maybePage =
                     (\transaction ->
                         { transaction = transaction
                         , positions = Claims.init
+                        , position =
+                            pool
+                                |> Claim.init model blockchain
+                                |> Tuple.first
+                                |> Just
+                                |> Debug.log "remove"
                         }
                             |> LendPage
                     )
@@ -160,6 +178,12 @@ construct ({ chains } as model) url maybePage =
                     (\transaction ->
                         { transaction = transaction
                         , positions = Claims.init
+                        , position =
+                            pool
+                                |> Claim.init model blockchain
+                                |> Tuple.first
+                                |> Just
+                                |> Debug.log "remove"
                         }
                             |> LendPage
                     )
@@ -172,6 +196,7 @@ construct ({ chains } as model) url maybePage =
                     (\transaction ->
                         { transaction = transaction
                         , positions = Claims.init
+                        , position = Nothing
                         }
                             |> LendPage
                     )
@@ -182,7 +207,9 @@ construct ({ chains } as model) url maybePage =
                 |> Borrow.initGivenPoolInfo model blockchain pool
                 |> Tuple.mapBoth
                     (\transaction ->
-                        { transaction = transaction }
+                        { transaction = transaction
+                        , positions = Dues.init
+                        }
                             |> BorrowPage
                     )
                     (Cmd.map BorrowMsg)
@@ -192,7 +219,9 @@ construct ({ chains } as model) url maybePage =
                 |> Borrow.initGivenSpot model blockchain pool
                 |> Tuple.mapBoth
                     (\transaction ->
-                        { transaction = transaction }
+                        { transaction = transaction
+                        , positions = Dues.init
+                        }
                             |> BorrowPage
                     )
                     (Cmd.map BorrowMsg)
@@ -202,7 +231,9 @@ construct ({ chains } as model) url maybePage =
                 |> Borrow.init model blockchain
                 |> Tuple.mapBoth
                     (\transaction ->
-                        { transaction = transaction }
+                        { transaction = transaction
+                        , positions = Dues.init
+                        }
                             |> BorrowPage
                     )
                     (Cmd.map BorrowMsg)
@@ -212,7 +243,10 @@ construct ({ chains } as model) url maybePage =
                 |> Liquidity.initGivenPoolInfo model blockchain pool
                 |> Tuple.mapBoth
                     (\transaction ->
-                        { transaction = transaction }
+                        { transaction = transaction
+                        , positions = Liqs.init
+                        , position = Nothing
+                        }
                             |> LiquidityPage
                     )
                     (Cmd.map LiquidityMsg)
@@ -222,7 +256,10 @@ construct ({ chains } as model) url maybePage =
                 |> Liquidity.initGivenSpot model blockchain pool
                 |> Tuple.mapBoth
                     (\transaction ->
-                        { transaction = transaction }
+                        { transaction = transaction
+                        , positions = Liqs.init
+                        , position = Nothing
+                        }
                             |> LiquidityPage
                     )
                     (Cmd.map LiquidityMsg)
@@ -232,7 +269,10 @@ construct ({ chains } as model) url maybePage =
                 |> Liquidity.init model blockchain
                 |> Tuple.mapBoth
                     (\transaction ->
-                        { transaction = transaction }
+                        { transaction = transaction
+                        , positions = Liqs.init
+                        , position = Nothing
+                        }
                             |> LiquidityPage
                     )
                     (Cmd.map LiquidityMsg)
@@ -244,6 +284,7 @@ construct ({ chains } as model) url maybePage =
                     (\transaction ->
                         { transaction = transaction
                         , positions = Claims.init
+                        , position = Nothing
                         }
                             |> LendPage
                     )
@@ -252,19 +293,25 @@ construct ({ chains } as model) url maybePage =
         ( Just (Route.Lend _), NotSupported _, _ ) ->
             ( { transaction = Lend.notSupported
               , positions = Claims.init
+              , position = Nothing
               }
                 |> LendPage
             , Cmd.none
             )
 
         ( Just (Route.Borrow _), NotSupported _, _ ) ->
-            ( { transaction = Borrow.notSupported }
+            ( { transaction = Borrow.notSupported
+              , positions = Dues.init
+              }
                 |> BorrowPage
             , Cmd.none
             )
 
         ( Just (Route.Liquidity _), NotSupported _, _ ) ->
-            ( { transaction = Liquidity.notSupported }
+            ( { transaction = Liquidity.notSupported
+              , positions = Liqs.init
+              , position = Nothing
+              }
                 |> LiquidityPage
             , Cmd.none
             )
@@ -272,6 +319,7 @@ construct ({ chains } as model) url maybePage =
         _ ->
             ( { transaction = Lend.notSupported
               , positions = Claims.init
+              , position = Nothing
               }
                 |> LendPage
             , Cmd.none
@@ -279,7 +327,7 @@ construct ({ chains } as model) url maybePage =
 
 
 update :
-    { model | slippage : Slippage }
+    { model | time : Posix, slippage : Slippage }
     -> Blockchain
     -> Msg
     -> Page
@@ -297,9 +345,54 @@ update model blockchain msg page =
                             |> LendPage
                         , cmd |> Cmd.map LendMsg
                         , maybeEffect
-                            |> Maybe.map lendEffects
+                            |> Maybe.map lendEffect
                         )
                    )
+
+        ( ClaimsMsg claimsMsg, LendPage lendPage ) ->
+            lendPage.positions
+                |> Claims.update claimsMsg
+                |> (\( updated, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map (claimsEffect model blockchain)
+                            |> Maybe.map
+                                (\( position, cmd ) ->
+                                    ( { lendPage
+                                        | positions = updated
+                                        , position = position
+                                      }
+                                        |> LendPage
+                                    , cmd
+                                    , Nothing
+                                    )
+                                )
+                            |> Maybe.withDefault
+                                ( lendPage |> LendPage
+                                , Cmd.none
+                                , Nothing
+                                )
+                   )
+
+        ( ClaimMsg claimMsg, LendPage lendPage ) ->
+            Just
+                (\user position ->
+                    position
+                        |> Claim.update model blockchain user claimMsg
+                        |> (\( updated, cmd, maybeEffect ) ->
+                                ( { lendPage | position = updated }
+                                    |> LendPage
+                                , cmd |> Cmd.map ClaimMsg
+                                , maybeEffect |> Maybe.map claimEffect
+                                )
+                           )
+                )
+                |> Maybe.apply (blockchain |> Blockchain.toUser)
+                |> Maybe.apply lendPage.position
+                |> Maybe.withDefault
+                    ( page
+                    , Cmd.none
+                    , Nothing
+                    )
 
         ( BorrowMsg transactionBorrowMsg, BorrowPage borrowPage ) ->
             borrowPage.transaction
@@ -312,7 +405,31 @@ update model blockchain msg page =
                             |> BorrowPage
                         , cmd |> Cmd.map BorrowMsg
                         , maybeEffect
-                            |> Maybe.map borrowEffects
+                            |> Maybe.map borrowEffect
+                        )
+                   )
+
+        ( DuesMsg duesMsg, BorrowPage borrowPage ) ->
+            borrowPage.positions
+                |> Dues.update duesMsg
+                |> (\( updated, maybeEffect ) ->
+                        -- maybeEffect
+                        --     |> Maybe.map (duesEffect model blockchain)
+                        --     |> Maybe.map
+                        --         (\( position, cmd ) ->
+                        --             ( { borrowPage
+                        --                 | positions = updated
+                        --                 -- , position = position
+                        --               }
+                        --                 |> BorrowPage
+                        --             , cmd
+                        --             , Nothing
+                        --             )
+                        --         )
+                        --     |> Maybe.withDefault
+                        ( borrowPage |> BorrowPage
+                        , Cmd.none
+                        , Nothing
                         )
                    )
 
@@ -327,18 +444,63 @@ update model blockchain msg page =
                             |> LiquidityPage
                         , cmd |> Cmd.map LiquidityMsg
                         , maybeEffect
-                            |> Maybe.map liquidityEffects
+                            |> Maybe.map liquidityEffect
                         )
                    )
+
+        ( LiqsMsg liqsMsg, LiquidityPage liquidityPage ) ->
+            liquidityPage.positions
+                |> Liqs.update liqsMsg
+                |> (\( updated, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map (liqsEffect model blockchain)
+                            |> Maybe.map
+                                (\( position, cmd ) ->
+                                    ( { liquidityPage
+                                        | positions = updated
+                                        , position = position
+                                      }
+                                        |> LiquidityPage
+                                    , cmd
+                                    , Nothing
+                                    )
+                                )
+                            |> Maybe.withDefault
+                                ( liquidityPage |> LiquidityPage
+                                , Cmd.none
+                                , Nothing
+                                )
+                   )
+
+        ( LiqMsg liqMsg, LiquidityPage liquidityPage ) ->
+            Just
+                (\user position ->
+                    position
+                        |> Liq.update model blockchain user liqMsg
+                        |> (\( updated, cmd, maybeEffect ) ->
+                                ( { liquidityPage | position = updated }
+                                    |> LiquidityPage
+                                , cmd |> Cmd.map LiqMsg
+                                , maybeEffect |> Maybe.map liqEffect
+                                )
+                           )
+                )
+                |> Maybe.apply (blockchain |> Blockchain.toUser)
+                |> Maybe.apply liquidityPage.position
+                |> Maybe.withDefault
+                    ( page
+                    , Cmd.none
+                    , Nothing
+                    )
 
         _ ->
             ( page, Cmd.none, Nothing ) |> Debug.log "positions msg"
 
 
-lendEffects :
+lendEffect :
     Lend.Effect
     -> Effect
-lendEffects effect =
+lendEffect effect =
     case effect of
         Lend.OpenTokenList tokenParam ->
             OpenTokenList tokenParam
@@ -359,10 +521,36 @@ lendEffects effect =
             Lend writeLend
 
 
-borrowEffects :
+claimsEffect :
+    { model | time : Posix }
+    -> Blockchain
+    -> Claims.Effect
+    -> ( Maybe Claim.Position, Cmd Msg )
+claimsEffect model blockchain effect =
+    case effect of
+        Claims.OpenClaim pool ->
+            Claim.init model blockchain pool
+                |> Tuple.mapBoth
+                    Just
+                    (Cmd.map ClaimMsg)
+
+
+claimEffect :
+    Claim.Effect
+    -> Effect
+claimEffect effect =
+    case effect of
+        Claim.InputPool pool ->
+            InputPool pool
+
+        Claim.Withdraw writeWithdraw ->
+            Withdraw writeWithdraw
+
+
+borrowEffect :
     Borrow.Effect
     -> Effect
-borrowEffects effect =
+borrowEffect effect =
     case effect of
         Borrow.OpenTokenList tokenParam ->
             OpenTokenList tokenParam
@@ -383,10 +571,25 @@ borrowEffects effect =
             Borrow writeBorrow
 
 
-liquidityEffects :
+
+-- duesEffect :
+--     { model | time : Posix }
+--     -> Blockchain
+--     -> Dues.Effect
+--     -> ( Maybe Due.Position, Cmd Msg )
+-- duesEffect model blockchain effect =
+--     case effect of
+--         Dues.OpenDue pool ->
+--             -- Due.init model blockchain pool
+--             --     |> Tuple.mapBoth
+--             --         Just
+--             --         (Cmd.map ClaimMsg)
+
+
+liquidityEffect :
     Liquidity.Effect
     -> Effect
-liquidityEffects effect =
+liquidityEffect effect =
     case effect of
         Liquidity.OpenTokenList tokenParam ->
             OpenTokenList tokenParam
@@ -413,13 +616,43 @@ liquidityEffects effect =
             Create writeCreate
 
 
+liqsEffect :
+    { model | time : Posix }
+    -> Blockchain
+    -> Liqs.Effect
+    -> ( Maybe Liq.Position, Cmd Msg )
+liqsEffect model blockchain effect =
+    case effect of
+        Liqs.OpenLiq pool ->
+            Liq.init model blockchain pool
+                |> Tuple.mapBoth
+                    Just
+                    (Cmd.map LiqMsg)
+
+
+liqEffect :
+    Liq.Effect
+    -> Effect
+liqEffect effect =
+    case effect of
+        Liq.InputPool pool ->
+            InputPool pool
+
+        Liq.Burn writeBurm ->
+            Burn writeBurm
+
+
 subscriptions : Page -> Sub Msg
 subscriptions page =
     case page of
-        LendPage { transaction } ->
+        LendPage { transaction, position } ->
             [ transaction
                 |> Lend.subscriptions
                 |> Sub.map LendMsg
+            , position
+                |> Maybe.map Claim.subscriptions
+                |> (Maybe.map << Sub.map) ClaimMsg
+                |> Maybe.withDefault Sub.none
             ]
                 |> Sub.batch
 
@@ -506,37 +739,58 @@ view model blockchain page =
         , alignTop
         ]
         (case page of
-            LendPage { transaction, positions } ->
-                [ transaction
-                    |> Lend.view model blockchain
-                    |> map LendMsg
-                , blockchain
-                    |> Blockchain.toUser
-                    |> Maybe.map
-                        (\user -> Claims.view model user positions)
-                    |> (Maybe.map << map) ClaimsMsg
-                    |> Maybe.withDefault none
-                ]
+            LendPage lendPage ->
+                Just
+                    (\position user ->
+                        Claim.view model user position
+                            |> map ClaimMsg
+                            |> List.singleton
+                    )
+                    |> Maybe.apply lendPage.position
+                    |> Maybe.apply (blockchain |> Blockchain.toUser)
+                    |> Maybe.withDefault
+                        [ lendPage.transaction
+                            |> Lend.view model blockchain
+                            |> map LendMsg
+                        , blockchain
+                            |> Blockchain.toUser
+                            |> Maybe.map
+                                (\user -> Claims.view model user lendPage.positions)
+                            |> (Maybe.map << map) ClaimsMsg
+                            |> Maybe.withDefault none
+                        ]
 
-            BorrowPage { transaction } ->
-                [ transaction
+            BorrowPage borrowPage ->
+                [ borrowPage.transaction
                     |> Borrow.view model blockchain
                     |> map BorrowMsg
                 , blockchain
                     |> Blockchain.toUser
-                    |> Maybe.map (Dues.view model)
+                    |> Maybe.map
+                        (\user -> Dues.view model user borrowPage.positions)
                     |> (Maybe.map << map) DuesMsg
                     |> Maybe.withDefault none
                 ]
 
-            LiquidityPage { transaction } ->
-                [ transaction
-                    |> Liquidity.view model blockchain
-                    |> map LiquidityMsg
-                , blockchain
-                    |> Blockchain.toUser
-                    |> Maybe.map (Liquidities.view model)
-                    |> (Maybe.map << map) LiquiditiesMsg
-                    |> Maybe.withDefault none
-                ]
+            LiquidityPage liquidityPage ->
+                Just
+                    (\position user ->
+                        -- Liq.view model user position
+                        --     |> map LiqMsg
+                        --     |> List.singleton
+                        [] |> Debug.log "edit"
+                    )
+                    |> Maybe.apply liquidityPage.position
+                    |> Maybe.apply (blockchain |> Blockchain.toUser)
+                    |> Maybe.withDefault
+                        [ liquidityPage.transaction
+                            |> Liquidity.view model blockchain
+                            |> map LiquidityMsg
+                        , blockchain
+                            |> Blockchain.toUser
+                            |> Maybe.map
+                                (\user -> Liqs.view model user liquidityPage.positions)
+                            |> (Maybe.map << map) LiqsMsg
+                            |> Maybe.withDefault none
+                        ]
         )

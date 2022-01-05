@@ -21,6 +21,9 @@ type TxnWrite
     | Borrow Pool
     | Liquidity Pool
     | Create Pool
+    | Withdraw Pool
+    | Pay Pool
+    | Burn Pool
 
 
 type alias Flag =
@@ -57,6 +60,9 @@ decoder =
     , decoderBorrow
     , decoderLiquidity
     , decoderCreate
+    , decoderWithdraw
+    , decoderPay
+    , decoderBurn
     ]
         |> Decode.oneOf
 
@@ -136,6 +142,51 @@ decoderCreate =
         |> Decode.andThen identity
 
 
+decoderWithdraw : Decoder TxnWrite
+decoderWithdraw =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "withdraw" then
+                Create pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
+decoderPay : Decoder TxnWrite
+decoderPay =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "pay" then
+                Create pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
+decoderBurn : Decoder TxnWrite
+decoderBurn =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "burn" then
+                Create pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
 encode : TxnWrite -> Value
 encode write =
     case write of
@@ -165,6 +216,24 @@ encode write =
 
         Create pool ->
             [ ( "txn", "create" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
+            ]
+                |> Encode.object
+
+        Withdraw pool ->
+            [ ( "txn", "withdraw" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
+            ]
+                |> Encode.object
+
+        Pay pool ->
+            [ ( "txn", "pay" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
+            ]
+                |> Encode.object
+
+        Burn pool ->
+            [ ( "txn", "burn" |> Encode.string )
             , ( "pool", pool |> Pool.encode )
             ]
                 |> Encode.object
