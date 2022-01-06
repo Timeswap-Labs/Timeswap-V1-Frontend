@@ -706,10 +706,10 @@ viewClaim :
 viewClaim { images, theme } user { pool, return, tooltip } =
     row
         [ width fill
-        , height shrink
+        , height <| px 82
         , Background.color Color.dark500
         , Border.rounded 8
-        , paddingXY 24 16
+        , paddingXY 24 0
         , spacing 48
         ]
         (return
@@ -719,6 +719,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                         [ width shrink
                         , height shrink
                         , spacing 8
+                        , centerY
                         ]
                         [ el
                             [ width shrink
@@ -730,7 +731,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                             (text "Asset to Receive")
                         , row
                             [ width shrink
-                            , height shrink
+                            , height <| px 24
                             , spacing 12
                             ]
                             [ row
@@ -808,7 +809,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                             (text "Collateral to Receive")
                         , row
                             [ width shrink
-                            , height shrink
+                            , height <| px 24
                             , spacing 12
                             ]
                             [ row
@@ -883,7 +884,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                         (text "Amount to Receive")
                     , row
                         [ width shrink
-                        , height shrink
+                        , height <| px 24
                         , spacing 12
                         ]
                         [ row
@@ -959,7 +960,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                         (text "Amount Protecting")
                     , row
                         [ width shrink
-                        , height shrink
+                        , height <| px 24
                         , spacing 12
                         ]
                         [ row

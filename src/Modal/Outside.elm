@@ -21,6 +21,7 @@ import Element.Background as Background
 import Element.Events as Events
 import Utility.Blur as Blur
 import Utility.Color as Color
+import Utility.Pointer as Pointer
 
 
 view :
@@ -37,6 +38,7 @@ view { backdrop } { onClick, modal } =
         , el
             ([ width fill
              , height fill
+             , Events.onClick onClick
              ]
                 ++ (case backdrop of
                         Backdrop.Supported ->
@@ -54,13 +56,14 @@ view { backdrop } { onClick, modal } =
             , height fill
             , paddingXY 0 100
             , scrollbars
-            , Events.onClick onClick
+            , Pointer.off
             ]
             (el
                 [ width shrink
                 , height shrink
                 , centerX
                 , centerY
+                , Pointer.on
                 ]
                 modal
             )
