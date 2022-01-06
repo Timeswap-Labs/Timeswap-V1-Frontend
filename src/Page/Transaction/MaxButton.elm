@@ -3,6 +3,7 @@ module Page.Transaction.MaxButton exposing (disabled, view)
 import Animator exposing (Timeline)
 import Animator.Css
 import Data.Remote as Remote exposing (Remote(..))
+import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.Uint exposing (Uint)
 import Data.Web exposing (Web)
@@ -35,6 +36,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Utility.Color as Color
 import Utility.Loading as Loading
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
@@ -46,6 +48,7 @@ view :
     , opened : Maybe tooltip
     , token : Token
     , balance : Web Uint
+    , theme : Theme
     }
     -> Element msg
 view param =
@@ -71,6 +74,7 @@ userBalance :
         , opened : Maybe tooltip
         , token : Token
         , balance : Web Uint
+        , theme : Theme
     }
     -> Element msg
 userBalance param =
@@ -85,7 +89,7 @@ userBalance param =
             , height shrink
             , Font.size 12
             , paddingXY 0 2
-            , Font.color Color.transparent300
+            , param.theme |> ThemeColor.textLight |> Font.color
             ]
             (text "Bal: ")
         , case param.balance of
@@ -107,8 +111,6 @@ userBalance param =
                     ]
                     (Loading.view timeline)
 
-            -- (text "loading")
-            -- |> Debug.log "implement loading animation"
             Failure error ->
                 el
                     [ width shrink
@@ -145,6 +147,7 @@ maxButton param =
 disabled :
     { token : Token
     , balance : Web Uint
+    , theme : Theme
     }
     -> Element Never
 disabled param =
@@ -166,6 +169,7 @@ disabledUserBalance :
     { param
         | token : Token
         , balance : Web Uint
+        , theme : Theme
     }
     -> Element Never
 disabledUserBalance param =
@@ -180,7 +184,7 @@ disabledUserBalance param =
             , height shrink
             , Font.size 12
             , paddingXY 0 2
-            , Font.color Color.transparent300
+            , param.theme |> ThemeColor.textLight |> Font.color
             ]
             (text "Bal: ")
         , case param.balance of

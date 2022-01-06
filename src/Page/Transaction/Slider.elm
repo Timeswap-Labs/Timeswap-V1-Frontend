@@ -116,7 +116,7 @@ slider { onChange, click, percent, min, max, theme } =
             [ width fill
             , height <| px 2
             , centerY
-            , Background.color Color.transparent100
+            , theme |> ThemeColor.textboxBorder |> Background.color
             ]
             none
             |> behindContent

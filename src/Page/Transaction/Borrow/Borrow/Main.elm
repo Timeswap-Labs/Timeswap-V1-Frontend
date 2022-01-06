@@ -2688,6 +2688,7 @@ collateralInSection model blockchain collateral { tooltip } or =
                             , opened = tooltip
                             , token = collateral
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none
@@ -2834,6 +2835,7 @@ advancedCollateralInSection model blockchain collateral { tooltip } or =
                             , opened = tooltip
                             , token = collateral
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none

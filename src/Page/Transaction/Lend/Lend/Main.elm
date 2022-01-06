@@ -1646,6 +1646,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
                             , opened = tooltip
                             , token = asset
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none
@@ -2105,7 +2106,7 @@ buttons theme blockchain asset transaction =
                                     [ Button.notEnoughBalance ]
 
                                 ( Just (Loading _), Just (Success True) ) ->
-                                    [ Button.checkingBalance |> map never ]
+                                    [ theme |> Button.checkingBalance |> map never ]
 
                                 ( Just (Success True), Just (Success False) ) ->
                                     [ approveButton erc20
@@ -2119,7 +2120,7 @@ buttons theme blockchain asset transaction =
 
                                 ( Just (Loading _), Just (Success False) ) ->
                                     [ disabledApprove erc20
-                                    , Button.checkingBalance |> map never
+                                    , theme |> Button.checkingBalance |> map never
                                     ]
 
                                 ( Just (Success True), Just (Loading _) ) ->
@@ -2134,7 +2135,7 @@ buttons theme blockchain asset transaction =
 
                                 ( Just (Loading _), Just (Loading _) ) ->
                                     [ theme |> Button.checkingAllowance |> map never
-                                    , Button.checkingBalance |> map never
+                                    , theme |> Button.checkingBalance |> map never
                                     ]
 
                                 ( Just (Failure error), _ ) ->
@@ -2174,7 +2175,7 @@ buttons theme blockchain asset transaction =
 
                                 ( Just (Loading _), Just (Loading _) ) ->
                                     [ theme |> Button.checkingAllowance |> map never
-                                    , Button.checkingBalance |> map never
+                                    , theme |> Button.checkingBalance |> map never
                                     ]
 
                                 ( _, Just (Loading _) ) ->
@@ -2199,7 +2200,7 @@ buttons theme blockchain asset transaction =
                                     [ disabledLend ]
 
                                 Just (Loading _) ->
-                                    [ Button.checkingBalance |> map never ]
+                                    [ theme |> Button.checkingBalance |> map never ]
 
                                 Just (Failure error) ->
                                     [ Button.error error |> map never ]
@@ -2221,7 +2222,7 @@ buttons theme blockchain asset transaction =
                                     [ disabledLend ]
 
                                 Just (Loading _) ->
-                                    [ Button.checkingBalance |> map never ]
+                                    [ theme |> Button.checkingBalance |> map never ]
 
                                 Just (Failure error) ->
                                     [ Button.error error |> map never ]

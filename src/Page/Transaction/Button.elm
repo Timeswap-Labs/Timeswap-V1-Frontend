@@ -141,28 +141,30 @@ checkingAllowance theme =
             [ centerX
             , centerY
             , Font.size 16
+            , Font.bold
             , paddingXY 0 4
-            , theme |> ThemeColor.border |> Font.color
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text "Checking Allowance")
         )
 
 
-checkingBalance : Element Never
-checkingBalance =
+checkingBalance : Theme -> Element Never
+checkingBalance theme =
     el
         [ Region.description "checking balance"
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
         ]
         (el
             [ centerX
             , centerY
             , Font.size 16
+            , Font.bold
             , paddingXY 0 4
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text "Checking Balance")
         )
@@ -246,8 +248,9 @@ connect theme msg =
             el
                 [ centerX
                 , centerY
-                , Font.size 16
                 , paddingXY 0 4
+                , Font.size 16
+                , Font.bold
                 , Font.color Color.light100
                 ]
                 (text "Connect Wallet")
@@ -269,6 +272,7 @@ approveAsset msg =
                 [ centerX
                 , centerY
                 , Font.size 16
+                , Font.bold
                 , paddingXY 0 4
                 , Font.color Color.light100
                 ]
@@ -290,8 +294,9 @@ approveCollateral msg =
             el
                 [ centerX
                 , centerY
-                , Font.size 16
                 , paddingXY 0 4
+                , Font.size 16
+                , Font.bold
                 , Font.color Color.light100
                 ]
                 (text "Approve Collateral")
@@ -310,8 +315,8 @@ selectTokens =
         (el
             [ centerX
             , centerY
-            , Font.size 16
             , paddingXY 0 4
+            , Font.size 16
             , Font.color Color.transparent100
             ]
             (text "Select Tokens First")
@@ -330,8 +335,8 @@ selectMaturity =
         (el
             [ centerX
             , centerY
-            , Font.size 16
             , paddingXY 0 4
+            , Font.size 16
             , Font.color Color.transparent100
             ]
             (text "Select Maturity First")
@@ -370,8 +375,9 @@ matured =
         (el
             [ centerX
             , centerY
-            , Font.size 16
             , paddingXY 0 4
+            , Font.size 16
+            , Font.bold
             , Font.color Color.transparent100
             ]
             (text "Matured")
@@ -390,8 +396,9 @@ doesNotExist =
         (el
             [ centerX
             , centerY
-            , Font.size 16
             , paddingXY 0 4
+            , Font.size 16
+            , Font.bold
             , Font.color Color.transparent100
             ]
             (text "Pool Does Not Exist")
@@ -410,8 +417,9 @@ exist =
         (el
             [ centerX
             , centerY
-            , Font.size 16
             , paddingXY 0 4
+            , Font.size 16
+            , Font.bold
             , Font.color Color.transparent100
             ]
             (text "Pool Already Exists")
@@ -429,8 +437,8 @@ error httpError =
         (el
             [ centerX
             , centerY
-            , Font.size 16
             , paddingXY 0 4
+            , Font.size 16
             , Font.color Color.light100
             ]
             (text "error")
@@ -448,8 +456,9 @@ notEnoughBalance =
         (el
             [ centerX
             , centerY
-            , Font.size 16
             , paddingXY 0 4
+            , Font.size 16
+            , Font.bold
             , Font.color Color.light100
             ]
             (text "Not Enough Balance")

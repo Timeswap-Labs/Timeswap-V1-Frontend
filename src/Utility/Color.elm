@@ -2,6 +2,7 @@ module Utility.Color exposing
     ( background
     , completelyTransparent
     , dark100
+    , dark100Transparent
     , dark200
     , dark300
     , dark400
@@ -83,6 +84,11 @@ list =
 modal : Color
 modal =
     rgba255 0 0 0 0.4
+
+
+dark100Transparent : Color
+dark100Transparent =
+    rgba255 67 72 89 0.12
 
 
 dark100 : Color

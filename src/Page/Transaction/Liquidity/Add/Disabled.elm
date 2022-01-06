@@ -112,6 +112,7 @@ assetInSection model blockchain asset transaction =
                         MaxButton.disabled
                             { token = asset
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none
@@ -244,6 +245,7 @@ collateralInSection model blockchain collateral transaction =
                         MaxButton.disabled
                             { token = collateral
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none

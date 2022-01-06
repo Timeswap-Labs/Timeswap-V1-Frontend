@@ -739,6 +739,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
                             , opened = tooltip
                             , token = asset
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none
@@ -895,6 +896,7 @@ collateralOutSection model blockchain collateral { tooltip } input =
                             , opened = tooltip
                             , token = collateral
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none

@@ -28,6 +28,7 @@ module Utility.ThemeColor exposing
     , secondary500
     , sectionBackground
     , text
+    , textDisabled
     , textError
     , textLight
     , textboxBorder
@@ -82,6 +83,16 @@ textLight theme =
 
         Theme.Light ->
             Color.dark100
+
+
+textDisabled : Theme -> Color
+textDisabled theme =
+    case theme of
+        Theme.Dark ->
+            Color.transparent100
+
+        Theme.Light ->
+            Color.dark100Transparent
 
 
 textError : Theme -> Color

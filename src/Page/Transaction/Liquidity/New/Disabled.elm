@@ -116,6 +116,7 @@ assetInSection model blockchain asset { assetIn } =
                         MaxButton.disabled
                             { token = asset
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none
@@ -230,6 +231,7 @@ collateralInSection model blockchain collateral { collateralIn } =
                         MaxButton.disabled
                             { token = collateral
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none

@@ -389,6 +389,7 @@ collateralInSection model blockchain collateralIn maybeCollateral =
                                     MaxButton.disabled
                                         { token = collateral
                                         , balance = balance
+                                        , theme = model.theme
                                         }
                                 )
                             |> Maybe.withDefault none
@@ -474,6 +475,7 @@ advancedCollateralInSection model blockchain collateral input =
                         MaxButton.disabled
                             { token = collateral
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none

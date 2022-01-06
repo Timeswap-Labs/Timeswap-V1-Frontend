@@ -144,6 +144,7 @@ assetInSection model blockchain asset transaction =
                         MaxButton.disabled
                             { token = asset
                             , balance = balance
+                            , theme = model.theme
                             }
                     )
                 |> Maybe.withDefault none
