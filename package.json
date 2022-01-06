@@ -1,7 +1,7 @@
 {
   "scripts": {
     "start": "parcel index.html",
-    "build": "parcel build index.html",
+    "build": "parcel build index.html --no-source-maps",
     "check": "tsc --noEmit"
   },
   "dependencies": {
