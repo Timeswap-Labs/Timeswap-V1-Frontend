@@ -65,6 +65,7 @@ import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
+import Utility.ThemeColor as ThemeColor
 
 
 type Transaction
@@ -1283,7 +1284,7 @@ assetInSection model blockchain asset { state, tooltip } =
         , height shrink
         , padding 16
         , spacing 10
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -1302,7 +1303,7 @@ assetInSection model blockchain asset { state, tooltip } =
                     , height shrink
                     , Font.size 14
                     , paddingXY 0 3
-                    , Font.color Color.primary400
+                    , model.theme |> ThemeColor.actionElemLabel |> Font.color
                     ]
                     (text "Amount to Lend")
                 , (case state of
@@ -1400,7 +1401,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
         , height shrink
         , padding 16
         , spacing 12
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -1504,7 +1505,7 @@ debtInSection model asset { tooltip } or =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Debt to Repay")
             , case or of
@@ -1571,7 +1572,7 @@ collateralInSection model blockchain collateral { tooltip } or =
                     , height shrink
                     , Font.size 14
                     , paddingXY 0 3
-                    , Font.color Color.primary400
+                    , model.theme |> ThemeColor.actionElemLabel |> Font.color
                     ]
                     (text "Collateral to Lock")
                 , case or of
@@ -1628,7 +1629,7 @@ collateralInSection model blockchain collateral { tooltip } or =
 
 
 liqOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Pool
     -> { transaction | state : State }
     -> Element Msg
@@ -1639,7 +1640,7 @@ liqOutSection model pool { state } =
         , height shrink
         , padding 16
         , spacing 10
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -1652,7 +1653,7 @@ liqOutSection model pool { state } =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "LP Tokens to Receive")
             , (case state of

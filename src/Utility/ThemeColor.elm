@@ -18,8 +18,6 @@ module Utility.ThemeColor exposing
     , positive300
     , positive400
     , positive500
-    , primary200
-    , primary300
     , primaryBtn
     , secondary100
     , secondary200
@@ -163,16 +161,6 @@ textboxBorder theme =
 
         Theme.Light ->
             Color.secondary200
-
-
-primary200 : Color
-primary200 =
-    rgba255 160 210 235 0.44
-
-
-primary300 : Color
-primary300 =
-    rgba255 160 210 235 0.64
 
 
 actionElemLabel : Theme -> Color

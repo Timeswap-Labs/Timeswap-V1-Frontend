@@ -30,6 +30,7 @@ import Page.Transaction.Output as Output
 import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
 view :
@@ -60,7 +61,7 @@ assetOutSection model token =
         , padding 16
         , spacing 10
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ el
@@ -68,7 +69,7 @@ assetOutSection model token =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Amount to Borrow")
         , token
@@ -98,7 +99,7 @@ duesOutSection model asset collateral =
         , padding 16
         , spacing 12
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ Switch.empty model.theme
@@ -135,7 +136,7 @@ debtOutSection model asset =
             [ width shrink
             , height shrink
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.textLight |> Font.color
             ]
             (text "Debt to Repay")
         , asset
@@ -170,7 +171,7 @@ collateralOutSection model collateral =
             [ width shrink
             , height shrink
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.textLight |> Font.color
             ]
             (text "Collateral to Lock")
         , collateral

@@ -64,6 +64,7 @@ import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
+import Utility.ThemeColor as ThemeColor
 
 
 type Transaction
@@ -709,7 +710,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
         , height shrink
         , padding 16
         , spacing 10
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -723,7 +724,7 @@ assetInSection model blockchain asset { assetIn, tooltip } =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Amount to Lend")
             , blockchain
@@ -777,7 +778,7 @@ duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tool
         , height shrink
         , padding 16
         , spacing 12
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -839,7 +840,7 @@ debtOutSection model asset { tooltip } input =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Debt to Repay")
         , Textbox.view model
@@ -880,7 +881,7 @@ collateralOutSection model blockchain collateral { tooltip } input =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Collateral to Lock")
             , blockchain
@@ -916,7 +917,7 @@ collateralOutSection model blockchain collateral { tooltip } input =
 
 
 liqOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Pool
     -> { transaction | liquidityOut : Remote Error LiquidityGivenNew }
     -> Element Msg
@@ -927,7 +928,7 @@ liqOutSection model pool { liquidityOut } =
         , height shrink
         , padding 16
         , spacing 10
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -940,7 +941,7 @@ liqOutSection model pool { liquidityOut } =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "LP Tokens to Receive")
             , case liquidityOut of

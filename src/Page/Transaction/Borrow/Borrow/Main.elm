@@ -70,6 +70,7 @@ import Url.Builder as Builder
 import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
+import Utility.ThemeColor as ThemeColor
 
 
 type Transaction
@@ -2245,7 +2246,7 @@ assetOutSection model asset { state, tooltip } =
         , height shrink
         , padding 16
         , spacing 10
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -2258,7 +2259,7 @@ assetOutSection model asset { state, tooltip } =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Amount to Borrow")
             , (case state of
@@ -2350,7 +2351,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
         , height shrink
         , padding 16
         , spacing 12
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ (case state of
@@ -2604,7 +2605,7 @@ debtInSection model asset { tooltip } output =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "Debt to Repay")
             , case output of
@@ -2660,7 +2661,7 @@ collateralInSection model blockchain collateral { tooltip } or =
                     , height shrink
                     , Font.size 14
                     , paddingXY 0 3
-                    , Font.color Color.primary400
+                    , model.theme |> ThemeColor.textLight |> Font.color
                     ]
                     (text "Collateral to Lock")
                 , case or of
@@ -2740,7 +2741,7 @@ advancedDebtInSection model asset { tooltip } or =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Debt to Repay")
             , case or of
@@ -2807,7 +2808,7 @@ advancedCollateralInSection model blockchain collateral { tooltip } or =
                     , height shrink
                     , Font.size 14
                     , paddingXY 0 3
-                    , Font.color Color.primary400
+                    , model.theme |> ThemeColor.actionElemLabel |> Font.color
                     ]
                     (text "Collateral to Lock")
                 , case or of

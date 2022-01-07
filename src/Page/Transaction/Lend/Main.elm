@@ -606,7 +606,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.selectTokens |> map never
+                        , buttons = theme |> Button.selectTokens |> map never
                         }
                    )
 
@@ -618,7 +618,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.selectTokens |> map never
+                        , buttons = theme |> Button.selectTokens |> map never
                         }
                    )
 
@@ -630,7 +630,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.selectTokens |> map never
+                        , buttons = theme |> Button.selectTokens |> map never
                         }
                    )
 
@@ -648,7 +648,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.selectMaturity |> map never
+                        , buttons = theme |> Button.selectMaturity |> map never
                         }
                    )
 
@@ -666,7 +666,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.matured |> map never
+                        , buttons = theme |> Button.matured |> map never
                         }
                    )
 
@@ -684,7 +684,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.loading |> map never
+                        , buttons = theme |> Button.loading |> map never
                         }
                    )
 
@@ -712,7 +712,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.doesNotExist |> map never
+                        , buttons = theme |> Button.doesNotExist |> map never
                         }
                    )
 

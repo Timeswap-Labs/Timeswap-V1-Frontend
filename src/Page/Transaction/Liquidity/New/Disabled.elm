@@ -39,6 +39,7 @@ import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
 import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
 type alias Transaction =
@@ -91,7 +92,7 @@ assetInSection model blockchain asset { assetIn } =
         , padding 16
         , spacing 10
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -105,7 +106,7 @@ assetInSection model blockchain asset { assetIn } =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Amount to Lend")
             , blockchain
@@ -143,7 +144,7 @@ duesInSection model blockchain pool transaction =
         , padding 16
         , spacing 12
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -186,7 +187,7 @@ debtInSection model asset { debtIn } =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Debt to Repay")
         , Textbox.disabled model
@@ -220,7 +221,7 @@ collateralInSection model blockchain collateral { collateralIn } =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Collateral to Lock")
             , blockchain
@@ -245,7 +246,7 @@ collateralInSection model blockchain collateral { collateralIn } =
 
 
 liqOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Pool
     -> Element Never
 liqOutSection model pool =
@@ -256,7 +257,7 @@ liqOutSection model pool =
         , padding 16
         , spacing 10
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ el
@@ -264,7 +265,7 @@ liqOutSection model pool =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "LP Tokens to Receive")
         , Output.disabledLiquidity model

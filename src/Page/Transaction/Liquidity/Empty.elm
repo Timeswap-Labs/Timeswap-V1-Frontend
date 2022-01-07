@@ -31,6 +31,7 @@ import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
 import Utility.Color as Color
 import Utility.Maybe as Maybe
+import Utility.ThemeColor as ThemeColor
 
 
 view :
@@ -63,7 +64,7 @@ assetInSection model token =
         , padding 16
         , spacing 10
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ el
@@ -71,7 +72,7 @@ assetInSection model token =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Amount to Lend")
         , token
@@ -101,7 +102,7 @@ duesOutSection model asset collateral =
         , padding 16
         , spacing 12
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ row
@@ -138,7 +139,7 @@ debtOutSection model asset =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Debt to Repay")
         , asset
@@ -170,7 +171,7 @@ collateralOutSection model collateral =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Collateral to Lock")
         , collateral
@@ -188,7 +189,7 @@ collateralOutSection model collateral =
 
 
 liqOutSection :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Maybe Token
     -> Maybe Token
     -> Element Never
@@ -200,7 +201,7 @@ liqOutSection model maybeAsset maybeCollateral =
         , padding 16
         , spacing 10
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ el
@@ -208,7 +209,7 @@ liqOutSection model maybeAsset maybeCollateral =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "LP Tokens to Receive")
         , Just

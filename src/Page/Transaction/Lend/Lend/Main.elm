@@ -2110,22 +2110,22 @@ buttons theme blockchain asset transaction =
 
                                 ( Just (Success True), Just (Success False) ) ->
                                     [ approveButton erc20
-                                    , disabledLend
+                                    , theme |> disabledLend
                                     ]
 
                                 ( Just (Success False), Just (Success False) ) ->
-                                    [ disabledApprove erc20
-                                    , disabledLend
+                                    [ disabledApprove theme erc20
+                                    , theme |> disabledLend
                                     ]
 
                                 ( Just (Loading _), Just (Success False) ) ->
-                                    [ disabledApprove erc20
+                                    [ disabledApprove theme erc20
                                     , theme |> Button.checkingBalance |> map never
                                     ]
 
                                 ( Just (Success True), Just (Loading _) ) ->
                                     [ theme |> Button.checkingAllowance |> map never
-                                    , disabledLend
+                                    , theme |> disabledLend
                                     ]
 
                                 ( Just (Success False), Just (Loading _) ) ->
@@ -2166,11 +2166,11 @@ buttons theme blockchain asset transaction =
                                     [ Button.error error |> map never ]
 
                                 ( _, Just (Success True) ) ->
-                                    [ disabledLend ]
+                                    [ theme |> disabledLend ]
 
                                 ( _, Just (Success False) ) ->
-                                    [ disabledApprove erc20
-                                    , disabledLend
+                                    [ disabledApprove theme erc20
+                                    , theme |> disabledLend
                                     ]
 
                                 ( Just (Loading _), Just (Loading _) ) ->
@@ -2180,7 +2180,7 @@ buttons theme blockchain asset transaction =
 
                                 ( _, Just (Loading _) ) ->
                                     [ theme |> Button.checkingAllowance |> map never
-                                    , disabledLend
+                                    , theme |> disabledLend
                                     ]
 
                                 _ ->
@@ -2197,7 +2197,7 @@ buttons theme blockchain asset transaction =
                                     [ lendButton ]
 
                                 Just (Success False) ->
-                                    [ disabledLend ]
+                                    [ theme |> disabledLend ]
 
                                 Just (Loading _) ->
                                     [ theme |> Button.checkingBalance |> map never ]
@@ -2216,10 +2216,10 @@ buttons theme blockchain asset transaction =
                                         (Uint.hasEnough assetIn)
                             of
                                 Just (Success True) ->
-                                    [ disabledLend ]
+                                    [ theme |> disabledLend ]
 
                                 Just (Success False) ->
-                                    [ disabledLend ]
+                                    [ theme |> disabledLend ]
 
                                 Just (Loading _) ->
                                     [ theme |> Button.checkingBalance |> map never ]
@@ -2246,9 +2246,9 @@ lendButton =
         }
 
 
-disabledLend : Element msg
-disabledLend =
-    Button.disabled "Lend"
+disabledLend : Theme -> Element msg
+disabledLend theme =
+    Button.disabled theme "Lend"
         |> map never
 
 
@@ -2260,7 +2260,7 @@ approveButton erc20 =
         }
 
 
-disabledApprove : ERC20 -> Element msg
-disabledApprove erc20 =
-    Button.disabledApprove erc20
+disabledApprove : Theme -> ERC20 -> Element msg
+disabledApprove theme erc20 =
+    Button.disabledApprove theme erc20
         |> map never

@@ -135,13 +135,7 @@ view { images, theme } param =
                             ]
                             (text "Select Token")
                         , images
-                            |> (case theme of
-                                    Theme.Dark ->
-                                        Image.discloser
-
-                                    Theme.Light ->
-                                        Image.arrowDownDark
-                               )
+                            |> Image.discloser
                                 [ width <| px 9
                                 , alignRight
                                 , centerY

@@ -136,13 +136,7 @@ view { time, offset, chosenZone, images, theme } param =
                             ]
                             (text "Select Maturity")
                         , images
-                            |> (case theme of
-                                    Theme.Dark ->
-                                        Image.discloser
-
-                                    Theme.Light ->
-                                        Image.arrowDownDark
-                               )
+                            |> Image.discloser
                                 [ width <| px 9
                                 , alignRight
                                 , centerY

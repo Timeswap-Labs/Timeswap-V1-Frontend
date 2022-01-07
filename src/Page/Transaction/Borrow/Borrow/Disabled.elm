@@ -43,6 +43,7 @@ import Page.Transaction.Slider as Slider
 import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
 type Transaction
@@ -119,7 +120,7 @@ assetOutSection model asset transaction =
         , padding 16
         , spacing 10
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ el
@@ -127,7 +128,7 @@ assetOutSection model asset transaction =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Amount to Borrow")
         , (case transaction of
@@ -170,7 +171,7 @@ duesInSection model blockchain pool transaction =
         , padding 16
         , spacing 12
         , alpha 0.2
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ { mode =
@@ -331,7 +332,7 @@ debtInSection model asset =
             [ width shrink
             , height shrink
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.textLight |> Font.color
             ]
             (text "Debt to Repay")
         , asset
@@ -375,7 +376,7 @@ collateralInSection model blockchain collateralIn maybeCollateral =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "Collateral to Lock")
             , maybeCollateral
@@ -430,7 +431,7 @@ advancedDebtInSection model asset input =
             [ width shrink
             , height shrink
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Debt to Repay")
         , Textbox.disabled model
@@ -464,7 +465,7 @@ advancedCollateralInSection model blockchain collateral input =
                 , height shrink
                 , Font.size 14
                 , paddingXY 0 3
-                , Font.color Color.primary400
+                , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Collateral to Lock")
             , blockchain

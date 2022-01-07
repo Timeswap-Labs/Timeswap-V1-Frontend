@@ -30,7 +30,7 @@ import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Data.TokenParam as TokenParam exposing (TokenParam)
 import Element
@@ -76,6 +76,7 @@ import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
+import Utility.ThemeColor as ThemeColor
 
 
 type Transaction
@@ -605,7 +606,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.selectTokens |> map never
+                        , buttons = theme |> Button.selectTokens |> map never
                         }
                    )
 
@@ -617,7 +618,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.selectTokens |> map never
+                        , buttons = theme |> Button.selectTokens |> map never
                         }
                    )
 
@@ -629,7 +630,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.selectTokens |> map never
+                        , buttons = theme |> Button.selectTokens |> map never
                         }
                    )
 
@@ -647,7 +648,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.selectMaturity |> map never
+                        , buttons = theme |> Button.selectMaturity |> map never
                         }
                    )
 
@@ -665,7 +666,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.matured |> map never
+                        , buttons = theme |> Button.matured |> map never
                         }
                    )
 
@@ -683,7 +684,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.loading |> map never
+                        , buttons = theme |> Button.loading |> map never
                         }
                    )
 
@@ -711,7 +712,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                 |> (\{ first, second } ->
                         { first = first |> map never
                         , second = second |> map never
-                        , buttons = Button.doesNotExist |> map never
+                        , buttons = theme |> Button.doesNotExist |> map never
                         }
                    )
 
@@ -741,7 +742,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                      , spacing 16
                      , Border.rounded 8
                      , Border.width 1
-                     , Border.color Color.transparent100
+                     , theme |> ThemeColor.border |> Border.color
                      ]
                         ++ Glass.background backdrop theme
                     )
@@ -754,7 +755,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                             , height shrink
                             , paddingXY 0 4
                             , Font.size 24
-                            , Font.color Color.light100
+                            , theme |> ThemeColor.text |> Font.color
                             , Font.bold
                             ]
                             (text "Borrow")
@@ -803,9 +804,9 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
 
 
 settingsButton :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Element Msg
-settingsButton { images } =
+settingsButton { images, theme } =
     Input.button
         [ width shrink
         , height shrink
@@ -815,7 +816,13 @@ settingsButton { images } =
         { onPress = Just ClickSettings
         , label =
             images
-                |> Image.option
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.option
+
+                        Theme.Light ->
+                            Image.settingsSecondary
+                   )
                     [ width <| px 20
                     , height <| px 20
                     ]
@@ -844,7 +851,7 @@ parameters model transaction =
         , height shrink
         , padding 16
         , spacing 12
-        , Background.color Color.primary100
+        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
         [ pairParameters model transaction
@@ -891,7 +898,7 @@ tokenParameter model transaction tokenParam =
             , height shrink
             , paddingXY 0 3
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             ((case tokenParam of
                 TokenParam.Asset ->
@@ -984,7 +991,7 @@ maturityParameter model { state, tooltip } =
             , height shrink
             , paddingXY 0 3
             , Font.size 14
-            , Font.color Color.primary400
+            , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Maturity")
         , case state of

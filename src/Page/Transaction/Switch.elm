@@ -52,7 +52,7 @@ disabled ({ mode, theme } as model) =
         , height <| px 44
         , padding 4
         , spacing 16
-        , theme |> ThemeColor.sectionBackground |> Background.color
+        , theme |> ThemeColor.border |> Background.color
         , Border.rounded 8
         ]
         [ disabledRecommended model
@@ -67,7 +67,7 @@ empty theme =
         , height <| px 44
         , padding 4
         , spacing 16
-        , theme |> ThemeColor.sectionBackground |> Background.color
+        , theme |> ThemeColor.border |> Background.color
         , Border.rounded 8
         ]
         [ emptyRecommended theme
@@ -269,7 +269,7 @@ emptyAdvanced theme =
         (el
             [ centerX
             , centerY
-            , Color.light100 |> Font.color
+            , theme |> ThemeColor.textLight |> Font.color
             , Font.size 16
             , Font.bold
             ]

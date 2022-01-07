@@ -70,13 +70,13 @@ view params =
         }
 
 
-disabled : String -> Element Never
-disabled string =
+disabled : Theme -> String -> Element Never
+disabled theme string =
     el
         [ Region.description string
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
         ]
         (el
@@ -170,8 +170,8 @@ checkingBalance theme =
         )
 
 
-disabledApprove : ERC20 -> Element msg
-disabledApprove erc20 =
+disabledApprove : Theme -> ERC20 -> Element msg
+disabledApprove theme erc20 =
     el
         [ [ "approve"
           , erc20
@@ -181,7 +181,7 @@ disabledApprove erc20 =
             |> Region.description
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
         ]
         (el
@@ -202,8 +202,8 @@ disabledApprove erc20 =
         )
 
 
-pendingApprove : ERC20 -> Element msg
-pendingApprove erc20 =
+pendingApprove : Theme -> ERC20 -> Element msg
+pendingApprove theme erc20 =
     el
         [ [ "approve"
           , erc20
@@ -213,7 +213,7 @@ pendingApprove erc20 =
             |> Region.description
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
         ]
         (el
@@ -303,14 +303,14 @@ approveCollateral msg =
         }
 
 
-selectTokens : Element Never
-selectTokens =
+selectTokens : Theme -> Element Never
+selectTokens theme =
     el
         [ Region.description "select token"
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
-        , Border.rounded 8
+        , theme |> ThemeColor.btnBackground |> Background.color
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -323,14 +323,14 @@ selectTokens =
         )
 
 
-selectMaturity : Element Never
-selectMaturity =
+selectMaturity : Theme -> Element Never
+selectMaturity theme =
     el
         [ Region.description "select maturity"
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
-        , Border.rounded 8
+        , theme |> ThemeColor.btnBackground |> Background.color
+        , Border.rounded 4
         ]
         (el
             [ centerX
@@ -343,13 +343,13 @@ selectMaturity =
         )
 
 
-loading : Element Never
-loading =
+loading : Theme -> Element Never
+loading theme =
     el
         [ Region.description "loading"
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
         ]
         (el
@@ -363,13 +363,13 @@ loading =
         )
 
 
-matured : Element Never
-matured =
+matured : Theme -> Element Never
+matured theme =
     el
         [ Region.description "matured"
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
         ]
         (el
@@ -384,13 +384,13 @@ matured =
         )
 
 
-doesNotExist : Element Never
-doesNotExist =
+doesNotExist : Theme -> Element Never
+doesNotExist theme =
     el
         [ Region.description "does not exist"
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
         ]
         (el
@@ -405,13 +405,13 @@ doesNotExist =
         )
 
 
-exist : Element Never
-exist =
+exist : Theme -> Element Never
+exist theme =
     el
         [ Region.description "exist"
         , width fill
         , height <| px 44
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
         ]
         (el
