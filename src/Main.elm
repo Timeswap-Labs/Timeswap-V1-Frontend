@@ -1147,7 +1147,7 @@ header :
         , page : Page
     }
     -> Element Msg
-header ({ device, backdrop } as model) =
+header ({ device, backdrop, theme } as model) =
     column
         [ width fill
         , height shrink
@@ -1186,7 +1186,7 @@ header ({ device, backdrop } as model) =
                 , Border.color Color.transparent100
                 , (case backdrop of
                     Backdrop.Supported ->
-                        Color.background
+                        theme |> ThemeColor.background
 
                     Backdrop.NotSupported ->
                         Color.solid

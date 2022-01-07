@@ -24,7 +24,7 @@ async function elmInit() {
       hasBackdropSupport:
         CSS.supports("-webkit-backdrop-filter: none") ||
         CSS.supports("backdrop-filter: none"),
-      theme: null,
+      theme: localStorage.getItem("theme"),
       images: Object.entries(images),
       tokenImages: Object.entries(tokenImages),
       chainImages: Object.entries(chainImages),
@@ -93,7 +93,7 @@ async function elmInit() {
           }
         ],
       },
-      user: null,
+      user,
     },
   });
 

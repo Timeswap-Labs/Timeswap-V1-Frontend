@@ -44,6 +44,7 @@ declare interface Ports {
   copyToClipboard: PortFromElm<string>;
 
   cacheChosenZone: PortFromElm<string>;
+  cacheTheme: PortFromElm<string>;
 
   changeChain: PortFromElm<Chain>;
 }

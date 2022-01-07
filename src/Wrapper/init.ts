@@ -18,7 +18,7 @@ export declare let window: any;
 
 export async function elmUser(): Promise<{
   gp: GlobalParams;
-  user?: { wallet: string; chainId: number; address: string };
+  user: ReceiveUser | null;
 }> {
   const gp = new GlobalParams();
 
@@ -30,7 +30,7 @@ export async function elmUser(): Promise<{
       gp.metamaskProvider.send("wallet_switchEthereumChain", [
         { chain: "0x4" },
       ]);
-      return { gp };
+      return { gp, user: null };
     }
 
     const accounts: string[] = await gp.metamaskProvider.send(
@@ -41,11 +41,12 @@ export async function elmUser(): Promise<{
     if (accounts[0]) {
       const wallet = "metamask";
       const chainId = 4;
-      return { gp, user: { wallet, chainId, address: accounts[0] } };
+      const txns : Txns = {confirmed: [], uncomfirmed: []};
+      return { gp, user: { wallet, chainId, address: accounts[0], txns } };
     }
   }
 
-  return { gp };
+  return { gp, user: null };
 }
 
 export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
@@ -106,6 +107,10 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
 
   app.ports.cacheChosenZone.subscribe((zone) => {
     localStorage.setItem("chosen-zone", zone);
+  });
+
+  app.ports.cacheTheme.subscribe((theme) => {
+    localStorage.setItem("theme", theme);
   });
 
   app.ports.changeChain.subscribe(chain => {

@@ -1324,7 +1324,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                             , height shrink
                             , paddingXY 0 4
                             , Font.size 24
-                            , theme |> ThemeColor.text |> Border.color
+                            , theme |> ThemeColor.text |> Font.color
                             , Font.bold
                             ]
                             ((case transaction.state of

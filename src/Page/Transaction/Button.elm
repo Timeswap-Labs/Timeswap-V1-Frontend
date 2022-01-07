@@ -317,7 +317,7 @@ selectTokens theme =
             , centerY
             , paddingXY 0 4
             , Font.size 16
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text "Select Tokens First")
         )

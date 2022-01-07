@@ -162,7 +162,7 @@ disabled theme =
             , alignLeft
             , centerY
             , Font.size 14
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text "Select Pair First")
         )
