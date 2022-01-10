@@ -869,8 +869,8 @@ tokenBalance user token (Modal { tooltip }) =
                 , Font.size 16
                 ]
                 (text "error")
-                |> Debug.log "implement error view"
 
+        -- |> Debug.log "implement error view"
         _ ->
             none
 

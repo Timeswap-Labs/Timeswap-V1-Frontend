@@ -257,7 +257,10 @@ init flags url key =
                   , zoneDropdown = Nothing
                   , device = flags.width |> Device.fromWidth
                   , headerGlass = Animator.init Browser.Events.Hidden
-                  , scrollToPositions = Animator.init Browser.Events.Hidden |> Debug.log "edit"
+                  , scrollToPositions =
+                        Animator.init Browser.Events.Hidden
+
+                  -- |> Debug.log "edit"
                   , visibility = Browser.Events.Visible
                   , backdrop = flags.hasBackdropSupport |> Backdrop.init
                   , theme = flags.theme |> Theme.init

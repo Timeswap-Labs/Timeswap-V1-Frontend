@@ -147,8 +147,9 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
                 loading model timeline
 
             Failure error ->
-                none |> Debug.log "error view"
+                none
 
+            -- |> Debug.log "error view"
             Success claims ->
                 if claims |> Dict.isEmpty then
                     noClaims model

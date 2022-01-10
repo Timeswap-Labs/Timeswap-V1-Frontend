@@ -92,8 +92,9 @@ view { images, theme } param =
                         |> Fade.view theme param.token
 
                 Loading _ ->
-                    none |> Debug.log "loading animation"
+                    none
 
+                -- |> Debug.log "loading animation"
                 _ ->
                     none
             )
@@ -276,8 +277,9 @@ liquidity { images } param =
                             |> Fade.viewLP
 
                     Loading _ ->
-                        none |> Debug.log "loading animation"
+                        none
 
+                    -- |> Debug.log "loading animation"
                     _ ->
                         none
                 )

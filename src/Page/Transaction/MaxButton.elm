@@ -120,7 +120,8 @@ userBalance param =
                     , Font.color Color.transparent300
                     ]
                     (text "error")
-                    |> Debug.log "implement error view"
+
+        -- |> Debug.log "implement error view"
         ]
 
 
@@ -203,8 +204,8 @@ disabledUserBalance param =
                     , Font.color Color.transparent300
                     ]
                     (text "loading")
-                    |> Debug.log "implement loading animation"
 
+            -- |> Debug.log "implement loading animation"
             Failure error ->
                 el
                     [ width shrink
@@ -214,7 +215,8 @@ disabledUserBalance param =
                     , Font.color Color.transparent300
                     ]
                     (text "error")
-                    |> Debug.log "implement error view"
+
+        -- |> Debug.log "implement error view"
         ]
 
 

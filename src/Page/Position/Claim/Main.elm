@@ -288,7 +288,7 @@ update { time } blockchain user msg (Position position) =
                         ( position
                             |> Position
                             |> Just
-                            |> Debug.log "fix"
+                          -- |> Debug.log "fix"
                         , Process.sleep 5000
                             |> Task.perform (\_ -> PoolInfoQueryAgain)
                         , Nothing
@@ -764,8 +764,9 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                                         (Loading.view timeline)
 
                                 Failure error ->
-                                    none |> Debug.log "show error"
+                                    none
 
+                                -- |> Debug.log "show error"
                                 Success ( _, Loading timeline ) ->
                                     el
                                         [ width shrink
@@ -774,8 +775,9 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                                         (Loading.view timeline)
 
                                 Success ( _, Failure error ) ->
-                                    none |> Debug.log "show error"
+                                    none
 
+                                -- |> Debug.log "show error"
                                 Success ( _, Success { asset } ) ->
                                     Truncate.viewAmount
                                         { onMouseEnter = OnMouseEnter
@@ -842,8 +844,9 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                                         (Loading.view timeline)
 
                                 Failure error ->
-                                    none |> Debug.log "show error"
+                                    none
 
+                                -- |> Debug.log "show error"
                                 Success ( _, Loading timeline ) ->
                                     el
                                         [ width shrink
@@ -852,8 +855,9 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                                         (Loading.view timeline)
 
                                 Success ( _, Failure error ) ->
-                                    none |> Debug.log "show error"
+                                    none
 
+                                -- |> Debug.log "show error"
                                 Success ( _, Success { collateral } ) ->
                                     Truncate.viewAmount
                                         { onMouseEnter = OnMouseEnter
@@ -921,8 +925,9 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                                                 (Loading.view timeline)
 
                                         Failure error ->
-                                            none |> Debug.log "show error"
+                                            none
 
+                                        -- |> Debug.log "show error"
                                         Success (Just { bond }) ->
                                             Truncate.viewAmount
                                                 { onMouseEnter = OnMouseEnter
@@ -935,7 +940,8 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                                                 }
 
                                         _ ->
-                                            none |> Debug.log "show error"
+                                            none
+                                -- |> Debug.log "show error"
                                )
                         ]
                     ]
@@ -997,8 +1003,9 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                                                 (Loading.view timeline)
 
                                         Failure error ->
-                                            none |> Debug.log "show error"
+                                            none
 
+                                        -- |> Debug.log "show error"
                                         Success (Just { insurance }) ->
                                             Truncate.viewAmount
                                                 { onMouseEnter = OnMouseEnter
@@ -1011,7 +1018,8 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                                                 }
 
                                         _ ->
-                                            none |> Debug.log "show error"
+                                            none
+                                -- |> Debug.log "show error"
                                )
                         ]
                     ]

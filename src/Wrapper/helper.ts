@@ -16,3 +16,19 @@ export function updateErc20Balance(
 export function getCurrentTime(): Uint256 {
   return new Uint256(Date.now()).div(1000);
 }
+
+export function getCustomTokens(chainId: string): ERC20Token[] {
+  const storeData = localStorage.getItem("custom-tokens");
+  let customTokens: ERC20Token[] = [];
+
+  if (storeData) {
+    try {
+      const parsedData : {[key: string] : ERC20Token[]}  = JSON.parse(storeData);
+      customTokens = parsedData[chainId];
+    } catch (error) {
+      return [];
+    }
+  }
+
+  return customTokens;
+}

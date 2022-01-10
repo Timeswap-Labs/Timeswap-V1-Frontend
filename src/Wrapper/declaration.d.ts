@@ -45,6 +45,8 @@ declare interface Ports {
 
   cacheChosenZone: PortFromElm<string>;
   cacheTheme: PortFromElm<string>;
+  cacheCustom: PortFromElm<{string: ERC20Token}>;
+  cacheTxns: PortFromElm<ReceiveUser>;
 
   changeChain: PortFromElm<Chain>;
 }

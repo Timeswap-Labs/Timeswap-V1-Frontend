@@ -296,7 +296,7 @@ update { time } blockchain user msg (Position position) =
                         ( position
                             |> Position
                             |> Just
-                            |> Debug.log "fix"
+                          -- |> Debug.log "fix"
                         , Process.sleep 5000
                             |> Task.perform (\_ -> PoolInfoQueryAgain)
                         , Nothing
@@ -773,7 +773,9 @@ viewLiq { images, theme } user { pool, return, tooltip } =
                                 , Font.color Color.transparent300
                                 ]
                                 (text "Asset to Receive")
-                            , none |> Debug.log "edit"
+                            , none
+
+                            -- |> Debug.log "edit"
                             ]
                         ]
 
@@ -781,8 +783,9 @@ viewLiq { images, theme } user { pool, return, tooltip } =
                         []
 
             Failure error ->
-                [] |> Debug.log "change"
+                []
 
+            -- |> Debug.log "change"
             Loading timeline ->
                 el
                     [ width shrink

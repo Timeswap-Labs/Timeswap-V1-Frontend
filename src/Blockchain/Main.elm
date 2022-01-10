@@ -66,7 +66,9 @@ init chains flag =
                               }
                                 |> Blockchain
                             , [ cmd |> Cmd.map UserMsg
-                              , Cmd.none |> Debug.log "cmd"
+                              , Cmd.none
+
+                              -- |> Debug.log "cmdnun"
                               ]
                                 |> Cmd.batch
                             )
@@ -76,7 +78,8 @@ init chains flag =
                           , user = Nothing
                           }
                             |> Blockchain
-                        , Cmd.none |> Debug.log "cmd"
+                        , Cmd.none
+                          -- |> Debug.log "cmd"
                         )
             )
 
@@ -94,7 +97,8 @@ initGivenChain chain =
       , user = Nothing
       }
         |> Blockchain
-    , Cmd.none |> Debug.log "cmd"
+    , Cmd.none
+      -- |> Debug.log "cmd"
     )
 
 
@@ -328,7 +332,9 @@ receiveUserInit ({ key, url, chains } as model) value =
                           }
                             |> Blockchain
                         , [ cmd |> Cmd.map UserMsg
-                          , Cmd.none |> Debug.log "cmd"
+                          , Cmd.none
+
+                          -- |> Debug.log "cmd"
                           , url
                                 |> Url.toString
                                 |> Navigation.pushUrl key
@@ -342,7 +348,9 @@ receiveUserInit ({ key, url, chains } as model) value =
                        , user = Nothing
                        }
                         |> Blockchain
-                     , [ Cmd.none |> Debug.log "cmd"
+                     , [ Cmd.none
+
+                       -- |> Debug.log "cmd"
                        , url
                             |> Url.toString
                             |> Navigation.pushUrl key
@@ -357,7 +365,9 @@ receiveUserInit ({ key, url, chains } as model) value =
               , user = Nothing
               }
                 |> Blockchain
-            , [ Cmd.none |> Debug.log "cmd"
+            , [ Cmd.none
+
+              -- |> Debug.log "cmd"
               , url
                     |> Url.toString
                     |> Navigation.pushUrl key
@@ -404,7 +414,9 @@ receiveUser ({ key, url, chains } as model) value (Blockchain blockchain) =
                               }
                                 |> Blockchain
                             , [ cmd |> Cmd.map UserMsg
-                              , Cmd.none |> Debug.log "cmd"
+                              , Cmd.none
+
+                              -- |> Debug.log "cmd"
                               , url
                                     |> Url.toString
                                     |> Navigation.pushUrl key
@@ -418,7 +430,9 @@ receiveUser ({ key, url, chains } as model) value (Blockchain blockchain) =
                            , user = Nothing
                            }
                             |> Blockchain
-                         , [ Cmd.none |> Debug.log "cmd"
+                         , [ Cmd.none
+
+                           -- |> Debug.log "cmd"
                            , url
                                 |> Url.toString
                                 |> Navigation.pushUrl key
@@ -441,7 +455,9 @@ receiveUser ({ key, url, chains } as model) value (Blockchain blockchain) =
                   , user = Nothing
                   }
                     |> Blockchain
-                , [ Cmd.none |> Debug.log "cmd"
+                , [ Cmd.none
+
+                  -- |> Debug.log "cmd"
                   , url
                         |> Url.toString
                         |> Navigation.pushUrl key

@@ -52,7 +52,7 @@ toPositions : (() -> msg) -> Cmd msg
 toPositions msg =
     "positions"
         |> SmoothScroll.scrollToWithOptions config
-        |> Debug.log "check"
+        -- |> Debug.log "check"
         |> Task.map (\_ -> ())
         |> Task.onError (\_ -> Task.succeed ())
         |> Task.perform msg

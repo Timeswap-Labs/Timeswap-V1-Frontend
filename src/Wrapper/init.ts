@@ -39,9 +39,20 @@ export async function elmUser(): Promise<{
     );
 
     if (accounts[0]) {
+      let txns : Txns = {confirmed: [], uncomfirmed: []};
       const wallet = "metamask";
       const chainId = 4;
-      const txns : Txns = {confirmed: [], uncomfirmed: []};
+      const storedTxns = localStorage.getItem("txns");
+
+      if (storedTxns) {
+        try {
+          const parsedTxns: {chainId: number, address: string, txns: Txns} = JSON.parse(storedTxns);
+          txns = (parsedTxns.address === accounts[0] && parsedTxns.chainId === chainId) ? parsedTxns.txns : txns;
+        } catch (err) {
+          txns = {confirmed: [], uncomfirmed: []};
+        }
+      }
+
       return { gp, user: { wallet, chainId, address: accounts[0], txns } };
     }
   }
@@ -113,6 +124,14 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
     localStorage.setItem("theme", theme);
   });
 
+  app.ports.cacheCustom.subscribe((customTokens) => {
+    localStorage.setItem("custom-tokens", JSON.stringify(customTokens));
+  });
+
+  app.ports.cacheTxns.subscribe((txns) => {
+    localStorage.setItem("txns", JSON.stringify(txns));
+  });
+
   app.ports.changeChain.subscribe(chain => {
     if (window.ethereum && ethereum) {
       gp.metamaskProvider = window.ethereum;
@@ -124,7 +143,6 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
   });
 
   window.addEventListener("scroll", () => {
-    console.log("scrolling");
     app.ports.scroll.send;
   });
 }

@@ -165,7 +165,8 @@ construct ({ chains } as model) url maybePage =
                                 |> Claim.init model blockchain
                                 |> Tuple.first
                                 |> Just
-                                |> Debug.log "remove"
+
+                        -- |> Debug.log "remove"
                         }
                             |> LendPage
                     )
@@ -183,7 +184,8 @@ construct ({ chains } as model) url maybePage =
                                 |> Claim.init model blockchain
                                 |> Tuple.first
                                 |> Just
-                                |> Debug.log "remove"
+
+                        -- |> Debug.log "remove"
                         }
                             |> LendPage
                     )
@@ -494,7 +496,11 @@ update model blockchain msg page =
                     )
 
         _ ->
-            ( page, Cmd.none, Nothing ) |> Debug.log "positions msg"
+            ( page, Cmd.none, Nothing )
+
+
+
+-- |> Debug.log "positions msg"
 
 
 lendEffect :
@@ -778,7 +784,8 @@ view model blockchain page =
                         -- Liq.view model user position
                         --     |> map LiqMsg
                         --     |> List.singleton
-                        [] |> Debug.log "edit"
+                        []
+                     -- |> Debug.log "edit"
                     )
                     |> Maybe.apply liquidityPage.position
                     |> Maybe.apply (blockchain |> Blockchain.toUser)

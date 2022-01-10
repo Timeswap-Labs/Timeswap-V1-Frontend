@@ -117,11 +117,14 @@ init chains chain flag =
               , name = Nothing
               , balances = Balances.init chains chain
               , allowances = Allowances.init chains chain
-              , positions = Success Positions.dummy |> Debug.log "replace"
+              , positions = Success Positions.dummy
+
+              --   |> Debug.log "replace"
               , txns = flag.txns |> Txns.init
               }
                 |> User
-            , Cmd.none |> Debug.log "Later"
+            , Cmd.none
+              -- |> Debug.log "Later"
             )
                 |> Just
 

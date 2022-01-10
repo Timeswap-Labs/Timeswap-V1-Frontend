@@ -7,6 +7,7 @@ import * as chainImages from "url:../../image/chains/*.svg";
 import * as walletImages from "url:../../image/wallets/*.svg";
 
 import { elmUser, init } from "./init";
+import { getCustomTokens } from "./helper";
 
 export declare let window: any;
 
@@ -59,10 +60,10 @@ async function elmInit() {
           ],
           custom: [
             {
-              "address": "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
-              "name": "USDC TEST TOKEN with a long name",
-              "symbol": "USDC",
-              "decimals": 18
+              address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+              name: "USDC TEST TOKEN with a long name",
+              symbol: "USDC",
+              decimals: 18
             },
             {
               address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
@@ -89,7 +90,7 @@ async function elmInit() {
               decimals: 18,
             },
             whitelist : [],
-            custom: [],
+            custom: getCustomTokens(String(0x3)),
           }
         ],
       },
