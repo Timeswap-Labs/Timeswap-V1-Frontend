@@ -414,7 +414,9 @@ decoder { chains } chain =
             , name = Nothing
             , balances = Balances.init chains chain
             , allowances = Allowances.init chains chain
-            , positions = Success Positions.dummy |> Debug.log "replace"
+            , positions = Success Positions.dummy
+
+            -- |> Debug.log "replace"
             , txns = txns
             }
                 |> User
@@ -453,7 +455,8 @@ receiveUserInit model chain value =
     case value |> Decode.decodeValue (decoder model chain) of
         Ok (Just decodedUser) ->
             ( decodedUser
-            , Cmd.none |> Debug.log "query for name"
+            , Cmd.none
+              -- |> Debug.log "query for name"
             )
                 |> Just
 
@@ -478,7 +481,8 @@ receiveUser model chain value user =
 
             else
                 ( decodedUser
-                , Cmd.none |> Debug.log "query for name"
+                , Cmd.none
+                  -- |> Debug.log "query for name"
                 )
                     |> Just
 
