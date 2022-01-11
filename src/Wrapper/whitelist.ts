@@ -10,12 +10,8 @@ export class WhiteList {
   convenience: string;
 
   private tokens: { [erc20: string]: ERC20Token | NativeToken } = {};
-  private pairs: { [asset: string]: { [collateral: string]: string } } = {};
-  private pools: {
-    [asset: string]: {
-      [collateral: string]: { [maturity: number]: PoolValue };
-    };
-  } = {};
+  private pairs: { [pair: string]: string } = {};
+  private pools: { [pool: string]: PoolValue } = {};
   private tokenIds: Map<
     string,
     Map<string, { debt: string; collateral: string }>
@@ -49,8 +45,7 @@ export class WhiteList {
     );
 
     whitelist.pairs.forEach(({ asset, collateral, pair }) => {
-      this.pairs[asset] = this.pairs[asset] ?? {};
-      this.pairs[asset][collateral] = pair;
+      this.pairs[`${asset}-${collateral}`] = pair;
     });
 
     whitelist.pairs.forEach(({ asset, collateral, pools }) => {
@@ -62,12 +57,10 @@ export class WhiteList {
             this.tokens[collateral],
             new Uint256(maturity),
             this.convenience,
-            this.pairs[asset][collateral]
+            this.pairs[`${asset}-${collateral}`]
           );
 
-          this.pools[asset] = this.pools[asset] ?? {};
-          this.pools[asset][collateral] = this.pools[asset][collateral] ?? {};
-          this.pools[asset][collateral][maturity] = {
+          this.pools[`${asset}-${collateral}-${maturity}`] = {
             pool,
             liquidity: new ERC20Token(provider, network.chainId, 18, liquidity),
             bond: new ERC20Token(provider, network.chainId, 18, bond),
@@ -88,11 +81,11 @@ export class WhiteList {
   }
 
   getPairAddress(asset: string, collateral: string): string {
-    return this.pairs[asset][collateral];
+    return this.pairs[`${asset}-${collateral}`];
   }
 
   getPool(asset: string, collateral: string, maturity: number): Pool {
-    return this.pools[asset][collateral][maturity].pool;
+    return this.pools[`${asset}-${collateral}-${maturity}`].pool;
   }
 
   getLiquidity(
@@ -100,11 +93,11 @@ export class WhiteList {
     collateral: string,
     maturity: number
   ): ERC20Token {
-    return this.pools[asset][collateral][maturity].liquidity;
+    return this.pools[`${asset}-${collateral}-${maturity}`].liquidity;
   }
 
   getBond(asset: string, collateral: string, maturity: number): ERC20Token {
-    return this.pools[asset][collateral][maturity].bond;
+    return this.pools[`${asset}-${collateral}-${maturity}`].bond;
   }
 
   getInsurance(
@@ -112,11 +105,11 @@ export class WhiteList {
     collateral: string,
     maturity: number
   ): ERC20Token {
-    return this.pools[asset][collateral][maturity].insurance;
+    return this.pools[`${asset}-${collateral}-${maturity}`].insurance;
   }
 
   getCDToken(asset: string, collateral: string, maturity: number): Contract {
-    return this.pools[asset][collateral][maturity].collateralizedDebt;
+    return this.pools[`${asset}-${collateral}-${maturity}`].collateralizedDebt;
   }
 
   getTokenIds(cdAddress: string) {
@@ -137,26 +130,20 @@ export class WhiteList {
   }
 
   poolEntries() {
-    return Object.entries(this.pools).flatMap(([asset, assetMap]) =>
-      Object.entries(assetMap).flatMap(([collateral, collateralMap]) =>
-        Object.entries(collateralMap).map(
-          ([
-            maturity,
-            { pool, liquidity, bond, insurance, collateralizedDebt },
-          ]) => {
-            return {
-              asset,
-              collateral,
-              maturity: Number(maturity),
-              pool,
-              liquidity,
-              bond,
-              insurance,
-              collateralizedDebt,
-            };
-          }
-        )
-      )
+    return Object.entries(this.pools).flatMap(
+      ([acm, { pool, liquidity, bond, insurance, collateralizedDebt }]) => {
+        const [asset, collateral, maturity] = acm.split("-");
+        return {
+          asset,
+          collateral,
+          maturity: Number(maturity),
+          pool,
+          liquidity,
+          bond,
+          insurance,
+          collateralizedDebt,
+        };
+      }
     );
   }
 }
