@@ -4,6 +4,7 @@ module Utility.Router exposing
     , toBorrow
     , toBorrowDashboard
     , toConnect
+    , toFaucet
     , toLend
     , toLendDashboard
     , toLiquidityProvider
@@ -101,6 +102,11 @@ toConnect =
 toWallet : String
 toWallet =
     "#wallet"
+
+
+toFaucet : String
+toFaucet =
+    "#faucet"
 
 
 toNoMetamask : String

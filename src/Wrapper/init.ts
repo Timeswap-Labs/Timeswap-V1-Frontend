@@ -10,6 +10,7 @@ import { lendPositionsInit, borrowPositionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
 import { withdrawSigner } from "./withdraw";
+import { faucetSigner } from "./faucet";
 import { swapSigner } from "./swap";
 
 export declare let window: any;
@@ -64,6 +65,8 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
 
   pay(app);
   paySigner(app, whitelist, gp);
+
+  faucetSigner(app, gp);
 
   portsInit(app, whitelist, gp);
   metamaskConnected(app, whitelist, gp);

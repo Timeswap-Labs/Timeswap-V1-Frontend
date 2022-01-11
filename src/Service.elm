@@ -47,6 +47,7 @@ import Element.Lazy as Lazy
 import Modal exposing (Modal)
 import Page exposing (Page)
 import Services.Connect.Main as Connect
+import Services.Faucet.Main as Faucet
 import Services.NoMetamask.Main as NoMetamask
 import Services.Settings.Main as Settings exposing (Settings)
 import Services.Swap.Main as Swap
@@ -63,6 +64,7 @@ type Service
     | NoMetamask
     | Wallet Wallet.Service
     | Settings Settings.Service Settings
+    | Faucet
     | Swap Swap.Service
 
 
@@ -86,6 +88,9 @@ fromFragment { user } string =
 
         ( "settings", _ ) ->
             ( Settings Settings.init Settings.initSettings, Cmd.none ) |> Just
+
+        ( "faucet", _ ) ->
+            Just ( Faucet, Cmd.none )
 
         ( "swap", _ ) ->
             Swap.init
@@ -111,6 +116,9 @@ toUrl service =
         Settings _ _ ->
             Router.toSettings
 
+        Faucet ->
+            Router.toFaucet
+
         Swap _ ->
             Router.toSwap
 
@@ -130,6 +138,9 @@ same service1 service2 =
         ( Settings _ _, Settings _ _ ) ->
             True
 
+        ( Faucet, Faucet ) ->
+            True
+
         ( Swap _, Swap _ ) ->
             True
 
@@ -141,6 +152,7 @@ type Msg
     = ConnectMsg Connect.Msg
     | WalletMsg Wallet.Msg
     | SettingsMsg Settings.Msg
+    | FaucetMsg Faucet.Msg
     | SwapMsg Swap.Msg
 
 
@@ -175,6 +187,12 @@ update model msg service =
         ( SettingsMsg settingsMsg, Settings _ settings ) ->
             ( Settings (Settings.update settingsMsg) settings
             , Cmd.none
+            )
+
+        ( FaucetMsg faucetMsg, Faucet ) ->
+            ( Faucet
+            , Faucet.update faucetMsg
+                |> Cmd.map FaucetMsg
             )
 
         ( SwapMsg swapMsg, Swap swap ) ->
@@ -422,6 +440,28 @@ view msgs ({ device, user } as model) service =
                 ]
                 (Lazy.lazy4 Settings.view msgs model settingsService settings)
                 |> (Element.map << Or.mapEither) SettingsMsg
+
+        ( Faucet, _ ) ->
+            el
+                [ width fill
+                , height fill
+                , if Device.isPhone device then
+                    paddingEach
+                        { top = 160
+                        , right = 0
+                        , bottom = 0
+                        , left = 0
+                        }
+
+                  else
+                    padding 80
+                , scrollbarY
+                , Background.color Color.modal
+                , Font.family Typography.supreme
+                ]
+                (Lazy.lazy Faucet.view model)
+                |> Element.map FaucetMsg
+                |> Element.map Either
 
         ( Swap swap, Success successUser ) ->
             if
