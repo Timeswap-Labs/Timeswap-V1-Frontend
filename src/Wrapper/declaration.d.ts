@@ -43,6 +43,8 @@ declare interface Ports {
 
   copyToClipboard: PortFromElm<string>;
 
+  cacheSlippage: PortFromElm<number>
+  cacheDeadline: PortFromElm<number>;
   cacheChosenZone: PortFromElm<string>;
   cacheTheme: PortFromElm<string>;
   cacheCustom: PortFromElm<{string: ERC20Token}>;

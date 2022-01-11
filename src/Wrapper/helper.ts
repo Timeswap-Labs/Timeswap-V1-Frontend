@@ -18,7 +18,7 @@ export function getCurrentTime(): Uint256 {
 }
 
 export function getCustomTokens(chainId: string): ERC20Token[] {
-  const storeData = localStorage.getItem("custom-tokens");
+  const storeData = window.localStorage.getItem("custom-tokens");
   let customTokens: ERC20Token[] = [];
 
   if (storeData) {

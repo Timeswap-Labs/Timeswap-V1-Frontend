@@ -20,18 +20,18 @@ async function elmInit() {
       time: Date.now(),
       offset: new Date().getTimezoneOffset(),
       zoneName: Intl.DateTimeFormat().resolvedOptions().timeZone,
-      chosenZone: localStorage.getItem("chosen-zone"),
+      chosenZone: window.localStorage.getItem("chosen-zone"),
       width: window.innerWidth,
       hasBackdropSupport:
         CSS.supports("-webkit-backdrop-filter: none") ||
         CSS.supports("backdrop-filter: none"),
-      theme: localStorage.getItem("theme"),
+      theme: window.localStorage.getItem("theme"),
       images: Object.entries(images),
       tokenImages: Object.entries(tokenImages),
       chainImages: Object.entries(chainImages),
       walletImages: Object.entries(walletImages),
-      slippage: null,
-      deadline: null,
+      slippage: Number(window.localStorage.getItem("slippage")) || null,
+      deadline: Number(window.localStorage.getItem("deadline")) || null,
       priceFeed: null,
       wallets: ["metamask"],
       chains: {

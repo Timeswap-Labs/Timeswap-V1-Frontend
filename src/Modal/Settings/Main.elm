@@ -176,7 +176,7 @@ update msg (Modal modal) =
                                 |> Just
                             , deadline
                                 |> Deadline.encode
-                                |> cacheSlippage
+                                |> cacheDeadline
                             , deadline
                                 |> UpdateDeadline
                                 |> Just

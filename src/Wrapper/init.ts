@@ -42,7 +42,7 @@ export async function elmUser(): Promise<{
       let txns : Txns = {confirmed: [], uncomfirmed: []};
       const wallet = "metamask";
       const chainId = 4;
-      const storedTxns = localStorage.getItem("txns");
+      const storedTxns = window.localStorage.getItem("txns");
 
       if (storedTxns) {
         try {
@@ -116,20 +116,28 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
     navigator.clipboard.writeText(copyStr);
   });
 
+  app.ports.cacheSlippage.subscribe((slippage) => {
+    window.localStorage.setItem("slippage", slippage);
+  });
+
+  app.ports.cacheDeadline.subscribe((deadline) => {
+    window.localStorage.setItem("deadline", deadline);
+  });
+
   app.ports.cacheChosenZone.subscribe((zone) => {
-    localStorage.setItem("chosen-zone", zone);
+    window.localStorage.setItem("chosen-zone", zone);
   });
 
   app.ports.cacheTheme.subscribe((theme) => {
-    localStorage.setItem("theme", theme);
+    window.localStorage.setItem("theme", theme);
   });
 
   app.ports.cacheCustom.subscribe((customTokens) => {
-    localStorage.setItem("custom-tokens", JSON.stringify(customTokens));
+    window.localStorage.setItem("custom-tokens", JSON.stringify(customTokens));
   });
 
   app.ports.cacheTxns.subscribe((txns) => {
-    localStorage.setItem("txns", JSON.stringify(txns));
+    window.localStorage.setItem("txns", JSON.stringify(txns));
   });
 
   app.ports.changeChain.subscribe(chain => {
