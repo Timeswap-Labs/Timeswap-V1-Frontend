@@ -11,7 +11,6 @@ import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
 import { withdrawSigner } from "./withdraw";
 import { faucetSigner } from "./faucet";
-import { swapSigner } from "./swap";
 
 export declare let window: any;
 
@@ -72,8 +71,6 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
   metamaskConnected(app, whitelist, gp);
   metamaskChainChange(app, whitelist, gp);
   metamaskAccountsChange(app, whitelist, gp);
-
-  swapSigner(app, gp);
 }
 
 function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {

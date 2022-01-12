@@ -10,7 +10,6 @@ module Service exposing
     , inputSlippage
     , refreshSettings
     , same
-    , subscriptions
     , toUrl
     , update
     , view
@@ -50,7 +49,6 @@ import Services.Connect.Main as Connect
 import Services.Faucet.Main as Faucet
 import Services.NoMetamask.Main as NoMetamask
 import Services.Settings.Main as Settings exposing (Settings)
-import Services.Swap.Main as Swap
 import Services.Wallet.Main as Wallet
 import Time exposing (Posix)
 import User exposing (User)
@@ -65,7 +63,6 @@ type Service
     | Wallet Wallet.Service
     | Settings Settings.Service Settings
     | Faucet
-    | Swap Swap.Service
 
 
 fromFragment : { model | user : Remote userError { user | chain : Chain } } -> String -> Maybe ( Service, Cmd Msg )
@@ -92,11 +89,6 @@ fromFragment { user } string =
         ( "faucet", _ ) ->
             Just ( Faucet, Cmd.none )
 
-        ( "swap", _ ) ->
-            Swap.init
-                |> Tuple.mapBoth Swap (Cmd.map SwapMsg)
-                |> Just
-
         _ ->
             Nothing
 
@@ -119,9 +111,6 @@ toUrl service =
         Faucet ->
             Router.toFaucet
 
-        Swap _ ->
-            Router.toSwap
-
 
 same : Service -> Service -> Bool
 same service1 service2 =
@@ -141,9 +130,6 @@ same service1 service2 =
         ( Faucet, Faucet ) ->
             True
 
-        ( Swap _, Swap _ ) ->
-            True
-
         _ ->
             False
 
@@ -153,7 +139,6 @@ type Msg
     | WalletMsg Wallet.Msg
     | SettingsMsg Settings.Msg
     | FaucetMsg Faucet.Msg
-    | SwapMsg Swap.Msg
 
 
 update :
@@ -195,28 +180,8 @@ update model msg service =
                 |> Cmd.map FaucetMsg
             )
 
-        ( SwapMsg swapMsg, Swap swap ) ->
-            swap
-                |> Swap.update model swapMsg
-                |> (\( updatedSwap, cmd ) ->
-                        ( updatedSwap |> Swap
-                        , cmd |> Cmd.map SwapMsg
-                        )
-                   )
-
         _ ->
             ( service, Cmd.none )
-
-
-subscriptions : Service -> Sub Msg
-subscriptions service =
-    case service of
-        Swap swap ->
-            Swap.subscriptions swap
-                |> Sub.map SwapMsg
-
-        _ ->
-            Sub.none
 
 
 inputSlippage : String -> Service -> Service
@@ -462,35 +427,6 @@ view msgs ({ device, user } as model) service =
                 (Lazy.lazy Faucet.view model)
                 |> Element.map FaucetMsg
                 |> Element.map Either
-
-        ( Swap swap, Success successUser ) ->
-            if
-                Address.participantAddresses
-                    |> List.member successUser.address
-            then
-                el
-                    [ width fill
-                    , height fill
-                    , if Device.isPhone device then
-                        paddingEach
-                            { top = 160
-                            , right = 0
-                            , bottom = 0
-                            , left = 0
-                            }
-
-                      else
-                        padding 80
-                    , scrollbarY
-                    , Background.color Color.modal
-                    , Font.family Typography.supreme
-                    ]
-                    (Lazy.lazy3 Swap.view model successUser swap)
-                    |> Element.map SwapMsg
-                    |> Element.map Either
-
-            else
-                none
 
         _ ->
             none
