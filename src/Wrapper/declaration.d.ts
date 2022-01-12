@@ -35,6 +35,8 @@ declare interface Ports {
   sdkPayMsg: PortToElm<PayCalculate>;
 
   withdraw: PortFromElm<Withdraw>;
+
+  faucetMint: PortFromElm<Faucet>;
 }
 
 interface MetamaskMsg {
