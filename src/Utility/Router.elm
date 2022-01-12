@@ -11,7 +11,6 @@ module Utility.Router exposing
     , toPairMarket
     , toPay
     , toSettings
-    , toSwap
     , toWallet
     , toWithdraw
     )
@@ -116,8 +115,3 @@ toSettings =
 exit : String
 exit =
     "#"
-
-
-toSwap : String
-toSwap =
-    "#swap"
