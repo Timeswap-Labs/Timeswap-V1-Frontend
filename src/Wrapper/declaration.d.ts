@@ -35,9 +35,6 @@ declare interface Ports {
   sdkPayMsg: PortToElm<PayCalculate>;
 
   withdraw: PortFromElm<Withdraw>;
-
-  signSwapTxn: PortFromElm;
-  swapSignatureMsg: PortToElm<String>;
 }
 
 interface MetamaskMsg {
