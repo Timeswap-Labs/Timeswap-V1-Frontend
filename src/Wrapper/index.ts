@@ -32,7 +32,7 @@ async function elmInit() {
       walletImages: Object.entries(walletImages),
       slippage: Number(window.localStorage.getItem("slippage")) || null,
       deadline: Number(window.localStorage.getItem("deadline")) || null,
-      priceFeed: null,
+      priceFeed: window.localStorage.getItem("priceFeed"),
       wallets: ["metamask"],
       chains: {
         default: {

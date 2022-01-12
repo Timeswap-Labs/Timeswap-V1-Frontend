@@ -19,15 +19,19 @@ import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
+        , alignLeft
+        , alignRight
         , centerX
         , centerY
         , column
         , el
         , fill
         , height
+        , none
         , padding
         , paddingEach
         , paddingXY
+        , pointer
         , px
         , row
         , shrink
@@ -37,6 +41,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events exposing (onClick)
 import Element.Font as Font
 import Element.Input as Input exposing (OptionState)
 import Json.Decode as Decode exposing (Decoder)
@@ -362,7 +367,8 @@ view ({ backdrop } as model) (Modal modal) =
                             [ width shrink
                             , height shrink
                             , centerY
-                            , Font.size 18
+                            , Font.size 16
+                            , Font.bold
                             , paddingXY 0 3
                             , Font.color Color.light100
                             ]
@@ -372,6 +378,7 @@ view ({ backdrop } as model) (Modal modal) =
                     ]
                 , slippageSetting modal
                 , deadlineSetting modal
+                , priceFeedSetting modal
                 ]
         }
 
@@ -395,8 +402,8 @@ slippageSetting modal =
                 , height shrink
                 , paddingXY 0 4
                 , Font.regular
-                , Font.size 16
-                , Font.color Color.transparent300
+                , Font.size 14
+                , Font.color Color.transparent400
                 ]
                 (text "Slippage tolerance")
             ]
@@ -430,8 +437,8 @@ deadlineSetting modal =
                 , height shrink
                 , paddingXY 0 4
                 , Font.regular
-                , Font.size 16
-                , Font.color Color.transparent300
+                , Font.size 14
+                , Font.color Color.transparent400
                 ]
                 (text "Transaction deadline")
             ]
@@ -443,6 +450,19 @@ deadlineSetting modal =
             [ deadlineSwitch modal
             , deadlineInput modal
             ]
+        ]
+
+
+priceFeedSetting : { modal | priceFeed : PriceFeed } -> Element Msg
+priceFeedSetting modal =
+    row
+        [ width fill
+        , height fill
+        , Font.color Color.transparent400
+        , Font.size 14
+        ]
+        [ text "CDP Spot Price"
+        , priceFeedSwitch modal
         ]
 
 
@@ -502,6 +522,61 @@ deadlineSwitch { deadline } =
         }
 
 
+priceFeedSwitch :
+    { modal | priceFeed : PriceFeed }
+    -> Element Msg
+priceFeedSwitch { priceFeed } =
+    el
+        [ width <| px 40
+        , height <| px 20
+        , alignRight
+        , centerY
+        , padding 2
+        , Border.rounded 500
+        , pointer
+        , onClick
+            (ChoosePriceFeed
+                (case priceFeed of
+                    PriceFeed.Ignore ->
+                        PriceFeed.Utilize
+
+                    PriceFeed.Utilize ->
+                        PriceFeed.Ignore
+                )
+            )
+        , (case priceFeed of
+            PriceFeed.Ignore ->
+                Color.transparent200
+
+            PriceFeed.Utilize ->
+                Color.primary100
+          )
+            |> Background.color
+        ]
+        (el
+            [ width <| px 16
+            , height <| px 16
+            , centerY
+            , case priceFeed of
+                PriceFeed.Ignore ->
+                    alignLeft
+
+                PriceFeed.Utilize ->
+                    alignRight
+            , Border.rounded 16
+            , (case priceFeed of
+                PriceFeed.Ignore ->
+                    Color.dark300
+
+                PriceFeed.Utilize ->
+                    Color.primary500
+              )
+                |> Background.color
+            ]
+            none
+        )
+
+
 slippageInput :
     { modal | slippage : Or Slippage String }
     -> Element Msg
@@ -539,7 +614,7 @@ slippageInput { slippage } =
             , Background.color Color.none
             , Border.color Color.none
             , Font.bold
-            , Font.size 16
+            , Font.size 14
             , (case slippage of
                 Left _ ->
                     Color.transparent500
@@ -579,7 +654,7 @@ slippageInput { slippage } =
             , height shrink
             , centerY
             , Font.bold
-            , Font.size 16
+            , Font.size 14
             , (case slippage of
                 Left _ ->
                     Color.transparent500
@@ -634,7 +709,7 @@ deadlineInput { deadline } =
             , Background.color Color.none
             , Border.color Color.none
             , Font.bold
-            , Font.size 16
+            , Font.size 14
             , (case deadline of
                 Left _ ->
                     Color.transparent500
@@ -674,7 +749,7 @@ deadlineInput { deadline } =
             , height shrink
             , centerY
             , Font.bold
-            , Font.size 16
+            , Font.size 14
             , (case deadline of
                 Left _ ->
                     Color.transparent500
@@ -710,8 +785,7 @@ radio label optionState =
         (el
             [ centerX
             , centerY
-            , Font.bold
-            , Font.size 16
+            , Font.size 14
             , (case optionState of
                 Input.Selected ->
                     Color.transparent500

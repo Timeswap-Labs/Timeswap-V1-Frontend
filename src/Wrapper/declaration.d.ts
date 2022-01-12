@@ -45,6 +45,7 @@ declare interface Ports {
 
   cacheSlippage: PortFromElm<number>
   cacheDeadline: PortFromElm<number>;
+  cachePriceFeed: PortFromElm<string>;
   cacheChosenZone: PortFromElm<string>;
   cacheTheme: PortFromElm<string>;
   cacheCustom: PortFromElm<{string: ERC20Token}>;

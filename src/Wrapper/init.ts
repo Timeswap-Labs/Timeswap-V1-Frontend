@@ -124,6 +124,10 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
     window.localStorage.setItem("deadline", deadline);
   });
 
+  app.ports.cachePriceFeed.subscribe((priceFeed) => {
+    window.localStorage.setItem("priceFeed", priceFeed);
+  });
+
   app.ports.cacheChosenZone.subscribe((zone) => {
     window.localStorage.setItem("chosen-zone", zone);
   });
