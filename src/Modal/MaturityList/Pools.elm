@@ -24,8 +24,7 @@ dummy =
 decoder : Decoder Pools
 decoder =
     Decode.succeed Tuple.pair
-        |> Pipeline.required "pool"
-            (Decode.field "maturity" Maturity.decoder)
+        |> Pipeline.required "maturity" Maturity.decoder
         |> Pipeline.custom Summary.decoder
         |> Decode.list
         |> Decode.map (Dict.fromList Maturity.sorter)

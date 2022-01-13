@@ -496,7 +496,7 @@ view ({ backdrop } as model) blockchain ((Modal { state, tooltip }) as modal) =
         }
 
 
-modalHeader : { model | images : Images } -> Modal -> Element Msg
+modalHeader : { model | images : Images, theme : Theme } -> Modal -> Element Msg
 modalHeader model (Modal { state }) =
     column
         [ width fill

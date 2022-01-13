@@ -127,8 +127,8 @@ init blockchain pair =
       , tooltip = Nothing
       }
         |> Modal
-      -- , get blockchain pair
-    , Cmd.none
+    , get blockchain pair
+      -- , Cmd.none
     )
 
 
@@ -200,8 +200,13 @@ update blockchain msg (Modal modal) =
                 ( { modal | pools = result |> Web.fromResult }
                     |> Modal
                     |> Just
-                , Process.sleep 5000
-                    |> Task.perform (\_ -> QueryAgain)
+                , case result |> Web.fromResult of
+                    Failure f ->
+                        Process.sleep 5000
+                            |> Task.perform (\_ -> QueryAgain)
+
+                    _ ->
+                        Cmd.none
                 , Nothing
                 )
 

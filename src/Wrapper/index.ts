@@ -46,13 +46,13 @@ async function elmInit() {
           },
           whitelist: [
             {
-              address: "0xb83a6d7f5dc224e241989511ea3e2b7f4f263ede",
+              address: "0x559a70084eb180d649080048a7e966602eacea9e",
               name: "DAI TEST TOKEN",
               symbol: "DAI",
               decimals: 18,
             },
             {
-              address: "0xec23daeab1deeb3587eeb3453d4e95db128b0e62",
+              address: "0x521c1c37fdd245c313457fcbc6d5ed156647c2f3",
               name: "Matic TEST TOKEN",
               symbol: "MATIC",
               decimals: 18,

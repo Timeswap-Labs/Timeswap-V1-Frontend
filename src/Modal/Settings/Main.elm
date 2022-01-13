@@ -53,6 +53,7 @@ import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Id as Id
 import Utility.Input as Input
+import Utility.ThemeColor as ThemeColor
 
 
 type Modal
@@ -336,7 +337,7 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ backdrop } as model) (Modal modal) =
+view ({ backdrop, theme } as model) (Modal modal) =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -348,10 +349,10 @@ view ({ backdrop } as model) (Modal modal) =
                  , centerX
                  , centerY
                  , Border.rounded 8
-                 , Border.color Color.transparent100
+                 , theme |> ThemeColor.border |> Border.color
                  , Border.width 1
                  ]
-                    ++ Glass.background backdrop model.theme
+                    ++ Glass.background backdrop theme
                 )
                 [ column
                     [ width fill
@@ -370,23 +371,24 @@ view ({ backdrop } as model) (Modal modal) =
                             , Font.size 16
                             , Font.bold
                             , paddingXY 0 3
-                            , Font.color Color.light100
+                            , theme |> ThemeColor.text |> Font.color
                             ]
                             (text "Settings")
                         , IconButton.exit model Exit
                         ]
                     ]
-                , slippageSetting modal
-                , deadlineSetting modal
-                , priceFeedSetting modal
+                , slippageSetting modal theme
+                , deadlineSetting modal theme
+                , priceFeedSetting modal theme
                 ]
         }
 
 
 slippageSetting :
     { modal | slippage : Or Slippage String }
+    -> Theme
     -> Element Msg
-slippageSetting modal =
+slippageSetting modal theme =
     column
         [ width fill
         , height shrink
@@ -403,7 +405,7 @@ slippageSetting modal =
                 , paddingXY 0 4
                 , Font.regular
                 , Font.size 14
-                , Font.color Color.transparent400
+                , theme |> ThemeColor.text |> Font.color
                 ]
                 (text "Slippage tolerance")
             ]
@@ -412,16 +414,17 @@ slippageSetting modal =
             , height shrink
             , spacing 8
             ]
-            [ slippageSwitch modal
-            , slippageInput modal
+            [ slippageSwitch modal theme
+            , slippageInput modal theme
             ]
         ]
 
 
 deadlineSetting :
     { modal | deadline : Or Deadline String }
+    -> Theme
     -> Element Msg
-deadlineSetting modal =
+deadlineSetting modal theme =
     column
         [ width fill
         , height shrink
@@ -438,7 +441,7 @@ deadlineSetting modal =
                 , paddingXY 0 4
                 , Font.regular
                 , Font.size 14
-                , Font.color Color.transparent400
+                , theme |> ThemeColor.text |> Font.color
                 ]
                 (text "Transaction deadline")
             ]
@@ -447,46 +450,47 @@ deadlineSetting modal =
             , height shrink
             , spacing 8
             ]
-            [ deadlineSwitch modal
-            , deadlineInput modal
+            [ deadlineSwitch modal theme
+            , deadlineInput modal theme
             ]
         ]
 
 
-priceFeedSetting : { modal | priceFeed : PriceFeed } -> Element Msg
-priceFeedSetting modal =
+priceFeedSetting : { modal | priceFeed : PriceFeed } -> Theme -> Element Msg
+priceFeedSetting modal theme =
     row
         [ width fill
         , height fill
-        , Font.color Color.transparent400
+        , theme |> ThemeColor.text |> Font.color
         , Font.size 14
         ]
         [ text "CDP Spot Price"
-        , priceFeedSwitch modal
+        , priceFeedSwitch modal theme
         ]
 
 
 slippageSwitch :
     { modal | slippage : Or Slippage String }
+    -> Theme
     -> Element Msg
-slippageSwitch { slippage } =
+slippageSwitch { slippage } theme =
     Input.radioRow
         [ width shrink
         , height shrink
         , padding 4
         , spacing 4
-        , Background.color Color.transparent100
+        , theme |> ThemeColor.border |> Background.color
         , Border.rounded 8
         ]
         { onChange = ChooseSlippageOption
         , options =
-            [ ( Slippage.Small, "0.10%" )
-            , ( Slippage.Medium, "0.50%" )
-            , ( Slippage.Large, "1.00%" )
+            [ ( Slippage.Small, "0.1%" )
+            , ( Slippage.Medium, "0.5%" )
+            , ( Slippage.Large, "1%" )
             ]
                 |> List.map
                     (\( options, label ) ->
-                        radio label
+                        radio label theme
                             |> Input.optionWith options
                     )
         , selected = slippage |> Slippage.toOption
@@ -496,14 +500,15 @@ slippageSwitch { slippage } =
 
 deadlineSwitch :
     { modal | deadline : Or Deadline String }
+    -> Theme
     -> Element Msg
-deadlineSwitch { deadline } =
+deadlineSwitch { deadline } theme =
     Input.radioRow
         [ width shrink
         , height shrink
         , padding 4
         , spacing 4
-        , Background.color Color.transparent100
+        , theme |> ThemeColor.border |> Background.color
         , Border.rounded 8
         ]
         { onChange = ChooseDeadlineOption
@@ -514,7 +519,7 @@ deadlineSwitch { deadline } =
             ]
                 |> List.map
                     (\( options, label ) ->
-                        radio label
+                        radio label theme
                             |> Input.optionWith options
                     )
         , selected = deadline |> Deadline.toOption
@@ -524,8 +529,9 @@ deadlineSwitch { deadline } =
 
 priceFeedSwitch :
     { modal | priceFeed : PriceFeed }
+    -> Theme
     -> Element Msg
-priceFeedSwitch { priceFeed } =
+priceFeedSwitch { priceFeed } theme =
     el
         [ width <| px 40
         , height <| px 20
@@ -546,10 +552,10 @@ priceFeedSwitch { priceFeed } =
             )
         , (case priceFeed of
             PriceFeed.Ignore ->
-                Color.transparent200
+                theme |> ThemeColor.switchBG
 
             PriceFeed.Utilize ->
-                Color.primary100
+                theme |> ThemeColor.primaryBtn
           )
             |> Background.color
         ]
@@ -557,19 +563,19 @@ priceFeedSwitch { priceFeed } =
             [ width <| px 16
             , height <| px 16
             , centerY
+            , Border.rounded 16
             , case priceFeed of
                 PriceFeed.Ignore ->
                     alignLeft
 
                 PriceFeed.Utilize ->
                     alignRight
-            , Border.rounded 16
             , (case priceFeed of
                 PriceFeed.Ignore ->
                     Color.dark300
 
                 PriceFeed.Utilize ->
-                    Color.primary500
+                    Color.light100
               )
                 |> Background.color
             ]
@@ -579,8 +585,9 @@ priceFeedSwitch { priceFeed } =
 
 slippageInput :
     { modal | slippage : Or Slippage String }
+    -> Theme
     -> Element Msg
-slippageInput { slippage } =
+slippageInput { slippage } theme =
     row
         [ width fill
         , height fill
@@ -594,11 +601,11 @@ slippageInput { slippage } =
         , Border.solid
         , (case slippage of
             Left _ ->
-                Color.transparent100
+                theme |> ThemeColor.textboxBorder
 
             Right string ->
                 if string |> Slippage.isCorrect then
-                    Color.transparent100
+                    theme |> ThemeColor.textboxBorder
 
                 else
                     Color.negative500
@@ -617,11 +624,11 @@ slippageInput { slippage } =
             , Font.size 14
             , (case slippage of
                 Left _ ->
-                    Color.transparent500
+                    theme |> ThemeColor.text
 
                 Right string ->
                     if string |> Slippage.isCorrect then
-                        Color.transparent500
+                        theme |> ThemeColor.text
 
                     else
                         Color.negative500
@@ -634,11 +641,11 @@ slippageInput { slippage } =
                 Input.placeholder
                     [ (case slippage of
                         Left _ ->
-                            Color.transparent100
+                            theme |> ThemeColor.placeholder2
 
                         Right string ->
                             if string |> Slippage.isCorrect then
-                                Color.transparent100
+                                theme |> ThemeColor.placeholder2
 
                             else
                                 Color.negative500
@@ -657,11 +664,11 @@ slippageInput { slippage } =
             , Font.size 14
             , (case slippage of
                 Left _ ->
-                    Color.transparent500
+                    theme |> ThemeColor.text
 
                 Right string ->
                     if string |> Slippage.isCorrect then
-                        Color.transparent500
+                        theme |> ThemeColor.text
 
                     else
                         Color.negative500
@@ -674,8 +681,9 @@ slippageInput { slippage } =
 
 deadlineInput :
     { modal | deadline : Or Deadline String }
+    -> Theme
     -> Element Msg
-deadlineInput { deadline } =
+deadlineInput { deadline } theme =
     row
         [ width fill
         , height fill
@@ -689,11 +697,11 @@ deadlineInput { deadline } =
         , Border.solid
         , (case deadline of
             Left _ ->
-                Color.transparent100
+                theme |> ThemeColor.textboxBorder
 
             Right string ->
                 if string |> Deadline.isCorrect then
-                    Color.transparent100
+                    theme |> ThemeColor.textboxBorder
 
                 else
                     Color.negative500
@@ -712,11 +720,11 @@ deadlineInput { deadline } =
             , Font.size 14
             , (case deadline of
                 Left _ ->
-                    Color.transparent500
+                    theme |> ThemeColor.text
 
                 Right string ->
                     if string |> Deadline.isCorrect then
-                        Color.transparent500
+                        theme |> ThemeColor.text
 
                     else
                         Color.negative500
@@ -729,11 +737,11 @@ deadlineInput { deadline } =
                 Input.placeholder
                     [ (case deadline of
                         Left _ ->
-                            Color.transparent100
+                            theme |> ThemeColor.placeholder2
 
                         Right string ->
                             if string |> Deadline.isCorrect then
-                                Color.transparent100
+                                theme |> ThemeColor.placeholder2
 
                             else
                                 Color.negative500
@@ -752,11 +760,11 @@ deadlineInput { deadline } =
             , Font.size 14
             , (case deadline of
                 Left _ ->
-                    Color.transparent500
+                    theme |> ThemeColor.text
 
                 Right string ->
                     if string |> Deadline.isCorrect then
-                        Color.transparent500
+                        theme |> ThemeColor.text
 
                     else
                         Color.negative500
@@ -767,8 +775,8 @@ deadlineInput { deadline } =
         ]
 
 
-radio : String -> OptionState -> Element msg
-radio label optionState =
+radio : String -> Theme -> OptionState -> Element msg
+radio label theme optionState =
     el
         ([ width <| px 59
          , height <| px 36
@@ -776,7 +784,7 @@ radio label optionState =
          ]
             ++ (case optionState of
                     Input.Selected ->
-                        [ Background.color Color.primary500 ]
+                        [ theme |> ThemeColor.primaryBtn |> Background.color ]
 
                     _ ->
                         []
@@ -785,13 +793,14 @@ radio label optionState =
         (el
             [ centerX
             , centerY
-            , Font.size 14
+            , Font.size 16
+            , Font.bold
             , (case optionState of
                 Input.Selected ->
                     Color.transparent500
 
                 _ ->
-                    Color.transparent300
+                    theme |> ThemeColor.textLight
               )
                 |> Font.color
             ]

@@ -44,7 +44,7 @@ decoder =
         |> Pipeline.required "y" Uint.decoder
         |> Pipeline.required "z" Uint.decoder
         |> Pipeline.required "assetReserve" Uint.decoder
-        |> Pipeline.required "ccollateralReserve" Uint.decoder
+        |> Pipeline.required "collateralReserve" Uint.decoder
         |> Pipeline.required "totalLiquidity" Uint.decoder
         |> Pipeline.required "totalBond" Uint.decoder
         |> Pipeline.required "totalInsurance" Uint.decoder

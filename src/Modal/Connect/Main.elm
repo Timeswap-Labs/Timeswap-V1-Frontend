@@ -320,6 +320,7 @@ viewWallets :
         | images : Images
         , wallets : Wallets
         , blockchain : Support User.NotSupported Blockchain
+        , theme : Theme
     }
     -> Element Msg
 viewWallets model =
@@ -536,7 +537,7 @@ metamaskButton ({ images, wallets } as model) =
 
 
 viewInitializing :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> { waiting | wallet : Wallet }
     -> Timeline ()
     -> Element Msg
@@ -569,7 +570,7 @@ viewInitializing model waiting timeline =
 
 
 viewError :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> { waiting | wallet : Wallet }
     -> Element Msg
 viewError model waiting =

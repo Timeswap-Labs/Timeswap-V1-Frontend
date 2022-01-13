@@ -5,6 +5,8 @@ module Utility.ThemeColor exposing
     , btnBackground
     , btnHoverBG
     , completelyTransparent
+    , modalBackground
+    , modalOutside
     , negative100
     , negative200
     , negative300
@@ -13,6 +15,7 @@ module Utility.ThemeColor exposing
     , none
     , outside
     , placeholder
+    , placeholder2
     , positive100
     , positive200
     , positive300
@@ -25,6 +28,7 @@ module Utility.ThemeColor exposing
     , secondary400
     , secondary500
     , sectionBackground
+    , switchBG
     , text
     , textDisabled
     , textError
@@ -61,6 +65,26 @@ background theme =
 
         Theme.Light ->
             Color.primaryLight
+
+
+modalBackground : Theme -> Color
+modalBackground theme =
+    case theme of
+        Theme.Dark ->
+            Color.background
+
+        Theme.Light ->
+            Color.primary100
+
+
+modalOutside : Theme -> Color
+modalOutside theme =
+    case theme of
+        Theme.Dark ->
+            Color.outside
+
+        Theme.Light ->
+            Color.transparent200
 
 
 text : Theme -> Color
@@ -111,6 +135,16 @@ placeholder theme =
 
         Theme.Light ->
             Color.dark100
+
+
+placeholder2 : Theme -> Color
+placeholder2 theme =
+    case theme of
+        Theme.Dark ->
+            Color.transparent100
+
+        Theme.Light ->
+            Color.light500
 
 
 sectionBackground : Theme -> Color
@@ -181,6 +215,16 @@ primaryBtn theme =
 
         Theme.Light ->
             Color.secondary500
+
+
+switchBG : Theme -> Color
+switchBG theme =
+    case theme of
+        Theme.Dark ->
+            Color.transparent200
+
+        Theme.Light ->
+            Color.transparent400
 
 
 secondary100 : Color

@@ -7,6 +7,7 @@ module Utility.Image exposing
     , checkbox
     , checkboxSelected
     , close
+    , closeDark
     , copy
     , default
     , discloser
@@ -260,6 +261,11 @@ arrow =
 close : List (Attribute msg) -> Images -> Element msg
 close =
     view "Close"
+
+
+closeDark : List (Attribute msg) -> Images -> Element msg
+closeDark =
+    view "CloseDark"
 
 
 arrowDown : List (Attribute msg) -> Images -> Element msg

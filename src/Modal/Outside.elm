@@ -1,6 +1,7 @@
 module Modal.Outside exposing (view)
 
 import Data.Backdrop as Backdrop exposing (Backdrop)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -22,16 +23,17 @@ import Element.Events as Events
 import Utility.Blur as Blur
 import Utility.Color as Color
 import Utility.Pointer as Pointer
+import Utility.ThemeColor as ThemeColor
 
 
 view :
-    { model | backdrop : Backdrop }
+    { model | backdrop : Backdrop, theme : Theme }
     ->
         { onClick : msg
         , modal : Element msg
         }
     -> Element msg
-view { backdrop } { onClick, modal } =
+view { backdrop, theme } { onClick, modal } =
     el
         [ width fill
         , height fill
@@ -42,7 +44,10 @@ view { backdrop } { onClick, modal } =
              ]
                 ++ (case backdrop of
                         Backdrop.Supported ->
-                            Background.color Color.outside
+                            (theme
+                                |> ThemeColor.modalOutside
+                                |> Background.color
+                            )
                                 :: Blur.ten
 
                         Backdrop.NotSupported ->

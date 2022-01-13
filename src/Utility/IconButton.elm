@@ -1,6 +1,7 @@
 module Utility.IconButton exposing (back, exit)
 
 import Data.Images exposing (Images)
+import Data.Theme as Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -36,8 +37,8 @@ back { images } msg =
         }
 
 
-exit : { model | images : Images } -> msg -> Element msg
-exit { images } msg =
+exit : { model | images : Images, theme : Theme } -> msg -> Element msg
+exit { images, theme } msg =
     Input.button
         [ width shrink
         , height shrink
@@ -47,7 +48,13 @@ exit { images } msg =
         { onPress = Just msg
         , label =
             images
-                |> Image.close
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.close
+
+                        Theme.Light ->
+                            Image.closeDark
+                   )
                     [ width <| px 24
                     , height <| px 24
                     ]

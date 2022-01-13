@@ -2,14 +2,13 @@ module Modal.Confirm.Main exposing (Modal, Msg, confirm, init, reject, update, v
 
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Data.Backdrop exposing (Backdrop)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
         , none
         )
 import Modal.Outside as Outside
-import Utility.Glass as Glass
-import Utility.IconButton as IconButton
 
 
 type Modal
@@ -54,7 +53,7 @@ reject (Modal modal) =
         |> Modal
 
 
-view : { model | backdrop : Backdrop } -> Element Msg
+view : { model | backdrop : Backdrop, theme : Theme } -> Element Msg
 view model =
     Outside.view model
         { onClick = Exit
