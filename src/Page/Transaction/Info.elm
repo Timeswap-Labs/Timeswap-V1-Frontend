@@ -279,6 +279,9 @@ lendCDP { priceFeed, theme } param =
                                 , opened = param.opened
                                 , pair = param.pair
                                 , cdp = cdp.ratio
+                                , styles =
+                                    [ Font.size 18
+                                    ]
                                 }
                             )
                     )
@@ -419,6 +422,9 @@ borrowCDP { priceFeed, theme } param =
                                 , opened = param.opened
                                 , pair = param.pair
                                 , cdp = cdp.ratio
+                                , styles =
+                                    [ Font.size 18
+                                    ]
                                 }
                             )
                     )

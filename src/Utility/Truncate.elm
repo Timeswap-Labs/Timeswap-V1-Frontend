@@ -16,7 +16,8 @@ import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
-        ( Element
+        ( Attribute
+        , Element
         , below
         , el
         , height
@@ -401,6 +402,7 @@ viewCDP :
     , opened : Maybe tooltip
     , pair : Pair
     , cdp : Uint
+    , styles : List (Attribute msg)
     }
     -> Element msg
 viewCDP param =
@@ -413,82 +415,88 @@ viewCDP param =
     of
         ( ( full, Just short ), Just opened ) ->
             el
-                [ width shrink
-                , height shrink
-                , paddingEach
+                ([ width shrink
+                 , height shrink
+                 , paddingEach
                     { top = 3
                     , right = 0
                     , bottom = 2
                     , left = 0
                     }
-                , Border.widthEach
+                 , Border.widthEach
                     { top = 0
                     , right = 0
                     , bottom = 1
                     , left = 0
                     }
-                , Border.dashed
-                , Border.color Color.transparent200
-                , Events.onMouseEnter
+                 , Border.dashed
+                 , Border.color Color.transparent200
+                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
-                , Events.onMouseLeave param.onMouseLeave
-                , (if opened == param.tooltip then
-                    el
-                        [ Font.size 12
-                        , Font.color Color.transparent300
-                        ]
-                        (text full)
-                        |> Tooltip.belowAlignRight
+                 , Events.onMouseLeave param.onMouseLeave
+                 , (if opened == param.tooltip then
+                        el
+                            [ Font.size 12
+                            , Font.color Color.transparent300
+                            ]
+                            (text full)
+                            |> Tooltip.belowAlignRight
 
-                   else
-                    none
-                  )
+                    else
+                        none
+                   )
                     |> below
-                , Font.size 18
-                , (if param.cdp |> Uint.isZero then
-                    Color.transparent200
+                 , Font.size 18
+                 , (if param.cdp |> Uint.isZero then
+                        Color.transparent200
 
-                   else
-                    Color.warning400
-                  )
+                    else
+                        Color.warning400
+                   )
                     |> Font.color
-                ]
+                 ]
+                    ++ param.styles
+                )
                 (text short)
 
         ( ( _, Just short ), Nothing ) ->
             el
-                [ width shrink
-                , height shrink
-                , paddingEach
+                ([ width shrink
+                 , height shrink
+                 , paddingEach
                     { top = 3
                     , right = 0
                     , bottom = 2
                     , left = 0
                     }
-                , Border.widthEach
+                 , Border.widthEach
                     { top = 0
                     , right = 0
                     , bottom = 1
                     , left = 0
                     }
-                , Border.dashed
-                , Border.color Color.transparent200
-                , Events.onMouseEnter
+                 , Border.dashed
+                 , Border.color Color.transparent200
+                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
-                , Events.onMouseLeave param.onMouseLeave
-                , Font.size 18
-                , Font.color Color.warning400
-                ]
+                 , Events.onMouseLeave param.onMouseLeave
+                 , Font.size 18
+                 , Font.color Color.warning400
+                 ]
+                    ++ param.styles
+                )
                 (text short)
 
         ( ( full, Nothing ), _ ) ->
             el
-                [ width shrink
-                , height shrink
-                , paddingXY 0 3
-                , Font.size 18
-                , Font.color Color.warning400
-                ]
+                ([ width shrink
+                 , height shrink
+                 , paddingXY 0 3
+                 , Font.size 18
+                 , Font.color Color.warning400
+                 ]
+                    ++ param.styles
+                )
                 (text full)
 
 

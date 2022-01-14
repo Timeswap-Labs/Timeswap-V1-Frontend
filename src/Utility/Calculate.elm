@@ -7,6 +7,7 @@ import Element
     exposing
         ( Color
         , Element
+        , centerX
         , el
         , fill
         , height
@@ -93,6 +94,10 @@ cdp params spot color fontSize =
                     , opened = params.opened
                     , pair = params.pair
                     , cdp = params.cdp.ratio
+                    , styles =
+                        [ Font.size 14
+                        , centerX
+                        ]
                     }
                 )
         )

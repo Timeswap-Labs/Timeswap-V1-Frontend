@@ -42,7 +42,8 @@ type Status matured active
 
 decoder : Decoder Maturity
 decoder =
-    Decode.int
+    Decode.string
+        |> Decode.map (\str -> str |> String.toInt |> Maybe.withDefault 0)
         |> Decode.map ((*) 1000)
         |> Decode.map Time.millisToPosix
         |> Decode.map Maturity

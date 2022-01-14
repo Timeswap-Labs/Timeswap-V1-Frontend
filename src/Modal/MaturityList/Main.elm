@@ -20,7 +20,7 @@ import Data.Offset exposing (Offset)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
-import Data.Remote exposing (Remote(..))
+import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme exposing (Theme)
 import Data.Token as Token
 import Data.Web as Web exposing (Web)
@@ -80,6 +80,7 @@ import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Id as Id
 import Utility.Image as Image
+import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 
 
@@ -108,6 +109,7 @@ type Msg
     | OnMouseLeave
     | OpenDropdown
     | CloseDropdown
+    | Tick Posix
     | Exit
 
 
@@ -123,12 +125,11 @@ init blockchain pair =
     ( { pair = pair
       , sorting = Sorting.Liquidity
       , dropdown = Close
-      , pools = Success Pools.dummy
+      , pools = Remote.loading
       , tooltip = Nothing
       }
         |> Modal
     , get blockchain pair
-      -- , Cmd.none
     )
 
 
@@ -248,6 +249,14 @@ update blockchain msg (Modal modal) =
             , Nothing
             )
 
+        Tick posix ->
+            ( { modal | pools = modal.pools |> Remote.update posix }
+                |> Modal
+                |> Just
+            , Cmd.none
+            , Nothing
+            )
+
         Exit ->
             ( Nothing
             , Cmd.none
@@ -256,8 +265,11 @@ update blockchain msg (Modal modal) =
 
 
 subscriptions : Modal -> Sub Msg
-subscriptions modal =
-    onClickOutsideDropdown modal
+subscriptions ((Modal { pools }) as modal) =
+    [ onClickOutsideDropdown modal
+    , Remote.subscriptions Tick pools
+    ]
+        |> Sub.batch
 
 
 onClickOutsideDropdown : Modal -> Sub Msg
@@ -628,11 +640,11 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
         , scrollbarY
         ]
         (case pools of
-            Loading _ ->
-                [ el [ centerX, Font.color Color.light100 ] (text "Loading...") ]
+            Loading timeline ->
+                [ el [ centerX, centerY, Font.color Color.light100 ] (Loading.view timeline) ]
 
             Failure err ->
-                [ el [ centerX, Font.color Color.negative400 ] (text "Error") ]
+                [ el [ centerX, centerY, Font.color Color.negative400 ] (text "Error") ]
 
             Success poolsDict ->
                 poolsDict
@@ -706,7 +718,7 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
                                             (Calculate.cdp
                                                 { onMouseEnter = OnMouseEnter
                                                 , onMouseLeave = OnMouseLeave
-                                                , cdpTooltip = Tooltip.CDP
+                                                , cdpTooltip = Tooltip.CDP maturity
                                                 , opened = tooltip
                                                 , pair = pair
                                                 , cdp = summary.cdp
