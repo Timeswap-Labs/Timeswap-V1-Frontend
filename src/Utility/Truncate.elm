@@ -952,10 +952,11 @@ fromSymbol token =
     token
         |> Token.toSymbol
         |> (\string ->
-                ( string
+                ( string |> String.toUpper
                 , if (string |> String.length) > 5 then
                     string
                         |> String.left 5
+                        |> String.toUpper
                         |> Just
 
                   else

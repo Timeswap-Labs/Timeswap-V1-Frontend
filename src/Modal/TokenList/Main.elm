@@ -371,8 +371,13 @@ update { chains } blockchain msg (Modal modal) =
               )
                 |> Modal
                 |> Just
-            , Process.sleep 5000
-                |> Task.perform (\_ -> QueryAgain)
+            , case allTokens.erc20 of
+                Just (Failure _) ->
+                    Process.sleep 5000
+                        |> Task.perform (\_ -> QueryAgain)
+
+                _ ->
+                    Cmd.none
             , Nothing
             )
 
@@ -600,6 +605,9 @@ tokenList ({ chains } as model) blockchain ((Modal { state }) as modal) =
                 case erc20 of
                     Just (Success (Ok erc20Value)) ->
                         [ customToken model blockchain modal (Token.ERC20 erc20Value) ]
+
+                    Just (Loading timeline) ->
+                        [ el [ width fill, centerX, padding 10 ] (Loading.view timeline) ]
 
                     _ ->
                         input

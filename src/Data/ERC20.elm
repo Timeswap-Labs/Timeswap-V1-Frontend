@@ -89,7 +89,7 @@ decoder =
         |> Pipeline.required "address" Address.decoder
         |> Pipeline.required "name" Decode.string
         |> Pipeline.required "symbol" Decode.string
-        |> Pipeline.required "decimals" Decode.int
+        |> Pipeline.optional "decimals" Decode.int 18
 
 
 decoderSet : Decoder (Set ERC20)
