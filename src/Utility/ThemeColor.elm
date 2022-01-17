@@ -4,6 +4,7 @@ module Utility.ThemeColor exposing
     , border
     , btnBackground
     , btnHoverBG
+    , btnPressBG
     , completelyTransparent
     , modalBackground
     , modalOutside
@@ -29,6 +30,7 @@ module Utility.ThemeColor exposing
     , secondary500
     , sectionBackground
     , switchBG
+    , tableHeaderBG
     , text
     , textDisabled
     , textError
@@ -177,6 +179,16 @@ btnHoverBG theme =
             Color.secondary200
 
 
+btnPressBG : Theme -> Color
+btnPressBG theme =
+    case theme of
+        Theme.Dark ->
+            Color.primary300
+
+        Theme.Light ->
+            Color.secondary300
+
+
 border : Theme -> Color
 border theme =
     case theme of
@@ -225,6 +237,16 @@ switchBG theme =
 
         Theme.Light ->
             Color.transparent400
+
+
+tableHeaderBG : Theme -> Color
+tableHeaderBG theme =
+    case theme of
+        Theme.Dark ->
+            Color.list
+
+        Theme.Light ->
+            Color.secondary100
 
 
 secondary100 : Color

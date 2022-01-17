@@ -21,7 +21,7 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token
 import Data.Web as Web exposing (Web)
 import Element
@@ -44,7 +44,6 @@ import Element
         , mouseOver
         , moveDown
         , moveLeft
-        , moveRight
         , none
         , paddingEach
         , paddingXY
@@ -82,6 +81,7 @@ import Utility.Id as Id
 import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
+import Utility.ThemeColor as ThemeColor
 
 
 type Modal
@@ -366,8 +366,9 @@ view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as moda
                             , height shrink
                             , centerY
                             , Font.size 18
+                            , Font.bold
                             , paddingXY 0 3
-                            , Font.color Color.light100
+                            , theme |> ThemeColor.text |> Font.color
                             ]
                             (text "Choose Maturity")
                         , IconButton.exit model Exit
@@ -387,7 +388,7 @@ view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as moda
                     , centerY
                     , paddingXY 44 0
                     , spacing 16
-                    , Background.color Color.list
+                    , theme |> ThemeColor.tableHeaderBG |> Background.color
                     ]
                     [ el
                         [ centerX
@@ -395,7 +396,7 @@ view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as moda
                         , Font.size 12
                         , Font.bold
                         , Font.letterSpacing 0.08
-                        , Font.color Color.transparent200
+                        , theme |> ThemeColor.placeholder |> Font.color
                         , Font.center
                         , moveLeft 16
                         ]
@@ -406,7 +407,7 @@ view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as moda
                         , Font.size 12
                         , Font.bold
                         , Font.letterSpacing 0.08
-                        , Font.color Color.transparent200
+                        , theme |> ThemeColor.placeholder |> Font.color
                         , Font.center
                         ]
                         (text "APR")
@@ -416,7 +417,7 @@ view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as moda
                         , Font.size 12
                         , Font.bold
                         , Font.letterSpacing 0.08
-                        , Font.color Color.transparent200
+                        , theme |> ThemeColor.placeholder |> Font.color
                         , Font.center
                         ]
                         (case priceFeed of
@@ -442,10 +443,11 @@ pairWithPoolCount :
     { model
         | time : Posix
         , images : Images
+        , theme : Theme
     }
     -> Modal
     -> Element Msg
-pairWithPoolCount { images } (Modal { pair, pools }) =
+pairWithPoolCount { images, theme } (Modal { pair, pools }) =
     let
         asset =
             pair |> Pair.toAsset
@@ -469,7 +471,7 @@ pairWithPoolCount { images } (Modal { pair, pools }) =
             , centerY
             , Font.size 16
             , paddingXY 0 3
-            , Font.color Color.light100
+            , theme |> ThemeColor.text |> Font.color
             ]
             (collateral
                 |> Token.toSymbol
@@ -483,7 +485,7 @@ pairWithPoolCount { images } (Modal { pair, pools }) =
             , centerY
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.transparent300
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             (case pools of
                 Success poolsDict ->
@@ -508,17 +510,17 @@ pairWithPoolCount { images } (Modal { pair, pools }) =
 
 
 sortBy :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Modal
     -> Element Msg
-sortBy { images } (Modal { sorting, dropdown }) =
+sortBy { images, theme } (Modal { sorting, dropdown }) =
     row
         [ alignRight
         , spacing 14
         , centerY
         ]
         [ el
-            [ Font.color Color.primary400
+            [ theme |> ThemeColor.actionElemLabel |> Font.color
             , Font.size 14
             ]
             (text "Sort by")
@@ -526,9 +528,9 @@ sortBy { images } (Modal { sorting, dropdown }) =
             [ Region.description "sort by"
             , width <| px 130
             , height <| px 38
-            , Background.color Color.primary100
+            , theme |> ThemeColor.btnBackground |> Background.color
             , Border.width 1
-            , Border.color Color.transparent100
+            , theme |> ThemeColor.border |> Border.color
             , Border.rounded 8
             , (if dropdown == Open then
                 [ Sorting.Liquidity
@@ -553,12 +555,18 @@ sortBy { images } (Modal { sorting, dropdown }) =
                     , height fill
                     , paddingXY 12 0
                     , spacing 6
-                    , Font.color Color.light100
+                    , theme |> ThemeColor.text |> Font.color
                     , Font.size 14
                     ]
                     [ sorting |> Sorting.toString |> text
                     , images
-                        |> Image.discloser
+                        |> (case theme of
+                                Theme.Dark ->
+                                    Image.discloser
+
+                                Theme.Light ->
+                                    Image.arrowDownDark
+                           )
                             [ width <| px 11
                             , height <| px 7
                             , alignRight
@@ -641,93 +649,112 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
         ]
         (case pools of
             Loading timeline ->
-                [ el [ centerX, centerY, Font.color Color.light100 ] (Loading.view timeline) ]
+                [ el [ centerX, centerY ] (Loading.view timeline) ]
 
             Failure err ->
                 [ el [ centerX, centerY, Font.color Color.negative400 ] (text "Error") ]
 
             Success poolsDict ->
-                poolsDict
-                    |> Dict.toList
-                    |> List.sortWith
-                        (case sorting of
-                            Sorting.Maturity ->
-                                Pools.compareMaturity
+                if Dict.size poolsDict > 0 then
+                    poolsDict
+                        |> Dict.toList
+                        |> List.sortWith
+                            (case sorting of
+                                Sorting.Maturity ->
+                                    Pools.compareMaturity
 
-                            Sorting.Liquidity ->
-                                Pools.compareRank
-                        )
-                    |> List.map
-                        (\( maturity, summary ) ->
-                            Input.button [ width fill ]
-                                { onPress = Just (SelectMaturity maturity)
-                                , label =
-                                    row
-                                        [ width fill
-                                        , height <| px 62
-                                        , paddingXY 20 12
-                                        , spacing 16
-                                        , centerY
-                                        , Background.color Color.primary100
-                                        , Border.rounded 8
-                                        , mouseDown [ Background.color Color.primary300 ]
-                                        , mouseOver [ Background.color Color.primary200 ]
-                                        ]
-                                        [ row [ width <| fillPortion 2, spacing 16 ]
-                                            [ images
-                                                |> Image.hourglassPrimary
-                                                    [ width <| px 16
-                                                    , height <| px 22
+                                Sorting.Liquidity ->
+                                    Pools.compareRank
+                            )
+                        |> List.map
+                            (\( maturity, summary ) ->
+                                Input.button [ width fill ]
+                                    { onPress = Just (SelectMaturity maturity)
+                                    , label =
+                                        row
+                                            [ width fill
+                                            , height <| px 62
+                                            , paddingXY 20 12
+                                            , spacing 16
+                                            , centerY
+                                            , theme |> ThemeColor.sectionBackground |> Background.color
+                                            , Border.rounded 8
+                                            , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
+                                            , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
+                                            ]
+                                            [ row [ width <| fillPortion 2, spacing 16 ]
+                                                [ images
+                                                    |> (case theme of
+                                                            Theme.Dark ->
+                                                                Image.hourglassPrimary
+
+                                                            Theme.Light ->
+                                                                Image.hourglassDark
+                                                       )
+                                                        [ width <| px 16
+                                                        , height <| px 22
+                                                        ]
+                                                , column
+                                                    []
+                                                    [ Duration.viewMaturity
+                                                        { onMouseEnter = OnMouseEnter
+                                                        , onMouseLeave = OnMouseLeave
+                                                        , tooltip = Tooltip.Maturity maturity
+                                                        , opened = tooltip
+                                                        , time = time
+                                                        , offset = offset
+                                                        , chosenZone = chosenZone
+                                                        , maturity = maturity
+                                                        , theme = theme
+                                                        }
                                                     ]
-                                            , column
-                                                []
-                                                [ Duration.viewMaturity
+                                                ]
+                                            , el
+                                                [ width <| fillPortion 1
+                                                , centerX
+                                                , centerY
+                                                , paddingXY 0 3
+                                                , Font.size 14
+                                                , Font.bold
+                                                , Font.center
+                                                , Font.color Color.positive400
+                                                ]
+                                                (Calculate.apr summary.apr)
+                                            , el
+                                                [ width <| fillPortion 1
+                                                , centerX
+                                                , centerY
+                                                , paddingXY 0 3
+                                                , Font.size 14
+                                                , Font.bold
+                                                , Font.center
+                                                , theme |> ThemeColor.text |> Font.color
+                                                ]
+                                                (Calculate.cdp
                                                     { onMouseEnter = OnMouseEnter
                                                     , onMouseLeave = OnMouseLeave
-                                                    , tooltip = Tooltip.Maturity maturity
+                                                    , cdpTooltip = Tooltip.CDP maturity
                                                     , opened = tooltip
-                                                    , time = time
-                                                    , offset = offset
-                                                    , chosenZone = chosenZone
-                                                    , maturity = maturity
-                                                    , theme = theme
+                                                    , pair = pair
+                                                    , cdp = summary.cdp
                                                     }
-                                                ]
+                                                    priceFeed
+                                                    Color.light100
+                                                    14
+                                                )
                                             ]
-                                        , el
-                                            [ width <| fillPortion 1
-                                            , centerX
-                                            , centerY
-                                            , paddingXY 0 3
-                                            , Font.size 14
-                                            , Font.bold
-                                            , Font.center
-                                            , Font.color Color.positive400
-                                            ]
-                                            (Calculate.apr summary.apr)
-                                        , el
-                                            [ width <| fillPortion 1
-                                            , centerX
-                                            , centerY
-                                            , paddingXY 0 3
-                                            , Font.size 14
-                                            , Font.bold
-                                            , Font.center
-                                            , Font.color Color.light100
-                                            ]
-                                            (Calculate.cdp
-                                                { onMouseEnter = OnMouseEnter
-                                                , onMouseLeave = OnMouseLeave
-                                                , cdpTooltip = Tooltip.CDP maturity
-                                                , opened = tooltip
-                                                , pair = pair
-                                                , cdp = summary.cdp
-                                                }
-                                                priceFeed
-                                                Color.light100
-                                                14
-                                            )
-                                        ]
-                                }
-                        )
+                                    }
+                            )
+
+                else
+                    [ el
+                        [ width fill
+                        , centerX
+                        , Font.center
+                        , Font.size 16
+                        , paddingXY 10 20
+                        , theme |> ThemeColor.text |> Font.color
+                        ]
+                        (text "No pools available")
+                    ]
         )

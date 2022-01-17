@@ -18,6 +18,7 @@ module Utility.Image exposing
     , gitbook
     , github
     , hourglass
+    , hourglassDark
     , hourglassPrimary
     , hourglassPrimarySmall
     , info
@@ -241,6 +242,11 @@ hourglassPrimary =
 hourglassPrimarySmall : List (Attribute msg) -> Images -> Element msg
 hourglassPrimarySmall =
     view "HourglassPrimarySmall"
+
+
+hourglassDark : List (Attribute msg) -> Images -> Element msg
+hourglassDark =
+    view "HourglassDark"
 
 
 plus : List (Attribute msg) -> Images -> Element msg
