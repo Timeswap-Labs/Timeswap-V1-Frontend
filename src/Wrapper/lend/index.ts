@@ -1,6 +1,6 @@
-// import {  } from "@timeswap-labs/timeswap-v1-sdk";  for lendSigner
-import { Uint112, Uint128, Uint16, Uint256, Pool, ERC20Token, NativeToken, Pair } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Uint256, ERC20Token } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
+import { getPool } from "../helper";
 import { WhiteList } from "../whitelist";
 import { bondCalculate, bondTransaction } from "./bond";
 import { insuranceCalculate, insuranceTransaction } from "./insurance";
@@ -66,21 +66,7 @@ async function lendQueryCalculation(
   app: ElmApp<Ports>,
   query: LendQuery,
 ) {
-  const asset = new ERC20Token(
-    query.chain.chainId,
-    query.pool.asset.decimals,
-    (query.pool.asset as ERC20Token).address
-  );
-
-  const collateral = new ERC20Token(
-    query.chain.chainId,
-    query.pool.collateral.decimals,
-    (query.pool.collateral as ERC20Token).address
-  );
-
-  const pair = new Pair(asset, collateral, new Uint16(50), new Uint16(50));
-  const pool = new Pool(pair, new Uint256(query.pool.maturity) );
-
+  const pool = getPool(query);
   const { percent, bondOut, insuranceOut } = query;
 
   if (percent !== undefined) {

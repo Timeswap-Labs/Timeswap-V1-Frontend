@@ -10,7 +10,7 @@ import {
   calculatePercent,
 } from "./common";
 
-export async function bondCalculate(
+export function bondCalculate(
   app: ElmApp<Ports>,
   pool: Pool,
   query: LendQuery
@@ -22,7 +22,7 @@ export async function bondCalculate(
     const bondOut = new Uint128(query.bondOut!);
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const { claims, yDecrease } = await pool.lendGivenBond(
+    const { claims, yDecrease } = pool.lendGivenBond(
       state,
       assetIn,
       bondOut,
@@ -30,7 +30,7 @@ export async function bondCalculate(
     );
     const insuranceOut = claims.insurance.toString();
 
-    const percent = await calculatePercent(
+    const percent = calculatePercent(
       pool,
       state,
       assetIn,
@@ -42,7 +42,7 @@ export async function bondCalculate(
       currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
-    const { claims: claimsSlippage } = await pool.lendGivenBond(
+    const { claims: claimsSlippage } = pool.lendGivenBond(
       state,
       assetIn,
       bondOut,
@@ -74,7 +74,9 @@ export async function bondCalculate(
         cf,
       },
     });
-  } catch {
+  } catch (err) {
+    console.log("catc", err);
+
     app.ports.receiveLendAnswer.send({
       ...query,
       result: 0,

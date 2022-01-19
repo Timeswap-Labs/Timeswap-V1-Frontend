@@ -19,12 +19,13 @@ export function insuranceCalculate(
     const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
     const assetIn = new Uint112(query.assetIn);
+    const insuranceOut = new Uint128(query.insuranceOut!);
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
     const { claims, yDecrease } = pool.lendGivenInsurance(
       state,
       assetIn,
-      new Uint128(query.insuranceOut!),
+      insuranceOut,
       currentTime
     );
     const bondOut = claims.bond.toString();
@@ -44,7 +45,7 @@ export function insuranceCalculate(
     const { claims: claimsSlippage } = pool.lendGivenInsurance(
       state,
       assetIn,
-      new Uint128(query.insuranceOut!),
+      insuranceOut,
       timeSlippage
     );
 

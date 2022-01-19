@@ -31,13 +31,21 @@ export function calculateCdp(
   collateralDecimals: number,
   collateralSpot: number | null
 ): CDP {
+  let percent = null;
   const ratio = new Uint256(assetIn)
     .mul(pow(10n, BigInt(collateralDecimals)))
     .div(insuranceOut)
     .toString();
 
-  // const percent = (assetSpot && collateralSpot) ? new Uint256(assetIn).div(new Uint256(insuranceOut)) : null;
-  const percent = null;
+  if (assetSpot && collateralSpot) {
+    const newRatio = new Uint256(assetIn)
+      .mul(pow(10n, BigInt(collateralDecimals)))
+      .div(insuranceOut)
+      .div(pow(10n, BigInt(assetDecimals)))
+      .toString();
+
+    percent = Number(newRatio) ? Number(newRatio) * assetSpot / collateralSpot : null;
+  }
 
   return { ratio, percent };
 }
