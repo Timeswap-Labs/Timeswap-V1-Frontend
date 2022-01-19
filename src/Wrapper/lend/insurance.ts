@@ -1,35 +1,37 @@
-import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
+import { Pool } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Uint112, Uint128, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
-import { WhiteList } from "../whitelist";
 import {
   calculateApr,
-  calculateCf,
+  calculateCdp,
   calculateMinValue,
   calculatePercent,
 } from "./common";
 
-export async function insuranceCalculate(
+export function insuranceCalculate(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   pool: Pool,
-  query: Query
+  query: LendQuery
 ) {
   try {
-    const maturity = new Uint256(query.maturity);
+    const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
     const assetIn = new Uint112(query.assetIn);
+    const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const { claims, yDecrease } = await pool.calculateLendGivenInsurance(
+    const { claims, yDecrease } = pool.lendGivenInsurance(
+      state,
       assetIn,
-      new Uint128(query.insuranceOut),
+      new Uint128(query.insuranceOut!),
       currentTime
     );
     const bondOut = claims.bond.toString();
 
-    const percent = await calculatePercent(
+    const percent = calculatePercent(
       pool,
+      state,
       assetIn,
       yDecrease,
       currentTime
@@ -39,9 +41,10 @@ export async function insuranceCalculate(
       currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
-    const { claims: claimsSlippage } = await pool.calculateLendGivenInsurance(
+    const { claims: claimsSlippage } = pool.lendGivenInsurance(
+      state,
       assetIn,
-      new Uint128(query.insuranceOut),
+      new Uint128(query.insuranceOut!),
       timeSlippage
     );
 
@@ -53,14 +56,17 @@ export async function insuranceCalculate(
       .toString();
 
     const apr = calculateApr(claims.bond, query.assetIn, maturity, currentTime);
-    const cf = calculateCf(
+    const cf = calculateCdp(
       query.assetIn,
-      whitelist,
-      query.collateral,
-      query.insuranceOut
+      query.pool.collateral.decimals,
+      query.poolInfo.assetSpot,
+      query.insuranceOut!,
+      query.pool.collateral.decimals,
+      query.poolInfo.collateralSpot
+
     );
 
-    app.ports.sdkLendMsg.send({
+    app.ports.receiveLendAnswer.send({
       ...query,
       result: {
         percent: Number(percent.toBigInt()),
@@ -71,7 +77,7 @@ export async function insuranceCalculate(
       },
     });
   } catch {
-    app.ports.sdkLendMsg.send({
+    app.ports.receiveLendAnswer.send({
       ...query,
       result: 0,
     });
@@ -79,7 +85,7 @@ export async function insuranceCalculate(
 }
 
 export async function insuranceTransaction(
-  pool: Pool,
+  pool: SDKPool,
   gp: GlobalParams,
   lend: Lend
 ) {

@@ -28,7 +28,7 @@ import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter exposing (Parameter)
 import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
-import Data.Remote exposing (Remote(..))
+import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
 import Data.Theme as Theme exposing (Theme)
 import Data.Token exposing (Token)
@@ -73,7 +73,6 @@ import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
 import Process
 import Task
 import Time exposing (Posix)
-import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.ThemeColor as ThemeColor
@@ -173,20 +172,13 @@ init { time } blockchain parameter =
         Just (Parameter.Pool pool) ->
             if pool.maturity |> Maturity.isActive time then
                 ( { state =
-                        Lend.init
-                            |> Exist PoolInfo.dummy
-                            |> Success
+                        Remote.loading
                             |> Active
                             |> Pool pool
-
-                  -- Loading
-                  --     |> Active
-                  --     |> Pool pool
                   , tooltip = Nothing
                   }
                     |> Transaction
-                  -- , get blockchain pool
-                , Cmd.none
+                , get blockchain pool
                 )
 
             else
@@ -215,8 +207,7 @@ initGivenPoolInfo { time } blockchain pool poolInfo =
           , tooltip = Nothing
           }
             |> Transaction
-          --, get blockchain pool
-        , Cmd.none
+        , get blockchain pool
         )
 
     else

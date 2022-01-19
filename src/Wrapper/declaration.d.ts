@@ -22,7 +22,7 @@ declare interface Ports {
   queryLendPerSecond: PortFromElm<LendQuery>;
   approveLend: PortFromElm<Approve>;
   lend: PortFromElm<Lend>;
-  sdkLendMsg: PortToElm<LendCalculate>;
+  receiveLendAnswer: PortToElm<LendCalculate>;
 
   queryBorrow: PortFromElm<BorrowQuery>;
   queryBorrowPerSecond: PortFromElm<BorrowQuery>;
@@ -87,10 +87,15 @@ interface Chain {
   etherscan: string;
 }
 
+interface CDP {
+  ratio: Uint;
+  percent: number | null;
+}
+
 interface Pool {
   asset: NativeToken | ERC20Token;
   collateral: NativeToken | ERC20Token;
-  maturity: number;
+  maturity: number | string;
 }
 
 interface NativeToken {
@@ -192,16 +197,16 @@ interface PoolInfo {
 //   erc20: string;
 // }
 
-// interface LendQuery {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetIn: string;
-//   bondOut?: string;
-//   insuranceOut?: string;
-//   percent?: number;
-//   slippage: number;
-// }
+interface LendQuery {
+  assetIn: string;
+  pool: Pool;
+  poolInfo: PoolInfo;
+  chain: Chain;
+  bondOut?: string;
+  insuranceOut?: string;
+  percent?: number;
+  slippage: number;
+}
 
 // interface Lend {
 //   asset: string;
@@ -218,7 +223,7 @@ interface PoolInfo {
 //   deadline: number;
 // }
 
-// type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
+type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
 
 // interface LendGivenPercent {
 //   asset: string;

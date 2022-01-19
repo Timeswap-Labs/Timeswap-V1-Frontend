@@ -21,18 +21,18 @@ dummy =
 decoder : Decoder Price
 decoder =
     Decode.succeed Price
-        |> Pipeline.required "asset" (Decode.float |> Decode.nullable)
-        |> Pipeline.required "collateral" (Decode.float |> Decode.nullable)
+        |> Pipeline.required "assetSpot" (Decode.float |> Decode.nullable)
+        |> Pipeline.required "collateralSpot" (Decode.float |> Decode.nullable)
 
 
 encode : Price -> Value
 encode { asset, collateral } =
-    [ ( "asset"
+    [ ( "assetSpot"
       , asset
             |> Maybe.map Encode.float
             |> Maybe.withDefault Encode.null
       )
-    , ( "collateral"
+    , ( "collateralSpot"
       , collateral
             |> Maybe.map Encode.float
             |> Maybe.withDefault Encode.null

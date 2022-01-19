@@ -29,8 +29,8 @@ type Token
 
 decoder : Decoder Token
 decoder =
-    [ Native.decoder |> Decode.map Native
-    , ERC20.decoder |> Decode.map ERC20
+    [ ERC20.decoder |> Decode.map ERC20
+    , Native.decoder |> Decode.map Native
     ]
         |> Decode.oneOf
 

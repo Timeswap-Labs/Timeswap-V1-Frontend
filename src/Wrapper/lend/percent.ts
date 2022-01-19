@@ -1,30 +1,33 @@
-import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import {
   Uint112,
   Uint128,
   Uint256,
   Uint40,
+  Pool
 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
-import { WhiteList } from "../whitelist";
-import { calculateApr, calculateCf, calculateMinValue } from "./common";
+import { calculateApr, calculateCdp, calculateMinValue } from "./common";
 
-export async function percentCalculate(
+export function percentCalculate(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   pool: Pool,
-  query: Query
+  query: LendQuery
 ) {
   try {
-    const maturity = new Uint256(query.maturity);
+    const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
 
-    const { claims } = await pool.calculateLendGivenPercent(
+    const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
+
+    const { claims } = pool.lendGivenPercent(
+      state,
       new Uint112(query.assetIn),
-      new Uint40(query.percent),
+      new Uint40(query.percent!),
       currentTime
     );
+
     const bondOut = claims.bond.toString();
     const insuranceOut = claims.insurance.toString();
 
@@ -32,9 +35,10 @@ export async function percentCalculate(
       currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
-    const { claims: claimsSlippage } = await pool.calculateLendGivenPercent(
+    const { claims: claimsSlippage } = pool.lendGivenPercent(
+      state,
       new Uint112(query.assetIn),
-      new Uint40(query.percent),
+      new Uint40(query.percent!),
       timeSlippage
     );
 
@@ -44,20 +48,25 @@ export async function percentCalculate(
     )
       .add(query.assetIn)
       .toString();
+
     const minInsurance = calculateMinValue(
       claimsSlippage.insurance,
       query.slippage
     ).toString();
 
     const apr = calculateApr(claims.bond, query.assetIn, maturity, currentTime);
-    const cf = calculateCf(
+    const cdp = calculateCdp(
       query.assetIn,
-      whitelist,
-      query.collateral,
-      claims.insurance
-    );
+      query.pool.asset.decimals,
+      query.poolInfo.assetSpot,
+      claims.insurance,
+      query.pool.collateral.decimals,
+      query.poolInfo.collateralSpot
+      );
 
-    app.ports.sdkLendMsg.send({
+    query.pool.maturity = query.pool.maturity.toString();
+
+    app.ports.receiveLendAnswer.send({
       ...query,
       result: {
         bondOut,
@@ -65,11 +74,11 @@ export async function percentCalculate(
         minBond,
         minInsurance,
         apr,
-        cf,
+        cdp,
       },
     });
   } catch {
-    app.ports.sdkLendMsg.send({
+    app.ports.receiveLendAnswer.send({
       ...query,
       result: 0,
     });
@@ -77,7 +86,7 @@ export async function percentCalculate(
 }
 
 export async function percentTransaction(
-  pool: Pool,
+  pool: SDKPool,
   gp: GlobalParams,
   lend: Lend
 ) {
@@ -92,15 +101,6 @@ export async function percentTransaction(
   });
 
   await txn.wait();
-}
-
-interface Query {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetIn: string;
-  percent: number;
-  slippage: number;
 }
 
 interface Lend {

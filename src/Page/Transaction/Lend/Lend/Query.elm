@@ -24,7 +24,7 @@ import Page.Transaction.Lend.Lend.Error as Error exposing (Error)
 
 
 type alias QueryPercent =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetIn : Uint
@@ -34,7 +34,7 @@ type alias QueryPercent =
 
 
 type alias QueryBond =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetIn : Uint
@@ -44,7 +44,7 @@ type alias QueryBond =
 
 
 type alias QueryInsurance =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetIn : Uint
@@ -121,8 +121,8 @@ type alias ResultInsurance =
 
 
 givenPercent : QueryPercent -> Value
-givenPercent { chainId, pool, poolInfo, assetIn, percent, slippage } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenPercent { chain, pool, poolInfo, assetIn, percent, slippage } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "assetIn", assetIn |> Uint.encode )
@@ -133,8 +133,8 @@ givenPercent { chainId, pool, poolInfo, assetIn, percent, slippage } =
 
 
 givenBond : QueryBond -> Value
-givenBond { chainId, pool, poolInfo, assetIn, bondOut, slippage } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenBond { chain, pool, poolInfo, assetIn, bondOut, slippage } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "assetIn", assetIn |> Uint.encode )
@@ -145,8 +145,8 @@ givenBond { chainId, pool, poolInfo, assetIn, bondOut, slippage } =
 
 
 givenInsurance : QueryInsurance -> Value
-givenInsurance { chainId, pool, poolInfo, assetIn, insuranceOut, slippage } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenInsurance { chain, pool, poolInfo, assetIn, insuranceOut, slippage } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "assetIn", assetIn |> Uint.encode )
@@ -171,12 +171,12 @@ decoder =
 decoderAnswerPercent : Decoder AnswerPercent
 decoderAnswerPercent =
     Decode.succeed AnswerPercent
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "assetIn" Uint.decoder
         |> Pipeline.required "percent" Percent.decoder
-        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "slippage" Slippage.decoderGivenPercent
         |> Pipeline.required "result"
             ([ decoderResultPercent |> Decode.map Ok
              , Error.decoder |> Decode.map Err
@@ -188,7 +188,7 @@ decoderAnswerPercent =
 decoderAnswerBond : Decoder AnswerBond
 decoderAnswerBond =
     Decode.succeed AnswerBond
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "assetIn" Uint.decoder
@@ -205,7 +205,7 @@ decoderAnswerBond =
 decoderAnswerInsurance : Decoder AnswerInsurance
 decoderAnswerInsurance =
     Decode.succeed AnswerInsurance
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "assetIn" Uint.decoder

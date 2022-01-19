@@ -69,7 +69,7 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
 
   // pool(app, whitelist, gp);
 
-  // lend(app, whitelist);
+  lend(app);
   // lendSigner(app, whitelist, gp);
 
   // withdrawSigner(app, whitelist, gp);
@@ -94,7 +94,7 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
 function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
   app.ports.connect.subscribe((walletName) => {
     if (wallet[walletName]) {
-      gp.metamaskProvider = wallet[walletName];
+      gp.metamaskProvider = wallet[walletName]!; //TODO: Fix null val
       receiveUser(app, whitelist, gp, walletName);
     } else {
       app.ports.receiveNoConnect.send(walletName);

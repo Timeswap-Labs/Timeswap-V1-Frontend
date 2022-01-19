@@ -39,7 +39,6 @@ import Element
         , none
         , padding
         , paddingXY
-        , px
         , row
         , shrink
         , spacing
@@ -67,7 +66,6 @@ import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Url.Builder as Builder
-import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
@@ -103,8 +101,8 @@ type alias BondInput =
 
 type alias InsuranceInput =
     { percent : Percent
-    , claims : Remote Error ClaimsGivenInsurance
     , insuranceOut : String
+    , claims : Remote Error ClaimsGivenInsurance
     }
 
 
@@ -1455,7 +1453,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
         ( False, Just assetIn ) ->
             case transaction.claimsOut of
                 Default _ ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , assetIn = assetIn
@@ -1466,7 +1464,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                         |> Just
 
                 Slider { percent } ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , assetIn = assetIn
@@ -1486,7 +1484,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                                 (pool.pair |> Pair.toAsset)
                             |> Maybe.map
                                 (\bondOut ->
-                                    { chainId = blockchain |> Blockchain.toChain
+                                    { chain = blockchain |> Blockchain.toChain
                                     , pool = pool
                                     , poolInfo = poolInfo
                                     , assetIn = assetIn
@@ -1506,7 +1504,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                                 (pool.pair |> Pair.toCollateral)
                             |> Maybe.map
                                 (\insuranceOut ->
-                                    { chainId = blockchain |> Blockchain.toChain
+                                    { chain = blockchain |> Blockchain.toChain
                                     , pool = pool
                                     , poolInfo = poolInfo
                                     , assetIn = assetIn

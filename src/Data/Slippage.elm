@@ -3,6 +3,7 @@ module Data.Slippage exposing
     , Option(..)
     , Slippage
     , decoder
+    , decoderGivenPercent
     , encode
     , encodeGivenPercent
     , fromOption
@@ -61,6 +62,26 @@ decoder =
             (\float ->
                 float
                     |> (*) 10000
+                    |> truncate
+                    |> (\int ->
+                            if int > 0 && int <= 5000 then
+                                int
+                                    |> Slippage
+                                    |> Decode.succeed
+
+                            else
+                                Decode.fail "Not a slippage"
+                       )
+            )
+
+
+decoderGivenPercent : Decoder Slippage
+decoderGivenPercent =
+    Decode.float
+        |> Decode.andThen
+            (\float ->
+                float
+                    |> (*) 20000
                     |> truncate
                     |> (\int ->
                             if int > 0 && int <= 5000 then

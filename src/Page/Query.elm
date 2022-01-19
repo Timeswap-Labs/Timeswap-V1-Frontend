@@ -11,7 +11,7 @@ import Url.Builder as Builder
 
 toUrlString : Chain -> Pool -> String
 toUrlString chain { pair, maturity } =
-    Builder.crossOrigin "http://localhost:3000"
+    Builder.crossOrigin "https://ts-gamification-api.herokuapp.com/v1"
         [ "pool" ]
         [ chain |> Chain.toQueryParameter
         , pair
