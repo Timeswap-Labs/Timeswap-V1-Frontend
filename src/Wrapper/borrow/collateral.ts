@@ -1,35 +1,36 @@
-import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Pool, Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
-import { WhiteList } from "../whitelist";
 import {
   calculateApr,
-  calculateCf,
+  calculateCdp,
   calculateMaxValue,
   calculatePercent,
 } from "./common";
 
 export async function collateralCalculate(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   pool: Pool,
-  query: Query
+  query: BorrowQuery
 ) {
   try {
-    const maturity = new Uint256(query.maturity);
+    const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
     const assetOut = new Uint112(query.assetOut);
+    const collateralIn = new Uint112(query.collateralIn!);
+    const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const { due, yIncrease } = await pool.calculateBorrowGivenCollateral(
+    const { due, yIncrease } = await pool.borrowGivenCollateral(
+      state,
       assetOut,
-      new Uint112(query.collateralIn),
+      collateralIn,
       currentTime
     );
     const debtIn = due.debt.toString();
 
     const percent = await calculatePercent(
       pool,
+      state,
       assetOut,
       yIncrease,
       currentTime
@@ -43,19 +44,19 @@ export async function collateralCalculate(
       .toString();
 
     const apr = calculateApr(due.debt, query.assetOut, maturity, currentTime);
-    const cf = calculateCf(
+    const cf = calculateCdp(
       query.assetOut,
-      whitelist,
-      query.collateral,
-      query.collateralIn
+      query.pool.asset.decimals,
+      query.poolInfo.assetSpot,
+      collateralIn,
+      query.pool.collateral.decimals,
+      query.poolInfo.assetSpot
     );
 
-    app.ports.sdkBorrowMsg.send({
-      asset: query.asset,
-      collateral: query.collateral,
-      maturity: query.maturity,
-      assetOut: query.assetOut,
-      collateralIn: query.collateralIn,
+    query.pool.maturity = query.pool.maturity.toString();
+
+    app.ports.receiveBorrowAnswer.send({
+      ...query,
       result: {
         percent: Number(percent.toBigInt()),
         debtIn,
@@ -65,12 +66,9 @@ export async function collateralCalculate(
       },
     });
   } catch {
-    app.ports.sdkBorrowMsg.send({
-      asset: query.asset,
-      collateral: query.collateral,
-      maturity: query.maturity,
-      assetOut: query.assetOut,
-      collateralIn: query.collateralIn,
+    query.pool.maturity = query.pool.maturity.toString();
+    app.ports.receiveBorrowAnswer.send({
+      ...query,
       result: 0,
     });
   }
@@ -91,15 +89,6 @@ export async function collateralTransaction(
   });
 
   await txn.wait();
-}
-
-interface Query {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetOut: string;
-  collateralIn: string;
-  slippage: number;
 }
 
 interface Borrow {

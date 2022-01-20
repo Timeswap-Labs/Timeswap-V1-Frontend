@@ -28,7 +28,7 @@ declare interface Ports {
   queryBorrowPerSecond: PortFromElm<BorrowQuery>;
   approveBorrow: PortFromElm<Approve>;
   borrow: PortFromElm<Borrow>;
-  sdkBorrowMsg: PortToElm<BorrowCalculate>;
+  receiveBorrowAnswer: PortToElm<BorrowCalculate>;
 
   queryPay: PortFromElm<PayQuery>;
   approvePay: PortFromElm<Approve>;
@@ -208,6 +208,17 @@ interface LendQuery {
   slippage: number;
 }
 
+interface BorrowQuery {
+  assetOut: string;
+  pool: Pool;
+  poolInfo: PoolInfo;
+  chain: Chain;
+  debtIn?: string;
+  collateralIn?: string;
+  percent?: number;
+  slippage: number;
+}
+
 // interface Lend {
 //   asset: string;
 //   collateral: string;
@@ -277,16 +288,6 @@ type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
 //     | number;
 // }
 
-// interface BorrowQuery {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetOut: string;
-//   debtIn?: string;
-//   collateralIn?: string;
-//   percent?: number;
-//   slippage: number;
-// }
 
 // interface Borrow {
 //   asset: string;

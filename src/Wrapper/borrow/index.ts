@@ -1,18 +1,19 @@
 import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
 import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
+import { getPool } from "../helper";
 import { WhiteList } from "../whitelist";
 import { collateralCalculate, collateralTransaction } from "./collateral";
 import { debtCalculate, debtTransaction } from "./debt";
 import { percentCalculate, percentTransaction } from "./percent";
 
-export function borrow(app: ElmApp<Ports>, whitelist: WhiteList) {
+export function borrow(app: ElmApp<Ports>) {
   app.ports.queryBorrow.subscribe((query) =>
-    borrowQueryCalculation(app, whitelist, query)
+    borrowQueryCalculation(app, query)
   );
 
   app.ports.queryBorrowPerSecond.subscribe((query) =>
-    borrowQueryCalculation(app, whitelist, query)
+    borrowQueryCalculation(app, query)
   );
 }
 
@@ -64,17 +65,16 @@ export function borrowSigner(
 
 async function borrowQueryCalculation(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   query: BorrowQuery
 ) {
-  const pool = whitelist.getPool(query.asset, query.collateral, query.maturity);
+  const pool = getPool(query);
   const { percent, debtIn, collateralIn } = query;
 
   if (percent !== undefined) {
-    await percentCalculate(app, whitelist, pool, { ...query, percent });
+    await percentCalculate(app, pool, { ...query, percent });
   } else if (debtIn !== undefined) {
-    await debtCalculate(app, whitelist, pool, { ...query, debtIn });
+    await debtCalculate(app, pool, { ...query, debtIn });
   } else if (collateralIn !== undefined) {
-    await collateralCalculate(app, whitelist, pool, { ...query, collateralIn });
+    await collateralCalculate(app, pool, { ...query, collateralIn });
   }
 }

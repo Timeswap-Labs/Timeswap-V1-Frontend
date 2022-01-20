@@ -1,6 +1,4 @@
-import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Uint112, Uint256, Uint40 } from "@timeswap-labs/timeswap-v1-sdk-core";
-import { WhiteList } from "../whitelist";
+import { CP, Pool, Uint112, Uint256, Uint40 } from "@timeswap-labs/timeswap-v1-sdk-core";
 
 export function calculateApr(
   debt: Uint112,
@@ -19,34 +17,52 @@ export function calculateApr(
   return Number(apr.toBigInt()) / 10_000;
 }
 
-export function calculateCf(
+export function calculateCdp(
   assetOut: string,
-  whitelist: WhiteList,
-  collateral: string,
-  collateralIn: Uint112 | string
-): string {
-  return new Uint256(assetOut)
-    .mul(pow(10n, BigInt(whitelist.getToken(collateral).decimals)))
+  assetDecimals: number,
+  assetSpot: number | null,
+  collateralIn: Uint112 | string,
+  collateralDecimals: number,
+  collateralSpot: number | null
+): CDP {
+  let percent = null;
+  const ratio = new Uint256(assetOut)
+    .mul(pow(10n, BigInt(collateralDecimals)))
     .div(collateralIn)
     .toString();
+
+  if (assetSpot && collateralSpot) {
+    const newRatio = new Uint256(assetOut)
+      .mul(pow(10n, BigInt(collateralDecimals)))
+      .div(collateralIn)
+      .div(pow(10n, BigInt(assetDecimals)))
+      .toString();
+
+    percent = Number(newRatio) ? Number(newRatio) * assetSpot / collateralSpot : null;
+  }
+
+  return { ratio, percent };
 }
 
 export function calculateMaxValue(value: Uint112, slippage: number): Uint256 {
-  return new Uint256(value).mul(10000 * (1 + slippage)).div(10000);
+  return new Uint256(value).mul(Math.round(100000 * (1 + slippage))).div(100000);
 }
 
 export async function calculatePercent(
   pool: Pool,
+  state : CP,
   assetOut: Uint112,
   yIncrease: Uint112,
   currentTime: Uint256
 ): Promise<Uint256> {
-  const { yIncrease: yMin } = await pool.calculateBorrowGivenPercent(
+  const { yIncrease: yMin } = await pool.borrowGivenPercent(
+    state,
     assetOut,
     new Uint40(0),
     currentTime
   );
-  const { yIncrease: yMax } = await pool.calculateBorrowGivenPercent(
+  const { yIncrease: yMax } = await pool.borrowGivenPercent(
+    state,
     assetOut,
     new Uint40(1n << 32n),
     currentTime

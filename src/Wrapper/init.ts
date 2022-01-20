@@ -74,7 +74,7 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
 
   // withdrawSigner(app, whitelist, gp);
 
-  // borrow(app, whitelist);
+  borrow(app);
   // borrowSigner(app, whitelist, gp);
 
   // pay(app);

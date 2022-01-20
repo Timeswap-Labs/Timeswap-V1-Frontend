@@ -1458,7 +1458,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenPercent answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.assetOut
@@ -1490,7 +1490,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenMax answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.collateralIn
@@ -1522,7 +1522,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenPercent answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.assetOut
@@ -1554,7 +1554,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenDebt answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.assetOut
@@ -1599,7 +1599,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenCollateral answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.assetOut
@@ -1644,7 +1644,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenMax answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.collateralIn
@@ -2007,7 +2007,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                 )
             of
                 ( False, Just assetOut ) ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , assetOut = assetOut
@@ -2029,7 +2029,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                 )
             of
                 ( False, Just collateralIn ) ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , collateralIn = collateralIn
@@ -2051,7 +2051,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                 )
             of
                 ( False, Just assetOut ) ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , assetOut = assetOut
@@ -2077,7 +2077,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                 )
             of
                 ( False, Just assetOut, Just debtIn ) ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , assetOut = assetOut
@@ -2103,7 +2103,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                 )
             of
                 ( False, Just assetOut, Just collateralIn ) ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , assetOut = assetOut
@@ -2125,7 +2125,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                 )
             of
                 ( False, Just collateralIn ) ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , collateralIn = collateralIn

@@ -25,7 +25,7 @@ import Page.Transaction.Borrow.Borrow.Error as Error exposing (Error)
 
 
 type alias QueryPercent =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetOut : Uint
@@ -35,7 +35,7 @@ type alias QueryPercent =
 
 
 type alias QueryMax =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , collateralIn : Uint
@@ -45,7 +45,7 @@ type alias QueryMax =
 
 
 type alias QueryDebt =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetOut : Uint
@@ -55,7 +55,7 @@ type alias QueryDebt =
 
 
 type alias QueryCollateral =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetOut : Uint
@@ -72,7 +72,7 @@ type Answer
 
 
 type alias AnswerPercent =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetOut : Uint
@@ -83,7 +83,7 @@ type alias AnswerPercent =
 
 
 type alias AnswerMax =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , collateralIn : Uint
@@ -94,7 +94,7 @@ type alias AnswerMax =
 
 
 type alias AnswerDebt =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetOut : Uint
@@ -105,7 +105,7 @@ type alias AnswerDebt =
 
 
 type alias AnswerCollateral =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetOut : Uint
@@ -153,8 +153,8 @@ type alias ResultCollateral =
 
 
 givenPercent : QueryPercent -> Value
-givenPercent { chainId, pool, poolInfo, assetOut, percent, slippage } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenPercent { chain, pool, poolInfo, assetOut, percent, slippage } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "assetOut", assetOut |> Uint.encode )
@@ -165,8 +165,8 @@ givenPercent { chainId, pool, poolInfo, assetOut, percent, slippage } =
 
 
 givenMax : QueryMax -> Value
-givenMax { chainId, pool, poolInfo, collateralIn, percent, slippage } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenMax { chain, pool, poolInfo, collateralIn, percent, slippage } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "collateralIn", collateralIn |> Uint.encode )
@@ -177,8 +177,8 @@ givenMax { chainId, pool, poolInfo, collateralIn, percent, slippage } =
 
 
 givenDebt : QueryDebt -> Value
-givenDebt { chainId, pool, poolInfo, assetOut, debtIn, slippage } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenDebt { chain, pool, poolInfo, assetOut, debtIn, slippage } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "assetOut", assetOut |> Uint.encode )
@@ -189,8 +189,8 @@ givenDebt { chainId, pool, poolInfo, assetOut, debtIn, slippage } =
 
 
 givenCollateral : QueryCollateral -> Value
-givenCollateral { chainId, pool, poolInfo, assetOut, collateralIn, slippage } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenCollateral { chain, pool, poolInfo, assetOut, collateralIn, slippage } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "assetOut", assetOut |> Uint.encode )
@@ -217,12 +217,12 @@ decoder =
 decoderAnswerPercent : Decoder AnswerPercent
 decoderAnswerPercent =
     Decode.succeed AnswerPercent
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "assetOut" Uint.decoder
         |> Pipeline.required "percent" Percent.decoder
-        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "slippage" Slippage.decoderGivenPercent
         |> Pipeline.required "result"
             ([ decoderResultPercent |> Decode.map Ok
              , Error.decoder |> Decode.map Err
@@ -234,7 +234,7 @@ decoderAnswerPercent =
 decoderAnswerMax : Decoder AnswerMax
 decoderAnswerMax =
     Decode.succeed AnswerMax
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "collateralIn" Uint.decoder
@@ -251,7 +251,7 @@ decoderAnswerMax =
 decoderAnswerDebt : Decoder AnswerDebt
 decoderAnswerDebt =
     Decode.succeed AnswerDebt
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "assetOut" Uint.decoder
@@ -268,7 +268,7 @@ decoderAnswerDebt =
 decoderAnswerCollateral : Decoder AnswerCollateral
 decoderAnswerCollateral =
     Decode.succeed AnswerCollateral
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "assetOut" Uint.decoder

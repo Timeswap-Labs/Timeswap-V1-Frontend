@@ -1,5 +1,4 @@
 import { Elm } from "../Main.elm";
-import rinkeby from "../../whitelist/rinkeby.json";
 
 import * as images from "url:../../image/*.svg";
 import * as tokenImages from "url:../../image/tokens/*.svg";
