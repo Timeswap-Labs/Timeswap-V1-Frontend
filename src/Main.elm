@@ -1523,7 +1523,7 @@ chainListButton ({ device, images, theme } as model) =
         , paddingXY 12 0
         , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
-        , mouseDown [ Background.color Color.primary300 ]
+        , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
         , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
         ]
         { onPress = Just OpenChainList
@@ -1600,21 +1600,21 @@ connectButton ({ device, images, theme } as model) =
                                 (\_ ->
                                     [ Region.description "account button"
                                     , theme |> ThemeColor.btnBackground |> Background.color
-                                    , mouseDown [ Background.color Color.primary300 ]
+                                    , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
                                     , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
                                     ]
                                 )
                             |> Maybe.withDefault
                                 [ Region.description "connect button"
                                 , theme |> ThemeColor.primaryBtn |> Background.color
-                                , mouseDown [ Background.color Color.primary300 ]
+                                , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
                                 , mouseOver [ Background.color Color.primary400 ]
                                 ]
 
                     NotSupported _ ->
                         [ Region.description "account button"
                         , theme |> ThemeColor.btnBackground |> Background.color
-                        , mouseDown [ Background.color Color.primary300 ]
+                        , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
                         , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
                         ]
                )
@@ -1773,7 +1773,7 @@ zoneButton ({ images, offset, zoneName, chosenZone, zoneDropdown, theme } as mod
         , paddingXY 12 0
         , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
-        , mouseDown [ Background.color Color.primary300 ]
+        , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
         , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
         , el
             [ width fill
@@ -1885,7 +1885,7 @@ themeButton { theme, images } =
         , height <| px 44
         , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 8
-        , mouseDown [ Background.color Color.primary300 ]
+        , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
         , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
         ]
         { onPress = Just SwitchTheme

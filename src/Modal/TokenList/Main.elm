@@ -36,6 +36,7 @@ import Element
         , height
         , htmlAttribute
         , minimum
+        , mouseDown
         , mouseOver
         , newTabLink
         , none
@@ -694,7 +695,8 @@ tokenButton model blockchain modal token =
                 , height fill
                 , centerY
                 , paddingXY 12 10
-                , mouseOver [ Background.color Color.primary100 ]
+                , mouseDown [ model.theme |> ThemeColor.btnHoverBG |> Background.color ]
+                , mouseOver [ model.theme |> ThemeColor.btnBackground |> Background.color ]
                 , Border.rounded 8
                 ]
                 [ tokenSymbolAndName model modal token
@@ -742,7 +744,13 @@ customToken model blockchain ((Modal { state }) as modal) token =
                                     Nothing
                         , label =
                             model.images
-                                |> Image.minus
+                                |> (case model.theme of
+                                        Theme.Dark ->
+                                            Image.minus
+
+                                        Theme.Light ->
+                                            Image.minusDark
+                                   )
                                     [ width <| px 16
                                     , height <| px 16
                                     , alpha 0.64
@@ -754,7 +762,13 @@ customToken model blockchain ((Modal { state }) as modal) token =
                         { url = token |> Etherscan.fromToken (blockchain |> Blockchain.toChain)
                         , label =
                             model.images
-                                |> Image.linkWhite
+                                |> (case model.theme of
+                                        Theme.Dark ->
+                                            Image.linkWhite
+
+                                        Theme.Light ->
+                                            Image.linkDark
+                                   )
                                     [ width <| px 16
                                     , height <| px 16
                                     ]
@@ -1083,7 +1097,7 @@ importTokenWarning { images, theme } erc20 tooltip =
             , theme |> ThemeColor.primaryBtn |> Background.color
             , Border.rounded 4
             ]
-            { onPress = Nothing
+            { onPress = Just ImportERC20
             , label = text "Import"
             }
         ]

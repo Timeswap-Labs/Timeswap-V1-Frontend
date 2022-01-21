@@ -25,6 +25,7 @@ module Utility.Image exposing
     , hourglassPrimarySmall
     , info
     , link
+    , linkDark
     , linkWhite
     , logoPure
     , logoText
@@ -33,6 +34,7 @@ module Utility.Image exposing
     , medium
     , metamask
     , minus
+    , minusDark
     , moon
     , openSea
     , option
@@ -206,6 +208,11 @@ linkWhite =
     view "LinkWhite"
 
 
+linkDark : List (Attribute msg) -> Images -> Element msg
+linkDark =
+    view "LinkDark"
+
+
 energy : List (Attribute msg) -> Images -> Element msg
 energy =
     view "Energy"
@@ -259,6 +266,11 @@ plus =
 minus : List (Attribute msg) -> Images -> Element msg
 minus =
     view "Minus"
+
+
+minusDark : List (Attribute msg) -> Images -> Element msg
+minusDark =
+    view "MinusDark"
 
 
 arrow : List (Attribute msg) -> Images -> Element msg
