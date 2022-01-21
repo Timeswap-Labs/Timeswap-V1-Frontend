@@ -16,7 +16,7 @@ import Data.Chains as Chains exposing (Chains)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
 import Data.Uint as Uint
@@ -70,6 +70,7 @@ import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
 import Utility.Loading as Loading
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
@@ -478,7 +479,7 @@ view ({ backdrop } as model) blockchain ((Modal { state, tooltip }) as modal) =
                  , height <| minimum 360 shrink
                  , centerX
                  , centerY
-                 , Border.color Color.transparent100
+                 , model.theme |> ThemeColor.border |> Border.color
                  , Border.width 1
                  , Border.rounded 8
                  ]
@@ -513,10 +514,10 @@ modalHeader model (Modal { state }) =
             , bottom = 20
             , left = 24
             }
-        , Font.color Color.light100
+        , model.theme |> ThemeColor.text |> Font.color
         , Font.bold
         , Font.size 18
-        , Border.color Color.transparent100
+        , model.theme |> ThemeColor.textboxBorder |> Border.color
         , Border.widthEach
             { top = 0
             , right = 0
@@ -559,7 +560,7 @@ modalHeader model (Modal { state }) =
                     , Font.regular
                     , Background.color Color.completelyTransparent
                     , Border.width 1
-                    , Border.color Color.transparent100
+                    , model.theme |> ThemeColor.textboxBorder |> Border.color
                     , Border.rounded 8
                     ]
                     { onChange = InputAddress
@@ -575,7 +576,7 @@ modalHeader model (Modal { state }) =
                                 ""
                     , placeholder =
                         Input.placeholder
-                            [ Font.color Color.transparent300
+                            [ model.theme |> ThemeColor.textLight |> Font.color
                             , Font.size 14
                             , Font.regular
                             ]
@@ -768,7 +769,7 @@ customToken model blockchain ((Modal { state }) as modal) token =
                     , Font.regular
                     , Font.letterSpacing 0.5
                     , paddingXY 9 4
-                    , Background.color Color.primary500
+                    , model.theme |> ThemeColor.primaryBtn |> Background.color
                     , Border.rounded 4
                     ]
                     { onPress = Just GoToImportERC20
@@ -824,7 +825,7 @@ tokenSymbolAndName { images, theme } (Modal { tooltip }) token =
             [ height <| px 23
             , paddingXY 5 0
             , Font.size 22
-            , Font.color Color.transparent300
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             (Char.fromCode 0x2022
                 |> String.fromChar
@@ -841,6 +842,7 @@ tokenSymbolAndName { images, theme } (Modal { tooltip }) token =
                 , tooltip = Tooltip.Name token
                 , opened = tooltip
                 , token = token
+                , theme = theme
                 }
             )
         ]
@@ -883,8 +885,8 @@ tokenBalance user token (Modal { tooltip }) =
             none
 
 
-noResults : { model | images : Images } -> Element Msg
-noResults { images } =
+noResults : { model | images : Images, theme : Theme } -> Element Msg
+noResults { images, theme } =
     column
         [ width fill
         , height fill
@@ -905,15 +907,15 @@ noResults { images } =
         , el
             [ Font.size 14
             , Font.center
-            , Font.color Color.light100
+            , theme |> ThemeColor.text |> Font.color
             , width fill
             ]
             ("No results found" |> text)
         ]
 
 
-manageTokensBtn : { model | images : Images } -> Element Msg
-manageTokensBtn { images } =
+manageTokensBtn : { model | images : Images, theme : Theme } -> Element Msg
+manageTokensBtn { images, theme } =
     el
         [ width fill
         , height <| px 52
@@ -922,7 +924,7 @@ manageTokensBtn { images } =
         , centerY
         , Font.size 14
         , Font.regular
-        , Font.color Color.primary400
+        , theme |> ThemeColor.actionElemLabel |> Font.color
         , Font.center
         , Border.widthEach
             { top = 1
@@ -930,7 +932,7 @@ manageTokensBtn { images } =
             , bottom = 0
             , left = 0
             }
-        , Border.color Color.transparent100
+        , theme |> ThemeColor.textboxBorder |> Border.color
         ]
         (Input.button
             [ width shrink
@@ -957,7 +959,13 @@ manageTokensBtn { images } =
                         ]
                         ("Manage Custom Tokens" |> text)
                     , images
-                        |> Image.arrow
+                        |> (case theme of
+                                Theme.Dark ->
+                                    Image.arrow
+
+                                Theme.Light ->
+                                    Image.arrowSecondary
+                           )
                             [ width <| px 16
                             , height <| px 16
                             , centerY
@@ -987,8 +995,8 @@ importTokenWarning { images, theme } erc20 tooltip =
             , spacing 12
             , centerX
             , Font.size 14
-            , Font.color Color.light500
-            , Background.color Color.primary100
+            , theme |> ThemeColor.text |> Font.color
+            , theme |> ThemeColor.sectionBackground |> Background.color
             , Border.rounded 8
             ]
             [ images
@@ -1043,12 +1051,13 @@ importTokenWarning { images, theme } erc20 tooltip =
                     , tooltip = Tooltip.Name (erc20 |> Token.ERC20)
                     , opened = tooltip
                     , token = erc20 |> Token.ERC20
+                    , theme = theme
                     }
                 )
             , el
                 [ centerX
                 , Font.size 12
-                , Font.color Color.primary400
+                , theme |> ThemeColor.actionElemLabel |> Font.color
                 , Font.regular
                 , paddingEach
                     { top = 4
@@ -1071,7 +1080,7 @@ importTokenWarning { images, theme } erc20 tooltip =
             , padding 10
             , Font.size 16
             , Font.color Color.light100
-            , Background.color Color.primary500
+            , theme |> ThemeColor.primaryBtn |> Background.color
             , Border.rounded 4
             ]
             { onPress = Nothing

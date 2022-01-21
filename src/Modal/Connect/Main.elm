@@ -22,7 +22,7 @@ import Data.Images exposing (Images)
 import Data.Pool as Pool
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Support exposing (Support(..))
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Wallets exposing (Wallets)
 import Element
@@ -384,9 +384,10 @@ metamaskButton :
         | images : Images
         , wallets : Wallets
         , blockchain : Support User.NotSupported Blockchain
+        , theme : Theme
     }
     -> Element Msg
-metamaskButton ({ images, wallets } as model) =
+metamaskButton ({ images, wallets, theme } as model) =
     (case model.blockchain of
         Supported blockchain ->
             blockchain
@@ -478,7 +479,13 @@ metamaskButton ({ images, wallets } as model) =
                                             |> text
                                         )
                                     , images
-                                        |> Image.arrow
+                                        |> (case theme of
+                                                Theme.Dark ->
+                                                    Image.arrow
+
+                                                Theme.Light ->
+                                                    Image.arrowSecondary
+                                           )
                                             [ width <| px 24
                                             , height <| px 24
                                             , alignRight

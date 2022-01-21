@@ -1,8 +1,10 @@
 module Utility.Image exposing
     ( allPairs
     , arrow
-    , arrowDown
     , arrowDownDark
+    , arrowLeft
+    , arrowLeftDark
+    , arrowSecondary
     , calander
     , checkbox
     , checkboxSelected
@@ -264,6 +266,11 @@ arrow =
     view "Arrow"
 
 
+arrowSecondary : List (Attribute msg) -> Images -> Element msg
+arrowSecondary =
+    view "ArrowSecondary"
+
+
 close : List (Attribute msg) -> Images -> Element msg
 close =
     view "Close"
@@ -274,9 +281,14 @@ closeDark =
     view "CloseDark"
 
 
-arrowDown : List (Attribute msg) -> Images -> Element msg
-arrowDown =
-    view "ArrowDown"
+arrowLeft : List (Attribute msg) -> Images -> Element msg
+arrowLeft =
+    view "ArrowLeft"
+
+
+arrowLeftDark : List (Attribute msg) -> Images -> Element msg
+arrowLeftDark =
+    view "ArrowLeftDark"
 
 
 arrowDownDark : List (Attribute msg) -> Images -> Element msg

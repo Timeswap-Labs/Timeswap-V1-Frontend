@@ -44,7 +44,7 @@ export async function collateralCalculate(
       .toString();
 
     const apr = calculateApr(due.debt, query.assetOut, maturity, currentTime);
-    const cf = calculateCdp(
+    const cdp = calculateCdp(
       query.assetOut,
       query.pool.asset.decimals,
       query.poolInfo.assetSpot,
@@ -62,7 +62,7 @@ export async function collateralCalculate(
         debtIn,
         maxDebt,
         apr,
-        cf,
+        cdp,
       },
     });
   } catch {

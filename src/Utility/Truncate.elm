@@ -19,6 +19,7 @@ import Element
         ( Attribute
         , Element
         , below
+        , centerY
         , el
         , height
         , none
@@ -166,7 +167,7 @@ viewSymbol param =
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 14
-                        , Font.color Color.transparent300
+                        , param.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text full)
                         |> Tooltip.belowAlignLeft
@@ -223,6 +224,7 @@ viewName :
     , tooltip : tooltip
     , opened : Maybe tooltip
     , token : Token
+    , theme : Theme
     }
     -> Element msg
 viewName param =
@@ -255,7 +257,7 @@ viewName param =
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 12
-                        , Font.color Color.transparent300
+                        , param.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text full)
                         |> Tooltip.belowAlignLeft
@@ -265,7 +267,7 @@ viewName param =
                   )
                     |> below
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text short)
 
@@ -291,7 +293,7 @@ viewName param =
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text short)
 
@@ -301,7 +303,7 @@ viewName param =
                 , height shrink
                 , paddingXY 0 2
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text full)
 
@@ -312,6 +314,7 @@ viewCDPSymbol :
     , tooltip : tooltip
     , opened : Maybe tooltip
     , pair : Pair
+    , theme : Theme
     }
     -> Element msg
 viewCDPSymbol param =
@@ -324,6 +327,7 @@ viewCDPSymbol param =
             el
                 [ width shrink
                 , height shrink
+                , centerY
                 , paddingEach
                     { top = 2
                     , right = 0
@@ -344,7 +348,7 @@ viewCDPSymbol param =
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 14
-                        , Font.color Color.transparent300
+                        , param.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text full)
                         |> Tooltip.belowAlignLeft
@@ -354,7 +358,7 @@ viewCDPSymbol param =
                   )
                     |> below
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text short)
 
@@ -362,6 +366,7 @@ viewCDPSymbol param =
             el
                 [ width shrink
                 , height shrink
+                , centerY
                 , paddingEach
                     { top = 2
                     , right = 0
@@ -380,7 +385,7 @@ viewCDPSymbol param =
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text short)
 
@@ -388,9 +393,10 @@ viewCDPSymbol param =
             el
                 [ width shrink
                 , height shrink
+                , centerY
                 , paddingXY 0 2
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text full)
 
@@ -540,7 +546,7 @@ viewAmount param =
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 12
-                        , Font.color Color.transparent300
+                        , param.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text full)
                         |> Tooltip.belowAlignRight
@@ -598,6 +604,7 @@ viewBalance :
     , opened : Maybe tooltip
     , token : Token
     , balance : Uint
+    , theme : Theme
     }
     -> Element msg
 viewBalance param =
@@ -630,7 +637,7 @@ viewBalance param =
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 12
-                        , Font.color Color.transparent300
+                        , param.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text full)
                         |> Tooltip.belowAlignRight
@@ -640,7 +647,7 @@ viewBalance param =
                   )
                     |> below
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text short)
 
@@ -666,7 +673,7 @@ viewBalance param =
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text short)
 
@@ -676,7 +683,7 @@ viewBalance param =
                 , height shrink
                 , paddingXY 0 4
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text full)
 
@@ -721,6 +728,7 @@ disabledSymbol token theme =
 disabledBalance :
     { token : Token
     , balance : Uint
+    , theme : Theme
     }
     -> Element Never
 disabledBalance param =
@@ -744,7 +752,7 @@ disabledBalance param =
                 , Border.dashed
                 , Border.color Color.transparent200
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text short)
 
@@ -754,7 +762,7 @@ disabledBalance param =
                 , height shrink
                 , paddingXY 0 4
                 , Font.size 12
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text full)
 

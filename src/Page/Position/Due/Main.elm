@@ -243,12 +243,10 @@ returnButton { images } =
                 , spacing 12
                 ]
                 [ images
-                    |> Image.arrowDown
+                    |> Image.arrowLeft
                         [ width <| px 16
                         , height <| px 16
                         , centerY
-                        , (pi / 2)
-                            |> rotate
                         ]
                 , el
                     [ width shrink

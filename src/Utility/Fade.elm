@@ -43,14 +43,14 @@ view theme token amount =
                         [ el
                             [ width shrink
                             , height shrink
-                            , Font.color Color.light100
+                            , theme |> ThemeColor.text |> Font.color
                             , Font.size 16
                             ]
                             (text unFaded)
                         , el
                             [ width shrink
                             , height shrink
-                            , Font.color Color.transparent200
+                            , theme |> ThemeColor.placeholder |> Font.color
                             , Font.size 16
                             ]
                             (text faded)

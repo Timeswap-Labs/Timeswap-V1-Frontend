@@ -101,6 +101,7 @@ userBalance param =
                     , opened = param.opened
                     , token = param.token
                     , balance = balance
+                    , theme = param.theme
                     }
 
             Loading timeline ->
@@ -193,6 +194,7 @@ disabledUserBalance param =
                 Truncate.disabledBalance
                     { token = param.token
                     , balance = balance
+                    , theme = param.theme
                     }
 
             Loading _ ->

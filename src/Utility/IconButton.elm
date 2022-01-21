@@ -18,8 +18,8 @@ import Element.Input as Input
 import Utility.Image as Image
 
 
-back : { model | images : Images } -> msg -> Element msg
-back { images } msg =
+back : { model | images : Images, theme : Theme } -> msg -> Element msg
+back { images, theme } msg =
     Input.button
         [ width shrink
         , height shrink
@@ -29,10 +29,15 @@ back { images } msg =
         { onPress = Just msg
         , label =
             images
-                |> Image.arrowDown
-                    [ width <| px 18
-                    , height <| px 18
-                    , rotate (pi / 2)
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.arrowLeft
+
+                        Theme.Light ->
+                            Image.arrowLeftDark
+                   )
+                    [ width <| px 16
+                    , height <| px 15
                     ]
         }
 

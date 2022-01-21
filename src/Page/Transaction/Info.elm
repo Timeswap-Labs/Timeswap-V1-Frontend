@@ -166,12 +166,14 @@ lendCDP { priceFeed, theme } param =
         [ row
             [ width fill
             , height shrink
+            , centerY
             , spacing 5
             ]
             [ el
                 [ width shrink
                 , height shrink
                 , Font.size 14
+                , centerY
                 , paddingXY 0 3
                 , theme |> ThemeColor.textLight |> Font.color
                 ]
@@ -202,6 +204,7 @@ lendCDP { priceFeed, theme } param =
                                 , tooltip = param.symbolTooltip
                                 , opened = param.opened
                                 , pair = param.pair
+                                , theme = theme
                                 }
                             )
 
@@ -345,6 +348,7 @@ borrowCDP { priceFeed, theme } param =
                                 , tooltip = param.symbolTooltip
                                 , opened = param.opened
                                 , pair = param.pair
+                                , theme = theme
                                 }
                             )
 
