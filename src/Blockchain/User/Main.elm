@@ -25,6 +25,7 @@ port module Blockchain.User.Main exposing
     , toWallet
     , toWalletNotSupported
     , update
+    , updateAddERC20
     , updateApprove
     , updateBorrow
     , updateBurn
@@ -55,12 +56,12 @@ import Blockchain.User.WriteLiquidity as WriteLiquidity exposing (WriteLiquidity
 import Blockchain.User.WriteWithdraw as WriteWithdraw exposing (WriteWithdraw)
 import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain)
-import Data.Chains exposing (Chains)
+import Data.Chains as Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.ERC20 exposing (ERC20)
 import Data.Hash exposing (Hash)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Token exposing (Token)
+import Data.Token as Token exposing (Token)
 import Data.Uint exposing (Uint)
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Web exposing (Web)
@@ -99,7 +100,9 @@ type alias Flag =
 
 
 type Msg
-    = ReceiveReceipt Value
+    = ReceiveBalances Value
+    | ReceiveAllowances Value
+    | ReceiveReceipt Value
     | BalancesTick Posix
     | AllowancesTick Posix
 
@@ -123,8 +126,14 @@ init chains chain flag =
               , txns = flag.txns |> Txns.init
               }
                 |> User
-            , Cmd.none
-              -- |> Debug.log "Later"
+            , [ address
+                    |> Balances.encode chains chain
+                    |> balancesOf
+              , address
+                    |> Allowances.encode chains chain
+                    |> allowancesOf
+              ]
+                |> Cmd.batch
             )
                 |> Just
 
@@ -153,11 +162,51 @@ initNotSupported flag =
 update : Chain -> Msg -> User -> ( User, Cmd Msg )
 update chain msg (User user) =
     case msg of
+        ReceiveBalances value ->
+            case value |> Decode.decodeValue Balances.decoder of
+                Ok decoded ->
+                    if
+                        (decoded.chain == chain)
+                            && (decoded.address == user.address)
+                    then
+                        { user
+                            | balances =
+                                user.balances
+                                    |> Dict.insertAll decoded.balances
+                        }
+                            |> noCmd
+
+                    else
+                        user |> noCmd
+
+                Err _ ->
+                    user |> noCmd
+
+        ReceiveAllowances value ->
+            case value |> Decode.decodeValue Allowances.decoder of
+                Ok decoded ->
+                    if
+                        (decoded.chain == chain)
+                            && (decoded.address == user.address)
+                    then
+                        { user
+                            | allowances =
+                                user.allowances
+                                    |> Dict.insertAll decoded.allowances
+                        }
+                            |> noCmd
+
+                    else
+                        user |> noCmd
+
+                Err _ ->
+                    user |> noCmd
+
         ReceiveReceipt value ->
             case value |> Decode.decodeValue Write.decoder of
                 Ok receipt ->
                     if
-                        (receipt.chainId == chain)
+                        (receipt.chain == chain)
                             && (receipt.address == user.address)
                     then
                         user.txns
@@ -199,6 +248,49 @@ updateClearTxns chain (User user) =
         |> Cache.encodeTxns chain user.address
         |> cacheTxns
     )
+
+
+updateAddERC20 : Chain -> ERC20 -> User -> ( User, Cmd Msg )
+updateAddERC20 chain erc20 (User user) =
+    ( user.balances |> Dict.get (Token.ERC20 erc20)
+    , user.allowances |> Dict.get erc20
+    )
+        |> (\( balance, allowance ) ->
+                ( { user
+                    | balances =
+                        balance
+                            |> Maybe.map (\_ -> user.balances)
+                            |> Maybe.withDefault
+                                (user.balances
+                                    |> Dict.insert (Token.ERC20 erc20) Remote.loading
+                                )
+                    , allowances =
+                        allowance
+                            |> Maybe.map (\_ -> user.allowances)
+                            |> Maybe.withDefault
+                                (user.allowances
+                                    |> Dict.insert erc20 Remote.loading
+                                )
+                  }
+                    |> User
+                , [ balance
+                        |> Maybe.map (\_ -> Cmd.none)
+                        |> Maybe.withDefault
+                            (Token.ERC20 erc20
+                                |> Balances.encodeSingle chain user.address
+                                |> balancesOf
+                            )
+                  , allowance
+                        |> Maybe.map (\_ -> Cmd.none)
+                        |> Maybe.withDefault
+                            (erc20
+                                |> Allowances.encodeSingle chain user.address
+                                |> allowancesOf
+                            )
+                  ]
+                    |> Cmd.batch
+                )
+           )
 
 
 updateApprove : Chain -> ERC20 -> User -> ( User, Cmd Msg )
@@ -514,6 +606,12 @@ receiveNotSupported value =
 port cacheTxns : Value -> Cmd msg
 
 
+port balancesOf : Value -> Cmd msg
+
+
+port allowancesOf : Value -> Cmd msg
+
+
 port approve : Value -> Cmd msg
 
 
@@ -532,12 +630,20 @@ port create : Value -> Cmd msg
 port withdraw : Value -> Cmd msg
 
 
+port receiveBalances : (Value -> msg) -> Sub msg
+
+
+port receiveAllowances : (Value -> msg) -> Sub msg
+
+
 port receiveReceipt : (Value -> msg) -> Sub msg
 
 
 subscriptions : User -> Sub Msg
 subscriptions (User user) =
-    [ user.balances |> Balances.subscriptions BalancesTick
+    [ receiveBalances ReceiveBalances
+    , receiveAllowances ReceiveAllowances
+    , user.balances |> Balances.subscriptions BalancesTick
     , user.allowances |> Allowances.subscriptions AllowancesTick
     ]
         |> Sub.batch

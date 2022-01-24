@@ -12,8 +12,8 @@ module Data.Tokens exposing
     , removeAll
     , toCustom
     , toCustomList
+    , toERC20List
     , toList
-    , toListERC20
     )
 
 import Data.Address as Address exposing (Address)
@@ -206,13 +206,13 @@ removeAll (Tokens tokens) =
 toList : Tokens -> List Token
 toList ((Tokens { native }) as tokens) =
     tokens
-        |> toListERC20
+        |> toERC20List
         |> List.map Token.ERC20
         |> (::) (Token.Native native)
 
 
-toListERC20 : Tokens -> List ERC20
-toListERC20 tokens =
+toERC20List : Tokens -> List ERC20
+toERC20List tokens =
     tokens
         |> toSet
         |> Set.toList

@@ -10,6 +10,7 @@ module Blockchain.Main exposing
     , toChain
     , toUser
     , update
+    , updateAddERC20
     , updateApprove
     , updateBorrow
     , updateBurn
@@ -131,6 +132,26 @@ updateClearTxns (Blockchain ({ chain } as blockchain)) =
             (\user ->
                 user
                     |> User.updateClearTxns chain
+                    |> Tuple.mapBoth
+                        (\updated ->
+                            { blockchain | user = Just updated }
+                                |> Blockchain
+                        )
+                        (Cmd.map UserMsg)
+            )
+        |> Maybe.withDefault
+            ( blockchain |> Blockchain
+            , Cmd.none
+            )
+
+
+updateAddERC20 : ERC20 -> Blockchain -> ( Blockchain, Cmd Msg )
+updateAddERC20 erc20 (Blockchain ({ chain } as blockchain)) =
+    blockchain.user
+        |> Maybe.map
+            (\user ->
+                user
+                    |> User.updateAddERC20 chain erc20
                     |> Tuple.mapBoth
                         (\updated ->
                             { blockchain | user = Just updated }

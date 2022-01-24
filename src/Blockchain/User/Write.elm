@@ -10,7 +10,7 @@ import Json.Encode as Encode exposing (Value)
 
 type alias Receipt =
     { id : Int
-    , chainId : Chain
+    , chain : Chain
     , address : Address
     , hash : Hash
     }
@@ -20,7 +20,7 @@ decoder : Decoder Receipt
 decoder =
     Decode.succeed Receipt
         |> Pipeline.required "id" Decode.int
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "address" Address.decoder
         |> Pipeline.required "hash" Hash.decoder
 
@@ -33,7 +33,7 @@ encode :
     -> Value
 encode id chain address send =
     [ ( "id", id |> Encode.int )
-    , ( "chainId", chain |> Chain.encode )
+    , ( "chain", chain |> Chain.encode )
     , ( "address", address |> Address.encode )
     , ( "send", send )
     ]

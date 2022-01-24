@@ -854,14 +854,19 @@ modalEffects effect model =
         Modal.AddERC20 tokenParam erc20 ->
             case model.blockchain of
                 Supported blockchain ->
-                    blockchain
-                        |> Blockchain.toChain
-                        |> (\chain ->
+                    ( blockchain |> Blockchain.toChain
+                    , blockchain |> Blockchain.updateAddERC20 erc20
+                    )
+                        |> (\( chain, ( updated, cmd ) ) ->
                                 model.chains
                                     |> Chains.insert chain erc20
                                     |> (\chains ->
-                                            ( { model | chains = chains }
-                                            , [ Route.fromTab
+                                            ( { model
+                                                | chains = chains
+                                                , blockchain = updated |> Supported
+                                              }
+                                            , [ cmd |> Cmd.map BlockchainMsg
+                                              , Route.fromTab
                                                     (model.page |> Page.toTab)
                                                     (model.page
                                                         |> Page.toParameter

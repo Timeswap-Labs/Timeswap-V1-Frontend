@@ -14,7 +14,7 @@ encode :
     -> Value
 encode id chain address write =
     [ ( "id", id |> Encode.int )
-    , ( "chainId", chain |> Chain.encode )
+    , ( "chain", chain |> Chain.encode )
     , ( "address", address |> Address.encode )
     , ( "erc20", write |> ERC20.encode )
     ]

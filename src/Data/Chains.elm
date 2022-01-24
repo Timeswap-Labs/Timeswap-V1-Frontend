@@ -13,8 +13,8 @@ module Data.Chains exposing
     , remove
     , removeAll
     , toCustomTokenList
+    , toERC20List
     , toList
-    , toListERC20
     , toTokenList
     )
 
@@ -246,12 +246,12 @@ toTokenList chain chains =
         |> Maybe.withDefault []
 
 
-toListERC20 : Chain -> Chains -> List ERC20
-toListERC20 chain chains =
+toERC20List : Chain -> Chains -> List ERC20
+toERC20List chain chains =
     chains
         |> toDict
         |> Dict.get chain
-        |> Maybe.map Tokens.toListERC20
+        |> Maybe.map Tokens.toERC20List
         |> Maybe.withDefault []
 
 
