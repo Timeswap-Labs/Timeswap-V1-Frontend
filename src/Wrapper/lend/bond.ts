@@ -55,7 +55,7 @@ export function bondCalculate(
     ).toString();
 
     const apr = calculateApr(bondOut, query.assetIn, maturity, currentTime);
-    const cf = calculateCdp(
+    const cdp = calculateCdp(
       query.assetIn,
       query.pool.asset.decimals,
       query.poolInfo.assetSpot,
@@ -64,6 +64,8 @@ export function bondCalculate(
       query.poolInfo.collateralSpot
       );
 
+    query.pool.maturity = query.pool.maturity.toString();
+
     app.ports.receiveLendAnswer.send({
       ...query,
       result: {
@@ -71,12 +73,10 @@ export function bondCalculate(
         insuranceOut,
         minInsurance,
         apr,
-        cf,
+        cdp,
       },
     });
   } catch (err) {
-    console.log("catc", err);
-
     app.ports.receiveLendAnswer.send({
       ...query,
       result: 0,

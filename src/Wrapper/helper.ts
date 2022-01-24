@@ -34,6 +34,7 @@ export function getCustomTokens(chainId: string): ERC20Token[] {
 }
 
 export function getPool(query: LendQuery | BorrowQuery): Pool {
+  const fee = 196, protocolFee = 17;
   let asset, collateral;
 
   if ((query.pool.asset as ERC20Token).address) {
@@ -65,7 +66,5 @@ export function getPool(query: LendQuery | BorrowQuery): Pool {
     );
   }
 
-  const pair = new Pair(asset as ERC20Token, collateral as ERC20Token, new Uint16(50), new Uint16(50));
-
-  return new Pool(pair, new Uint256(query.pool.maturity) );
+  return new Pool(asset, collateral, query.pool.maturity, fee, protocolFee);
 }
