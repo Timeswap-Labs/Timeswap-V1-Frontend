@@ -162,7 +162,7 @@ disabled theme percent =
             , el
                 [ alignRight
                 , Font.regular
-                , Font.color Color.primary500
+                , theme |> ThemeColor.primaryBtn |> Font.color
                 ]
                 (text "Learn more")
             ]

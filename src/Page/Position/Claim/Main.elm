@@ -24,7 +24,7 @@ import Data.Or exposing (Or(..))
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.TokenParam as TokenParam
 import Data.Web exposing (Web)
 import Element
@@ -72,6 +72,7 @@ import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
@@ -487,7 +488,7 @@ view ({ device, backdrop, theme } as model) user (Position position) =
              , spacing 30
              , Border.rounded 8
              , Border.width 1
-             , Border.color Color.transparent100
+             , theme |> ThemeColor.border |> Border.color
              ]
                 ++ Glass.background backdrop theme
             )
@@ -497,8 +498,8 @@ view ({ device, backdrop, theme } as model) user (Position position) =
         ]
 
 
-returnButton : { model | images : Images } -> Element Msg
-returnButton { images } =
+returnButton : { model | images : Images, theme : Theme } -> Element Msg
+returnButton { images, theme } =
     Input.button
         [ width shrink
         , height shrink
@@ -511,7 +512,13 @@ returnButton { images } =
                 , spacing 12
                 ]
                 [ images
-                    |> Image.arrowLeft
+                    |> (case theme of
+                            Theme.Dark ->
+                                Image.arrowLeft
+
+                            Theme.Light ->
+                                Image.arrowLeftDark
+                       )
                         [ width <| px 16
                         , height <| px 16
                         , centerY
@@ -520,8 +527,9 @@ returnButton { images } =
                     [ width shrink
                     , height shrink
                     , Font.size 16
+                    , Font.bold
                     , paddingXY 0 2
-                    , Font.color Color.transparent500
+                    , theme |> ThemeColor.text |> Font.color
                     , centerY
                     ]
                     (text "Back to lend")
@@ -569,6 +577,7 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
                 , pair = pool.pair
                 , fontSize = 16
                 , fontPadding = 2
+                , theme = theme
                 }
             )
         , el
@@ -590,26 +599,26 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
                 }
             )
         , if pool.maturity |> Maturity.isActive time then
-            lendMoreButton
+            lendMoreButton theme
 
           else
             lendMoreDisabled
         , if pool.maturity |> Maturity.isActive time then
-            lendDisabled
+            lendDisabled theme
 
           else
-            lendButton
+            lendButton theme
         ]
 
 
-lendMoreButton : Element Msg
-lendMoreButton =
+lendMoreButton : Theme -> Element Msg
+lendMoreButton theme =
     Input.button
-        [ width <| px 102
+        [ width <| px 110
         , height <| px 44
         , Border.rounded 4
         , Border.width 1
-        , Border.color Color.primary300
+        , theme |> ThemeColor.btnHoverBG |> Border.color
         ]
         { onPress = Just ClickLendMore
         , label =
@@ -619,8 +628,8 @@ lendMoreButton =
                 , centerX
                 , centerY
                 , Font.size 16
-                , Font.color Color.light100
                 , Font.bold
+                , theme |> ThemeColor.text |> Font.color
                 ]
                 (text "Lend More")
         }
@@ -648,13 +657,13 @@ lendMoreDisabled =
         )
 
 
-lendButton : Element Msg
-lendButton =
+lendButton : Theme -> Element Msg
+lendButton theme =
     Input.button
         [ width <| px 102
         , height <| px 44
         , Border.rounded 4
-        , Background.color Color.primary500
+        , theme |> ThemeColor.primaryBtn |> Background.color
         ]
         { onPress = Just ClickClaim
         , label =
@@ -671,13 +680,13 @@ lendButton =
         }
 
 
-lendDisabled : Element msg
-lendDisabled =
+lendDisabled : Theme -> Element msg
+lendDisabled theme =
     el
         [ width <| px 102
         , height <| px 44
         , Border.rounded 4
-        , Background.color Color.transparent200
+        , theme |> ThemeColor.btnBackground |> Background.color
         ]
         (el
             [ width shrink
@@ -705,7 +714,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
     row
         [ width fill
         , height <| px 82
-        , Background.color Color.dark500
+        , theme |> ThemeColor.positionBG |> Background.color
         , Border.rounded 8
         , paddingXY 24 0
         , spacing 48
@@ -724,7 +733,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                             , height shrink
                             , Font.size 14
                             , paddingXY 0 3
-                            , Font.color Color.transparent300
+                            , theme |> ThemeColor.textLight |> Font.color
                             ]
                             (text "Asset to Receive")
                         , row
@@ -804,7 +813,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                             , height shrink
                             , Font.size 14
                             , paddingXY 0 3
-                            , Font.color Color.transparent300
+                            , theme |> ThemeColor.textLight |> Font.color
                             ]
                             (text "Collateral to Receive")
                         , row
@@ -881,7 +890,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                         , height shrink
                         , Font.size 14
                         , paddingXY 0 3
-                        , Font.color Color.transparent300
+                        , theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text "Amount to Receive")
                     , row
@@ -959,7 +968,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                         , height shrink
                         , Font.size 14
                         , paddingXY 0 3
-                        , Font.color Color.transparent300
+                        , theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text "Amount Protecting")
                     , row

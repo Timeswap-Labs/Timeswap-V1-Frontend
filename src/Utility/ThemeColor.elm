@@ -8,26 +8,12 @@ module Utility.ThemeColor exposing
     , completelyTransparent
     , modalBackground
     , modalOutside
-    , negative100
-    , negative200
-    , negative300
-    , negative400
-    , negative500
     , none
     , outside
     , placeholder
     , placeholder2
-    , positive100
-    , positive200
-    , positive300
-    , positive400
-    , positive500
+    , positionBG
     , primaryBtn
-    , secondary100
-    , secondary200
-    , secondary300
-    , secondary400
-    , secondary500
     , sectionBackground
     , switchBG
     , tableHeaderBG
@@ -249,79 +235,14 @@ tableHeaderBG theme =
             Color.secondary100
 
 
-secondary100 : Color
-secondary100 =
-    rgba255 120 117 235 0.12
+positionBG : Theme -> Color
+positionBG theme =
+    case theme of
+        Theme.Dark ->
+            Color.dark500
 
-
-secondary200 : Color
-secondary200 =
-    rgba255 120 117 235 0.44
-
-
-secondary300 : Color
-secondary300 =
-    rgba255 120 117 235 0.64
-
-
-secondary400 : Color
-secondary400 =
-    rgba255 120 117 235 1
-
-
-secondary500 : Color
-secondary500 =
-    rgba255 84 82 204 1
-
-
-negative100 : Color
-negative100 =
-    rgba255 233 85 103 0.12
-
-
-negative200 : Color
-negative200 =
-    rgba255 233 85 103 0.12
-
-
-negative300 : Color
-negative300 =
-    rgba255 233 85 103 0.44
-
-
-negative400 : Color
-negative400 =
-    rgba255 233 85 103 0.64
-
-
-negative500 : Color
-negative500 =
-    rgba255 204 51 69 1
-
-
-positive100 : Color
-positive100 =
-    rgba255 82 204 184 0.12
-
-
-positive200 : Color
-positive200 =
-    rgba255 82 204 184 0.44
-
-
-positive300 : Color
-positive300 =
-    rgba255 82 204 184 0.64
-
-
-positive400 : Color
-positive400 =
-    rgba255 82 204 184 1
-
-
-positive500 : Color
-positive500 =
-    rgba255 36 178 155 1
+        Theme.Light ->
+            Color.transparent200
 
 
 warning100 : Color

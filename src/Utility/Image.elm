@@ -24,6 +24,7 @@ module Utility.Image exposing
     , hourglassPrimary
     , hourglassPrimarySmall
     , info
+    , infoDark
     , link
     , linkDark
     , linkWhite
@@ -316,6 +317,11 @@ hourglass =
 info : List (Attribute msg) -> Images -> Element msg
 info =
     view "Info"
+
+
+infoDark : List (Attribute msg) -> Images -> Element msg
+infoDark =
+    view "InfoDark"
 
 
 warningCircle : List (Attribute msg) -> Images -> Element msg

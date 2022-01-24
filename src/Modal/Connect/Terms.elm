@@ -1,5 +1,6 @@
 module Modal.Connect.Terms exposing (..)
 
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -16,10 +17,11 @@ import Element
 import Element.Font as Font
 import Url.Builder as Builder
 import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
-view : Element msg
-view =
+view : Theme -> Element msg
+view theme =
     paragraph
         [ width shrink
         , height shrink
@@ -29,14 +31,14 @@ view =
         , Font.size 14
         ]
         [ el
-            [ Font.color Color.transparent300 ]
+            [ theme |> ThemeColor.textLight |> Font.color ]
             (text "By connecting, I accept Timeswap's ")
         , newTabLink
-            [ Font.color Color.primary300 ]
+            [ theme |> ThemeColor.btnPressBG |> Font.color ]
             { url =
                 Builder.crossOrigin "https://timeswap.io"
                     [ "terms" ]
                     []
-            , label = text "terms of service"
+            , label = text " terms of service"
             }
         ]

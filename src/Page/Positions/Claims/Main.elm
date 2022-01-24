@@ -19,7 +19,7 @@ import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
 import Data.Pool as Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -59,6 +59,7 @@ import Utility.Id as Id
 import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
@@ -159,8 +160,8 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
         )
 
 
-loading : { model | images : Images } -> Timeline () -> Element msg
-loading { images } timeline =
+loading : { model | images : Images, theme : Theme } -> Timeline () -> Element msg
+loading { images, theme } timeline =
     row
         [ width shrink
         , height shrink
@@ -169,7 +170,13 @@ loading { images } timeline =
         , spacing 12
         ]
         [ images
-            |> Image.info
+            |> (case theme of
+                    Theme.Dark ->
+                        Image.info
+
+                    Theme.Light ->
+                        Image.infoDark
+               )
                 [ width <| px 20
                 , height <| px 20
                 , centerX
@@ -182,7 +189,7 @@ loading { images } timeline =
             , centerY
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.transparent300
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             [ text "Fetching your Lend positions..." ]
         , el
@@ -191,17 +198,23 @@ loading { images } timeline =
         ]
 
 
-noClaims : { model | images : Images } -> Element msg
-noClaims { images } =
+noClaims : { model | images : Images, theme : Theme } -> Element msg
+noClaims { images, theme } =
     row
         [ width shrink
         , height shrink
         , centerX
         , centerY
-        , spacing 12
+        , spacing 8
         ]
         [ images
-            |> Image.info
+            |> (case theme of
+                    Theme.Dark ->
+                        Image.info
+
+                    Theme.Light ->
+                        Image.infoDark
+               )
                 [ width <| px 20
                 , height <| px 20
                 , centerX
@@ -214,7 +227,7 @@ noClaims { images } =
             , centerY
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.transparent300
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             [ text "Your Lend positions will appear here..." ]
         ]
@@ -328,6 +341,7 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                         , pair = pool.pair
                         , fontSize = 14
                         , fontPadding = 3
+                        , theme = theme
                         }
                     )
                 , el

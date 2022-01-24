@@ -19,7 +19,7 @@ import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
 import Data.Pool as Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -159,8 +159,8 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
         )
 
 
-loading : { model | images : Images } -> Timeline () -> Element msg
-loading { images } timeline =
+loading : { model | images : Images, theme : Theme } -> Timeline () -> Element msg
+loading { images, theme } timeline =
     row
         [ width shrink
         , height shrink
@@ -169,7 +169,13 @@ loading { images } timeline =
         , spacing 12
         ]
         [ images
-            |> Image.info
+            |> (case theme of
+                    Theme.Dark ->
+                        Image.info
+
+                    Theme.Light ->
+                        Image.infoDark
+               )
                 [ width <| px 20
                 , height <| px 20
                 , centerX
@@ -191,8 +197,8 @@ loading { images } timeline =
         ]
 
 
-noLiqs : { model | device : Device, images : Images } -> Element msg
-noLiqs { device, images } =
+noLiqs : { model | device : Device, images : Images, theme : Theme } -> Element msg
+noLiqs { device, images, theme } =
     row
         [ (case device of
             Desktop ->
@@ -208,7 +214,13 @@ noLiqs { device, images } =
         , spacing 12
         ]
         [ images
-            |> Image.info
+            |> (case theme of
+                    Theme.Dark ->
+                        Image.info
+
+                    Theme.Light ->
+                        Image.infoDark
+               )
                 [ width <| px 20
                 , height <| px 20
                 , centerX
@@ -335,6 +347,7 @@ viewLiq { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                         , pair = pool.pair
                         , fontSize = 14
                         , fontPadding = 3
+                        , theme = theme
                         }
                     )
                 , el

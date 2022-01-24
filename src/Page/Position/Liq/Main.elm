@@ -22,7 +22,7 @@ import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Web exposing (Web)
 import Element
     exposing
@@ -513,8 +513,8 @@ view ({ device, backdrop, theme } as model) user (Position position) =
         ]
 
 
-returnButton : { model | images : Images } -> Element Msg
-returnButton { images } =
+returnButton : { model | images : Images, theme : Theme } -> Element Msg
+returnButton { images, theme } =
     Input.button
         [ width shrink
         , height shrink
@@ -527,7 +527,13 @@ returnButton { images } =
                 , spacing 12
                 ]
                 [ images
-                    |> Image.arrowLeft
+                    |> (case theme of
+                            Theme.Dark ->
+                                Image.arrowLeft
+
+                            Theme.Light ->
+                                Image.arrowLeftDark
+                       )
                         [ width <| px 16
                         , height <| px 16
                         , centerY
@@ -585,6 +591,7 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
                 , pair = pool.pair
                 , fontSize = 16
                 , fontPadding = 2
+                , theme = theme
                 }
             )
         , el

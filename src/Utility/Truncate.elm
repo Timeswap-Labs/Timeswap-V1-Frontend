@@ -45,6 +45,7 @@ viewPairSymbol :
     , pair : Pair
     , fontSize : Int
     , fontPadding : Int
+    , theme : Theme
     }
     -> Element msg
 viewPairSymbol param =
@@ -87,7 +88,7 @@ viewPairSymbol param =
                   )
                     |> below
                 , Font.size 14
-                , Font.color Color.transparent500
+                , param.theme |> ThemeColor.text |> Font.color
                 ]
                 (text short)
 
@@ -113,7 +114,7 @@ viewPairSymbol param =
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
                 , Font.size param.fontSize
-                , Font.color Color.transparent500
+                , param.theme |> ThemeColor.text |> Font.color
                 ]
                 (text short)
 
@@ -123,7 +124,7 @@ viewPairSymbol param =
                 , height shrink
                 , paddingXY 0 param.fontPadding
                 , Font.size param.fontSize
-                , Font.color Color.transparent500
+                , param.theme |> ThemeColor.text |> Font.color
                 ]
                 (text full)
 

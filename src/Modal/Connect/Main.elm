@@ -64,6 +64,7 @@ import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
 import Utility.Loading as Loading
+import Utility.ThemeColor as ThemeColor
 
 
 type Modal
@@ -273,7 +274,7 @@ view ({ backdrop, theme } as model) modal =
                  , centerX
                  , centerY
                  , Border.rounded 8
-                 , Border.color Color.transparent100
+                 , theme |> ThemeColor.border |> Border.color
                  , Border.width 1
                  ]
                     ++ Glass.background backdrop theme
@@ -353,8 +354,9 @@ viewWallets model =
                             , height shrink
                             , centerY
                             , Font.size 18
+                            , Font.bold
                             , paddingXY 0 3
-                            , Font.color Color.light100
+                            , model.theme |> ThemeColor.text |> Font.color
                             ]
                             (text "Change Wallet")
                         ]
@@ -365,8 +367,9 @@ viewWallets model =
                         , height shrink
                         , centerY
                         , Font.size 18
+                        , Font.bold
                         , paddingXY 0 3
-                        , Font.color Color.light100
+                        , model.theme |> ThemeColor.text |> Font.color
                         ]
                         (text "Connect Wallet")
                     ]
@@ -375,7 +378,7 @@ viewWallets model =
                    ]
             )
         , metamaskButton model
-        , Terms.view
+        , Terms.view model.theme
         ]
 
 
@@ -411,7 +414,7 @@ metamaskButton ({ images, wallets, theme } as model) =
                             , height <| px 54
                             , paddingXY 18 0
                             , spacing 8
-                            , Background.color Color.primary100
+                            , theme |> ThemeColor.btnBackground |> Background.color
                             , Border.rounded 8
                             ]
                             [ images
@@ -427,7 +430,7 @@ metamaskButton ({ images, wallets, theme } as model) =
                                 , centerY
                                 , Font.size 16
                                 , paddingXY 0 4
-                                , Font.color Color.light100
+                                , theme |> ThemeColor.text |> Font.color
                                 ]
                                 (Wallet.Metamask
                                     |> Wallet.toString
@@ -472,7 +475,7 @@ metamaskButton ({ images, wallets, theme } as model) =
                                         , centerY
                                         , Font.size 16
                                         , paddingXY 0 4
-                                        , Font.color Color.light100
+                                        , theme |> ThemeColor.text |> Font.color
                                         ]
                                         (Wallet.Metamask
                                             |> Wallet.toString
@@ -522,7 +525,7 @@ metamaskButton ({ images, wallets, theme } as model) =
                                         , centerY
                                         , Font.size 16
                                         , paddingXY 0 4
-                                        , Font.color Color.light100
+                                        , theme |> ThemeColor.text |> Font.color
                                         ]
                                         ([ "Install"
                                          , Wallet.Metamask
@@ -565,14 +568,15 @@ viewInitializing model waiting timeline =
                 , height shrink
                 , centerY
                 , Font.size 18
+                , Font.bold
                 , paddingXY 0 3
-                , Font.color Color.light100
+                , model.theme |> ThemeColor.text |> Font.color
                 ]
                 (text "Connect Wallet")
             , IconButton.exit model Exit
             ]
         , walletWaiting model waiting timeline
-        , Terms.view
+        , Terms.view model.theme
         ]
 
 
@@ -597,29 +601,30 @@ viewError model waiting =
                 , height shrink
                 , centerY
                 , Font.size 18
+                , Font.bold
                 , paddingXY 0 3
-                , Font.color Color.light100
+                , model.theme |> ThemeColor.text |> Font.color
                 ]
                 (text "Connect Wallet")
             , IconButton.exit model Exit
             ]
         , walletError model waiting
-        , Terms.view
+        , Terms.view model.theme
         ]
 
 
 walletWaiting :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> { waiting | wallet : Wallet }
     -> Timeline ()
     -> Element msg
-walletWaiting { images } { wallet } timeline =
+walletWaiting { images, theme } { wallet } timeline =
     row
         [ width fill
         , height <| px 54
         , paddingXY 18 0
         , spacing 8
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 8
         ]
         [ images
@@ -635,7 +640,7 @@ walletWaiting { images } { wallet } timeline =
             , centerY
             , Font.size 16
             , paddingXY 0 4
-            , Font.color Color.light100
+            , theme |> ThemeColor.text |> Font.color
             ]
             (wallet
                 |> Wallet.toString
@@ -646,7 +651,7 @@ walletWaiting { images } { wallet } timeline =
             , height shrink
             , alignRight
             , centerY
-            , Font.color Color.light100
+            , theme |> ThemeColor.text |> Font.color
             , Font.size 16
             ]
             (Loading.view timeline)
@@ -712,11 +717,11 @@ walletError { images } { wallet } =
 
 
 viewConnected :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> User
     -> Element Msg
-viewConnected ({ images } as model) blockchain user =
+viewConnected ({ images, theme } as model) blockchain user =
     column
         [ width fill
         , height shrink
@@ -731,24 +736,12 @@ viewConnected ({ images } as model) blockchain user =
                 , height shrink
                 , centerY
                 , Font.size 18
+                , Font.bold
                 , paddingXY 0 3
-                , Font.color Color.light100
+                , theme |> ThemeColor.text |> Font.color
                 ]
                 (text "Account")
-            , Input.button
-                [ width shrink
-                , height shrink
-                , alignRight
-                , centerY
-                ]
-                { onPress = Just Exit
-                , label =
-                    images
-                        |> Image.close
-                            [ width <| px 24
-                            , height <| px 24
-                            ]
-                }
+            , IconButton.exit model Exit
             ]
         , walletConnected model blockchain user
         , viewTxns model blockchain user
@@ -756,17 +749,17 @@ viewConnected ({ images } as model) blockchain user =
 
 
 walletConnected :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> User
     -> Element Msg
-walletConnected { images } blockchain user =
+walletConnected { images, theme } blockchain user =
     row
         [ width fill
         , height <| px 54
         , paddingXY 18 0
         , spacing 8
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 8
         ]
         [ images
@@ -782,7 +775,7 @@ walletConnected { images } blockchain user =
             , centerY
             , Font.size 16
             , paddingXY 0 4
-            , Font.color Color.primary500
+            , theme |> ThemeColor.primaryBtn |> Font.color
             ]
             (user
                 |> User.toName
@@ -850,7 +843,7 @@ walletConnected { images } blockchain user =
             , height shrink
             , alignRight
             , centerY
-            , Font.color Color.primary500
+            , theme |> ThemeColor.primaryBtn |> Font.color
             , Font.size 14
             , paddingXY 0 3
             ]
@@ -861,7 +854,7 @@ walletConnected { images } blockchain user =
 
 
 viewTxns :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> User
     -> Element Msg
@@ -875,7 +868,7 @@ viewTxns model blockchain user =
                         , height shrink
                         , Font.size 14
                         , paddingXY 0 3
-                        , Font.color Color.transparent300
+                        , model.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text "No recent transactions...")
 
@@ -885,7 +878,7 @@ viewTxns model blockchain user =
                         , height shrink
                         , spacing 16
                         ]
-                        [ recentTransactions
+                        [ recentTransactions model.theme
                         , Keyed.column
                             [ width fill
                             , height shrink
@@ -905,8 +898,8 @@ viewTxns model blockchain user =
            )
 
 
-recentTransactions : Element Msg
-recentTransactions =
+recentTransactions : Theme -> Element Msg
+recentTransactions theme =
     row
         [ width fill
         , height shrink
@@ -916,9 +909,9 @@ recentTransactions =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.transparent300
+            , theme |> ThemeColor.textLight |> Font.color
             ]
-            (text "Recent transactions")
+            (text "Recent transactionss")
         , Input.button
             [ width shrink
             , height shrink
@@ -933,7 +926,7 @@ recentTransactions =
                     , paddingXY 0 3
                     , Font.color Color.warning400
                     ]
-                    (text "clear all")
+                    (text "Clear all")
             }
         ]
 
@@ -1064,10 +1057,10 @@ viewTxn { images } blockchain ( hash, txn ) =
 
 
 viewNotSupported :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> User.NotSupported
     -> Element Msg
-viewNotSupported ({ images } as model) notSupported =
+viewNotSupported ({ images, theme } as model) notSupported =
     column
         [ width fill
         , height shrink
@@ -1082,40 +1075,28 @@ viewNotSupported ({ images } as model) notSupported =
                 , height shrink
                 , centerY
                 , Font.size 18
+                , Font.bold
                 , paddingXY 0 3
-                , Font.color Color.light100
+                , theme |> ThemeColor.text |> Font.color
                 ]
                 (text "Not Supported")
-            , Input.button
-                [ width shrink
-                , height shrink
-                , alignRight
-                , centerY
-                ]
-                { onPress = Just Exit
-                , label =
-                    images
-                        |> Image.close
-                            [ width <| px 24
-                            , height <| px 24
-                            ]
-                }
+            , IconButton.exit model Exit
             ]
         , walletNotSupported model notSupported
         ]
 
 
 walletNotSupported :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> User.NotSupported
     -> Element Msg
-walletNotSupported { images } notSupported =
+walletNotSupported { images, theme } notSupported =
     row
         [ width fill
         , height <| px 54
         , paddingXY 18 0
         , spacing 8
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 8
         ]
         [ images
@@ -1133,7 +1114,7 @@ walletNotSupported { images } notSupported =
             , centerY
             , Font.size 16
             , paddingXY 0 4
-            , Font.color Color.primary500
+            , theme |> ThemeColor.primaryBtn |> Font.color
             ]
             (notSupported
                 |> User.toAddressNotSupported
@@ -1145,7 +1126,7 @@ walletNotSupported { images } notSupported =
             , height shrink
             , alignRight
             , centerY
-            , Font.color Color.primary500
+            , theme |> ThemeColor.primaryBtn |> Font.color
             , Font.size 14
             , paddingXY 0 3
             ]
