@@ -6,10 +6,11 @@ import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
 import Blockchain.User.Txns.TxnWrite as TxnWrite
 import Blockchain.User.WriteBorrow as WriteBorrow
-import Blockchain.User.WriteBurn as WriteBurn exposing (WriteBurn)
+import Blockchain.User.WriteBurn as WriteBurn
 import Blockchain.User.WriteCreate as WriteCreate
 import Blockchain.User.WriteLend as WriteLend
 import Blockchain.User.WriteLiquidity as WriteLiquidity
+import Blockchain.User.WritePay as WritePay
 import Blockchain.User.WriteWithdraw as WriteWithdraw
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events exposing (Visibility)
@@ -660,6 +661,29 @@ pageEffects blockchain effect model =
                 |> Navigation.pushUrl model.key
             )
 
+        Page.OpenPayTransaction pool set ->
+            blockchain
+                |> Blockchain.toUser
+                |> Maybe.map
+                    (\user ->
+                        Modal.initPayTransaction blockchain user pool set
+                    )
+                |> Maybe.map
+                    (\( newModal, cmd ) ->
+                        ( { model
+                            | modal =
+                                model.modal
+                                    |> Animator.go Animator.quickly
+                                        (Just newModal)
+                          }
+                        , cmd |> Cmd.map ModalMsg
+                        )
+                    )
+                |> Maybe.withDefault
+                    ( model
+                    , Cmd.none
+                    )
+
         Page.Approve erc20 ->
             blockchain
                 |> Blockchain.updateApprove erc20
@@ -944,6 +968,58 @@ modalEffects effect model =
                         { model | blockchain = Supported blockchain }
                     )
                     (Cmd.map BlockchainMsg)
+
+        Modal.Approve erc20 ->
+            case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.updateApprove erc20
+                        |> Tuple.mapBoth
+                            (\updated ->
+                                { model
+                                    | blockchain = Supported updated
+                                    , modal =
+                                        model.modal
+                                            |> Animator.go Animator.quickly
+                                                (TxnWrite.Approve erc20
+                                                    |> Modal.initConfirm
+                                                    |> Just
+                                                )
+                                }
+                            )
+                            (Cmd.map BlockchainMsg)
+
+                NotSupported _ ->
+                    ( model
+                    , Cmd.none
+                    )
+
+        Modal.Pay writePay ->
+            case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.updatePay model writePay
+                        |> Tuple.mapBoth
+                            (\updated ->
+                                { model
+                                    | blockchain = Supported updated
+                                    , modal =
+                                        model.modal
+                                            |> Animator.go Animator.quickly
+                                                (writePay
+                                                    |> WritePay.toPool
+                                                    |> TxnWrite.Pay
+                                                    |> Modal.initConfirm
+                                                    |> Just
+                                                )
+                                }
+                            )
+                            (Cmd.map BlockchainMsg)
+
+                NotSupported _ ->
+                    ( model
+                    , Cmd.none
+                    )
 
 
 animator : Animator Model

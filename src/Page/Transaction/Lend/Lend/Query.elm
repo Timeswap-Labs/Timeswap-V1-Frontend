@@ -60,7 +60,7 @@ type Answer
 
 
 type alias AnswerPercent =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetIn : Uint
@@ -71,7 +71,7 @@ type alias AnswerPercent =
 
 
 type alias AnswerBond =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetIn : Uint
@@ -82,7 +82,7 @@ type alias AnswerBond =
 
 
 type alias AnswerInsurance =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetIn : Uint

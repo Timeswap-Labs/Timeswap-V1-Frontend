@@ -18,6 +18,7 @@ module Blockchain.Main exposing
     , updateCreate
     , updateLend
     , updateLiquidity
+    , updatePay
     , updateWithdraw
     )
 
@@ -27,6 +28,7 @@ import Blockchain.User.WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate exposing (WriteCreate)
 import Blockchain.User.WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
+import Blockchain.User.WritePay exposing (WritePay)
 import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
 import Browser.Navigation as Navigation exposing (Key)
 import Data.Chain exposing (Chain)
@@ -289,6 +291,30 @@ updateWithdraw writeWithdraw (Blockchain ({ chain } as blockchain)) =
             (\user ->
                 user
                     |> User.updateWithdraw chain writeWithdraw
+                    |> Tuple.mapBoth
+                        (\updated ->
+                            { blockchain | user = Just updated }
+                                |> Blockchain
+                        )
+                        (Cmd.map UserMsg)
+            )
+        |> Maybe.withDefault
+            ( blockchain |> Blockchain
+            , Cmd.none
+            )
+
+
+updatePay :
+    { model | time : Posix, deadline : Deadline }
+    -> WritePay
+    -> Blockchain
+    -> ( Blockchain, Cmd Msg )
+updatePay model writePay (Blockchain ({ chain } as blockchain)) =
+    blockchain.user
+        |> Maybe.map
+            (\user ->
+                user
+                    |> User.updatePay model chain writePay
                     |> Tuple.mapBoth
                         (\updated ->
                             { blockchain | user = Just updated }

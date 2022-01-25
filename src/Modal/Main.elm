@@ -7,6 +7,7 @@ module Modal.Main exposing
     , initConnect
     , initInputMaturity
     , initMaturityList
+    , initPayTransaction
     , initSettings
     , initTokenList
     , receiveUser
@@ -15,9 +16,11 @@ module Modal.Main exposing
     , view
     )
 
-import Blockchain.Main exposing (Blockchain)
-import Blockchain.User.Main as User
+import Blockchain.Main as Blockchain exposing (Blockchain)
+import Blockchain.User.Main as User exposing (User)
+import Blockchain.User.TokenId exposing (TokenId)
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
+import Blockchain.User.WritePay exposing (WritePay)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
 import Data.Chains exposing (Chains)
@@ -47,8 +50,10 @@ import Modal.Confirm.Main as Confirm
 import Modal.Connect.Main as Connect
 import Modal.InputMaturity.Main as InputMaturity
 import Modal.MaturityList.Main as MaturityList
+import Modal.PayTransaction.Main as PayTransaction
 import Modal.Settings.Main as Settings
 import Modal.TokenList.Main as TokenList
+import Sort.Set exposing (Set)
 import Time exposing (Posix)
 
 
@@ -59,6 +64,7 @@ type Modal
     | TokenList TokenList.Modal
     | MaturityList MaturityList.Modal
     | InputMaturity InputMaturity.Modal
+    | PayTransaction PayTransaction.Modal
     | Confirm Confirm.Modal
 
 
@@ -69,6 +75,7 @@ type Msg
     | TokenListMsg TokenList.Msg
     | MaturityListMsg MaturityList.Msg
     | InputMaturityMsg InputMaturity.Msg
+    | PayTransactionMsg PayTransaction.Msg
     | ConfirmMsg Confirm.Msg
 
 
@@ -83,6 +90,8 @@ type Effect
     | InputPool Pool
     | ClearTxns
     | ChangeChain Chain
+    | Approve ERC20
+    | Pay WritePay
 
 
 initConnect : Support User.NotSupported Blockchain -> Modal
@@ -135,6 +144,19 @@ initInputMaturity pair =
 initChainList : Modal
 initChainList =
     ChainList
+
+
+initPayTransaction :
+    Blockchain
+    -> User
+    -> Pool
+    -> Set TokenId
+    -> ( Modal, Cmd Msg )
+initPayTransaction blockchain user pool set =
+    PayTransaction.init blockchain user pool set
+        |> Tuple.mapBoth
+            PayTransaction
+            (Cmd.map PayTransactionMsg)
 
 
 update :
@@ -206,6 +228,26 @@ update model msg modal =
                         )
                    )
 
+        ( PayTransactionMsg payTransactionMsg, PayTransaction payTransaction, Supported blockchain ) ->
+            blockchain
+                |> Blockchain.toUser
+                |> Maybe.map
+                    (\user ->
+                        payTransaction
+                            |> PayTransaction.update blockchain user payTransactionMsg
+                            |> (\( updated, cmd, maybeEffect ) ->
+                                    ( updated |> Maybe.map PayTransaction
+                                    , cmd |> Cmd.map PayTransactionMsg
+                                    , maybeEffect |> Maybe.map payTransactionEffect
+                                    )
+                               )
+                    )
+                |> Maybe.withDefault
+                    ( modal |> Just
+                    , Cmd.none
+                    , Nothing
+                    )
+
         ( ConfirmMsg confirmMsg, Confirm _, Supported _ ) ->
             Confirm.update confirmMsg
                 |> (\updated ->
@@ -270,6 +312,16 @@ maturityListEffect effect =
     case effect of
         MaturityList.InputPool pool ->
             InputPool pool
+
+
+payTransactionEffect : PayTransaction.Effect -> Effect
+payTransactionEffect effect =
+    case effect of
+        PayTransaction.Approve erc20 ->
+            Approve erc20
+
+        PayTransaction.Pay writePay ->
+            Pay writePay
 
 
 receiveUser : Modal -> Maybe Modal

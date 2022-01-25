@@ -975,7 +975,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenPercent answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.assetIn
@@ -1008,7 +1008,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenPercent answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.assetIn
@@ -1040,7 +1040,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenBond answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.assetIn
@@ -1085,7 +1085,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenInsurance answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.assetIn

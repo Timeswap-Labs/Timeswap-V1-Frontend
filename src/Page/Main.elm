@@ -14,6 +14,7 @@ module Page.Main exposing
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Claim as Claim
+import Blockchain.User.TokenId exposing (TokenId)
 import Blockchain.User.WriteBorrow exposing (WriteBorrow)
 import Blockchain.User.WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate exposing (WriteCreate)
@@ -52,6 +53,7 @@ import Element
         )
 import Page.PoolInfo exposing (PoolInfo)
 import Page.Position.Claim.Main as Claim
+import Page.Position.Due.Main as Due
 import Page.Position.Liq.Main as Liq
 import Page.Positions.Claims.Main as Claims
 import Page.Positions.Dues.Main as Dues
@@ -61,6 +63,7 @@ import Page.Transaction.Borrow.Main as Borrow
 import Page.Transaction.Lend.Main as Lend
 import Page.Transaction.Liquidity.Main as Liquidity
 import Page.Transaction.Price exposing (Price)
+import Sort.Set exposing (Set)
 import Time exposing (Posix)
 import Url exposing (Url)
 import Utility.Maybe as Maybe
@@ -75,6 +78,7 @@ type Page
     | BorrowPage
         { transaction : Borrow.Transaction
         , positions : Dues.Positions
+        , position : Maybe Due.Position
         }
     | LiquidityPage
         { transaction : Liquidity.Transaction
@@ -89,6 +93,7 @@ type Msg
     | ClaimMsg Claim.Msg
     | BorrowMsg Borrow.Msg
     | DuesMsg Dues.Msg
+    | DueMsg Due.Msg
     | LiquidityMsg Liquidity.Msg
     | LiqsMsg Liqs.Msg
     | LiqMsg Liq.Msg
@@ -101,6 +106,7 @@ type Effect
     | OpenSettings
     | OpenConnect
     | InputPool Pool
+    | OpenPayTransaction Pool (Set TokenId)
     | Approve ERC20
     | Lend WriteLend
     | Borrow WriteBorrow
@@ -211,6 +217,7 @@ construct ({ chains } as model) url maybePage =
                     (\transaction ->
                         { transaction = transaction
                         , positions = Dues.init
+                        , position = Nothing
                         }
                             |> BorrowPage
                     )
@@ -223,6 +230,7 @@ construct ({ chains } as model) url maybePage =
                     (\transaction ->
                         { transaction = transaction
                         , positions = Dues.init
+                        , position = Nothing
                         }
                             |> BorrowPage
                     )
@@ -235,6 +243,7 @@ construct ({ chains } as model) url maybePage =
                     (\transaction ->
                         { transaction = transaction
                         , positions = Dues.init
+                        , position = Nothing
                         }
                             |> BorrowPage
                     )
@@ -304,6 +313,7 @@ construct ({ chains } as model) url maybePage =
         ( Just (Route.Borrow _), NotSupported _, _ ) ->
             ( { transaction = Borrow.notSupported
               , positions = Dues.init
+              , position = Nothing
               }
                 |> BorrowPage
             , Cmd.none
@@ -415,25 +425,46 @@ update model blockchain msg page =
             borrowPage.positions
                 |> Dues.update duesMsg
                 |> (\( updated, maybeEffect ) ->
-                        -- maybeEffect
-                        --     |> Maybe.map (duesEffect model blockchain)
-                        --     |> Maybe.map
-                        --         (\( position, cmd ) ->
-                        --             ( { borrowPage
-                        --                 | positions = updated
-                        --                 -- , position = position
-                        --               }
-                        --                 |> BorrowPage
-                        --             , cmd
-                        --             , Nothing
-                        --             )
-                        --         )
-                        --     |> Maybe.withDefault
-                        ( borrowPage |> BorrowPage
-                        , Cmd.none
-                        , Nothing
-                        )
+                        maybeEffect
+                            |> Maybe.map duesEffect
+                            |> Maybe.map
+                                (\position ->
+                                    ( { borrowPage
+                                        | positions = updated
+                                        , position = position
+                                      }
+                                        |> BorrowPage
+                                    , Cmd.none
+                                    , Nothing
+                                    )
+                                )
+                            |> Maybe.withDefault
+                                ( borrowPage |> BorrowPage
+                                , Cmd.none
+                                , Nothing
+                                )
                    )
+
+        ( DueMsg dueMsg, BorrowPage borrowPage ) ->
+            Just
+                (\user position ->
+                    position
+                        |> Due.update user dueMsg
+                        |> (\( updated, maybeEffect ) ->
+                                ( { borrowPage | position = updated }
+                                    |> BorrowPage
+                                , Cmd.none
+                                , maybeEffect |> Maybe.map dueEffect
+                                )
+                           )
+                )
+                |> Maybe.apply (blockchain |> Blockchain.toUser)
+                |> Maybe.apply borrowPage.position
+                |> Maybe.withDefault
+                    ( page
+                    , Cmd.none
+                    , Nothing
+                    )
 
         ( LiquidityMsg liquidityMsg, LiquidityPage liquidityPage ) ->
             liquidityPage.transaction
@@ -577,19 +608,26 @@ borrowEffect effect =
             Borrow writeBorrow
 
 
+duesEffect :
+    Dues.Effect
+    -> Maybe Due.Position
+duesEffect effect =
+    case effect of
+        Dues.OpenDue pool ->
+            Due.init pool
+                |> Just
 
--- duesEffect :
---     { model | time : Posix }
---     -> Blockchain
---     -> Dues.Effect
---     -> ( Maybe Due.Position, Cmd Msg )
--- duesEffect model blockchain effect =
---     case effect of
---         Dues.OpenDue pool ->
---             -- Due.init model blockchain pool
---             --     |> Tuple.mapBoth
---             --         Just
---             --         (Cmd.map ClaimMsg)
+
+dueEffect :
+    Due.Effect
+    -> Effect
+dueEffect effect =
+    case effect of
+        Due.InputPool pool ->
+            InputPool pool
+
+        Due.OpenPayTransaction pool set ->
+            OpenPayTransaction pool set
 
 
 liquidityEffect :

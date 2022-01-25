@@ -33,6 +33,7 @@ port module Blockchain.User.Main exposing
     , updateCreate
     , updateLend
     , updateLiquidity
+    , updatePay
     , updateWithdraw
     )
 
@@ -53,6 +54,7 @@ import Blockchain.User.WriteBurn as WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate as WriteCreate exposing (WriteCreate)
 import Blockchain.User.WriteLend as WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity as WriteLiquidity exposing (WriteLiquidity)
+import Blockchain.User.WritePay as WritePay exposing (WritePay)
 import Blockchain.User.WriteWithdraw as WriteWithdraw exposing (WriteWithdraw)
 import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain)
@@ -126,14 +128,7 @@ init chains chain flag =
               , txns = flag.txns |> Txns.init
               }
                 |> User
-            , [ address
-                    |> Balances.encode chains chain
-                    |> balancesOf
-              , address
-                    |> Allowances.encode chains chain
-                    |> allowancesOf
-              ]
-                |> Cmd.batch
+            , Cmd.none
             )
                 |> Just
 
@@ -530,6 +525,34 @@ updateWithdraw chain writeWithdraw (User user) =
            )
 
 
+updatePay :
+    { model | time : Posix, deadline : Deadline }
+    -> Chain
+    -> WritePay
+    -> User
+    -> ( User, Cmd Msg )
+updatePay model chain writePay (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.Pay
+                (writePay |> WritePay.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ writePay
+                        |> WritePay.encode model user.address
+                        |> Write.encode id chain user.address
+                        |> pay
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                )
+           )
+
+
 updateBurn :
     Chain
     -> WriteBurn
@@ -642,6 +665,9 @@ port create : Value -> Cmd msg
 
 
 port withdraw : Value -> Cmd msg
+
+
+port pay : Value -> Cmd msg
 
 
 port receiveBalances : (Value -> msg) -> Sub msg

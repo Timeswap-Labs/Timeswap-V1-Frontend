@@ -23,7 +23,7 @@ import Page.Transaction.Liquidity.Add.Error as Error exposing (Error)
 
 
 type alias QueryAsset =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetIn : Uint
@@ -32,7 +32,7 @@ type alias QueryAsset =
 
 
 type alias QueryDebt =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , debtIn : Uint
@@ -41,7 +41,7 @@ type alias QueryDebt =
 
 
 type alias QueryCollateral =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , collateralIn : Uint
@@ -56,7 +56,7 @@ type Answer
 
 
 type alias AnswerAsset =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , assetIn : Uint
@@ -66,7 +66,7 @@ type alias AnswerAsset =
 
 
 type alias AnswerDebt =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , debtIn : Uint
@@ -76,7 +76,7 @@ type alias AnswerDebt =
 
 
 type alias AnswerCollateral =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , collateralIn : Uint
@@ -122,8 +122,8 @@ type alias ResultCollateral =
 
 
 givenAsset : QueryAsset -> Value
-givenAsset { chainId, pool, poolInfo, assetIn, slippage } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenAsset { chain, pool, poolInfo, assetIn, slippage } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "assetIn", assetIn |> Uint.encode )
@@ -133,8 +133,8 @@ givenAsset { chainId, pool, poolInfo, assetIn, slippage } =
 
 
 givenDebt : QueryDebt -> Value
-givenDebt { chainId, pool, poolInfo, debtIn, slippage } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenDebt { chain, pool, poolInfo, debtIn, slippage } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "debtIn", debtIn |> Uint.encode )
@@ -144,8 +144,8 @@ givenDebt { chainId, pool, poolInfo, debtIn, slippage } =
 
 
 givenCollateral : QueryCollateral -> Value
-givenCollateral { chainId, pool, poolInfo, collateralIn, slippage } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenCollateral { chain, pool, poolInfo, collateralIn, slippage } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "collateralIn", collateralIn |> Uint.encode )
@@ -169,7 +169,7 @@ decoder =
 decoderAnswerAsset : Decoder AnswerAsset
 decoderAnswerAsset =
     Decode.succeed AnswerAsset
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "assetIn" Uint.decoder
@@ -185,7 +185,7 @@ decoderAnswerAsset =
 decoderAnswerDebt : Decoder AnswerDebt
 decoderAnswerDebt =
     Decode.succeed AnswerDebt
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "debtIn" Uint.decoder
@@ -201,7 +201,7 @@ decoderAnswerDebt =
 decoderAnswerCollateral : Decoder AnswerCollateral
 decoderAnswerCollateral =
     Decode.succeed AnswerCollateral
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "collateralIn" Uint.decoder

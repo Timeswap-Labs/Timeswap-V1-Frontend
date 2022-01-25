@@ -833,7 +833,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenAsset answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.assetIn
@@ -864,7 +864,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenDebt answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.debtIn
@@ -895,7 +895,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok (Query.GivenCollateral answer) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (answer.poolInfo == poolInfo)
                             && (Just answer.collateralIn
@@ -1127,7 +1127,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                 )
             of
                 ( False, Just assetIn ) ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , assetIn = assetIn
@@ -1148,7 +1148,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                 )
             of
                 ( False, Just debtIn ) ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , debtIn = debtIn
@@ -1169,7 +1169,7 @@ constructQuery givenCmd { slippage } blockchain pool poolInfo transaction =
                 )
             of
                 ( False, Just collateralIn ) ->
-                    { chainId = blockchain |> Blockchain.toChain
+                    { chain = blockchain |> Blockchain.toChain
                     , pool = pool
                     , poolInfo = poolInfo
                     , collateralIn = collateralIn

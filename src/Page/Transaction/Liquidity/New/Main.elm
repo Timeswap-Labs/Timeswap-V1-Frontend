@@ -473,7 +473,7 @@ update blockchain pool priceFeed msg (Transaction transaction) =
             (case value |> Decode.decodeValue Query.decoder of
                 Ok answer ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == pool)
                             && (Just answer.assetIn
                                     == (transaction.assetIn
@@ -641,7 +641,7 @@ constructQueryNew givenCmd blockchain pool price transaction =
             )
         of
             ( Just assetIn, Just debtIn, Just collateralIn ) ->
-                { chainId = blockchain |> Blockchain.toChain
+                { chain = blockchain |> Blockchain.toChain
                 , pool = pool
                 , price = price
                 , assetIn = assetIn

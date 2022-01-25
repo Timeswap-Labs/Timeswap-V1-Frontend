@@ -73,7 +73,7 @@ type Msg
 
 type Effect
     = InputPool Pool
-    | OpenPay Pool (Set TokenId)
+    | OpenPayTransaction Pool (Set TokenId)
 
 
 init : Pool -> Position
@@ -104,7 +104,7 @@ update user msg (Position position) =
                 |> Just
             , position
                 |> getChecks user
-                |> OpenPay position.pool
+                |> OpenPayTransaction position.pool
                 |> Just
             )
 
