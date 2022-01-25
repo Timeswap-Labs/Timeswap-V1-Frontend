@@ -13,6 +13,8 @@ import { withdrawSigner } from "./withdraw";
 import { faucetSigner } from "./faucet";
 // import { pending } from "./pending";
 import { wallet } from "./wallet";
+import { BalancesOf, ReceiveUser, Ports } from "./declaration";
+import { getTokenList } from './chains';
 
 export declare let window: any;
 
@@ -60,15 +62,24 @@ export async function elmUser(): Promise<{
   return { gp, user: null };
 }
 
-export async function init(app: ElmApp<Ports>, gp: GlobalParams) {
+export async function init(app: ElmApp<Ports>, gp: GlobalParams, user: ReceiveUser | null) {
   const provider = await getProvider(gp);
   const network = await provider.getNetwork();
   gp.provider = provider;
 
   const whitelist = new WhiteList(rinkeby, gp.provider, network);
 
-  // pool(app, whitelist, gp);
+  if (user) {
+    const balancesOf: BalancesOf = {
+      chain: {chainId: network.chainId, name: network.name, etherscan: ""},
+      address: user.address,
+      tokens: getTokenList(network.chainId)
+    }
 
+    balancesInit(app, gp, balancesOf);
+  }
+
+  // pool(app, whitelist, gp);
   lend(app);
   // lendSigner(app, whitelist, gp);
 
@@ -289,7 +300,7 @@ function userInit(
   account: string
 ) {
   if (gp.network === "0x4") {
-    // balancesInit(app, whitelist, gp, account);
+    // balancesInit(app, gp, whitelist, account);
     // lendPositionsInit(app, whitelist, gp, account);
     // borrowPositionsInit(app, whitelist, gp, account);
     // pending(gp, account);

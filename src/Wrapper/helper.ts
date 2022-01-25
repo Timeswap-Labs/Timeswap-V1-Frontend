@@ -1,4 +1,4 @@
-import { ERC20Token, NativeToken, Pair, Pool, Uint16, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { ERC20Token, NativeToken, Pool, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Contract } from "@ethersproject/contracts";
 
 export function updateErc20Balance(

@@ -68,8 +68,6 @@ init chains flag =
                                 |> Blockchain
                             , [ cmd |> Cmd.map UserMsg
                               , Cmd.none
-
-                              -- |> Debug.log "cmdnun"
                               ]
                                 |> Cmd.batch
                             )

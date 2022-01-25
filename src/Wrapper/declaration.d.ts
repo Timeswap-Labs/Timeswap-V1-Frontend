@@ -14,9 +14,12 @@ declare interface Ports {
   disconnect: PortFromElm;
 
   sdkPoolsMsg: PortToElm<SdkPoolsMsg[]>;
-  sdkBalancesMsg: PortToElm<SdkBalancesMsg[]>;
-  sdkAllowancesMsg: PortToElm<SdkAllowancesMsg[]>;
   sdkPositionsMsg: PortToElm<SdkPositionsMsg[]>;
+
+  balancesOf: PortFromElm<BalancesOf>;
+  allowancesOf: PortFromElm<AllowancesOf>;
+  receiveBalances: PortToElm<ReceiveBalances>;
+  receiveAllowances: PortToElm<ReceiveAllowances>;
 
   queryLend: PortFromElm<LendQuery>;
   queryLendPerSecond: PortFromElm<LendQuery>;
@@ -52,6 +55,45 @@ declare interface Ports {
   cacheTxns: PortFromElm<ReceiveUser>;
 
   changeChain: PortFromElm<Chain>;
+}
+
+export interface NativeToken {
+  name: string;
+  symbol: string;
+  decimals: number;
+}
+
+export interface ERC20Token {
+  address: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+}
+
+export interface BalancesOf {
+  chain: Chain;
+  address: string;
+  tokens: (NativeToken | ERC20Token)[];
+}
+
+export interface ReceiveBalances {
+  chain: Chain;
+  address: string;
+  tokens: (NativeToken | ERC20Token)[];
+  balances: string[];
+}
+
+export interface AllowancesOf {
+  chain: Chain;
+  address: string;
+  erc20s: ERC20Token[];
+}
+
+export interface ReceiveAllowances {
+  chain: Chain;
+  address: string;
+  erc20s: ERC20Token[];
+  allowances: string[];
 }
 
 interface ReceiveUser {
@@ -98,18 +140,7 @@ interface Pool {
   maturity: number | string;
 }
 
-interface NativeToken {
-  name: string;
-  symbol: string;
-  decimals: number;
-}
 
-interface ERC20Token {
-  address: string;
-  name: string;
-  symbol: string;
-  decimals: number;
-}
 
 interface PoolInfo {
   x: Uint;

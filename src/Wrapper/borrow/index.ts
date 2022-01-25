@@ -1,5 +1,6 @@
 import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
 import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Ports } from "../declaration";
 import { GlobalParams } from "../global";
 import { getPool } from "../helper";
 import { WhiteList } from "../whitelist";
