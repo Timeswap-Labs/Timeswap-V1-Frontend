@@ -12,7 +12,6 @@ module Data.Token exposing
     , toSymbol
     )
 
-import Data.Address as Address exposing (Address)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Native as Native exposing (Native)
 import Data.TokenParam as TokenParam exposing (TokenParam)

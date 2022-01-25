@@ -56,7 +56,7 @@ import Blockchain.User.WriteLiquidity as WriteLiquidity exposing (WriteLiquidity
 import Blockchain.User.WriteWithdraw as WriteWithdraw exposing (WriteWithdraw)
 import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain)
-import Data.Chains as Chains exposing (Chains)
+import Data.Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.ERC20 exposing (ERC20)
 import Data.Hash exposing (Hash)
@@ -156,6 +156,85 @@ initNotSupported flag =
                 |> Just
 
         _ ->
+            Nothing
+
+
+receiveUserInit :
+    { model | chains : Chains }
+    -> Chain
+    -> Value
+    -> Maybe ( User, Cmd Msg )
+receiveUserInit ({ chains } as model) chain value =
+    case value |> Decode.decodeValue (decoder model chain) of
+        Ok (Just (User decodedUser)) ->
+            ( User decodedUser
+            , [ decodedUser.address
+                    |> Balances.encode chains chain
+                    |> balancesOf
+              , decodedUser.address
+                    |> Allowances.encode chains chain
+                    |> allowancesOf
+              ]
+                |> Cmd.batch
+              -- |> Debug.log "query for name"
+            )
+                |> Just
+
+        _ ->
+            Nothing
+
+
+receiveUser :
+    { model | chains : Chains }
+    -> Chain
+    -> Value
+    -> User
+    -> Maybe ( User, Cmd Msg )
+receiveUser ({ chains } as model) chain value user =
+    case value |> Decode.decodeValue (decoder model chain) of
+        Ok (Just (User decodedUser)) ->
+            if isSame user (User decodedUser) then
+                ( user
+                , Cmd.none
+                )
+                    |> Just
+
+            else
+                ( User decodedUser
+                , [ decodedUser.address
+                        |> Balances.encode chains chain
+                        |> balancesOf
+                  , decodedUser.address
+                        |> Allowances.encode chains chain
+                        |> allowancesOf
+                  ]
+                    |> Cmd.batch
+                  -- |> Debug.log "query for name"
+                )
+                    |> Just
+
+        Ok Nothing ->
+            Nothing
+
+        Err _ ->
+            ( user
+            , Cmd.none
+            )
+                |> Just
+
+
+receiveNotSupported :
+    Value
+    -> Maybe NotSupported
+receiveNotSupported value =
+    case
+        value
+            |> Decode.decodeValue decoderNotSupported
+    of
+        Ok decodedUser ->
+            Just decodedUser
+
+        Err _ ->
             Nothing
 
 
@@ -536,71 +615,6 @@ isSame : User -> User -> Bool
 isSame (User user1) (User user2) =
     (user1.address == user2.address)
         && (user1.wallet == user2.wallet)
-
-
-receiveUserInit :
-    { model | chains : Chains }
-    -> Chain
-    -> Value
-    -> Maybe ( User, Cmd Msg )
-receiveUserInit model chain value =
-    case value |> Decode.decodeValue (decoder model chain) of
-        Ok (Just decodedUser) ->
-            ( decodedUser
-            , Cmd.none
-              -- |> Debug.log "query for name"
-            )
-                |> Just
-
-        _ ->
-            Nothing
-
-
-receiveUser :
-    { model | chains : Chains }
-    -> Chain
-    -> Value
-    -> User
-    -> Maybe ( User, Cmd Msg )
-receiveUser model chain value user =
-    case value |> Decode.decodeValue (decoder model chain) of
-        Ok (Just decodedUser) ->
-            if isSame user decodedUser then
-                ( user
-                , Cmd.none
-                )
-                    |> Just
-
-            else
-                ( decodedUser
-                , Cmd.none
-                  -- |> Debug.log "query for name"
-                )
-                    |> Just
-
-        Ok Nothing ->
-            Nothing
-
-        Err _ ->
-            ( user
-            , Cmd.none
-            )
-                |> Just
-
-
-receiveNotSupported :
-    Value
-    -> Maybe NotSupported
-receiveNotSupported value =
-    case
-        value
-            |> Decode.decodeValue decoderNotSupported
-    of
-        Ok decodedUser ->
-            Just decodedUser
-
-        Err _ ->
-            Nothing
 
 
 port cacheTxns : Value -> Cmd msg

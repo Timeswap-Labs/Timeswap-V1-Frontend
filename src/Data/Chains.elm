@@ -20,16 +20,15 @@ module Data.Chains exposing
 
 import Data.Address exposing (Address)
 import Data.Chain as Chain exposing (Chain(..))
-import Data.ERC20 as ERC20 exposing (ERC20)
-import Data.ERC20s as ERC20s exposing (ERC20s)
+import Data.ERC20 exposing (ERC20)
+import Data.ERC20s as ERC20s
 import Data.Native as Native
-import Data.Token as Token exposing (Token)
+import Data.Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
 import Data.Tokens as Tokens exposing (Tokens)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Sort.Dict as Dict exposing (Dict)
-import Sort.Set as Set exposing (Set)
 
 
 type Chains
