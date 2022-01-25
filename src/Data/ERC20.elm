@@ -4,6 +4,7 @@ module Data.ERC20 exposing
     , compare
     , decoder
     , decoderSet
+    , dummy
     , encode
     , encodeAddress
     , fromString
@@ -39,6 +40,16 @@ type alias Flag =
     , symbol : String
     , decimals : Int
     }
+
+
+dummy : ERC20
+dummy =
+    { address = Address.dummy
+    , name = "Dummy Token"
+    , symbol = "DUMMY"
+    , decimals = 18
+    }
+        |> ERC20
 
 
 init : Flag -> Maybe ERC20

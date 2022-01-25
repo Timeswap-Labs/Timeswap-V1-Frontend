@@ -1,6 +1,7 @@
 module Data.Pair exposing
     ( Pair
     , decoder
+    , dummy
     , init
     , opposite
     , sorter
@@ -10,6 +11,7 @@ module Data.Pair exposing
     , toString
     )
 
+import Data.ERC20 as ERC20
 import Data.Token as Token exposing (Token)
 import Data.TokenParam as TokenParam
 import Json.Decode as Decode exposing (Decoder)
@@ -23,6 +25,14 @@ type Pair
         { asset : Token
         , collateral : Token
         }
+
+
+dummy : Pair
+dummy =
+    { asset = ERC20.dummy |> Token.ERC20
+    , collateral = ERC20.dummy |> Token.ERC20
+    }
+        |> Pair
 
 
 init : Token -> Token -> Maybe Pair

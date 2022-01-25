@@ -716,7 +716,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
         , height <| px 82
         , theme |> ThemeColor.positionBG |> Background.color
         , Border.rounded 8
-        , paddingXY 24 0
+        , paddingXY 24 16
         , spacing 48
         ]
         (return
@@ -800,7 +800,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                     , el
                         [ width <| px 1
                         , height fill
-                        , Background.color Color.transparent100
+                        , theme |> ThemeColor.textDisabled |> Background.color
                         ]
                         none
                     , column
@@ -955,7 +955,7 @@ viewClaim { images, theme } user { pool, return, tooltip } =
                 , el
                     [ width <| px 1
                     , height fill
-                    , Background.color Color.transparent100
+                    , theme |> ThemeColor.textDisabled |> Background.color
                     ]
                     none
                 , column

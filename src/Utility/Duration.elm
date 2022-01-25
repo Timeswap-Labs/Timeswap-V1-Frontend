@@ -54,7 +54,7 @@ viewMaturity param =
             , left = 0
             }
         , Border.dashed
-        , Border.color Color.transparent200
+        , param.theme |> ThemeColor.placeholder |> Border.color
         , Events.onMouseEnter
             (param.onMouseEnter param.tooltip)
         , Events.onMouseLeave param.onMouseLeave

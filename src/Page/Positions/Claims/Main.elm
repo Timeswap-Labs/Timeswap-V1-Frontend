@@ -25,6 +25,7 @@ import Element
         ( Element
         , alignRight
         , alignTop
+        , alpha
         , centerX
         , centerY
         , column
@@ -138,7 +139,7 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
             |> padding
          , Border.rounded 8
          , Border.width 1
-         , Border.color Color.transparent100
+         , theme |> ThemeColor.border |> Border.color
          , Id.is "positions"
          ]
             ++ Glass.background backdrop theme
@@ -244,13 +245,13 @@ viewClaims :
     -> Maybe Tooltip
     -> Claims
     -> Element Msg
-viewClaims ({ time } as model) tooltip claims =
+viewClaims ({ time, theme } as model) tooltip claims =
     column
         [ width fill
         , height shrink
         , spacing 20
         ]
-        [ title claims
+        [ title theme claims
         , Keyed.column
             [ width fill
             , height shrink
@@ -268,16 +269,17 @@ viewClaims ({ time } as model) tooltip claims =
         ]
 
 
-title : Claims -> Element msg
-title claims =
+title : Theme -> Claims -> Element msg
+title theme claims =
     el
         [ width shrink
         , height shrink
         , Font.size 16
+        , Font.bold
         , paddingXY 0 2
-        , Font.color Color.transparent500
+        , theme |> ThemeColor.text |> Font.color
         ]
-        ([ "Your Lend Positions"
+        ([ "Your Lend Positions "
          , "("
          , claims
             |> Dict.size
@@ -312,10 +314,10 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                 , height fill
                 , paddingXY 20 0
                 , spacing 12
-                , Background.color Color.dark500
+                , theme |> ThemeColor.positionBG |> Background.color
                 , Border.width 1
                 , Border.rounded 8
-                , Border.color Color.transparent100
+                , theme |> ThemeColor.border |> Border.color
                 ]
                 [ el
                     [ width shrink
@@ -344,13 +346,25 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                         , theme = theme
                         }
                     )
-                , el
+                , row
                     [ width shrink
                     , height shrink
                     , alignRight
                     , centerY
+                    , spacing 10
                     ]
-                    (Duration.viewMaturity
+                    [ images
+                        |> (case theme of
+                                Theme.Dark ->
+                                    Image.hourglassPrimary
+
+                                Theme.Light ->
+                                    Image.hourglassDark
+                           )
+                            [ width <| px 16
+                            , height <| px 16
+                            ]
+                    , Duration.viewMaturity
                         { onMouseEnter = OnMouseEnter
                         , onMouseLeave = OnMouseLeave
                         , tooltip = Tooltip.Maturity pool
@@ -361,11 +375,12 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                         , maturity = pool.maturity
                         , theme = theme
                         }
-                    )
+                    ]
                 , if pool.maturity |> Maturity.isActive time then
                     el
                         [ width shrink
                         , height <| px 24
+                        , paddingXY 10 2
                         , Background.color Color.positive100
                         , Border.rounded 999
                         ]
@@ -375,6 +390,7 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                             , centerX
                             , centerY
                             , Font.size 14
+                            , Font.bold
                             , Font.color Color.positive400
                             ]
                             (text "Active")
@@ -384,6 +400,7 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                     el
                         [ width shrink
                         , height <| px 24
+                        , paddingXY 10 2
                         , Background.color Color.negative100
                         , Border.rounded 999
                         ]
@@ -393,16 +410,24 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                             , centerX
                             , centerY
                             , Font.size 14
+                            , Font.bold
                             , Font.color Color.negative400
                             ]
                             (text "Matured")
                         )
                 , images
-                    |> Image.discloser
+                    |> (case theme of
+                            Theme.Dark ->
+                                Image.discloser
+
+                            Theme.Light ->
+                                Image.arrowDownDark
+                       )
                         [ width <| px 11
-                        , height <| px 7
+                        , height <| px 8
                         , alignRight
                         , centerY
+                        , alpha 0.6
                         , (pi / 2)
                             |> negate
                             |> rotate

@@ -244,6 +244,11 @@ discloser =
     view "Discloser"
 
 
+hourglass : List (Attribute msg) -> Images -> Element msg
+hourglass =
+    view "Hourglass"
+
+
 hourglassPrimary : List (Attribute msg) -> Images -> Element msg
 hourglassPrimary =
     view "HourglassPrimary"
@@ -307,11 +312,6 @@ arrowLeftDark =
 arrowDownDark : List (Attribute msg) -> Images -> Element msg
 arrowDownDark =
     view "ArrowDownDark"
-
-
-hourglass : List (Attribute msg) -> Images -> Element msg
-hourglass =
-    view "Hourglass"
 
 
 info : List (Attribute msg) -> Images -> Element msg

@@ -44,6 +44,7 @@ import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
+import Utility.ThemeColor as ThemeColor
 
 
 type Msg
@@ -129,7 +130,7 @@ view ({ backdrop, theme } as model) =
                  , centerY
                  , spacing 16
                  , Border.rounded 8
-                 , Border.color Color.transparent100
+                 , theme |> ThemeColor.border |> Border.color
                  , Border.width 1
                  ]
                     ++ Glass.background backdrop theme
@@ -144,8 +145,9 @@ view ({ backdrop, theme } as model) =
                         , height shrink
                         , centerY
                         , Font.size 18
+                        , Font.bold
                         , paddingXY 0 3
-                        , Font.color Color.light100
+                        , theme |> ThemeColor.text |> Font.color
                         ]
                         (text "Change Chain")
                     , IconButton.exit model Exit
@@ -164,6 +166,7 @@ chainRow :
         | images : Images
         , chains : Chains
         , blockchain : Support User.NotSupported Blockchain
+        , theme : Theme
     }
     -> Chain
     -> Element Msg
@@ -177,8 +180,8 @@ chainRow model chain =
                     , paddingXY 18 0
                     , spacing 8
                     , Font.size 16
-                    , Font.color Color.light100
-                    , Background.color Color.primary100
+                    , model.theme |> ThemeColor.text |> Font.color
+                    , model.theme |> ThemeColor.btnBackground |> Background.color
                     , Border.rounded 8
                     ]
                     [ model.images
@@ -210,8 +213,8 @@ chainRow model chain =
                             , height <| px 54
                             , paddingXY 18 0
                             , spacing 8
-                            , Background.color Color.primary100
-                            , mouseOver [ Background.color Color.primary200 ]
+                            , model.theme |> ThemeColor.btnBackground |> Background.color
+                            , mouseOver [ model.theme |> ThemeColor.btnHoverBG |> Background.color ]
                             , Border.rounded 8
                             ]
                             [ model.images
@@ -227,7 +230,7 @@ chainRow model chain =
                                 , centerY
                                 , Font.size 16
                                 , paddingXY 0 4
-                                , Font.color Color.light100
+                                , model.theme |> ThemeColor.text |> Font.color
                                 ]
                                 (chain
                                     |> Chain.toString
