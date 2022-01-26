@@ -4,12 +4,13 @@ import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Dues as Dues
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.TokenId as TokenId exposing (TokenId)
-import Blockchain.User.WritePay exposing (WritePay)
+import Blockchain.User.WritePay as WritePay exposing (WritePay)
 import Data.Chain exposing (Chain)
 import Data.ERC20 exposing (ERC20)
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
+import Data.Token as Token
 import Data.Uint as Uint exposing (Uint)
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
@@ -58,6 +59,8 @@ type Msg
     | ClickPay
     | ReceiveSum Value
     | ReceiveProportion Value
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
     | Exit
 
 
@@ -357,6 +360,164 @@ update blockchain user msg (Modal modal) =
                 _ ->
                     modal |> noCmdAndEffect
 
+        ( ClickApprove, _ ) ->
+            (case
+                ( modal.total
+                , modal.pool.pair
+                    |> Pair.toAsset
+                    |> Token.toERC20
+                )
+             of
+                ( Success total, Just erc20 ) ->
+                    if
+                        (user
+                            |> User.hasEnoughBalance
+                                (modal.pool.pair |> Pair.toAsset)
+                                total.assetIn
+                        )
+                            && (user
+                                    |> User.hasEnoughAllowance
+                                        erc20
+                                        total.assetIn
+                                    |> not
+                               )
+                    then
+                        ( modal
+                            |> Modal
+                            |> Just
+                        , Cmd.none
+                        , erc20
+                            |> Approve
+                            |> Just
+                        )
+                            |> Just
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (modal |> noCmdAndEffect)
+
+        ( ClickPay, Full set ) ->
+            (case modal.total of
+                Success total ->
+                    if
+                        (user
+                            |> User.hasEnoughBalance
+                                (modal.pool.pair |> Pair.toAsset)
+                                total.assetIn
+                        )
+                            && (modal.pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toERC20
+                                    |> Maybe.map
+                                        (\erc20 ->
+                                            user
+                                                |> User.hasEnoughAllowance
+                                                    erc20
+                                                    total.assetIn
+                                        )
+                                    |> Maybe.withDefault True
+                               )
+                    then
+                        ( modal
+                            |> Modal
+                            |> Just
+                        , Cmd.none
+                        , user
+                            |> User.getDues
+                            |> Remote.map (Dues.getMultiple modal.pool set)
+                            |> (Remote.map << Maybe.map << Dict.map)
+                                (\_ { debt } -> debt)
+                            |> (Remote.map << Maybe.andThen)
+                                (\assetsIn ->
+                                    { pool = modal.pool
+                                    , assetsIn = assetsIn
+                                    }
+                                        |> Pay
+                                        |> Just
+                                )
+                            |> Remote.withDefault Nothing
+                        )
+                            |> Just
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (modal |> noCmdAndEffect)
+
+        ( ClickPay, Custom dict ) ->
+            (case modal.total of
+                Success total ->
+                    if
+                        (user
+                            |> User.hasEnoughBalance
+                                (modal.pool.pair |> Pair.toAsset)
+                                total.assetIn
+                        )
+                            && (modal.pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toERC20
+                                    |> Maybe.map
+                                        (\erc20 ->
+                                            user
+                                                |> User.hasEnoughAllowance
+                                                    erc20
+                                                    total.assetIn
+                                        )
+                                    |> Maybe.withDefault True
+                               )
+                    then
+                        ( modal
+                            |> Modal
+                            |> Just
+                        , Cmd.none
+                        , dict
+                            |> Dict.foldr
+                                (\tokenId dueIn accumulator ->
+                                    accumulator
+                                        |> Maybe.andThen
+                                            (\accumulatedDict ->
+                                                case
+                                                    ( dueIn.assetIn
+                                                        |> Uint.fromAmount
+                                                            (modal.pool.pair |> Pair.toAsset)
+                                                    , dueIn.collateralOut
+                                                    )
+                                                of
+                                                    ( Just assetIn, Success _ ) ->
+                                                        accumulatedDict
+                                                            |> Dict.insert tokenId assetIn
+                                                            |> Just
+
+                                                    _ ->
+                                                        Nothing
+                                            )
+                                )
+                                (Dict.empty TokenId.sorter |> Just)
+                            |> Maybe.map
+                                (\assetsIn ->
+                                    { pool = modal.pool
+                                    , assetsIn = assetsIn
+                                    }
+                                        |> Pay
+                                )
+                        )
+                            |> Just
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (modal |> noCmdAndEffect)
+
         ( ReceiveSum value, Full set ) ->
             case value |> Decode.decodeValue Query.decoderSum of
                 Ok answer ->
@@ -558,8 +719,22 @@ update blockchain user msg (Modal modal) =
                 _ ->
                     modal |> noCmdAndEffect
 
+        ( OnMouseEnter tooltip, _ ) ->
+            { modal | tooltip = Just tooltip }
+                |> noCmdAndEffect
+
+        ( OnMouseLeave, _ ) ->
+            { modal | tooltip = Nothing }
+                |> noCmdAndEffect
+
+        ( Exit, _ ) ->
+            ( Nothing
+            , Cmd.none
+            , Nothing
+            )
+
         _ ->
-            ( Nothing, Cmd.none, Nothing ) |> Debug.log "remove"
+            modal |> noCmdAndEffect
 
 
 toRemote :
