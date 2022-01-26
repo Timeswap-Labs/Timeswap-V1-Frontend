@@ -702,7 +702,7 @@ tokenButton model blockchain modal token =
                 [ tokenSymbolAndName model modal token
                 , case blockchain |> Blockchain.toUser of
                     Just user ->
-                        tokenBalance user token modal
+                        tokenBalance user token modal model.theme
 
                     _ ->
                         none
@@ -862,8 +862,8 @@ tokenSymbolAndName { images, theme } (Modal { tooltip }) token =
         ]
 
 
-tokenBalance : User -> Token -> Modal -> Element Msg
-tokenBalance user token (Modal { tooltip }) =
+tokenBalance : User -> Token -> Modal -> Theme -> Element Msg
+tokenBalance user token (Modal { tooltip }) theme =
     let
         balances =
             user |> User.getBalance token
@@ -875,7 +875,16 @@ tokenBalance user token (Modal { tooltip }) =
                 , Font.regular
                 , Font.size 16
                 ]
-                (balance |> Uint.toString |> text)
+                (Truncate.viewAmount
+                    { onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Name token
+                    , opened = tooltip
+                    , token = token
+                    , amount = balance
+                    , theme = theme
+                    }
+                )
 
         Just (Loading timeline) ->
             el

@@ -1,5 +1,6 @@
 import { ERC20Token, NativeToken, Pool, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Contract } from "@ethersproject/contracts";
+import { BorrowQuery, LendQuery } from "./declaration";
 
 export function updateErc20Balance(
   contract: Contract,
@@ -34,7 +35,6 @@ export function getCustomTokens(chainId: string): ERC20Token[] {
 }
 
 export function getPool(query: LendQuery | BorrowQuery): Pool {
-  const fee = 196, protocolFee = 17;
   let asset, collateral;
 
   if ((query.pool.asset as ERC20Token).address) {
@@ -66,5 +66,5 @@ export function getPool(query: LendQuery | BorrowQuery): Pool {
     );
   }
 
-  return new Pool(asset, collateral, query.pool.maturity, fee, protocolFee);
+  return new Pool(asset, collateral, query.pool.maturity, query.poolInfo.fee, query.poolInfo.protocolFee);
 }

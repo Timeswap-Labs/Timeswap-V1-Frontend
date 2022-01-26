@@ -27,22 +27,10 @@ export const whitelistChains = {
     ],
     custom: [
       {
-        address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+        address: "0x339a7cce9e5a20833da4f195ad15174c8ba554ad",
         name: "USDC TEST TOKEN with a long name",
         symbol: "USDC",
         decimals: 18
-      },
-      {
-        address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
-        name: "USDT",
-        symbol: "USDT",
-        decimals: 18,
-      },
-      {
-        address: "0xdac17f958d2ee523a2206206994597c13d831ff9",
-        name: "DDDT",
-        symbol: "DDDT",
-        decimals: 18,
       }
     ]
   },
@@ -60,6 +48,22 @@ export const whitelistChains = {
       custom: getCustomTokens(String(0x3)),
     }
   ],
+}
+
+export function getChainData(chainId: number) {
+  let chain = null;
+
+  if (whitelistChains.default.chainId === chainId) {
+    chain = whitelistChains.default
+  } else {
+    whitelistChains.others.forEach(whitelistChain => {
+      if (whitelistChain.chainId === chainId) {
+        chain = whitelistChain;
+      }
+    });
+  }
+
+  return chain;
 }
 
 export function getTokenList(chainId: number): (NativeToken | ERC20Token)[] {

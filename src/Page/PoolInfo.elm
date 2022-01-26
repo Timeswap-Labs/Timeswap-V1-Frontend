@@ -18,6 +18,8 @@ type alias PoolInfo =
     , totalDebtCreated : Uint
     , assetSpot : Maybe Float
     , collateralSpot : Maybe Float
+    , fee : Int
+    , protocolFee : Int
     }
 
 
@@ -34,6 +36,8 @@ dummy =
     , totalDebtCreated = Uint.dummy
     , assetSpot = Nothing
     , collateralSpot = Nothing
+    , fee = 196
+    , protocolFee = 17
     }
 
 
@@ -51,6 +55,8 @@ decoder =
         |> Pipeline.required "totalDebtCreated" Uint.decoder
         |> Pipeline.required "assetSpot" (Decode.float |> Decode.nullable)
         |> Pipeline.required "collateralSpot" (Decode.float |> Decode.nullable)
+        |> Pipeline.required "fee" Decode.int
+        |> Pipeline.required "protocolFee" Decode.int
 
 
 encode : PoolInfo -> Value
@@ -85,6 +91,12 @@ encode poolInfo =
       , poolInfo.collateralSpot
             |> Maybe.map Encode.float
             |> Maybe.withDefault Encode.null
+      )
+    , ( "fee"
+      , poolInfo.fee |> Encode.int
+      )
+    , ( "protocolFee"
+      , poolInfo.protocolFee |> Encode.int
       )
     ]
         |> Encode.object

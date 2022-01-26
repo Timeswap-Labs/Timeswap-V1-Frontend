@@ -154,27 +154,9 @@ interface PoolInfo {
   totalDebtCreated: Uint;
   assetSpot: number | null;
   collateralSpot: number | null;
+  fee: number;
+  protocolFee: number
 }
-
-// interface SdkPoolsMsg {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetLiquidity: string;
-//   collateralLiquidity: string;
-//   apr: number;
-//   cf: string;
-// }
-
-// interface SdkBalancesMsg {
-//   token: string;
-//   balance: string;
-// }
-
-// interface SdkAllowancesMsg {
-//   erc20: string;
-//   allowance: string;
-// }
 
 // type SdkPositionsMsg =
 //   | SdkPositionsMsg1
@@ -302,23 +284,6 @@ type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
 //     | number;
 // }
 
-// interface LendGivenInsurance {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetIn: string;
-//   insuranceOut: string;
-//   result:
-//     | {
-//         percent: number;
-//         bondOut: string;
-//         minBond: string;
-//         apr: number;
-//         cf: string;
-//       }
-//     | number;
-// }
-
 
 // interface Borrow {
 //   asset: string;
@@ -335,19 +300,6 @@ type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
 //   deadline: number;
 // }
 
-// interface BorrowGivenPercentCalculate {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetOut: string;
-//   percent: number;
-//   debtIn: string;
-//   collateralIn: string;
-//   maxDebt?: string;
-//   maxCollateral?: string;
-//   apr: number;
-//   cf: string;
-// }
 
 // type BorrowCalculate =
 //   | BorrowGivenPercent

@@ -14,7 +14,7 @@ import { faucetSigner } from "./faucet";
 // import { pending } from "./pending";
 import { wallet } from "./wallet";
 import { BalancesOf, ReceiveUser, Ports } from "./declaration";
-import { getTokenList } from './chains';
+import { getChainData, getTokenList } from './chains';
 
 export declare let window: any;
 
@@ -68,10 +68,11 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams, user: ReceiveUs
   gp.provider = provider;
 
   const whitelist = new WhiteList(rinkeby, gp.provider, network);
+  const wlChain = getChainData(network.chainId);
 
-  if (user) {
+  if (user && wlChain) {
     const balancesOf: BalancesOf = {
-      chain: {chainId: network.chainId, name: network.name, etherscan: ""},
+      chain: {chainId: wlChain.chainId, name: wlChain.name, etherscan: wlChain.etherscan},
       address: user.address,
       tokens: getTokenList(network.chainId)
     }
