@@ -805,16 +805,25 @@ view model blockchain page =
                         ]
 
             BorrowPage borrowPage ->
-                [ borrowPage.transaction
-                    |> Borrow.view model blockchain
-                    |> map BorrowMsg
-                , blockchain
-                    |> Blockchain.toUser
-                    |> Maybe.map
-                        (\user -> Dues.view model user borrowPage.positions)
-                    |> (Maybe.map << map) DuesMsg
-                    |> Maybe.withDefault none
-                ]
+                Just
+                    (\position user ->
+                        Due.view model user position
+                            |> map DueMsg
+                            |> List.singleton
+                    )
+                    |> Maybe.apply borrowPage.position
+                    |> Maybe.apply (blockchain |> Blockchain.toUser)
+                    |> Maybe.withDefault
+                        [ borrowPage.transaction
+                            |> Borrow.view model blockchain
+                            |> map BorrowMsg
+                        , blockchain
+                            |> Blockchain.toUser
+                            |> Maybe.map
+                                (\user -> Dues.view model user borrowPage.positions)
+                            |> (Maybe.map << map) DuesMsg
+                            |> Maybe.withDefault none
+                        ]
 
             LiquidityPage liquidityPage ->
                 Just
