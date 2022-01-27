@@ -1165,6 +1165,7 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
             , el
                 [ alignRight
                 , paddingXY 3 1
+                , Border.rounded 4
                 , theme |> ThemeColor.border |> Background.color
                 ]
                 (Truncate.viewSymbol
@@ -1202,6 +1203,7 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
             , el
                 [ alignRight
                 , paddingXY 3 1
+                , Border.rounded 4
                 , theme |> ThemeColor.border |> Background.color
                 ]
                 (Truncate.viewSymbol
@@ -1278,6 +1280,7 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
             , el
                 [ alignRight
                 , paddingXY 3 1
+                , Border.rounded 4
                 , theme |> ThemeColor.border |> Background.color
                 ]
                 (Truncate.viewSymbol
@@ -1356,6 +1359,7 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
             , el
                 [ alignRight
                 , paddingXY 3 1
+                , Border.rounded 4
                 , theme |> ThemeColor.border |> Background.color
                 ]
                 (Truncate.viewSymbol
