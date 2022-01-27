@@ -2,6 +2,7 @@ module Data.Uint exposing
     ( Uint
     , decoder
     , dummy
+    , dummy2
     , encode
     , fromAmount
     , fromString
@@ -29,6 +30,11 @@ type Uint
 dummy : Uint
 dummy =
     "4000000000000000000000" |> Uint
+
+
+dummy2 : Uint
+dummy2 =
+    "4321000000000000000000" |> Uint
 
 
 decoder : Decoder Uint

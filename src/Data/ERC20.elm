@@ -5,6 +5,7 @@ module Data.ERC20 exposing
     , decoder
     , decoderSet
     , dummy
+    , dummy2
     , encode
     , encodeAddress
     , fromString
@@ -47,6 +48,16 @@ dummy =
     { address = Address.dummy
     , name = "Dummy Token"
     , symbol = "DUMMY"
+    , decimals = 18
+    }
+        |> ERC20
+
+
+dummy2 : ERC20
+dummy2 =
+    { address = Address.dummy
+    , name = "USDC Token"
+    , symbol = "USDC"
     , decimals = 18
     }
         |> ERC20

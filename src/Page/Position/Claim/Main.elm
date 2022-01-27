@@ -604,10 +604,10 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
           else
             lendMoreDisabled
         , if pool.maturity |> Maturity.isActive time then
-            lendDisabled theme
+            claimDisabled theme
 
           else
-            lendButton theme
+            claimButton theme
         ]
 
 
@@ -657,8 +657,8 @@ lendMoreDisabled =
         )
 
 
-lendButton : Theme -> Element Msg
-lendButton theme =
+claimButton : Theme -> Element Msg
+claimButton theme =
     Input.button
         [ width <| px 102
         , height <| px 44
@@ -680,8 +680,8 @@ lendButton theme =
         }
 
 
-lendDisabled : Theme -> Element msg
-lendDisabled theme =
+claimDisabled : Theme -> Element msg
+claimDisabled theme =
     el
         [ width <| px 102
         , height <| px 44

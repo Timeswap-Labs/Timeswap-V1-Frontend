@@ -3,6 +3,7 @@ module Page.Positions.Dues.Main exposing
     , Msg
     , Positions
     , init
+    , noDues
     , update
     , view
     )
@@ -144,20 +145,26 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
          ]
             ++ Glass.background backdrop theme
         )
-        (case user |> User.getDues of
-            Loading timeline ->
-                loading model timeline
+        -- (case user |> User.getDues of
+        --     Loading timeline ->
+        --         loading model timeline
+        --     Failure error ->
+        --         none
+        --     -- |> Debug.log "error view"
+        --     Success dues ->
+        --         if dues |> Dict.isEmpty then
+        --             noDues model
+        --         else
+        --             viewDues model tooltip dues
+        -- )
+        (User.getDuesDummy
+            |> (\dues ->
+                    if dues |> Dict.isEmpty then
+                        noDues model
 
-            Failure error ->
-                none
-
-            -- |> Debug.log "error view"
-            Success dues ->
-                if dues |> Dict.isEmpty then
-                    noDues model
-
-                else
-                    viewDues model tooltip dues
+                    else
+                        viewDues model tooltip dues
+               )
         )
 
 
@@ -259,13 +266,13 @@ viewDues :
     -> Maybe Tooltip
     -> Dues
     -> Element Msg
-viewDues ({ time } as model) tooltip dues =
+viewDues ({ time, theme } as model) tooltip dues =
     column
         [ width fill
         , height shrink
         , spacing 20
         ]
-        [ title dues
+        [ title theme dues
         , Keyed.column
             [ width fill
             , height shrink
@@ -283,16 +290,17 @@ viewDues ({ time } as model) tooltip dues =
         ]
 
 
-title : Dues -> Element msg
-title dues =
+title : Theme -> Dues -> Element msg
+title theme dues =
     el
         [ width shrink
         , height shrink
         , Font.size 16
+        , Font.bold
         , paddingXY 0 2
-        , Font.color Color.transparent500
+        , theme |> ThemeColor.text |> Font.color
         ]
-        ([ "Your Lend Positions"
+        ([ "Your Borrow Positions "
          , "("
          , dues
             |> Dict.size
@@ -381,6 +389,7 @@ viewDue { time, offset, chosenZone, theme, images } tooltip ( pool, due ) =
                     el
                         [ width shrink
                         , height <| px 24
+                        , paddingXY 10 2
                         , Background.color Color.positive100
                         , Border.rounded 999
                         ]
@@ -390,6 +399,7 @@ viewDue { time, offset, chosenZone, theme, images } tooltip ( pool, due ) =
                             , centerX
                             , centerY
                             , Font.size 14
+                            , Font.bold
                             , Font.color Color.positive400
                             ]
                             ([ due
@@ -406,6 +416,7 @@ viewDue { time, offset, chosenZone, theme, images } tooltip ( pool, due ) =
                     el
                         [ width shrink
                         , height <| px 24
+                        , paddingXY 10 2
                         , Background.color Color.negative100
                         , Border.rounded 999
                         ]
@@ -415,6 +426,7 @@ viewDue { time, offset, chosenZone, theme, images } tooltip ( pool, due ) =
                             , centerX
                             , centerY
                             , Font.size 14
+                            , Font.bold
                             , Font.color Color.negative400
                             ]
                             (text "Matured")

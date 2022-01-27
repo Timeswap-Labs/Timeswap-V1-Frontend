@@ -13,24 +13,28 @@ import Data.Backdrop exposing (Backdrop)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.Images exposing (Images)
+import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
+import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
+import Data.TokenParam as TokenParam
 import Data.Uint as Uint
 import Element
     exposing
         ( Element
         , alignRight
+        , centerX
         , centerY
         , column
         , el
         , fill
         , height
+        , none
         , padding
         , paddingXY
         , px
-        , rotate
         , row
         , shrink
         , spacing
@@ -51,6 +55,7 @@ import Utility.Duration as Duration
 import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.PairImage as PairImage
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
@@ -64,7 +69,7 @@ type Position
 
 type Msg
     = ClickBorrowMore
-    | ClickProcceed
+    | ClickProceed
     | ClickReturn
     | Check TokenId Bool
     | OnMouseEnter Tooltip
@@ -98,7 +103,7 @@ update user msg (Position position) =
                 |> Just
             )
 
-        ClickProcceed ->
+        ClickProceed ->
             ( position
                 |> Position
                 |> Just
@@ -197,7 +202,7 @@ view ({ device, backdrop, theme } as model) user (Position position) =
         ]
         [ returnButton model
         , column
-            ([ Region.description "lend positions"
+            ([ Region.description "Borrow positions"
              , (case device of
                     Desktop ->
                         758
@@ -223,7 +228,9 @@ view ({ device, backdrop, theme } as model) user (Position position) =
              ]
                 ++ Glass.background backdrop theme
             )
-            [ header model position ]
+            [ header model position
+            , viewDue model user position
+            ]
         ]
 
 
@@ -273,9 +280,9 @@ header :
         , theme : Theme
         , images : Images
     }
-    -> { position | pool : Pool, tooltip : Maybe Tooltip }
+    -> { position | pool : Pool, checks : Set TokenId, tooltip : Maybe Tooltip }
     -> Element Msg
-header { time, offset, chosenZone, theme, images } { pool, tooltip } =
+header { time, offset, chosenZone, theme, images } { pool, checks, tooltip } =
     row
         [ width fill
         , height shrink
@@ -326,4 +333,262 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
                 , theme = theme
                 }
             )
+        , if pool.maturity |> Maturity.isActive time then
+            borrowMoreButton theme
+
+          else
+            borrowMoreDisabled
+        , if (pool.maturity |> Maturity.isActive time) && (checks |> Set.isEmpty |> not) then
+            repayButton theme
+
+          else
+            repayDisabled theme
         ]
+
+
+borrowMoreButton : Theme -> Element Msg
+borrowMoreButton theme =
+    Input.button
+        [ width shrink
+        , height <| px 44
+        , paddingXY 12 5
+        , Border.rounded 4
+        , Border.width 1
+        , theme |> ThemeColor.btnHoverBG |> Border.color
+        ]
+        { onPress = Just ClickBorrowMore
+        , label =
+            el
+                [ width shrink
+                , height shrink
+                , centerX
+                , centerY
+                , Font.size 16
+                , Font.bold
+                , theme |> ThemeColor.text |> Font.color
+                ]
+                (text "Borrow More")
+        }
+
+
+borrowMoreDisabled : Element msg
+borrowMoreDisabled =
+    el
+        [ width shrink
+        , height <| px 44
+        , paddingXY 12 5
+        , Border.rounded 4
+        , Border.width 1
+        , Border.color Color.transparent200
+        ]
+        (el
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.size 16
+            , Font.color Color.transparent200
+            , Font.bold
+            ]
+            (text "Borrow More")
+        )
+
+
+repayButton : Theme -> Element Msg
+repayButton theme =
+    Input.button
+        [ width <| px 102
+        , height <| px 44
+        , Border.rounded 4
+        , theme |> ThemeColor.primaryBtn |> Background.color
+        ]
+        { onPress = Just ClickProceed
+        , label =
+            el
+                [ width shrink
+                , height shrink
+                , centerX
+                , centerY
+                , Font.size 16
+                , Font.color Color.light100
+                , Font.bold
+                ]
+                (text "Repay")
+        }
+
+
+repayDisabled : Theme -> Element msg
+repayDisabled theme =
+    el
+        [ width <| px 102
+        , height <| px 44
+        , Border.rounded 4
+        , theme |> ThemeColor.btnBackground |> Background.color
+        ]
+        (el
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.size 16
+            , Font.color Color.transparent300
+            , Font.bold
+            ]
+            (text "Repay")
+        )
+
+
+viewDue :
+    { model | images : Images, theme : Theme }
+    -> User
+    ->
+        { pool : Pool
+        , checks : Set TokenId
+        , tooltip : Maybe Tooltip
+        }
+    -> Element Msg
+viewDue { images, theme } user { pool, checks, tooltip } =
+    column
+        [ width fill
+        , spacing 12
+        ]
+        (User.getDuesDummy
+            |> Dict.get pool
+            |> Maybe.map
+                (\dict ->
+                    dict
+                        |> Dict.toList
+                        |> List.map
+                            (\( tokenId, dues ) ->
+                                row
+                                    [ width fill
+                                    , height <| px 82
+                                    , theme |> ThemeColor.positionBG |> Background.color
+                                    , Border.rounded 8
+                                    , paddingXY 24 16
+                                    , spacing 48
+                                    ]
+                                    [ Input.checkbox
+                                        [ width <| px 24
+                                        , height <| px 24
+                                        , Border.rounded 4
+                                        ]
+                                        { onChange = Check tokenId
+                                        , icon = Input.defaultCheckbox
+                                        , checked = tokenId |> Set.memberOf checks
+                                        , label =
+                                            Input.labelHidden "Due checkbox"
+                                        }
+                                    , column
+                                        [ width shrink
+                                        , height shrink
+                                        , spacing 8
+                                        , centerY
+                                        ]
+                                        [ el
+                                            [ width shrink
+                                            , height shrink
+                                            , Font.size 14
+                                            , paddingXY 0 3
+                                            , theme |> ThemeColor.textLight |> Font.color
+                                            ]
+                                            (text "Asset to Repay")
+                                        , row
+                                            [ width shrink
+                                            , height <| px 24
+                                            , spacing 12
+                                            ]
+                                            [ row
+                                                [ width shrink
+                                                , height shrink
+                                                , spacing 6
+                                                ]
+                                                [ images
+                                                    |> Image.viewToken
+                                                        [ width <| px 24
+                                                        , height <| px 24
+                                                        , centerY
+                                                        ]
+                                                        (pool.pair |> Pair.toAsset)
+                                                , Truncate.viewSymbol
+                                                    { onMouseEnter = OnMouseEnter
+                                                    , onMouseLeave = OnMouseLeave
+                                                    , tooltip = Tooltip.Symbol tokenId TokenParam.Asset
+                                                    , opened = tooltip
+                                                    , token = pool.pair |> Pair.toAsset
+                                                    , theme = theme
+                                                    }
+                                                ]
+                                            , Truncate.viewAmount
+                                                { onMouseEnter = OnMouseEnter
+                                                , onMouseLeave = OnMouseLeave
+                                                , tooltip = Tooltip.Amount tokenId TokenParam.Asset
+                                                , opened = tooltip
+                                                , token = pool.pair |> Pair.toAsset
+                                                , amount = dues.debt
+                                                , theme = theme
+                                                }
+                                            ]
+                                        ]
+                                    , el
+                                        [ width <| px 1
+                                        , height fill
+                                        , theme |> ThemeColor.textDisabled |> Background.color
+                                        ]
+                                        none
+                                    , column
+                                        [ width shrink
+                                        , height shrink
+                                        , spacing 8
+                                        ]
+                                        [ el
+                                            [ width shrink
+                                            , height shrink
+                                            , Font.size 14
+                                            , paddingXY 0 3
+                                            , theme |> ThemeColor.textLight |> Font.color
+                                            ]
+                                            (text "Collateral to unlock")
+                                        , row
+                                            [ width shrink
+                                            , height <| px 24
+                                            , spacing 12
+                                            ]
+                                            [ row
+                                                [ width shrink
+                                                , height shrink
+                                                , spacing 6
+                                                ]
+                                                [ images
+                                                    |> Image.viewToken
+                                                        [ width <| px 24
+                                                        , height <| px 24
+                                                        , centerY
+                                                        ]
+                                                        (pool.pair |> Pair.toCollateral)
+                                                , Truncate.viewSymbol
+                                                    { onMouseEnter = OnMouseEnter
+                                                    , onMouseLeave = OnMouseLeave
+                                                    , tooltip = Tooltip.Symbol tokenId TokenParam.Collateral
+                                                    , opened = tooltip
+                                                    , token = pool.pair |> Pair.toCollateral
+                                                    , theme = theme
+                                                    }
+                                                ]
+                                            , Truncate.viewAmount
+                                                { onMouseEnter = OnMouseEnter
+                                                , onMouseLeave = OnMouseLeave
+                                                , tooltip = Tooltip.Amount tokenId TokenParam.Collateral
+                                                , opened = tooltip
+                                                , token = pool.pair |> Pair.toCollateral
+                                                , amount = dues.collateral
+                                                , theme = theme
+                                                }
+                                            ]
+                                        ]
+                                    ]
+                            )
+                )
+            |> Maybe.withDefault
+                [ none ]
+        )

@@ -7,6 +7,7 @@ port module Blockchain.User.Main exposing
     , getBalance
     , getClaims
     , getDues
+    , getDuesDummy
     , getLiqs
     , hasEnoughAllowance
     , hasEnoughBalance
@@ -41,7 +42,7 @@ import Blockchain.User.Allowances as Allowances exposing (Allowances)
 import Blockchain.User.Balances as Balances exposing (Balances)
 import Blockchain.User.Cache as Cache
 import Blockchain.User.Claims exposing (Claims)
-import Blockchain.User.Dues exposing (Dues)
+import Blockchain.User.Dues as Dues exposing (Dues)
 import Blockchain.User.Liqs exposing (Liqs)
 import Blockchain.User.Positions as Positions exposing (Positions)
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
@@ -777,6 +778,11 @@ getDues : User -> Web Dues
 getDues (User { positions }) =
     positions
         |> Remote.map .dues
+
+
+getDuesDummy : Dues
+getDuesDummy =
+    Dues.dummy
 
 
 getLiqs : User -> Web Liqs
