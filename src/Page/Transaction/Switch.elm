@@ -46,7 +46,7 @@ view param =
 
 
 disabled : { mode : Mode, theme : Theme } -> Element Never
-disabled ({ mode, theme } as model) =
+disabled ({ theme } as model) =
     row
         [ width fill
         , height <| px 44

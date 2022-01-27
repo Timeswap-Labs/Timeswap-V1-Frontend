@@ -354,6 +354,10 @@ subscriptions modal =
                 |> MaturityList.subscriptions
                 |> Sub.map MaturityListMsg
 
+        PayTransaction _ ->
+            PayTransaction.subscriptions
+                |> Sub.map PayTransactionMsg
+
         _ ->
             Sub.none
 
@@ -411,6 +415,15 @@ view model modal =
                 Supported _ ->
                     InputMaturity.view model inputMaturity
                         |> map InputMaturityMsg
+
+                _ ->
+                    none
+
+        PayTransaction payTransaction ->
+            case model.blockchain of
+                Supported blockchain ->
+                    PayTransaction.view model blockchain payTransaction
+                        |> map PayTransactionMsg
 
                 _ ->
                     none
