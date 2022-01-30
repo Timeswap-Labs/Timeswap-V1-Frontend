@@ -44,7 +44,7 @@ import Blockchain.User.Cache as Cache
 import Blockchain.User.Claims exposing (Claims)
 import Blockchain.User.Dues as Dues exposing (Dues)
 import Blockchain.User.Liqs exposing (Liqs)
-import Blockchain.User.Natives as Natives exposing (Natives)
+import Blockchain.User.Natives as Natives
 import Blockchain.User.Positions as Positions exposing (Positions)
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
 import Blockchain.User.Txns.Txn as Txn exposing (Txn)
@@ -107,7 +107,8 @@ type alias Flag =
 
 
 type Msg
-    = ReceiveBalances Value
+    = QueryNatives ()
+    | ReceiveBalances Value
     | ReceiveAllowances Value
     | ReceiveReceipt Value
     | ReceiveNatives Chain (Result Http.Error Natives.Answer)
@@ -133,7 +134,7 @@ init chains chain flag =
               , txns = flag.txns |> Txns.init
               }
                 |> User
-            , Cmd.none
+            , getNatives chain
             )
                 |> Just
 
@@ -174,9 +175,9 @@ receiveUserInit ({ chains } as model) chain value =
               , decodedUser.address
                     |> Allowances.encode chains chain
                     |> allowancesOf
+              , getNatives chain
               ]
                 |> Cmd.batch
-              -- |> Debug.log "query for name"
             )
                 |> Just
 
@@ -207,6 +208,7 @@ receiveUser ({ chains } as model) chain value user =
                   , decodedUser.address
                         |> Allowances.encode chains chain
                         |> allowancesOf
+                  , getNatives chain
                   ]
                     |> Cmd.batch
                   -- |> Debug.log "query for name"
@@ -241,6 +243,11 @@ receiveNotSupported value =
 update : Chain -> Msg -> User -> ( User, Cmd Msg )
 update chain msg (User user) =
     case msg of
+        QueryNatives () ->
+            ( user |> User
+            , getNatives chain
+            )
+
         ReceiveBalances value ->
             case value |> Decode.decodeValue Balances.decoder of
                 Ok decoded ->
@@ -281,9 +288,6 @@ update chain msg (User user) =
                 Err _ ->
                     user |> noCmd
 
-        -- ReceivePositions value ->
-        --     case value |> Decode.decodeValue Positions.decoder of
-        --         Ok decoded ->
         ReceiveReceipt value ->
             case value |> Decode.decodeValue Write.decoder of
                 Ok receipt ->
@@ -316,7 +320,8 @@ update chain msg (User user) =
                 [ natives
                     |> Natives.encode chain user.address
                     |> positionsOf
-                , Cmd.none |> Debug.log "query again natives"
+                , Process.sleep 300000
+                    |> Task.perform QueryNatives
                 ]
                     |> Cmd.batch
 
@@ -328,7 +333,8 @@ update chain msg (User user) =
             if decodedChain == chain then
                 ( { user | positions = Failure error }
                     |> User
-                , Cmd.none |> Debug.log "query again natives"
+                , Process.sleep 5000
+                    |> Task.perform QueryNatives
                 )
 
             else
