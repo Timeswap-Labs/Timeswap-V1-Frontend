@@ -79,9 +79,14 @@ import Utility.Truncate as Truncate
 type Position
     = Position
         { pool : Pool
-        , return : Maybe (Web ( PoolInfo, Remote Error Return ))
+        , state : State
         , tooltip : Maybe Tooltip
         }
+
+
+type State
+    = Active (Remote Error Return)
+    | Matured (Web ( PoolInfo, Remote Error Return ))
 
 
 type Msg
@@ -93,7 +98,8 @@ type Msg
     | PoolInfoQueryAgain
     | QueryAgain Posix
     | ReceivePoolInfo Chain Pool (Result Http.Error PoolInfoAnswer.Answer)
-    | ReceiveAnswer Value
+    | ReceiveSum Value
+    | ReceiveReturn Value
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
@@ -106,19 +112,22 @@ type Effect
 init :
     { model | time : Posix }
     -> Blockchain
+    -> User
     -> Pool
     -> ( Position, Cmd Msg )
-init { time } blockchain pool =
+init { time } blockchain user pool =
     ( { pool = pool
-      , return =
+      , state =
             if
                 pool.maturity
                     |> Maturity.isActive time
             then
-                Nothing
+                Remote.loading
+                    |> Active
 
             else
-                Just Remote.loading
+                Remote.loading
+                    |> Matured
       , tooltip = Nothing
       }
         |> Position
@@ -126,7 +135,16 @@ init { time } blockchain pool =
         pool.maturity
             |> Maturity.isActive time
       then
-        Cmd.none
+        user
+            |> User.getClaims
+            |> Remote.map (Dict.get pool)
+            |> (Remote.map << Maybe.map)
+                (\claims ->
+                    { pool = pool }
+                        |> queryActive blockchain claims
+                )
+            |> (Remote.map << Maybe.withDefault) Cmd.none
+            |> Remote.withDefault Cmd.none
 
       else
         get blockchain pool
@@ -134,135 +152,131 @@ init { time } blockchain pool =
 
 
 update :
-    { model | time : Posix }
-    -> Blockchain
+    Blockchain
     -> User
     -> Msg
     -> Position
     -> ( Maybe Position, Cmd Msg, Maybe Effect )
-update { time } blockchain user msg (Position position) =
-    case msg of
-        ClickLendMore ->
+update blockchain user msg (Position position) =
+    case ( msg, position.state ) of
+        ( ClickLendMore, Active _ ) ->
             ( Nothing
             , Cmd.none
             , InputPool position.pool |> Just
             )
 
-        ClickClaim ->
+        ( ClickClaim, Matured _ ) ->
             ( Position position |> Just
             , Cmd.none
-            , if
-                position.pool.maturity
-                    |> Maturity.isActive time
-              then
-                Nothing
-
-              else
-                user
-                    |> User.getClaims
-                    |> Remote.map (Dict.get position.pool)
-                    |> (Remote.map << Maybe.andThen)
-                        (\claimsIn ->
-                            { pool = position.pool
-                            , claimsIn = claimsIn
-                            }
-                                |> Withdraw
-                                |> Just
-                        )
-                    |> Remote.withDefault Nothing
+            , user
+                |> User.getClaims
+                |> Remote.map (Dict.get position.pool)
+                |> (Remote.map << Maybe.andThen)
+                    (\claimsIn ->
+                        { pool = position.pool
+                        , claimsIn = claimsIn
+                        }
+                            |> Withdraw
+                            |> Just
+                    )
+                |> Remote.withDefault Nothing
             )
 
-        ClickReturn ->
+        ( ClickReturn, _ ) ->
             ( Nothing
             , Cmd.none
             , Nothing
             )
 
-        CheckMaturity posix ->
-            case
-                ( position.pool.maturity
+        ( CheckMaturity posix, Active _ ) ->
+            if
+                position.pool.maturity
                     |> Maturity.isActive posix
-                , position.return
+            then
+                position |> noCmdAndEffect
+
+            else
+                ( { position
+                    | state =
+                        Remote.loading
+                            |> Matured
+                  }
+                    |> Position
+                    |> Just
+                , get blockchain position.pool
+                , Nothing
                 )
-            of
-                ( False, Nothing ) ->
-                    ( { position
-                        | return = Just Remote.loading
-                      }
-                        |> Position
-                        |> Just
-                    , get blockchain position.pool
-                    , Nothing
+
+        ( Tick posix, Active remote ) ->
+            { position
+                | state =
+                    remote
+                        |> Remote.update posix
+                        |> Active
+            }
+                |> noCmdAndEffect
+
+        ( Tick posix, Matured (Success ( poolInfo, remote )) ) ->
+            { position
+                | state =
+                    ( poolInfo
+                    , remote |> Remote.update posix
                     )
+                        |> Success
+                        |> Matured
+            }
+                |> noCmdAndEffect
 
-                _ ->
-                    ( position
-                        |> Position
-                        |> Just
-                    , Cmd.none
-                    , Nothing
-                    )
+        ( Tick posix, Matured remote ) ->
+            { position
+                | state =
+                    remote
+                        |> Remote.update posix
+                        |> Matured
+            }
+                |> noCmdAndEffect
 
-        Tick posix ->
-            ( { position
-                | return =
-                    case position.return of
-                        Just (Success ( poolInfo, remote )) ->
-                            ( poolInfo
-                            , remote |> Remote.update posix
-                            )
-                                |> Success
-                                |> Just
-
-                        Just remote ->
-                            remote
-                                |> Remote.update posix
-                                |> Just
-
-                        _ ->
-                            position.return
-              }
-                |> Position
-                |> Just
-            , Cmd.none
-            , Nothing
-            )
-
-        PoolInfoQueryAgain ->
+        ( PoolInfoQueryAgain, Matured _ ) ->
             ( position
                 |> Position
                 |> Just
-            , case position.return of
-                Just _ ->
-                    get blockchain position.pool
-
-                _ ->
-                    Cmd.none
+            , get blockchain position.pool
             , Nothing
             )
 
-        QueryAgain _ ->
+        ( QueryAgain _, Active _ ) ->
             ( position
                 |> Position
                 |> Just
-            , case position.return of
-                Just (Success ( poolInfo, _ )) ->
-                    user
-                        |> User.getClaims
-                        |> Remote.map (Dict.get position.pool)
-                        |> (Remote.map << Maybe.map)
-                            (\claimsIn ->
-                                query blockchain poolInfo claimsIn position
-                            )
-                        |> (Remote.map << Maybe.withDefault) Cmd.none
-                        |> Remote.withDefault Cmd.none
-
-                _ ->
-                    Cmd.none
+            , user
+                |> User.getClaims
+                |> Remote.map (Dict.get position.pool)
+                |> (Remote.map << Maybe.map)
+                    (\claims ->
+                        queryActive blockchain claims position
+                    )
+                |> (Remote.map << Maybe.withDefault) Cmd.none
+                |> Remote.withDefault Cmd.none
             , Nothing
             )
 
-        ReceivePoolInfo chain pool result ->
+        ( QueryAgain _, Matured (Success ( poolInfo, _ )) ) ->
+            ( position
+                |> Position
+                |> Just
+            , user
+                |> User.getClaims
+                |> Remote.map (Dict.get position.pool)
+                |> (Remote.map << Maybe.map)
+                    (\claimsIn ->
+                        queryMatured blockchain poolInfo claimsIn position
+                    )
+                |> (Remote.map << Maybe.withDefault) Cmd.none
+                |> Remote.withDefault Cmd.none
+            , Nothing
+            )
+
+        ( ReceivePoolInfo chain pool result, Matured remote ) ->
             if
                 (chain == (blockchain |> Blockchain.toChain))
                     && (pool == position.pool)
@@ -270,13 +284,15 @@ update { time } blockchain user msg (Position position) =
                 case result of
                     Ok (Right poolInfo) ->
                         ( { position
-                            | return =
-                                case position.return of
-                                    Just (Success ( _, return )) ->
-                                        Just (Success ( poolInfo, return ))
+                            | state =
+                                (case remote of
+                                    Success ( _, return ) ->
+                                        Success ( poolInfo, return )
 
                                     _ ->
-                                        Just (Success ( poolInfo, Remote.loading ))
+                                        Success ( poolInfo, Remote.loading )
+                                )
+                                    |> Matured
                           }
                             |> Position
                             |> Just
@@ -289,7 +305,6 @@ update { time } blockchain user msg (Position position) =
                         ( position
                             |> Position
                             |> Just
-                          -- |> Debug.log "fix"
                         , Process.sleep 5000
                             |> Task.perform (\_ -> PoolInfoQueryAgain)
                         , Nothing
@@ -297,10 +312,10 @@ update { time } blockchain user msg (Position position) =
 
                     Err error ->
                         ( { position
-                            | return =
+                            | state =
                                 error
                                     |> Failure
-                                    |> Just
+                                    |> Matured
                           }
                             |> Position
                             |> Just
@@ -318,61 +333,83 @@ update { time } blockchain user msg (Position position) =
                 , Nothing
                 )
 
-        ReceiveAnswer value ->
-            case
-                ( value |> Decode.decodeValue Query.decoder
-                , position.return
-                )
-            of
-                ( Ok answer, Just (Success ( poolInfo, _ )) ) ->
+        ( ReceiveSum value, Active _ ) ->
+            (case value |> Decode.decodeValue Query.decoderSum of
+                Ok answer ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == position.pool)
-                            && (answer.poolInfo == poolInfo)
+                            && (user
+                                    |> User.getClaims
+                                    |> Remote.map (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map)
+                                        (\claims ->
+                                            answer.claims == claims
+                                        )
+                                    |> (Remote.map << Maybe.withDefault) False
+                                    |> Remote.withDefault False
+                               )
                     then
-                        ( { position
-                            | return =
-                                ( poolInfo, answer.result |> toRemote )
-                                    |> Success
-                                    |> Just
-                          }
-                            |> Position
-                            |> Just
-                        , Cmd.none
-                        , Nothing
-                        )
+                        { position
+                            | state =
+                                answer.result
+                                    |> toRemote
+                                    |> Active
+                        }
 
                     else
-                        ( position
-                            |> Position
-                            |> Just
-                        , Cmd.none
-                        , Nothing
-                        )
+                        position
 
                 _ ->
-                    ( position
-                        |> Position
-                        |> Just
-                    , Cmd.none
-                    , Nothing
-                    )
-
-        OnMouseEnter tooltip ->
-            ( { position | tooltip = Just tooltip }
-                |> Position
-                |> Just
-            , Cmd.none
-            , Nothing
+                    position
             )
+                |> noCmdAndEffect
 
-        OnMouseLeave ->
-            ( { position | tooltip = Nothing }
-                |> Position
-                |> Just
-            , Cmd.none
-            , Nothing
+        ( ReceiveReturn value, Matured (Success ( poolInfo, _ )) ) ->
+            (case value |> Decode.decodeValue Query.decoderReturn of
+                Ok answer ->
+                    if
+                        (answer.chain == (blockchain |> Blockchain.toChain))
+                            && (answer.pool == position.pool)
+                            && (answer.poolInfo == poolInfo)
+                            && (user
+                                    |> User.getClaims
+                                    |> Remote.map (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map)
+                                        (\claimsIn ->
+                                            answer.claimsIn == claimsIn
+                                        )
+                                    |> (Remote.map << Maybe.withDefault) False
+                                    |> Remote.withDefault False
+                               )
+                    then
+                        { position
+                            | state =
+                                ( poolInfo
+                                , answer.result |> toRemote
+                                )
+                                    |> Success
+                                    |> Matured
+                        }
+
+                    else
+                        position
+
+                _ ->
+                    position
             )
+                |> noCmdAndEffect
+
+        ( OnMouseEnter tooltip, _ ) ->
+            { position | tooltip = Just tooltip }
+                |> noCmdAndEffect
+
+        ( OnMouseLeave, _ ) ->
+            { position | tooltip = Nothing }
+                |> noCmdAndEffect
+
+        _ ->
+            position |> noCmdAndEffect
 
 
 toRemote :
@@ -385,6 +422,21 @@ toRemote result =
 
         Err error ->
             Failure error
+
+
+noCmdAndEffect :
+    { pool : Pool
+    , state : State
+    , tooltip : Maybe Tooltip
+    }
+    -> ( Maybe Position, Cmd Msg, Maybe Effect )
+noCmdAndEffect position =
+    ( position
+        |> Position
+        |> Just
+    , Cmd.none
+    , Nothing
+    )
 
 
 get :
@@ -407,7 +459,24 @@ get blockchain pool =
            )
 
 
-query :
+queryActive :
+    Blockchain
+    -> Claim
+    ->
+        { position
+            | pool : Pool
+        }
+    -> Cmd Msg
+queryActive blockchain claim { pool } =
+    { chain = blockchain |> Blockchain.toChain
+    , pool = pool
+    , claims = claim
+    }
+        |> Query.givenSum
+        |> querySum
+
+
+queryMatured :
     Blockchain
     -> PoolInfo
     -> Claim
@@ -416,30 +485,47 @@ query :
             | pool : Pool
         }
     -> Cmd Msg
-query blockchain poolInfo claim { pool } =
-    { chainId = blockchain |> Blockchain.toChain
+queryMatured blockchain poolInfo claim { pool } =
+    { chain = blockchain |> Blockchain.toChain
     , pool = pool
     , poolInfo = poolInfo
     , claimsIn = claim
     }
-        |> Query.givenClaim
+        |> Query.givenReturn
         |> queryClaim
+
+
+port querySum : Value -> Cmd msg
 
 
 port queryClaim : Value -> Cmd msg
 
 
+port receiveSum : (Value -> msg) -> Sub msg
+
+
+port receiveReturn : (Value -> msg) -> Sub msg
+
+
 subscriptions : Position -> Sub Msg
-subscriptions (Position { return }) =
-    [ return
-        |> (Maybe.map << Remote.map) Tuple.second
-        |> (Maybe.map << Remote.map) (Remote.subscriptions Tick)
-        |> (Maybe.map << Remote.withDefault)
-            (return
-                |> Maybe.map (Remote.subscriptions Tick)
-                |> Maybe.withDefault Sub.none
-            )
-        |> Maybe.withDefault Sub.none
+subscriptions (Position { state }) =
+    [ case state of
+        Active remote ->
+            remote |> Remote.subscriptions Tick
+
+        Matured (Success ( _, remote )) ->
+            remote |> Remote.subscriptions Tick
+
+        Matured remote ->
+            remote |> Remote.subscriptions Tick
+    , receiveSum ReceiveSum
+    , receiveReturn ReceiveReturn
+    , case state of
+        Active _ ->
+            Time.every 1000 CheckMaturity
+
+        _ ->
+            Sub.none
     , Time.every 1000 QueryAgain
     ]
         |> Sub.batch
@@ -455,10 +541,9 @@ view :
         , theme : Theme
         , images : Images
     }
-    -> User
     -> Position
     -> Element Msg
-view ({ device, backdrop, theme } as model) user (Position position) =
+view ({ device, backdrop, theme } as model) (Position position) =
     column
         [ width shrink
         , height shrink
@@ -493,7 +578,7 @@ view ({ device, backdrop, theme } as model) user (Position position) =
                 ++ Glass.background backdrop theme
             )
             [ header model position
-            , viewClaim model user position
+            , viewClaim model position
             ]
         ]
 
@@ -703,14 +788,13 @@ claimDisabled theme =
 
 viewClaim :
     { model | images : Images, theme : Theme }
-    -> User
     ->
         { pool : Pool
-        , return : Maybe (Web ( PoolInfo, Remote Error Return ))
+        , state : State
         , tooltip : Maybe Tooltip
         }
     -> Element Msg
-viewClaim { images, theme } user { pool, return, tooltip } =
+viewClaim ({ theme } as model) ({ state } as position) =
     row
         [ width fill
         , height <| px 82
@@ -719,316 +803,350 @@ viewClaim { images, theme } user { pool, return, tooltip } =
         , paddingXY 24 16
         , spacing 48
         ]
-        (return
-            |> Maybe.map
-                (\remote ->
-                    [ column
-                        [ width shrink
-                        , height shrink
-                        , spacing 8
-                        , centerY
-                        ]
-                        [ el
-                            [ width shrink
-                            , height shrink
-                            , Font.size 14
-                            , paddingXY 0 3
-                            , theme |> ThemeColor.textLight |> Font.color
-                            ]
-                            (text "Asset to Receive")
-                        , row
-                            [ width shrink
-                            , height <| px 24
-                            , spacing 12
-                            ]
-                            [ row
-                                [ width shrink
-                                , height shrink
-                                , spacing 6
-                                ]
-                                [ images
-                                    |> Image.viewToken
-                                        [ width <| px 24
-                                        , height <| px 24
-                                        , centerY
-                                        ]
-                                        (pool.pair |> Pair.toAsset)
-                                , Truncate.viewSymbol
-                                    { onMouseEnter = OnMouseEnter
-                                    , onMouseLeave = OnMouseLeave
-                                    , tooltip = Tooltip.Symbol TokenParam.Asset
-                                    , opened = tooltip
-                                    , token = pool.pair |> Pair.toAsset
-                                    , theme = theme
-                                    }
-                                ]
-                            , case remote of
-                                Loading timeline ->
-                                    el
-                                        [ width shrink
-                                        , height shrink
-                                        ]
-                                        (Loading.view timeline)
+        (case state of
+            Active remote ->
+                [ viewBond model position remote
+                , line model
+                , viewInsurance model position remote
+                ]
 
-                                Failure error ->
-                                    none
-
-                                -- |> Debug.log "show error"
-                                Success ( _, Loading timeline ) ->
-                                    el
-                                        [ width shrink
-                                        , height shrink
-                                        ]
-                                        (Loading.view timeline)
-
-                                Success ( _, Failure error ) ->
-                                    none
-
-                                -- |> Debug.log "show error"
-                                Success ( _, Success { asset } ) ->
-                                    Truncate.viewAmount
-                                        { onMouseEnter = OnMouseEnter
-                                        , onMouseLeave = OnMouseLeave
-                                        , tooltip = Tooltip.Amount TokenParam.Asset
-                                        , opened = tooltip
-                                        , token = pool.pair |> Pair.toAsset
-                                        , amount = asset
-                                        , theme = theme
-                                        }
-                            ]
-                        ]
-                    , el
-                        [ width <| px 1
-                        , height fill
-                        , theme |> ThemeColor.textDisabled |> Background.color
-                        ]
-                        none
-                    , column
-                        [ width shrink
-                        , height shrink
-                        , spacing 8
-                        ]
-                        [ el
-                            [ width shrink
-                            , height shrink
-                            , Font.size 14
-                            , paddingXY 0 3
-                            , theme |> ThemeColor.textLight |> Font.color
-                            ]
-                            (text "Collateral to Receive")
-                        , row
-                            [ width shrink
-                            , height <| px 24
-                            , spacing 12
-                            ]
-                            [ row
-                                [ width shrink
-                                , height shrink
-                                , spacing 6
-                                ]
-                                [ images
-                                    |> Image.viewToken
-                                        [ width <| px 24
-                                        , height <| px 24
-                                        , centerY
-                                        ]
-                                        (pool.pair |> Pair.toCollateral)
-                                , Truncate.viewSymbol
-                                    { onMouseEnter = OnMouseEnter
-                                    , onMouseLeave = OnMouseLeave
-                                    , tooltip = Tooltip.Symbol TokenParam.Collateral
-                                    , opened = tooltip
-                                    , token = pool.pair |> Pair.toCollateral
-                                    , theme = theme
-                                    }
-                                ]
-                            , case remote of
-                                Loading timeline ->
-                                    el
-                                        [ width shrink
-                                        , height shrink
-                                        ]
-                                        (Loading.view timeline)
-
-                                Failure error ->
-                                    none
-
-                                -- |> Debug.log "show error"
-                                Success ( _, Loading timeline ) ->
-                                    el
-                                        [ width shrink
-                                        , height shrink
-                                        ]
-                                        (Loading.view timeline)
-
-                                Success ( _, Failure error ) ->
-                                    none
-
-                                -- |> Debug.log "show error"
-                                Success ( _, Success { collateral } ) ->
-                                    Truncate.viewAmount
-                                        { onMouseEnter = OnMouseEnter
-                                        , onMouseLeave = OnMouseLeave
-                                        , tooltip = Tooltip.Amount TokenParam.Collateral
-                                        , opened = tooltip
-                                        , token = pool.pair |> Pair.toCollateral
-                                        , amount = collateral
-                                        , theme = theme
-                                        }
-                            ]
-                        ]
-                    ]
-                )
-            |> Maybe.withDefault
-                [ column
-                    [ width shrink
-                    , height shrink
-                    , spacing 8
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 14
-                        , paddingXY 0 3
-                        , theme |> ThemeColor.textLight |> Font.color
-                        ]
-                        (text "Amount to Receive")
-                    , row
-                        [ width shrink
-                        , height <| px 24
-                        , spacing 12
-                        ]
-                        [ row
-                            [ width shrink
-                            , height shrink
-                            , spacing 6
-                            ]
-                            [ images
-                                |> Image.viewToken
-                                    [ width <| px 24
-                                    , height <| px 24
-                                    , centerY
-                                    ]
-                                    (pool.pair |> Pair.toAsset)
-                            , Truncate.viewSymbol
-                                { onMouseEnter = OnMouseEnter
-                                , onMouseLeave = OnMouseLeave
-                                , tooltip = Tooltip.Symbol TokenParam.Asset
-                                , opened = tooltip
-                                , token = pool.pair |> Pair.toAsset
-                                , theme = theme
-                                }
-                            ]
-                        , user
-                            |> User.getClaims
-                            |> Remote.map (Dict.get pool)
-                            |> (\remote ->
-                                    case remote of
-                                        Loading timeline ->
-                                            el
-                                                [ width shrink
-                                                , height shrink
-                                                ]
-                                                (Loading.view timeline)
-
-                                        Failure error ->
-                                            none
-
-                                        -- |> Debug.log "show error"
-                                        Success (Just { bond }) ->
-                                            Truncate.viewAmount
-                                                { onMouseEnter = OnMouseEnter
-                                                , onMouseLeave = OnMouseLeave
-                                                , tooltip = Tooltip.Amount TokenParam.Asset
-                                                , opened = tooltip
-                                                , token = pool.pair |> Pair.toAsset
-                                                , amount = bond
-                                                , theme = theme
-                                                }
-
-                                        _ ->
-                                            none
-                                -- |> Debug.log "show error"
-                               )
-                        ]
-                    ]
-                , el
-                    [ width <| px 1
-                    , height fill
-                    , theme |> ThemeColor.textDisabled |> Background.color
-                    ]
-                    none
-                , column
-                    [ width shrink
-                    , height shrink
-                    , spacing 8
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , Font.size 14
-                        , paddingXY 0 3
-                        , theme |> ThemeColor.textLight |> Font.color
-                        ]
-                        (text "Amount Protecting")
-                    , row
-                        [ width shrink
-                        , height <| px 24
-                        , spacing 12
-                        ]
-                        [ row
-                            [ width shrink
-                            , height shrink
-                            , spacing 6
-                            ]
-                            [ images
-                                |> Image.viewToken
-                                    [ width <| px 24
-                                    , height <| px 24
-                                    , centerY
-                                    ]
-                                    (pool.pair |> Pair.toCollateral)
-                            , Truncate.viewSymbol
-                                { onMouseEnter = OnMouseEnter
-                                , onMouseLeave = OnMouseLeave
-                                , tooltip = Tooltip.Symbol TokenParam.Collateral
-                                , opened = tooltip
-                                , token = pool.pair |> Pair.toCollateral
-                                , theme = theme
-                                }
-                            ]
-                        , user
-                            |> User.getClaims
-                            |> Remote.map (Dict.get pool)
-                            |> (\remote ->
-                                    case remote of
-                                        Loading timeline ->
-                                            el
-                                                [ width shrink
-                                                , height shrink
-                                                ]
-                                                (Loading.view timeline)
-
-                                        Failure error ->
-                                            none
-
-                                        -- |> Debug.log "show error"
-                                        Success (Just { insurance }) ->
-                                            Truncate.viewAmount
-                                                { onMouseEnter = OnMouseEnter
-                                                , onMouseLeave = OnMouseLeave
-                                                , tooltip = Tooltip.Amount TokenParam.Collateral
-                                                , opened = tooltip
-                                                , token = pool.pair |> Pair.toCollateral
-                                                , amount = insurance
-                                                , theme = theme
-                                                }
-
-                                        _ ->
-                                            none
-                                -- |> Debug.log "show error"
-                               )
-                        ]
-                    ]
+            Matured remote ->
+                [ viewAssetReturn model position remote
+                , line model
+                , viewCollateralReturn model position remote
                 ]
         )
+
+
+viewBond :
+    { model | images : Images, theme : Theme }
+    ->
+        { position
+            | pool : Pool
+            , tooltip : Maybe Tooltip
+        }
+    -> Remote Error Return
+    -> Element Msg
+viewBond { images, theme } { pool, tooltip } remote =
+    column
+        [ width shrink
+        , height shrink
+        , spacing 8
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , paddingXY 0 3
+            , theme |> ThemeColor.textLight |> Font.color
+            ]
+            (text "Amount to Receive")
+        , row
+            [ width shrink
+            , height <| px 24
+            , spacing 12
+            ]
+            [ row
+                [ width shrink
+                , height shrink
+                , spacing 6
+                ]
+                [ images
+                    |> Image.viewToken
+                        [ width <| px 24
+                        , height <| px 24
+                        , centerY
+                        ]
+                        (pool.pair |> Pair.toAsset)
+                , Truncate.viewSymbol
+                    { onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Symbol TokenParam.Asset
+                    , opened = tooltip
+                    , token = pool.pair |> Pair.toAsset
+                    , theme = theme
+                    }
+                ]
+            , case remote of
+                Loading timeline ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        ]
+                        (Loading.view timeline)
+
+                Failure error ->
+                    none
+
+                -- |> Debug.log "show error"
+                Success { asset } ->
+                    Truncate.viewAmount
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.Amount TokenParam.Asset
+                        , opened = tooltip
+                        , token = pool.pair |> Pair.toAsset
+                        , amount = asset
+                        , theme = theme
+                        }
+            ]
+        ]
+
+
+viewInsurance :
+    { model | images : Images, theme : Theme }
+    ->
+        { position
+            | pool : Pool
+            , tooltip : Maybe Tooltip
+        }
+    -> Remote Error Return
+    -> Element Msg
+viewInsurance { images, theme } { pool, tooltip } remote =
+    column
+        [ width shrink
+        , height shrink
+        , spacing 8
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , paddingXY 0 3
+            , theme |> ThemeColor.textLight |> Font.color
+            ]
+            (text "Amount Protecting")
+        , row
+            [ width shrink
+            , height <| px 24
+            , spacing 12
+            ]
+            [ row
+                [ width shrink
+                , height shrink
+                , spacing 6
+                ]
+                [ images
+                    |> Image.viewToken
+                        [ width <| px 24
+                        , height <| px 24
+                        , centerY
+                        ]
+                        (pool.pair |> Pair.toCollateral)
+                , Truncate.viewSymbol
+                    { onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Symbol TokenParam.Collateral
+                    , opened = tooltip
+                    , token = pool.pair |> Pair.toCollateral
+                    , theme = theme
+                    }
+                ]
+            , case remote of
+                Loading timeline ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        ]
+                        (Loading.view timeline)
+
+                Failure error ->
+                    none
+
+                -- |> Debug.log "show error"
+                Success { collateral } ->
+                    Truncate.viewAmount
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.Amount TokenParam.Collateral
+                        , opened = tooltip
+                        , token = pool.pair |> Pair.toCollateral
+                        , amount = collateral
+                        , theme = theme
+                        }
+            ]
+        ]
+
+
+viewAssetReturn :
+    { model | images : Images, theme : Theme }
+    ->
+        { position
+            | pool : Pool
+            , tooltip : Maybe Tooltip
+        }
+    -> Web ( poolInfo, Remote Error Return )
+    -> Element Msg
+viewAssetReturn { images, theme } { pool, tooltip } remote =
+    column
+        [ width shrink
+        , height shrink
+        , spacing 8
+        , centerY
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , paddingXY 0 3
+            , theme |> ThemeColor.textLight |> Font.color
+            ]
+            (text "Asset to Receive")
+        , row
+            [ width shrink
+            , height <| px 24
+            , spacing 12
+            ]
+            [ row
+                [ width shrink
+                , height shrink
+                , spacing 6
+                ]
+                [ images
+                    |> Image.viewToken
+                        [ width <| px 24
+                        , height <| px 24
+                        , centerY
+                        ]
+                        (pool.pair |> Pair.toAsset)
+                , Truncate.viewSymbol
+                    { onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Symbol TokenParam.Asset
+                    , opened = tooltip
+                    , token = pool.pair |> Pair.toAsset
+                    , theme = theme
+                    }
+                ]
+            , case remote of
+                Loading timeline ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        ]
+                        (Loading.view timeline)
+
+                Failure error ->
+                    none
+
+                -- |> Debug.log "show error"
+                Success ( _, Loading timeline ) ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        ]
+                        (Loading.view timeline)
+
+                Success ( _, Failure error ) ->
+                    none
+
+                -- |> Debug.log "show error"
+                Success ( _, Success { asset } ) ->
+                    Truncate.viewAmount
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.Amount TokenParam.Asset
+                        , opened = tooltip
+                        , token = pool.pair |> Pair.toAsset
+                        , amount = asset
+                        , theme = theme
+                        }
+            ]
+        ]
+
+
+viewCollateralReturn :
+    { model | images : Images, theme : Theme }
+    ->
+        { position
+            | pool : Pool
+            , tooltip : Maybe Tooltip
+        }
+    -> Web ( poolInfo, Remote Error Return )
+    -> Element Msg
+viewCollateralReturn { images, theme } { pool, tooltip } remote =
+    column
+        [ width shrink
+        , height shrink
+        , spacing 8
+        , centerY
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , paddingXY 0 3
+            , theme |> ThemeColor.textLight |> Font.color
+            ]
+            (text "Collateral to Receive")
+        , row
+            [ width shrink
+            , height <| px 24
+            , spacing 12
+            ]
+            [ row
+                [ width shrink
+                , height shrink
+                , spacing 6
+                ]
+                [ images
+                    |> Image.viewToken
+                        [ width <| px 24
+                        , height <| px 24
+                        , centerY
+                        ]
+                        (pool.pair |> Pair.toAsset)
+                , Truncate.viewSymbol
+                    { onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Symbol TokenParam.Asset
+                    , opened = tooltip
+                    , token = pool.pair |> Pair.toAsset
+                    , theme = theme
+                    }
+                ]
+            , case remote of
+                Loading timeline ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        ]
+                        (Loading.view timeline)
+
+                Failure error ->
+                    none
+
+                -- |> Debug.log "show error"
+                Success ( _, Loading timeline ) ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        ]
+                        (Loading.view timeline)
+
+                Success ( _, Failure error ) ->
+                    none
+
+                -- |> Debug.log "show error"
+                Success ( _, Success { collateral } ) ->
+                    Truncate.viewAmount
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.Amount TokenParam.Collateral
+                        , opened = tooltip
+                        , token = pool.pair |> Pair.toCollateral
+                        , amount = collateral
+                        , theme = theme
+                        }
+            ]
+        ]
+
+
+line : { model | theme : Theme } -> Element msg
+line { theme } =
+    el
+        [ width <| px 1
+        , height fill
+        , theme |> ThemeColor.textDisabled |> Background.color
+        ]
+        none

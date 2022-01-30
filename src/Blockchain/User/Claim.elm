@@ -12,28 +12,36 @@ import Json.Encode as Encode exposing (Value)
 
 
 type alias Claim =
-    { bond : Uint
-    , insurance : Uint
+    { bondPrincipal : Uint
+    , bondInterest : Uint
+    , insurancePrincipal : Uint
+    , insuranceInterest : Uint
     }
 
 
 dummy : Claim
 dummy =
-    { bond = Uint.dummy
-    , insurance = Uint.dummy
+    { bondPrincipal = Uint.dummy
+    , bondInterest = Uint.dummy
+    , insurancePrincipal = Uint.dummy
+    , insuranceInterest = Uint.dummy
     }
 
 
 decoder : Decoder Claim
 decoder =
     Decode.succeed Claim
-        |> Pipeline.required "bond" Uint.decoder
-        |> Pipeline.required "insurance" Uint.decoder
+        |> Pipeline.required "bondPrincipal" Uint.decoder
+        |> Pipeline.required "bondInterest" Uint.decoder
+        |> Pipeline.required "insurancePrincipal" Uint.decoder
+        |> Pipeline.required "insuranceInterest" Uint.decoder
 
 
 encode : Claim -> Value
-encode { bond, insurance } =
-    [ ( "bond", bond |> Uint.encode )
-    , ( "insurance", insurance |> Uint.encode )
+encode { bondPrincipal, bondInterest, insurancePrincipal, insuranceInterest } =
+    [ ( "bondPrincipal", bondPrincipal |> Uint.encode )
+    , ( "bondInterest", bondInterest |> Uint.encode )
+    , ( "insurancePrincipal", insurancePrincipal |> Uint.encode )
+    , ( "insuranceInterest", insuranceInterest |> Uint.encode )
     ]
         |> Encode.object

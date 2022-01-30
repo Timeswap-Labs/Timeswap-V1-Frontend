@@ -166,13 +166,7 @@ construct ({ chains } as model) url maybePage =
                     (\transaction ->
                         { transaction = transaction
                         , positions = Claims.init
-                        , position =
-                            pool
-                                |> Claim.init model blockchain
-                                |> Tuple.first
-                                |> Just
-
-                        -- |> Debug.log "remove"
+                        , position = Nothing
                         }
                             |> LendPage
                     )
@@ -185,13 +179,7 @@ construct ({ chains } as model) url maybePage =
                     (\transaction ->
                         { transaction = transaction
                         , positions = Claims.init
-                        , position =
-                            pool
-                                |> Claim.init model blockchain
-                                |> Tuple.first
-                                |> Just
-
-                        -- |> Debug.log "remove"
+                        , position = Nothing
                         }
                             |> LendPage
                     )
@@ -389,7 +377,7 @@ update model blockchain msg page =
             Just
                 (\user position ->
                     position
-                        |> Claim.update model blockchain user claimMsg
+                        |> Claim.update blockchain user claimMsg
                         |> (\( updated, cmd, maybeEffect ) ->
                                 ( { lendPage | position = updated }
                                     |> LendPage
@@ -566,10 +554,19 @@ claimsEffect :
 claimsEffect model blockchain effect =
     case effect of
         Claims.OpenClaim pool ->
-            Claim.init model blockchain pool
-                |> Tuple.mapBoth
-                    Just
-                    (Cmd.map ClaimMsg)
+            blockchain
+                |> Blockchain.toUser
+                |> Maybe.map
+                    (\user ->
+                        Claim.init model blockchain user pool
+                            |> Tuple.mapBoth
+                                Just
+                                (Cmd.map ClaimMsg)
+                    )
+                |> Maybe.withDefault
+                    ( Nothing
+                    , Cmd.none
+                    )
 
 
 claimEffect :
@@ -784,14 +781,13 @@ view model blockchain page =
         ]
         (case page of
             LendPage lendPage ->
-                Just
-                    (\position user ->
-                        Claim.view model user position
-                            |> map ClaimMsg
-                            |> List.singleton
-                    )
-                    |> Maybe.apply lendPage.position
-                    |> Maybe.apply (blockchain |> Blockchain.toUser)
+                lendPage.position
+                    |> Maybe.map
+                        (\position ->
+                            Claim.view model position
+                                |> map ClaimMsg
+                                |> List.singleton
+                        )
                     |> Maybe.withDefault
                         [ lendPage.transaction
                             |> Lend.view model blockchain

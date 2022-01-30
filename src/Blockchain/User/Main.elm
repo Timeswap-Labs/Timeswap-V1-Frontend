@@ -44,6 +44,7 @@ import Blockchain.User.Cache as Cache
 import Blockchain.User.Claims exposing (Claims)
 import Blockchain.User.Dues as Dues exposing (Dues)
 import Blockchain.User.Liqs exposing (Liqs)
+import Blockchain.User.Natives as Natives exposing (Natives)
 import Blockchain.User.Positions as Positions exposing (Positions)
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
 import Blockchain.User.Txns.Txn as Txn exposing (Txn)
@@ -68,10 +69,13 @@ import Data.Token as Token exposing (Token)
 import Data.Uint exposing (Uint)
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Web exposing (Web)
+import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode exposing (Value)
+import Process
 import Sort.Dict as Dict
+import Task
 import Time exposing (Posix)
 
 
@@ -106,6 +110,8 @@ type Msg
     = ReceiveBalances Value
     | ReceiveAllowances Value
     | ReceiveReceipt Value
+    | ReceiveNatives Chain (Result Http.Error Natives.Answer)
+    | ReceivePositions Value
     | BalancesTick Posix
     | AllowancesTick Posix
 
@@ -123,9 +129,7 @@ init chains chain flag =
               , name = Nothing
               , balances = Balances.init chains chain
               , allowances = Allowances.init chains chain
-              , positions = Success Positions.dummy
-
-              --   |> Debug.log "replace"
+              , positions = Remote.loading
               , txns = flag.txns |> Txns.init
               }
                 |> User
@@ -277,6 +281,9 @@ update chain msg (User user) =
                 Err _ ->
                     user |> noCmd
 
+        -- ReceivePositions value ->
+        --     case value |> Decode.decodeValue Positions.decoder of
+        --         Ok decoded ->
         ReceiveReceipt value ->
             case value |> Decode.decodeValue Write.decoder of
                 Ok receipt ->
@@ -302,6 +309,68 @@ update chain msg (User user) =
 
                 Err _ ->
                     user |> noCmd
+
+        ReceiveNatives decodedChain (Ok natives) ->
+            ( user |> User
+            , if decodedChain == chain then
+                [ natives
+                    |> Natives.encode chain user.address
+                    |> positionsOf
+                , Cmd.none |> Debug.log "query again natives"
+                ]
+                    |> Cmd.batch
+
+              else
+                Cmd.none
+            )
+
+        ReceiveNatives decodedChain (Err error) ->
+            if decodedChain == chain then
+                ( { user | positions = Failure error }
+                    |> User
+                , Cmd.none |> Debug.log "query again natives"
+                )
+
+            else
+                ( user |> User
+                , Cmd.none
+                )
+
+        ReceivePositions value ->
+            (case value |> Decode.decodeValue Positions.decoder of
+                Ok decoded ->
+                    if
+                        (decoded.chain == chain)
+                            && (decoded.owner == user.address)
+                    then
+                        { user
+                            | positions =
+                                user.positions
+                                    |> Remote.map
+                                        (\{ claims, dues, liqs } ->
+                                            { claims =
+                                                claims
+                                                    |> Dict.insertAll decoded.positions.claims
+                                            , dues =
+                                                dues
+                                                    |> Dict.insertAll decoded.positions.dues
+                                            , liqs =
+                                                liqs
+                                                    |> Dict.insertAll decoded.positions.liqs
+                                            }
+                                                |> Success
+                                        )
+                                    |> Remote.withDefault
+                                        (decoded.positions |> Success)
+                        }
+
+                    else
+                        user
+
+                _ ->
+                    user
+            )
+                |> noCmd
 
         BalancesTick posix ->
             ( { user | balances = user.balances |> Balances.update posix }
@@ -641,6 +710,19 @@ isSame (User user1) (User user2) =
         && (user1.wallet == user2.wallet)
 
 
+getNatives :
+    Chain
+    -> Cmd Msg
+getNatives chain =
+    Http.get
+        { url = Natives.toUrlString chain
+        , expect =
+            Natives.decoder
+                |> Http.expectJson
+                    (ReceiveNatives chain)
+        }
+
+
 port cacheTxns : Value -> Cmd msg
 
 
@@ -648,6 +730,9 @@ port balancesOf : Value -> Cmd msg
 
 
 port allowancesOf : Value -> Cmd msg
+
+
+port positionsOf : Value -> Cmd msg
 
 
 port approve : Value -> Cmd msg
@@ -675,6 +760,9 @@ port receiveBalances : (Value -> msg) -> Sub msg
 
 
 port receiveAllowances : (Value -> msg) -> Sub msg
+
+
+port receivePositions : (Value -> msg) -> Sub msg
 
 
 port receiveReceipt : (Value -> msg) -> Sub msg
@@ -788,4 +876,4 @@ getDuesDummy =
 getLiqs : User -> Web Liqs
 getLiqs (User { positions }) =
     positions
-        |> Remote.map .liquidities
+        |> Remote.map .liqs

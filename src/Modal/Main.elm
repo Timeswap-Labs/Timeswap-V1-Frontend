@@ -354,8 +354,9 @@ subscriptions modal =
                 |> MaturityList.subscriptions
                 |> Sub.map MaturityListMsg
 
-        PayTransaction _ ->
-            PayTransaction.subscriptions
+        PayTransaction payTransaction ->
+            payTransaction
+                |> PayTransaction.subscriptions
                 |> Sub.map PayTransactionMsg
 
         _ ->

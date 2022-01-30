@@ -16,7 +16,7 @@ import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Support exposing (Support)
 import Data.Theme exposing (Theme)
-import Data.Token as Token
+import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
@@ -67,6 +67,7 @@ import Process
 import Sort.Dict as Dict exposing (Dict)
 import Sort.Set as Set exposing (Set)
 import Task
+import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
@@ -105,12 +106,13 @@ type Msg
     = SwitchMode Mode
     | InputAssetIn TokenId String
     | InputMax TokenId
-    | QuerySum ()
-    | QueryProportion TokenId ()
+    | QueryFullAgain Posix
+    | QueryCustomAgain Posix
+    | Tick Posix
     | ClickApprove
     | ClickPay
-    | ReceiveSum Value
-    | ReceiveProportion Value
+    | ReceiveFull Value
+    | ReceiveCustom Value
     | OnMouseEnter Tooltip
     | OnMouseLeave
     | Exit
@@ -134,27 +136,7 @@ init blockchain user pool set =
       , tooltip = Nothing
       }
         |> Modal
-    , user
-        |> User.getDues
-        |> Remote.map (Dues.getMultiple pool set)
-        |> (Remote.map << Maybe.map) Dict.values
-        |> (Remote.map << Maybe.map << List.map)
-            (\{ debt, collateral } ->
-                { assetIn = debt
-                , collateralOut = collateral
-                }
-            )
-        |> (Remote.map << Maybe.map)
-            (\duesIn ->
-                { chain = blockchain |> Blockchain.toChain
-                , pool = pool
-                , duesIn = duesIn
-                }
-                    |> Query.sum
-                    |> querySum
-            )
-        |> (Remote.map << Maybe.withDefault) Cmd.none
-        |> Remote.withDefault Cmd.none
+    , queryFullCmd blockchain user pool set
     )
 
 
@@ -177,27 +159,7 @@ update blockchain user msg (Modal modal) =
                           }
                             |> Modal
                             |> Just
-                        , user
-                            |> User.getDues
-                            |> Remote.map (Dues.getMultiple modal.pool set)
-                            |> (Remote.map << Maybe.map) Dict.values
-                            |> (Remote.map << Maybe.map << List.map)
-                                (\{ debt, collateral } ->
-                                    { assetIn = debt
-                                    , collateralOut = collateral
-                                    }
-                                )
-                            |> (Remote.map << Maybe.map)
-                                (\duesIn ->
-                                    { chain = blockchain |> Blockchain.toChain
-                                    , pool = modal.pool
-                                    , duesIn = duesIn
-                                    }
-                                        |> Query.sum
-                                        |> querySum
-                                )
-                            |> (Remote.map << Maybe.withDefault) Cmd.none
-                            |> Remote.withDefault Cmd.none
+                        , queryFullCmd blockchain user modal.pool set
                         , Nothing
                         )
                    )
@@ -225,192 +187,75 @@ update blockchain user msg (Modal modal) =
 
         ( InputAssetIn tokenId assetIn, Custom dict ) ->
             if assetIn |> Uint.isAmount (modal.pool.pair |> Pair.toAsset) then
-                ( { modal
-                    | state =
-                        dict
-                            |> Dict.insert tokenId
-                                { assetIn = assetIn
-                                , collateralOut = Remote.loading
-                                }
-                            |> Dict.map
-                                (\_ customInfo ->
-                                    case customInfo.collateralOut of
-                                        Failure _ ->
-                                            { customInfo
-                                                | collateralOut = Remote.loading
-                                            }
+                dict
+                    |> Dict.insert tokenId
+                        { assetIn = assetIn
+                        , collateralOut = Remote.loading
+                        }
+                    |> Dict.map
+                        (\_ customInfo ->
+                            case customInfo.collateralOut of
+                                Failure _ ->
+                                    { customInfo
+                                        | collateralOut = Remote.loading
+                                    }
 
-                                        _ ->
-                                            customInfo
-                                )
-                            |> Custom
-                    , total = Remote.loading
-                  }
-                    |> Modal
-                    |> Just
-                , user
-                    |> User.getDues
-                    |> Remote.map (Dict.get modal.pool)
-                    |> (Remote.map << Maybe.andThen) (Dict.get tokenId)
-                    |> (Remote.map << Maybe.map)
-                        (\due assetInUint ->
-                            { chain = blockchain |> Blockchain.toChain
-                            , pool = modal.pool
-                            , tokenId = tokenId
-                            , due = due
-                            , assetIn = assetInUint
-                            }
-                                |> Query.proportion
-                                |> queryProportion
+                                _ ->
+                                    customInfo
                         )
-                    |> (Remote.map << Maybe.apply)
-                        (assetIn
-                            |> Uint.fromAmount
-                                (modal.pool.pair |> Pair.toAsset)
-                        )
-                    |> (Remote.map << Maybe.withDefault) Cmd.none
-                    |> Remote.withDefault Cmd.none
-                , Nothing
-                )
+                    |> (\updatedDict ->
+                            ( { modal
+                                | state = updatedDict |> Custom
+                                , total = Remote.loading
+                              }
+                                |> Modal
+                                |> Just
+                            , queryCustomCmd blockchain user modal.pool updatedDict
+                            , Nothing
+                            )
+                       )
 
             else
                 modal |> noCmdAndEffect
 
-        ( QuerySum (), Full set ) ->
-            case modal.total of
-                Failure _ ->
-                    ( { modal
-                        | total = Remote.loading
-                      }
-                        |> Modal
-                        |> Just
-                    , user
-                        |> User.getDues
-                        |> Remote.map (Dues.getMultiple modal.pool set)
-                        |> (Remote.map << Maybe.map) Dict.values
-                        |> (Remote.map << Maybe.map << List.map)
-                            (\{ debt, collateral } ->
-                                { assetIn = debt
-                                , collateralOut = collateral
+        ( QueryFullAgain _, Full set ) ->
+            ( modal
+                |> Modal
+                |> Just
+            , queryFullCmd blockchain user modal.pool set
+            , Nothing
+            )
+
+        ( QueryCustomAgain _, Custom dict ) ->
+            ( modal
+                |> Modal
+                |> Just
+            , queryCustomCmd blockchain user modal.pool dict
+            , Nothing
+            )
+
+        ( Tick posix, Full _ ) ->
+            { modal
+                | total = modal.total |> Remote.update posix
+            }
+                |> noCmdAndEffect
+
+        ( Tick posix, Custom dict ) ->
+            { modal
+                | state =
+                    dict
+                        |> Dict.map
+                            (\_ ({ collateralOut } as customInfo) ->
+                                { customInfo
+                                    | collateralOut =
+                                        collateralOut
+                                            |> Remote.update posix
                                 }
                             )
-                        |> (Remote.map << Maybe.map)
-                            (\duesIn ->
-                                { chain = blockchain |> Blockchain.toChain
-                                , pool = modal.pool
-                                , duesIn = duesIn
-                                }
-                                    |> Query.sum
-                                    |> querySum
-                            )
-                        |> (Remote.map << Maybe.withDefault) Cmd.none
-                        |> Remote.withDefault Cmd.none
-                    , Nothing
-                    )
-
-                _ ->
-                    modal |> noCmdAndEffect
-
-        ( QuerySum (), Custom dict ) ->
-            case modal.total of
-                Failure _ ->
-                    ( { modal
-                        | total = Remote.loading
-                      }
-                        |> Modal
-                        |> Just
-                    , dict
-                        |> Dict.values
-                        |> List.foldr
-                            (\dueIn accumulator ->
-                                accumulator
-                                    |> Maybe.andThen
-                                        (\list ->
-                                            case
-                                                ( dueIn.assetIn
-                                                    |> Uint.fromAmount
-                                                        (modal.pool.pair |> Pair.toAsset)
-                                                , dueIn.collateralOut
-                                                )
-                                            of
-                                                ( Just assetIn, Success collateralOut ) ->
-                                                    { assetIn = assetIn
-                                                    , collateralOut = collateralOut
-                                                    }
-                                                        :: list
-                                                        |> Just
-
-                                                _ ->
-                                                    Nothing
-                                        )
-                            )
-                            (Just [])
-                        |> Maybe.map
-                            (\duesIn ->
-                                { chain = blockchain |> Blockchain.toChain
-                                , pool = modal.pool
-                                , duesIn = duesIn
-                                }
-                                    |> Query.sum
-                                    |> querySum
-                            )
-                        |> Maybe.withDefault Cmd.none
-                    , Nothing
-                    )
-
-                _ ->
-                    modal |> noCmdAndEffect
-
-        ( QueryProportion tokenId (), Custom dict ) ->
-            case
-                dict
-                    |> Dict.get tokenId
-            of
-                Just customInfo ->
-                    case customInfo.collateralOut of
-                        Failure _ ->
-                            ( { modal
-                                | state =
-                                    dict
-                                        |> Dict.insert tokenId
-                                            { customInfo
-                                                | collateralOut =
-                                                    Remote.loading
-                                            }
-                                        |> Custom
-                              }
-                                |> Modal
-                                |> Just
-                            , user
-                                |> User.getDues
-                                |> Remote.map (Dict.get modal.pool)
-                                |> (Remote.map << Maybe.andThen) (Dict.get tokenId)
-                                |> (Remote.map << Maybe.map)
-                                    (\due assetInUint ->
-                                        { chain = blockchain |> Blockchain.toChain
-                                        , pool = modal.pool
-                                        , tokenId = tokenId
-                                        , due = due
-                                        , assetIn = assetInUint
-                                        }
-                                            |> Query.proportion
-                                            |> queryProportion
-                                    )
-                                |> (Remote.map << Maybe.apply)
-                                    (customInfo.assetIn
-                                        |> Uint.fromAmount
-                                            (modal.pool.pair |> Pair.toAsset)
-                                    )
-                                |> (Remote.map << Maybe.withDefault) Cmd.none
-                                |> Remote.withDefault Cmd.none
-                            , Nothing
-                            )
-
-                        _ ->
-                            modal |> noCmdAndEffect
-
-                _ ->
-                    modal |> noCmdAndEffect
+                        |> Custom
+                , total = modal.total |> Remote.update posix
+            }
+                |> noCmdAndEffect
 
         ( ClickApprove, _ ) ->
             (case
@@ -570,8 +415,8 @@ update blockchain user msg (Modal modal) =
             )
                 |> Maybe.withDefault (modal |> noCmdAndEffect)
 
-        ( ReceiveSum value, Full set ) ->
-            case value |> Decode.decodeValue Query.decoderSum of
+        ( ReceiveFull value, Full set ) ->
+            (case value |> Decode.decodeValue Query.decoderFull of
                 Ok answer ->
                     if
                         (answer.chain == (blockchain |> Blockchain.toChain))
@@ -579,197 +424,77 @@ update blockchain user msg (Modal modal) =
                             && (user
                                     |> User.getDues
                                     |> Remote.map (Dues.getMultiple modal.pool set)
-                                    |> (Remote.map << Maybe.map) Dict.values
-                                    |> (Remote.map << Maybe.map << List.map)
-                                        (\{ debt, collateral } ->
-                                            { assetIn = debt
-                                            , collateralOut = collateral
-                                            }
-                                        )
-                                    |> (Remote.map << Maybe.map) ((==) answer.duesIn)
+                                    |> (Remote.map << Maybe.map) ((==) answer.dues)
                                     |> (Remote.map << Maybe.withDefault) False
                                     |> Remote.withDefault False
                                )
                     then
-                        ( { modal
-                            | total =
-                                answer.result
-                                    |> toRemote
-                          }
-                            |> Modal
-                            |> Just
-                        , answer.result
-                            |> Result.map (\_ -> Cmd.none)
-                            |> Result.withDefault
-                                (Process.sleep 5000
-                                    |> Task.perform QuerySum
-                                )
-                        , Nothing
-                        )
+                        { modal | total = answer.result |> toRemote }
 
                     else
-                        modal |> noCmdAndEffect
+                        modal
 
                 _ ->
-                    modal |> noCmdAndEffect
+                    modal
+            )
+                |> noCmdAndEffect
 
-        ( ReceiveSum value, Custom dict ) ->
-            case value |> Decode.decodeValue Query.decoderSum of
-                Ok answer ->
-                    if
-                        (answer.chain == (blockchain |> Blockchain.toChain))
-                            && (answer.pool == modal.pool)
-                            && (dict
-                                    |> Dict.values
-                                    |> List.foldr
-                                        (\dueIn accumulator ->
-                                            accumulator
-                                                |> Maybe.andThen
-                                                    (\list ->
-                                                        case
-                                                            ( dueIn.assetIn
-                                                                |> Uint.fromAmount
-                                                                    (modal.pool.pair |> Pair.toAsset)
-                                                            , dueIn.collateralOut
-                                                            )
-                                                        of
-                                                            ( Just assetIn, Success collateralOut ) ->
-                                                                { assetIn = assetIn
-                                                                , collateralOut = collateralOut
-                                                                }
-                                                                    :: list
-                                                                    |> Just
-
-                                                            _ ->
-                                                                Nothing
-                                                    )
-                                        )
-                                        (Just [])
-                                    |> Maybe.map ((==) answer.duesIn)
-                                    |> Maybe.withDefault False
-                               )
-                    then
-                        ( { modal
-                            | total =
-                                answer.result
-                                    |> toRemote
-                          }
-                            |> Modal
-                            |> Just
-                        , answer.result
-                            |> Result.map (\_ -> Cmd.none)
-                            |> Result.withDefault
-                                (Process.sleep 5000
-                                    |> Task.perform QuerySum
-                                )
-                        , Nothing
-                        )
-
-                    else
-                        modal |> noCmdAndEffect
-
-                _ ->
-                    modal |> noCmdAndEffect
-
-        ( ReceiveProportion value, Custom dict ) ->
-            case value |> Decode.decodeValue Query.decoderProportion of
+        ( ReceiveCustom value, Custom dict ) ->
+            (case value |> Decode.decodeValue Query.decoderCustom of
                 Ok answer ->
                     if
                         (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == modal.pool)
                             && (user
                                     |> User.getDues
-                                    |> Remote.map (Dict.get modal.pool)
-                                    |> (Remote.map << Maybe.andThen)
-                                        (Dict.get answer.tokenId)
-                                    |> (Remote.map << Maybe.map) ((==) answer.due)
+                                    |> Remote.map
+                                        (dict
+                                            |> Dict.keys
+                                            |> Set.fromList TokenId.sorter
+                                            |> Dues.getMultiple modal.pool
+                                        )
+                                    |> (Remote.map << Maybe.map) ((==) answer.dues)
                                     |> (Remote.map << Maybe.withDefault) False
                                     |> Remote.withDefault False
                                )
                             && (dict
-                                    |> Dict.get answer.tokenId
-                                    |> Maybe.map
-                                        (\{ assetIn } ->
-                                            (answer.assetIn
-                                                |> Uint.toAmount
-                                                    (modal.pool.pair |> Pair.toAsset)
-                                            )
-                                                == assetIn
-                                        )
+                                    |> toAssetsIn (modal.pool.pair |> Pair.toAsset)
+                                    |> Maybe.map ((==) answer.assetsIn)
                                     |> Maybe.withDefault False
                                )
                     then
-                        ( { modal
+                        { modal
                             | state =
-                                dict
-                                    |> Dict.get answer.tokenId
-                                    |> Maybe.map
-                                        (\customInfo ->
-                                            dict
-                                                |> Dict.insert answer.tokenId
-                                                    { customInfo
-                                                        | collateralOut =
-                                                            answer.result
-                                                                |> toRemote
-                                                    }
+                                answer.result.collateralsOut
+                                    |> Dict.foldl
+                                        (\tokenId collateralOut accumulator ->
+                                            accumulator
+                                                |> Dict.get tokenId
+                                                |> Maybe.map
+                                                    (\customInfo ->
+                                                        { customInfo
+                                                            | collateralOut =
+                                                                collateralOut |> toRemote
+                                                        }
+                                                    )
+                                                |> Maybe.map
+                                                    (\customInfo ->
+                                                        accumulator
+                                                            |> Dict.insert tokenId customInfo
+                                                    )
+                                                |> Maybe.withDefault accumulator
                                         )
-                                    |> Maybe.withDefault dict
+                                        dict
                                     |> Custom
-                          }
-                            |> Modal
-                            |> Just
-                        , answer.result
-                            |> Result.map
-                                (\_ ->
-                                    dict
-                                        |> Dict.values
-                                        |> List.foldr
-                                            (\dueIn accumulator ->
-                                                accumulator
-                                                    |> Maybe.andThen
-                                                        (\list ->
-                                                            case
-                                                                ( dueIn.assetIn
-                                                                    |> Uint.fromAmount
-                                                                        (modal.pool.pair |> Pair.toAsset)
-                                                                , dueIn.collateralOut
-                                                                )
-                                                            of
-                                                                ( Just assetIn, Success collateralOut ) ->
-                                                                    { assetIn = assetIn
-                                                                    , collateralOut = collateralOut
-                                                                    }
-                                                                        :: list
-                                                                        |> Just
-
-                                                                _ ->
-                                                                    Nothing
-                                                        )
-                                            )
-                                            (Just [])
-                                        |> Maybe.map
-                                            (\duesIn ->
-                                                { chain = blockchain |> Blockchain.toChain
-                                                , pool = modal.pool
-                                                , duesIn = duesIn
-                                                }
-                                                    |> Query.sum
-                                                    |> querySum
-                                            )
-                                        |> Maybe.withDefault Cmd.none
-                                )
-                            |> Result.withDefault
-                                (Process.sleep 5000
-                                    |> Task.perform (QueryProportion answer.tokenId)
-                                )
-                        , Nothing
-                        )
+                        }
 
                     else
-                        modal |> noCmdAndEffect
+                        modal
 
                 _ ->
-                    modal |> noCmdAndEffect
+                    modal
+            )
+                |> noCmdAndEffect
 
         ( OnMouseEnter tooltip, _ ) ->
             { modal | tooltip = Just tooltip }
@@ -787,6 +512,26 @@ update blockchain user msg (Modal modal) =
 
         _ ->
             modal |> noCmdAndEffect
+
+
+toAssetsIn : Token -> Dict TokenId CustomInfo -> Maybe (Dict TokenId Uint)
+toAssetsIn asset dict =
+    dict
+        |> Dict.foldl
+            (\tokenId customInfo accumulator ->
+                accumulator
+                    |> Maybe.andThen
+                        (\accumulatedDict ->
+                            customInfo.assetIn
+                                |> Uint.fromAmount asset
+                                |> Maybe.map
+                                    (\assetIn ->
+                                        accumulatedDict
+                                            |> Dict.insert tokenId assetIn
+                                    )
+                        )
+            )
+            (Dict.empty TokenId.sorter |> Just)
 
 
 toRemote :
@@ -817,22 +562,88 @@ noCmdAndEffect modal =
     )
 
 
-port queryProportion : Value -> Cmd msg
+queryFullCmd : Blockchain -> User -> Pool -> Set TokenId -> Cmd msg
+queryFullCmd blockchain user pool set =
+    user
+        |> User.getDues
+        |> Remote.map (Dues.getMultiple pool set)
+        |> (Remote.map << Maybe.map)
+            (\dues ->
+                { chain = blockchain |> Blockchain.toChain
+                , pool = pool
+                , dues = dues
+                }
+                    |> Query.givenFull
+                    |> queryFull
+            )
+        |> (Remote.map << Maybe.withDefault) Cmd.none
+        |> Remote.withDefault Cmd.none
 
 
-port querySum : Value -> Cmd msg
+queryCustomCmd : Blockchain -> User -> Pool -> Dict TokenId CustomInfo -> Cmd msg
+queryCustomCmd blockchain user pool dict =
+    user
+        |> User.getDues
+        |> Remote.map
+            (dict
+                |> Dict.keys
+                |> Set.fromList TokenId.sorter
+                |> Dues.getMultiple pool
+            )
+        |> (Remote.map << Maybe.map)
+            (\dues assetsIn ->
+                { chain = blockchain |> Blockchain.toChain
+                , pool = pool
+                , dues = dues
+                , assetsIn = assetsIn
+                }
+                    |> Query.givenCustom
+                    |> queryCustom
+            )
+        |> (Remote.map << Maybe.apply)
+            (dict
+                |> toAssetsIn
+                    (pool.pair |> Pair.toAsset)
+            )
+        |> (Remote.map << Maybe.withDefault) Cmd.none
+        |> Remote.withDefault Cmd.none
 
 
-port receiveProportion : (Value -> msg) -> Sub msg
+port queryFull : Value -> Cmd msg
 
 
-port receiveSum : (Value -> msg) -> Sub msg
+port queryCustom : Value -> Cmd msg
 
 
-subscriptions : Sub Msg
-subscriptions =
-    [ receiveProportion ReceiveProportion
-    , receiveSum ReceiveSum
+port receiveFull : (Value -> msg) -> Sub msg
+
+
+port receiveCustom : (Value -> msg) -> Sub msg
+
+
+subscriptions : Modal -> Sub Msg
+subscriptions (Modal modal) =
+    [ (case modal.state of
+        Full _ ->
+            QueryFullAgain
+
+        Custom _ ->
+            QueryCustomAgain
+      )
+        |> Time.every 1000
+    , receiveFull ReceiveFull
+    , receiveCustom ReceiveCustom
+    , case modal.state of
+        Custom dict ->
+            dict
+                |> Dict.values
+                |> List.map .collateralOut
+                |> List.map (Remote.subscriptions Tick)
+                |> Sub.batch
+
+        _ ->
+            Sub.none
+    , modal.total |> Remote.subscriptions Tick
     ]
         |> Sub.batch
 

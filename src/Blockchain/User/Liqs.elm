@@ -1,8 +1,10 @@
-module Blockchain.User.Liqs exposing (Liqs, toList)
+module Blockchain.User.Liqs exposing (Liqs, decoder, toList)
 
-import Blockchain.User.Liq exposing (Liq)
+import Blockchain.User.Liq as Liq exposing (Liq)
 import Data.Maturity as Maturity
-import Data.Pool exposing (Pool)
+import Data.Pool as Pool exposing (Pool)
+import Json.Decode as Decode exposing (Decoder)
+import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
 import Time exposing (Posix)
 
@@ -28,3 +30,12 @@ toList posix claims =
                 ]
                     |> List.concat
            )
+
+
+decoder : Decoder Liqs
+decoder =
+    Decode.succeed Tuple.pair
+        |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "liq" Liq.decoder
+        |> Decode.list
+        |> Decode.map (Dict.fromList Pool.sorter)
