@@ -18,8 +18,11 @@ declare interface Ports {
 
   balancesOf: PortFromElm<BalancesOf>;
   allowancesOf: PortFromElm<AllowancesOf>;
+  positionsOf: PortFromElm<PositionsOf>;
+
   receiveBalances: PortToElm<ReceiveBalances>;
   receiveAllowances: PortToElm<ReceiveAllowances>;
+  receivePositions: PortToElm<ReceivePositions>;
 
   queryLend: PortFromElm<LendQuery>;
   queryLendPerSecond: PortFromElm<LendQuery>;
@@ -46,55 +49,107 @@ declare interface Ports {
 
   copyToClipboard: PortFromElm<string>;
 
-  cacheSlippage: PortFromElm<number>
+  cacheSlippage: PortFromElm<number>;
   cacheDeadline: PortFromElm<number>;
   cachePriceFeed: PortFromElm<string>;
   cacheChosenZone: PortFromElm<string>;
   cacheTheme: PortFromElm<string>;
-  cacheCustom: PortFromElm<{string: ERC20Token}>;
+  cacheCustom: PortFromElm<{ string: ERC20Token }>;
   cacheTxns: PortFromElm<ReceiveUser>;
 
   changeChain: PortFromElm<Chain>;
 }
 
-export interface NativeToken {
+interface NativeToken {
   name: string;
   symbol: string;
   decimals: number;
 }
 
-export interface ERC20Token {
+interface ERC20Token {
   address: string;
   name: string;
   symbol: string;
   decimals: number;
 }
 
-export interface BalancesOf {
+interface BalancesOf {
   chain: Chain;
   address: string;
   tokens: (NativeToken | ERC20Token)[];
 }
 
-export interface ReceiveBalances {
+interface ReceiveBalances {
   chain: Chain;
   address: string;
   tokens: (NativeToken | ERC20Token)[];
   balances: string[];
 }
 
-export interface AllowancesOf {
+interface AllowancesOf {
   chain: Chain;
   address: string;
   erc20s: ERC20Token[];
 }
 
-export interface ReceiveAllowances {
+interface ReceiveAllowances {
   chain: Chain;
   address: string;
   erc20s: ERC20Token[];
   allowances: string[];
 }
+
+interface PositionsOf {
+  chain: number;
+  owner: string;
+  natives: {
+    pool: Pool;
+    natives: {
+      bondPrincipal: string;
+      bondInterest: string;
+      insurancePrincipal: string;
+      insuranceInterest: string;
+      liquidity: string;
+      collateralizedDebt: string;
+    };
+  }[];
+}
+
+interface ReceivePositions {
+  chain: number;
+  owner: string;
+  positions: {
+    claims: Claims;
+    dues: Dues;
+    liqs: Liqs;
+  };
+}
+
+type Claims = {
+  pool: Pool;
+  claim: {
+    bondPrincipal: Uint;
+    bondInterest: Uint;
+    insurancePrincipal: Uint;
+    insuranceInterest: Uint;
+  };
+}[];
+
+type Dues = {
+  pool: Pool;
+  dues: {
+    tokenId: Uint;
+    due: {
+      debt: Uint;
+      collateral: Uint;
+    };
+  }[];
+}[];
+
+type Liqs = {
+  pool: Pool;
+  liq: Uint;
+}[];
 
 interface ReceiveUser {
   chainId: int;
@@ -107,7 +162,6 @@ interface Txns {
   confirmed: Confirmed[];
   uncomfirmed: Uncomfirmed[];
 }
-
 
 interface Confirmed {
   id: number;
@@ -140,8 +194,6 @@ interface Pool {
   maturity: number | string;
 }
 
-
-
 interface PoolInfo {
   x: Uint;
   y: Uint;
@@ -155,7 +207,7 @@ interface PoolInfo {
   assetSpot: number | null;
   collateralSpot: number | null;
   fee: number;
-  protocolFee: number
+  protocolFee: number;
 }
 
 // type SdkPositionsMsg =
@@ -284,7 +336,6 @@ type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
 //     | number;
 // }
 
-
 // interface Borrow {
 //   asset: string;
 //   collateral: string;
@@ -299,7 +350,6 @@ type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
 //   maxCollateral?: string;
 //   deadline: number;
 // }
-
 
 // type BorrowCalculate =
 //   | BorrowGivenPercent

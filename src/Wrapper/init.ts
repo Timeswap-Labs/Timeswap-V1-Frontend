@@ -6,15 +6,15 @@ import { pool } from "./pool";
 import { lend, lendSigner } from "./lend";
 import { GlobalParams } from "./global";
 import { balancesInit } from "./balances";
-import { lendPositionsInit, borrowPositionsInit } from "./positions";
+import { positionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
 import { withdrawSigner } from "./withdraw";
 import { faucetSigner } from "./faucet";
 // import { pending } from "./pending";
 import { wallet } from "./wallet";
-import { BalancesOf, ReceiveUser, Ports } from "./declaration";
-import { getChainData, getTokenList } from './chains';
+// import { BalancesOf, ReceiveUser, Ports } from "./declaration";
+import { getChainData, getTokenList } from "./chains";
 
 export declare let window: any;
 
@@ -41,17 +41,21 @@ export async function elmUser(): Promise<{
     );
 
     if (accounts[0]) {
-      let txns : Txns = {confirmed: [], uncomfirmed: []};
+      let txns: Txns = { confirmed: [], uncomfirmed: [] };
       const wallet = "metamask";
       const chainId = 4;
       const storedTxns = window.localStorage.getItem("txns");
 
       if (storedTxns) {
         try {
-          const parsedTxns: {chainId: number, address: string, txns: Txns} = JSON.parse(storedTxns);
-          txns = (parsedTxns.address === accounts[0] && parsedTxns.chainId === chainId) ? parsedTxns.txns : txns;
+          const parsedTxns: { chainId: number; address: string; txns: Txns } =
+            JSON.parse(storedTxns);
+          txns =
+            parsedTxns.address === accounts[0] && parsedTxns.chainId === chainId
+              ? parsedTxns.txns
+              : txns;
         } catch (err) {
-          txns = {confirmed: [], uncomfirmed: []};
+          txns = { confirmed: [], uncomfirmed: [] };
         }
       }
 
@@ -62,7 +66,11 @@ export async function elmUser(): Promise<{
   return { gp, user: null };
 }
 
-export async function init(app: ElmApp<Ports>, gp: GlobalParams, user: ReceiveUser | null) {
+export async function init(
+  app: ElmApp<Ports>,
+  gp: GlobalParams,
+  user: ReceiveUser | null
+) {
   const provider = await getProvider(gp);
   const network = await provider.getNetwork();
   gp.provider = provider;
@@ -72,12 +80,17 @@ export async function init(app: ElmApp<Ports>, gp: GlobalParams, user: ReceiveUs
 
   if (user && wlChain) {
     const balancesOf: BalancesOf = {
-      chain: {chainId: wlChain.chainId, name: wlChain.name, etherscan: wlChain.etherscan},
+      chain: {
+        chainId: wlChain.chainId,
+        name: wlChain.name,
+        etherscan: wlChain.etherscan,
+      },
       address: user.address,
-      tokens: getTokenList(network.chainId)
-    }
+      tokens: getTokenList(network.chainId),
+    };
 
     balancesInit(app, gp, balancesOf);
+    positionsInit(app, gp);
   }
 
   // pool(app, whitelist, gp);
@@ -156,12 +169,16 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
     window.localStorage.setItem("txns", JSON.stringify(txns));
   });
 
-  app.ports.changeChain.subscribe(chain => {
+  app.ports.changeChain.subscribe((chain) => {
     if (window.ethereum && ethereum) {
       gp.metamaskProvider = window.ethereum;
 
       gp.metamaskProvider.send("wallet_switchEthereumChain", [
-        { chainId: chain.chainId.toString().startsWith("0x") ? chain.chainId : "0x" + chain.chainId },
+        {
+          chainId: chain.chainId.toString().startsWith("0x")
+            ? chain.chainId
+            : "0x" + chain.chainId,
+        },
       ]);
     }
   });
@@ -206,7 +223,6 @@ function metamaskConnected(
   gp: GlobalParams
 ) {
   gp.metamaskProvider.send("eth_accounts", []).then((accounts: string[]) => {
-
     if (accounts[0]) {
       app.ports.receiveUser.send({
         chainId: Number(ethereum.chainId),
@@ -302,8 +318,7 @@ function userInit(
 ) {
   if (gp.network === "0x4") {
     // balancesInit(app, gp, whitelist, account);
-    // lendPositionsInit(app, whitelist, gp, account);
-    // borrowPositionsInit(app, whitelist, gp, account);
+    // positionsInit(app, whitelist, gp, account);
     // pending(gp, account);
   }
 }
