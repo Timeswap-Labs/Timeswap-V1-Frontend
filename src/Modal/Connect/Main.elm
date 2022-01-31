@@ -535,7 +535,13 @@ metamaskButton ({ images, wallets, theme } as model) =
                                             |> text
                                         )
                                     , images
-                                        |> Image.link
+                                        |> (case theme of
+                                                Theme.Dark ->
+                                                    Image.link
+
+                                                Theme.Light ->
+                                                    Image.linkSecondary
+                                           )
                                             [ width <| px 18
                                             , height <| px 18
                                             , alignRight
@@ -812,7 +818,13 @@ walletConnected { images, theme } blockchain user =
                         , padding 4
                         ]
                         (images
-                            |> Image.link
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.link
+
+                                    Theme.Light ->
+                                        Image.linkSecondary
+                               )
                                 [ width <| px 16
                                 , height <| px 16
                                 , centerX
@@ -932,11 +944,11 @@ recentTransactions theme =
 
 
 viewTxn :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     -> Blockchain
     -> ( Hash, Txn )
     -> Element msg
-viewTxn { images } blockchain ( hash, txn ) =
+viewTxn { images, theme } blockchain ( hash, txn ) =
     row
         [ width fill
         , height shrink
@@ -1048,7 +1060,13 @@ viewTxn { images } blockchain ( hash, txn ) =
                         (blockchain |> Blockchain.toChain)
             , label =
                 images
-                    |> Image.link
+                    |> (case theme of
+                            Theme.Dark ->
+                                Image.link
+
+                            Theme.Light ->
+                                Image.linkSecondary
+                       )
                         [ width <| px 16
                         , height <| px 16
                         ]
@@ -1060,7 +1078,7 @@ viewNotSupported :
     { model | images : Images, theme : Theme }
     -> User.NotSupported
     -> Element Msg
-viewNotSupported ({ images, theme } as model) notSupported =
+viewNotSupported ({ theme } as model) notSupported =
     column
         [ width fill
         , height shrink

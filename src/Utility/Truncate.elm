@@ -136,6 +136,7 @@ viewSymbol :
     , opened : Maybe tooltip
     , token : Token
     , theme : Theme
+    , customStyles : List (Attribute msg)
     }
     -> Element msg
 viewSymbol param =
@@ -146,76 +147,82 @@ viewSymbol param =
     of
         ( ( full, Just short ), Just opened ) ->
             el
-                [ width shrink
-                , height shrink
-                , paddingEach
+                ([ width shrink
+                 , height shrink
+                 , paddingEach
                     { top = 4
                     , right = 0
                     , bottom = 3
                     , left = 0
                     }
-                , Border.widthEach
+                 , Border.widthEach
                     { top = 0
                     , right = 0
                     , bottom = 1
                     , left = 0
                     }
-                , Border.dashed
-                , Border.color Color.transparent200
-                , Events.onMouseEnter
+                 , Border.dashed
+                 , Border.color Color.transparent200
+                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
-                , Events.onMouseLeave param.onMouseLeave
-                , (if opened == param.tooltip then
-                    el
-                        [ Font.size 14
-                        , param.theme |> ThemeColor.textLight |> Font.color
-                        ]
-                        (text full)
-                        |> Tooltip.belowAlignLeft
+                 , Events.onMouseLeave param.onMouseLeave
+                 , (if opened == param.tooltip then
+                        el
+                            [ Font.size 14
+                            , param.theme |> ThemeColor.textLight |> Font.color
+                            ]
+                            (text full)
+                            |> Tooltip.belowAlignLeft
 
-                   else
-                    none
-                  )
+                    else
+                        none
+                   )
                     |> below
-                , Font.size 16
-                , param.theme |> ThemeColor.text |> Font.color
-                ]
+                 , Font.size 16
+                 , param.theme |> ThemeColor.text |> Font.color
+                 ]
+                    ++ param.customStyles
+                )
                 (text short)
 
         ( ( _, Just short ), Nothing ) ->
             el
-                [ width shrink
-                , height shrink
-                , paddingEach
+                ([ width shrink
+                 , height shrink
+                 , paddingEach
                     { top = 4
                     , right = 0
                     , bottom = 3
                     , left = 0
                     }
-                , Border.widthEach
+                 , Border.widthEach
                     { top = 0
                     , right = 0
                     , bottom = 1
                     , left = 0
                     }
-                , Border.dashed
-                , Border.color Color.transparent200
-                , Events.onMouseEnter
+                 , Border.dashed
+                 , Border.color Color.transparent200
+                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
-                , Events.onMouseLeave param.onMouseLeave
-                , Font.size 16
-                , param.theme |> ThemeColor.text |> Font.color
-                ]
+                 , Events.onMouseLeave param.onMouseLeave
+                 , Font.size 16
+                 , param.theme |> ThemeColor.text |> Font.color
+                 ]
+                    ++ param.customStyles
+                )
                 (text short)
 
         ( ( full, Nothing ), _ ) ->
             el
-                [ width shrink
-                , height shrink
-                , paddingXY 0 4
-                , Font.size 16
-                , param.theme |> ThemeColor.text |> Font.color
-                ]
+                ([ width shrink
+                 , height shrink
+                 , paddingXY 0 4
+                 , Font.size 16
+                 , param.theme |> ThemeColor.text |> Font.color
+                 ]
+                    ++ param.customStyles
+                )
                 (text full)
 
 
@@ -515,6 +522,7 @@ viewAmount :
     , token : Token
     , amount : Uint
     , theme : Theme
+    , customStyles : List (Attribute msg)
     }
     -> Element msg
 viewAmount param =
@@ -525,76 +533,82 @@ viewAmount param =
     of
         ( ( full, Just short ), Just opened ) ->
             el
-                [ width shrink
-                , height shrink
-                , paddingEach
+                ([ width shrink
+                 , height shrink
+                 , paddingEach
                     { top = 4
                     , right = 0
                     , bottom = 3
                     , left = 0
                     }
-                , Border.widthEach
+                 , Border.widthEach
                     { top = 0
                     , right = 0
                     , bottom = 1
                     , left = 0
                     }
-                , Border.dashed
-                , Border.color Color.transparent200
-                , Events.onMouseEnter
+                 , Border.dashed
+                 , Border.color Color.transparent200
+                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
-                , Events.onMouseLeave param.onMouseLeave
-                , (if opened == param.tooltip then
-                    el
-                        [ Font.size 12
-                        , param.theme |> ThemeColor.textLight |> Font.color
-                        ]
-                        (text full)
-                        |> Tooltip.belowAlignRight
+                 , Events.onMouseLeave param.onMouseLeave
+                 , (if opened == param.tooltip then
+                        el
+                            [ Font.size 12
+                            , param.theme |> ThemeColor.textLight |> Font.color
+                            ]
+                            (text full)
+                            |> Tooltip.belowAlignRight
 
-                   else
-                    none
-                  )
+                    else
+                        none
+                   )
                     |> below
-                , Font.size 16
-                , param.theme |> ThemeColor.text |> Font.color
-                ]
+                 , Font.size 16
+                 , param.theme |> ThemeColor.text |> Font.color
+                 ]
+                    ++ param.customStyles
+                )
                 (text short)
 
         ( ( _, Just short ), Nothing ) ->
             el
-                [ width shrink
-                , height shrink
-                , paddingEach
+                ([ width shrink
+                 , height shrink
+                 , paddingEach
                     { top = 4
                     , right = 0
                     , bottom = 3
                     , left = 0
                     }
-                , Border.widthEach
+                 , Border.widthEach
                     { top = 0
                     , right = 0
                     , bottom = 1
                     , left = 0
                     }
-                , Border.dashed
-                , Border.color Color.transparent200
-                , Events.onMouseEnter
+                 , Border.dashed
+                 , Border.color Color.transparent200
+                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
-                , Events.onMouseLeave param.onMouseLeave
-                , Font.size 16
-                , param.theme |> ThemeColor.text |> Font.color
-                ]
+                 , Events.onMouseLeave param.onMouseLeave
+                 , Font.size 16
+                 , param.theme |> ThemeColor.text |> Font.color
+                 ]
+                    ++ param.customStyles
+                )
                 (text short)
 
         ( ( full, Nothing ), _ ) ->
             el
-                [ width shrink
-                , height shrink
-                , paddingXY 0 4
-                , Font.size 16
-                , param.theme |> ThemeColor.text |> Font.color
-                ]
+                ([ width shrink
+                 , height shrink
+                 , paddingXY 0 4
+                 , Font.size 16
+                 , param.theme |> ThemeColor.text |> Font.color
+                 ]
+                    ++ param.customStyles
+                )
                 (text full)
 
 

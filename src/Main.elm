@@ -1267,7 +1267,7 @@ header ({ device, backdrop, theme } as model) =
                     , bottom = 1
                     , left = 0
                     }
-                , Border.color Color.transparent100
+                , theme |> ThemeColor.border |> Border.color
                 , (case backdrop of
                     Backdrop.Supported ->
                         theme |> ThemeColor.background
@@ -1361,9 +1361,10 @@ scrollButton :
         , backdrop : Backdrop
         , scrollToPositions : Timeline Visibility
         , images : Images
+        , theme : Theme
     }
     -> Element Msg
-scrollButton ({ device, backdrop, images } as model) =
+scrollButton ({ backdrop, images, theme } as model) =
     el
         [ width shrink
         , height shrink
@@ -1409,11 +1410,11 @@ scrollButton ({ device, backdrop, images } as model) =
                     , height <| px 44
                     , paddingXY 12 0
                     , Border.width 1
-                    , Border.color Color.transparent100
+                    , theme |> ThemeColor.border |> Border.color
                     , Border.rounded 8
                     , (case backdrop of
                         Backdrop.Supported ->
-                            Color.primary100
+                            theme |> ThemeColor.btnBackground
 
                         Backdrop.NotSupported ->
                             Color.solid
@@ -1434,12 +1435,18 @@ scrollButton ({ device, backdrop, images } as model) =
                                 , height shrink
                                 , centerX
                                 , centerY
-                                , Font.color Color.light100
+                                , theme |> ThemeColor.text |> Font.color
                                 , Font.size 16
                                 ]
                                 (text "Your Positions")
                             , images
-                                |> Image.discloser
+                                |> (case theme of
+                                        Theme.Dark ->
+                                            Image.discloser
+
+                                        Theme.Light ->
+                                            Image.arrowDownDark
+                                   )
                                     [ width <| px 11
                                     , height <| px 7
                                     ]
@@ -2066,7 +2073,7 @@ notSupportedBody { backdrop, images, theme } =
          , centerY
          , Border.rounded 8
          , Border.width 1
-         , Border.color Color.transparent100
+         , theme |> ThemeColor.border |> Border.color
          ]
             ++ Glass.background backdrop theme
         )

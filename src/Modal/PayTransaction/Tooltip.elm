@@ -8,3 +8,7 @@ type Tooltip
     | Collateral TokenId
     | TextboxToken TokenId
     | Balance TokenId
+    | TotalDebt
+    | TotalCollateral
+    | DebtSymbol
+    | CollateralSymbol

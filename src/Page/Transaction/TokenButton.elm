@@ -86,6 +86,7 @@ view { images, theme } param =
                                 , opened = param.opened
                                 , token = token
                                 , theme = theme
+                                , customStyles = []
                                 }
                             , images
                                 |> (case theme of

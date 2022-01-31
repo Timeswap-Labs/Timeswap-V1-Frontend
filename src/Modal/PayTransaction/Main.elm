@@ -5,7 +5,7 @@ import Blockchain.User.Due exposing (Due)
 import Blockchain.User.Dues as Dues
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.TokenId as TokenId exposing (TokenId)
-import Blockchain.User.WritePay as WritePay exposing (WritePay)
+import Blockchain.User.WritePay exposing (WritePay)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
 import Data.ERC20 exposing (ERC20)
@@ -15,36 +15,26 @@ import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Support exposing (Support)
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
         , alignRight
-        , below
         , centerX
         , centerY
-        , clipY
         , column
         , el
         , fill
-        , fillPortion
         , height
-        , inFront
-        , maximum
         , minimum
-        , mouseDown
-        , mouseOver
-        , moveDown
-        , moveLeft
         , none
         , padding
         , paddingEach
         , paddingXY
         , px
         , row
-        , scrollbarY
         , shrink
         , spacing
         , text
@@ -63,15 +53,14 @@ import Modal.PayTransaction.Tooltip as Tooltip exposing (Tooltip)
 import Modal.PayTransaction.Total exposing (Total)
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Textbox as Textbox
-import Process
 import Sort.Dict as Dict exposing (Dict)
 import Sort.Set as Set exposing (Set)
-import Task
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
+import Utility.Loading as Loading
 import Utility.Maybe as Maybe
 import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
@@ -668,7 +657,7 @@ view ({ backdrop, images, theme } as model) blockchain modal =
                  , centerX
                  , centerY
                  , Border.rounded 8
-                 , Border.color Color.transparent100
+                 , theme |> ThemeColor.border |> Border.color
                  , Border.width 1
                  ]
                     ++ Glass.background backdrop theme
@@ -705,7 +694,7 @@ header model =
             , bottom = 1
             , left = 0
             }
-        , model.theme |> ThemeColor.border |> Border.color
+        , model.theme |> ThemeColor.textboxBorder |> Border.color
         ]
         [ el
             [ width shrink
@@ -729,7 +718,7 @@ body :
     -> Modal
     -> Blockchain
     -> Element Msg
-body model ((Modal { state }) as modal) blockchain =
+body model modal blockchain =
     column
         [ width fill
         , padding 20
@@ -855,7 +844,7 @@ repayList :
     -> Modal
     -> Blockchain
     -> Element Msg
-repayList model ((Modal { state, pool }) as modal) blockchain =
+repayList model ((Modal { state, pool, total, tooltip }) as modal) blockchain =
     column
         [ width fill
         , spacing 12
@@ -874,7 +863,7 @@ repayList model ((Modal { state, pool }) as modal) blockchain =
                 --     |> (Maybe.map << Remote.map << Maybe.withDefault) [ none ]
                 --     |> (Maybe.map << Remote.withDefault) [ none ]
                 --     |> Maybe.withDefault [ none ]
-                User.getDuesDummy
+                (User.getDuesDummy
                     |> Dues.getMultiple pool TokenId.dummy
                     |> Maybe.map Dict.toList
                     |> (Maybe.map << List.map)
@@ -882,6 +871,8 @@ repayList model ((Modal { state, pool }) as modal) blockchain =
                             fullPosition model modal tokenId due
                         )
                     |> Maybe.withDefault [ none ]
+                )
+                    ++ [ totalDebtCollateral model modal ]
 
             Custom dict ->
                 -- blockchain
@@ -948,13 +939,19 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
                 ]
                 (text (tokenId |> TokenId.toString))
             , images
-                |> Image.link
-                    [ width <| px 16, height <| px 16 ]
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.link
+
+                        Theme.Light ->
+                            Image.linkSecondary
+                   )
+                    [ width <| px 14, height <| px 14 ]
             ]
         , row [ width fill, spacing 6, centerY ]
             [ el
                 [ Font.size 14
-                , theme |> ThemeColor.text |> Font.color
+                , theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "Amount to repay")
             , el
@@ -971,6 +968,7 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
                     , token = pool.pair |> Pair.toAsset
                     , amount = due.debt
                     , theme = theme
+                    , customStyles = [ Font.size 14 ]
                     }
                 )
             , el
@@ -986,13 +984,24 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
                     , opened = tooltip
                     , token = pool.pair |> Pair.toAsset
                     , theme = theme
+                    , customStyles =
+                        [ Font.size 14
+                        , theme |> ThemeColor.textLight |> Font.color
+                        , Font.regular
+                        , paddingEach
+                            { top = 4
+                            , right = 0
+                            , bottom = 2
+                            , left = 0
+                            }
+                        ]
                     }
                 )
             ]
         , row [ width fill, spacing 6, centerY ]
             [ el
                 [ Font.size 14
-                , theme |> ThemeColor.text |> Font.color
+                , theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "Collateral to unlock")
             , el
@@ -1009,6 +1018,7 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
                     , token = pool.pair |> Pair.toCollateral
                     , amount = due.collateral
                     , theme = theme
+                    , customStyles = [ Font.size 14 ]
                     }
                 )
             , el
@@ -1024,6 +1034,122 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
                     , opened = tooltip
                     , token = pool.pair |> Pair.toCollateral
                     , theme = theme
+                    , customStyles =
+                        [ Font.size 14
+                        , theme |> ThemeColor.textLight |> Font.color
+                        , Font.regular
+                        , paddingEach
+                            { top = 4
+                            , right = 0
+                            , bottom = 2
+                            , left = 0
+                            }
+                        ]
+                    }
+                )
+            ]
+        ]
+
+
+totalDebtCollateral :
+    { model
+        | theme : Theme
+        , images : Images
+    }
+    -> Modal
+    -> Element Msg
+totalDebtCollateral { theme, images } (Modal { pool, total, tooltip }) =
+    column
+        [ width fill, spacing 12, paddingXY 0 4 ]
+        [ row
+            [ width fill, centerY, spacing 4 ]
+            [ el [ Font.size 14, theme |> ThemeColor.actionElemLabel |> Font.color ]
+                (text "Total amount to repay")
+            , el [ alignRight ]
+                (case total of
+                    Loading timeline ->
+                        Loading.view timeline
+
+                    Success totalVal ->
+                        Truncate.viewAmount
+                            { onMouseEnter = OnMouseEnter
+                            , onMouseLeave = OnMouseLeave
+                            , tooltip = Tooltip.TotalDebt
+                            , opened = tooltip
+                            , token = pool.pair |> Pair.toAsset
+                            , amount = totalVal.assetIn
+                            , theme = theme
+                            , customStyles = [ Font.size 14, Font.bold ]
+                            }
+
+                    Failure _ ->
+                        none
+                )
+            , el []
+                (images
+                    |> Image.viewToken
+                        [ width <| px 16, height <| px 16 ]
+                        (pool.pair |> Pair.toAsset)
+                )
+            , el []
+                (Truncate.viewSymbol
+                    { onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.DebtSymbol
+                    , opened = tooltip
+                    , token = pool.pair |> Pair.toAsset
+                    , theme = theme
+                    , customStyles =
+                        [ Font.size 14
+                        , Font.bold
+                        , theme |> ThemeColor.text |> Font.color
+                        ]
+                    }
+                )
+            ]
+        , row
+            [ width fill, centerY, spacing 4 ]
+            [ el [ Font.size 14, theme |> ThemeColor.actionElemLabel |> Font.color ]
+                (text "Total collateral to unlock")
+            , el [ alignRight ]
+                (case total of
+                    Loading timeline ->
+                        Loading.view timeline
+
+                    Success totalVal ->
+                        Truncate.viewAmount
+                            { onMouseEnter = OnMouseEnter
+                            , onMouseLeave = OnMouseLeave
+                            , tooltip = Tooltip.TotalCollateral
+                            , opened = tooltip
+                            , token = pool.pair |> Pair.toCollateral
+                            , amount = totalVal.collateralOut
+                            , theme = theme
+                            , customStyles = [ Font.size 14, Font.bold ]
+                            }
+
+                    Failure _ ->
+                        none
+                )
+            , el []
+                (images
+                    |> Image.viewToken
+                        [ width <| px 16, height <| px 16 ]
+                        (pool.pair |> Pair.toCollateral)
+                )
+            , el []
+                (Truncate.viewSymbol
+                    { onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.CollateralSymbol
+                    , opened = tooltip
+                    , token = pool.pair |> Pair.toCollateral
+                    , theme = theme
+                    , customStyles =
+                        [ Font.size 14
+                        , Font.bold
+                        , theme |> ThemeColor.text |> Font.color
+                        ]
                     }
                 )
             ]
@@ -1044,7 +1170,7 @@ customPosition :
 customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as modal) user tokenId due customInfoDict =
     column
         [ width fill
-        , paddingXY 16 12
+        , paddingXY 16 14
         , spacing 12
         , theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
@@ -1063,8 +1189,14 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                 ]
                 (text (tokenId |> TokenId.toString))
             , images
-                |> Image.link
-                    [ width <| px 16, height <| px 16 ]
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.link
+
+                        Theme.Light ->
+                            Image.linkSecondary
+                   )
+                    [ width <| px 14, height <| px 14 ]
             ]
         , row [ width fill, spacing 6, centerY ]
             [ el
@@ -1086,6 +1218,7 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                     , token = pool.pair |> Pair.toAsset
                     , amount = due.debt
                     , theme = theme
+                    , customStyles = [ Font.size 14 ]
                     }
                 )
             , el
@@ -1101,6 +1234,17 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                     , opened = tooltip
                     , token = pool.pair |> Pair.toAsset
                     , theme = theme
+                    , customStyles =
+                        [ Font.size 14
+                        , theme |> ThemeColor.textLight |> Font.color
+                        , Font.regular
+                        , paddingEach
+                            { top = 4
+                            , right = 0
+                            , bottom = 2
+                            , left = 0
+                            }
+                        ]
                     }
                 )
             ]
@@ -1148,7 +1292,7 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
         , row [ width fill, spacing 6, centerY ]
             [ el
                 [ Font.size 14
-                , theme |> ThemeColor.text |> Font.color
+                , theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "Collateral to unlock")
             , el
@@ -1165,6 +1309,7 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                     , token = pool.pair |> Pair.toCollateral
                     , amount = due.collateral
                     , theme = theme
+                    , customStyles = [ Font.size 14 ]
                     }
                 )
             , el
@@ -1180,6 +1325,17 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                     , opened = tooltip
                     , token = pool.pair |> Pair.toCollateral
                     , theme = theme
+                    , customStyles =
+                        [ Font.size 14
+                        , theme |> ThemeColor.textLight |> Font.color
+                        , Font.regular
+                        , paddingEach
+                            { top = 4
+                            , right = 0
+                            , bottom = 2
+                            , left = 0
+                            }
+                        ]
                     }
                 )
             ]

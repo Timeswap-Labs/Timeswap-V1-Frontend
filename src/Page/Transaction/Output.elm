@@ -79,6 +79,7 @@ view { images, theme } param =
                 , opened = param.opened
                 , token = param.token
                 , theme = theme
+                , customStyles = []
                 }
             ]
         , el
@@ -140,6 +141,7 @@ viewCollateral { images, theme } param =
                 , opened = param.opened
                 , token = param.token
                 , theme = theme
+                , customStyles = []
                 }
             ]
         , el

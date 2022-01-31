@@ -69,6 +69,7 @@ import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
@@ -505,7 +506,7 @@ view ({ device, backdrop, theme } as model) user (Position position) =
              , spacing 30
              , Border.rounded 8
              , Border.width 1
-             , Border.color Color.transparent100
+             , theme |> ThemeColor.border |> Border.color
              ]
                 ++ Glass.background backdrop theme
             )
@@ -542,8 +543,9 @@ returnButton { images, theme } =
                     [ width shrink
                     , height shrink
                     , Font.size 16
+                    , Font.bold
                     , paddingXY 0 2
-                    , Font.color Color.transparent500
+                    , theme |> ThemeColor.text |> Font.color
                     , centerY
                     ]
                     (text "Back to liquidity")
@@ -728,7 +730,7 @@ viewLiq { images, theme } user { pool, return, tooltip } =
     row
         [ width fill
         , height <| px 82
-        , Background.color Color.dark500
+        , theme |> ThemeColor.positionBG |> Background.color
         , Border.rounded 8
         , paddingXY 24 0
         , spacing 48

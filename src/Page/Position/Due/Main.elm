@@ -224,7 +224,7 @@ view ({ device, backdrop, theme } as model) user (Position position) =
              , spacing 30
              , Border.rounded 8
              , Border.width 1
-             , Border.color Color.transparent100
+             , theme |> ThemeColor.border |> Border.color
              ]
                 ++ Glass.background backdrop theme
             )
@@ -263,8 +263,9 @@ returnButton { images, theme } =
                     [ width shrink
                     , height shrink
                     , Font.size 16
+                    , Font.bold
                     , paddingXY 0 2
-                    , Font.color Color.transparent500
+                    , theme |> ThemeColor.text |> Font.color
                     , centerY
                     ]
                     (text "Back to borrow")
@@ -517,6 +518,7 @@ viewDue { images, theme } user { pool, checks, tooltip } =
                                                     , opened = tooltip
                                                     , token = pool.pair |> Pair.toAsset
                                                     , theme = theme
+                                                    , customStyles = []
                                                     }
                                                 ]
                                             , Truncate.viewAmount
@@ -527,6 +529,7 @@ viewDue { images, theme } user { pool, checks, tooltip } =
                                                 , token = pool.pair |> Pair.toAsset
                                                 , amount = dues.debt
                                                 , theme = theme
+                                                , customStyles = []
                                                 }
                                             ]
                                         ]
@@ -573,6 +576,7 @@ viewDue { images, theme } user { pool, checks, tooltip } =
                                                     , opened = tooltip
                                                     , token = pool.pair |> Pair.toCollateral
                                                     , theme = theme
+                                                    , customStyles = []
                                                     }
                                                 ]
                                             , Truncate.viewAmount
@@ -583,6 +587,7 @@ viewDue { images, theme } user { pool, checks, tooltip } =
                                                 , token = pool.pair |> Pair.toCollateral
                                                 , amount = dues.collateral
                                                 , theme = theme
+                                                , customStyles = []
                                                 }
                                             ]
                                         ]

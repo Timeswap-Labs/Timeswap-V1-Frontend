@@ -865,6 +865,7 @@ viewBond { images, theme } { pool, tooltip } remote =
                     , opened = tooltip
                     , token = pool.pair |> Pair.toAsset
                     , theme = theme
+                    , customStyles = []
                     }
                 ]
             , case remote of
@@ -888,6 +889,7 @@ viewBond { images, theme } { pool, tooltip } remote =
                         , token = pool.pair |> Pair.toAsset
                         , amount = asset
                         , theme = theme
+                        , customStyles = []
                         }
             ]
         ]
@@ -940,6 +942,7 @@ viewInsurance { images, theme } { pool, tooltip } remote =
                     , opened = tooltip
                     , token = pool.pair |> Pair.toCollateral
                     , theme = theme
+                    , customStyles = []
                     }
                 ]
             , case remote of
@@ -963,6 +966,7 @@ viewInsurance { images, theme } { pool, tooltip } remote =
                         , token = pool.pair |> Pair.toCollateral
                         , amount = collateral
                         , theme = theme
+                        , customStyles = []
                         }
             ]
         ]
@@ -1016,6 +1020,7 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
                     , opened = tooltip
                     , token = pool.pair |> Pair.toAsset
                     , theme = theme
+                    , customStyles = []
                     }
                 ]
             , case remote of
@@ -1050,6 +1055,7 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
                         , token = pool.pair |> Pair.toAsset
                         , amount = asset
                         , theme = theme
+                        , customStyles = []
                         }
             ]
         ]
@@ -1103,6 +1109,7 @@ viewCollateralReturn { images, theme } { pool, tooltip } remote =
                     , opened = tooltip
                     , token = pool.pair |> Pair.toAsset
                     , theme = theme
+                    , customStyles = []
                     }
                 ]
             , case remote of
@@ -1137,6 +1144,7 @@ viewCollateralReturn { images, theme } { pool, tooltip } remote =
                         , token = pool.pair |> Pair.toCollateral
                         , amount = collateral
                         , theme = theme
+                        , customStyles = []
                         }
             ]
         ]
