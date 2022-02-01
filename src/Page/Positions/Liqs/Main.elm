@@ -59,6 +59,7 @@ import Utility.Id as Id
 import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
@@ -137,7 +138,7 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
             |> padding
          , Border.rounded 8
          , Border.width 1
-         , Border.color Color.transparent100
+         , theme |> ThemeColor.border |> Border.color
          , Id.is "positions"
          ]
             ++ Glass.background backdrop theme
@@ -318,10 +319,10 @@ viewLiq { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                 , height fill
                 , paddingXY 20 0
                 , spacing 12
-                , Background.color Color.dark500
+                , theme |> ThemeColor.positionBG |> Background.color
                 , Border.width 1
                 , Border.rounded 8
-                , Border.color Color.transparent100
+                , theme |> ThemeColor.border |> Border.color
                 ]
                 [ el
                     [ width shrink

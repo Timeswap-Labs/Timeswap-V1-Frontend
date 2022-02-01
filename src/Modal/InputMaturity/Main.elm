@@ -35,6 +35,7 @@ import Modal.Outside as Outside
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
+import Utility.ThemeColor as ThemeColor
 
 
 type Modal
@@ -80,7 +81,7 @@ view ({ backdrop, theme } as model) (Modal modal) =
                  , centerY
                  , Background.color Color.background
                  , Border.rounded 8
-                 , Border.color Color.transparent100
+                 , theme |> ThemeColor.border |> Border.color
                  , Border.width 1
                  ]
                     ++ Glass.background backdrop theme

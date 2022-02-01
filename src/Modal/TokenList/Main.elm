@@ -833,6 +833,7 @@ tokenSymbolAndName { images, theme } (Modal { tooltip }) token =
                 , opened = tooltip
                 , token = token
                 , theme = theme
+                , customStyles = []
                 }
             )
         , el
@@ -883,6 +884,7 @@ tokenBalance user token (Modal { tooltip }) theme =
                     , token = token
                     , amount = balance
                     , theme = theme
+                    , customStyles = []
                     }
                 )
 
@@ -1060,6 +1062,7 @@ importTokenWarning { images, theme } erc20 tooltip =
                     , opened = tooltip
                     , token = erc20 |> Token.ERC20
                     , theme = theme
+                    , customStyles = []
                     }
                 )
             , el

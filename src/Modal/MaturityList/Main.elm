@@ -342,7 +342,7 @@ view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as moda
                  , centerX
                  , centerY
                  , Border.rounded 8
-                 , Border.color Color.transparent100
+                 , theme |> ThemeColor.border |> Border.color
                  , Border.width 1
                  ]
                     ++ Glass.background backdrop theme
@@ -680,7 +680,7 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
                                             , theme |> ThemeColor.sectionBackground |> Background.color
                                             , Border.rounded 8
                                             , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
-                                            , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
+                                            , mouseOver [ theme |> ThemeColor.border |> Background.color ]
                                             ]
                                             [ row [ width <| fillPortion 2, spacing 16 ]
                                                 [ images
@@ -739,7 +739,7 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
                                                     , cdp = summary.cdp
                                                     }
                                                     priceFeed
-                                                    Color.light100
+                                                    (theme |> ThemeColor.text)
                                                     14
                                                 )
                                             ]

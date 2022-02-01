@@ -27,6 +27,7 @@ module Utility.Image exposing
     , infoDark
     , link
     , linkDark
+    , linkSecondary
     , linkWhite
     , logoPure
     , logoText
@@ -202,6 +203,11 @@ metamask =
 link : List (Attribute msg) -> Images -> Element msg
 link =
     view "Link"
+
+
+linkSecondary : List (Attribute msg) -> Images -> Element msg
+linkSecondary =
+    view "LinkSecondary"
 
 
 linkWhite : List (Attribute msg) -> Images -> Element msg

@@ -140,7 +140,7 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
             |> padding
          , Border.rounded 8
          , Border.width 1
-         , Border.color Color.transparent100
+         , theme |> ThemeColor.border |> Border.color
          , Id.is "positions"
          ]
             ++ Glass.background backdrop theme
@@ -335,10 +335,10 @@ viewDue { time, offset, chosenZone, theme, images } tooltip ( pool, due ) =
                 , height fill
                 , paddingXY 20 0
                 , spacing 12
-                , Background.color Color.dark500
+                , theme |> ThemeColor.positionBG |> Background.color
                 , Border.width 1
                 , Border.rounded 8
-                , Border.color Color.transparent100
+                , theme |> ThemeColor.border |> Border.color
                 ]
                 [ el
                     [ width shrink
@@ -432,7 +432,13 @@ viewDue { time, offset, chosenZone, theme, images } tooltip ( pool, due ) =
                             (text "Matured")
                         )
                 , images
-                    |> Image.discloser
+                    |> (case theme of
+                            Theme.Dark ->
+                                Image.discloser
+
+                            Theme.Light ->
+                                Image.arrowDownDark
+                       )
                         [ width <| px 11
                         , height <| px 7
                         , alignRight
