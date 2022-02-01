@@ -14,25 +14,24 @@ export const whitelistChains = {
     whitelist: [
       {
         address: "0x559a70084eb180d649080048a7e966602eacea9e",
-        name: "DAI TEST TOKEN",
-        symbol: "DAI",
-        decimals: 18,
+        name: "TS Dai Stablecoin",
+        symbol: "TS-DAI",
+        decimals: 18
       },
       {
         address: "0x521c1c37fdd245c313457fcbc6d5ed156647c2f3",
-        name: "Matic TEST TOKEN",
-        symbol: "MATIC",
-        decimals: 18,
-      }
-    ],
-    custom: [
+        name: "TS Matic Token",
+        symbol: "TS-MATIC",
+        decimals :18
+      },
       {
         address: "0x339a7cce9e5a20833da4f195ad15174c8ba554ad",
-        name: "USDC TEST TOKEN with a long name",
-        symbol: "USDC",
+        name: "TS Ethereum",
+        symbol: "TS-ETH",
         decimals: 18
       }
-    ]
+    ],
+    custom: []
   },
   others: [
     {
