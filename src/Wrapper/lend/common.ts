@@ -41,28 +41,23 @@ export function calculateCdp(
   //   .mul(pow(10n, BigInt(collateralDecimals)))
   //   .div(insuranceOut)
   //   .toString();
-  console.log("lend spots", assetSpot, collateralSpot);
 
   if (assetSpot && collateralSpot) {
-    // const newRatio = new Uint256(assetIn)
-    //   .mul(pow(10n, BigInt(collateralDecimals)))
-    //   .div(insuranceOut)
-    //   .div(pow(10n, BigInt(assetDecimals)))
-    //   .toString();
-
     // const newRatio = new Uint256(insuranceOut)
     //   .mul(pow(10n, BigInt(assetDecimals)))
     //   .div(assetIn)
     //   .div(pow(10n, BigInt(collateralDecimals)))
     //   .toString();
 
-
-    percent = Number(new Uint256(insuranceOut).toBigInt()
-      * BigInt(Math.floor(collateralSpot * 10000000000))
-      * (pow(10n, BigInt(assetDecimals)))
-      / BigInt(assetIn)
-      / BigInt(Math.floor(assetSpot * 1000000))
-      / (pow(10n, BigInt(collateralDecimals)))) / 10000
+    percent =
+      Number(
+        new Uint256(insuranceOut).toBigInt()
+        * BigInt(Math.floor(collateralSpot * 10000000000))
+        * (pow(10n, BigInt(assetDecimals)))
+        / BigInt(assetIn)
+        / BigInt(Math.floor(assetSpot * 1000000))
+        / (pow(10n, BigInt(collateralDecimals)))
+      ) / 10000
       // .mul(pow(10n, BigInt(assetDecimals)))
       // .div(assetIn)
       // .div(pow(10n, BigInt(collateralDecimals)))
@@ -70,8 +65,6 @@ export function calculateCdp(
 
     // percent = Number(newRatio) ? Number(newRatio) * collateralSpot / assetSpot : null;
   }
-
-  console.log("lend per", percent);
 
   return { ratio, percent };
 }

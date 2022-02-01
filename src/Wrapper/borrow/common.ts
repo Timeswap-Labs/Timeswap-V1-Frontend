@@ -36,8 +36,6 @@ export function calculateCdp(
     .div(assetOut)
     .toString();
 
-    console.log("borrow spots", assetSpot, collateralSpot);
-
   if (assetSpot && collateralSpot) {
     // const newRatio = new Uint256(assetOut)
     //   .mul(pow(10n, BigInt(collateralDecimals)))
@@ -47,15 +45,16 @@ export function calculateCdp(
 
     // percent = Number(newRatio) ? Number(newRatio) * assetSpot / collateralSpot : null;
 
-    percent = Number(new Uint256(collateralIn).toBigInt()
-      * BigInt(Math.floor(collateralSpot * 10000000000))
-      * (pow(10n, BigInt(assetDecimals)))
-      / BigInt(assetOut)
-      / BigInt(Math.floor(assetSpot * 1000000))
-      / (pow(10n, BigInt(collateralDecimals)))) / 10000
+    percent =
+      Number(
+        new Uint256(collateralIn).toBigInt()
+        * BigInt(Math.floor(collateralSpot * 10000000000))
+        * (pow(10n, BigInt(assetDecimals)))
+        / BigInt(assetOut)
+        / BigInt(Math.floor(assetSpot * 1000000))
+        / (pow(10n, BigInt(collateralDecimals)))
+      ) / 10000
   }
-
-  console.log("per", percent);
 
   return { ratio, percent };
 }
