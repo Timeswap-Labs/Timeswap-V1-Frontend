@@ -1,4 +1,5 @@
 import { Pool, Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
 import {
@@ -72,7 +73,7 @@ export async function debtCalculate(
 }
 
 export async function debtTransaction(
-  pool: Pool,
+  pool: SDKPool,
   gp: GlobalParams,
   borrow: Borrow
 ) {

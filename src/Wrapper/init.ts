@@ -5,7 +5,7 @@ import { getProvider } from "./provider";
 import { pool } from "./pool";
 import { lend, lendSigner } from "./lend";
 import { GlobalParams } from "./global";
-import { balancesAllowancesInit, fetchBalancesOf } from "./balances";
+import { balancesAllowancesInit, fetchAllowancesOf, fetchBalancesOf } from "./balances";
 import { positionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
@@ -141,6 +141,10 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
 
   app.ports.balancesOf.subscribe((balancesOf) => {
     fetchBalancesOf(app, gp, balancesOf);
+  });
+
+  app.ports.allowancesOf.subscribe((allowancesOf) => {
+    fetchAllowancesOf(app, gp, allowancesOf);
   });
 
   app.ports.copyToClipboard.subscribe((copyStr) => {

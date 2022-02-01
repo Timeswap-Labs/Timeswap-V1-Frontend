@@ -1,4 +1,6 @@
 import { Pool, Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
+
 import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
 import {
@@ -75,7 +77,7 @@ export async function collateralCalculate(
 }
 
 export async function collateralTransaction(
-  pool: Pool,
+  pool: SDKPool,
   gp: GlobalParams,
   borrow: Borrow
 ) {

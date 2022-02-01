@@ -373,57 +373,26 @@ interface Lend {
   }
 }
 
-type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
 
-// interface LendGivenPercent {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetIn: string;
-//   percent: number;
-//   result:
-//     | {
-//         bondOut: string;
-//         insuranceOut: string;
-//         minBond: string;
-//         minInsurance: string;
-//         apr: number;
-//         cf: string;
-//       }
-//     | number;
-// }
-
-// interface LendGivenBond {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetIn: string;
-//   bondOut: string;
-//   result:
-//     | {
-//         percent: number;
-//         insuranceOut: string;
-//         minInsurance: string;
-//         apr: number;
-//         cf: string;
-//       }
-//     | number;
-// }
-
-// interface Borrow {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetTo: string;
-//   dueTo: string;
-//   assetOut: string;
-//   debtIn?: string;
-//   collateralIn?: string;
-//   percent?: number;
-//   maxDebt?: string;
-//   maxCollateral?: string;
-//   deadline: number;
-// }
+interface Borrow {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    assetTo: string;
+    dueTo: string;
+    assetOut: string;
+    debtIn?: string;
+    collateralIn?: string;
+    percent?: number;
+    maxDebt?: string;
+    maxCollateral?: string;
+    deadline: number;
+  }
+}
 
 // type BorrowCalculate =
 //   | BorrowGivenPercent

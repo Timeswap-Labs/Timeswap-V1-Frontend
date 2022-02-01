@@ -149,3 +149,55 @@ export async function fetchBalancesOf(app: ElmApp<Ports>, gp: GlobalParams, bala
     ),
   });
 }
+
+export async function fetchAllowancesOf(
+  app: ElmApp<Ports>,
+  gp: GlobalParams,
+  allowancesOf: { chain: Chain, address: string, erc20s: ERC20Token[]}
+) {
+  const allowancesToken: ERC20Token[] = [];
+  const allowances: Promise<any>[] = [];
+
+  for (const token of allowancesOf.erc20s) {
+    if (token.address) {
+      const contract = new Contract(
+        token.address,
+        erc20Abi,
+        gp.metamaskProviderMulti
+      );
+
+      allowancesToken.push(token);
+      allowances.push(
+        contract.allowance(
+          allowancesOf.address,
+          CONVENIENCE[allowancesOf.chain.chainId]
+        )
+      );
+
+      const allowanceFilter = contract.filters.Approval(
+        allowancesOf.address,
+        CONVENIENCE[allowancesOf.chain.chainId]
+      );
+
+      contract.on(allowanceFilter, (_owner, _spender, value) => {
+        app.ports.receiveAllowances.send({
+          chain: allowancesOf.chain,
+          address: allowancesOf.address,
+          erc20s: allowancesOf.erc20s,
+          allowances: [value.toString()],
+        });
+      });
+    }
+  }
+
+  const allowancesResult = await Promise.all(allowances);
+
+  app.ports.receiveAllowances.send({
+    chain: allowancesOf.chain,
+    address: allowancesOf.address,
+    erc20s: allowancesToken,
+    allowances: allowancesToken.map((token, index) =>
+      allowancesResult[index].toString()
+    ),
+  });
+}
