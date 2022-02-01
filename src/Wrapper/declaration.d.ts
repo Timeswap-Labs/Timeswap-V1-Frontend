@@ -29,12 +29,20 @@ declare interface Ports {
   approveLend: PortFromElm<Approve>;
   lend: PortFromElm<Lend>;
   receiveLendAnswer: PortToElm<LendCalculate>;
+  querySum: PortFromElm<ClaimsSum>;
+  receiveSum: PortToElm<ReceiveSum>;
+  queryClaim: PortFromElm<ClaimsReturn>;
+  receiveReturn: PortToElm<ReceiveReturn>;
 
   queryBorrow: PortFromElm<BorrowQuery>;
   queryBorrowPerSecond: PortFromElm<BorrowQuery>;
   approveBorrow: PortFromElm<Approve>;
   borrow: PortFromElm<Borrow>;
   receiveBorrowAnswer: PortToElm<BorrowCalculate>;
+  queryFull: PortFromElm<QueryFull>;
+  receiveFull: PortToElm<ReceiveFull>;
+  queryCustom: PortFromElm<QueryCustom>;
+  receiveCustom: PortToElm<ReceiveCustom>;
 
   queryPay: PortFromElm<PayQuery>;
   approvePay: PortFromElm<Approve>;
@@ -125,15 +133,51 @@ interface ReceivePositions {
   };
 }
 
+interface Claim {
+  bondPrincipal: Uint;
+  bondInterest: Uint;
+  insurancePrincipal: Uint;
+  insuranceInterest: Uint;
+}
+
 type Claims = {
   pool: Pool;
-  claim: {
-    bondPrincipal: Uint;
-    bondInterest: Uint;
-    insurancePrincipal: Uint;
-    insuranceInterest: Uint;
-  };
+  claim: Claim;
 }[];
+
+type ClaimsSum = {
+  chain: Chain,
+  pool: Pool;
+  claim: Claim;
+};
+
+type ReceiveSum = {
+  chain: Chain;
+  pool: Pool;
+  claim: Claim;
+  result: {
+    asset: string;
+    collateral: string;
+  };
+};
+
+type ClaimsReturn = {
+  chain: Chain;
+  pool: Pool;
+  poolInfo: PoolInfo;
+  claimsIn: Claim;
+};
+
+type ReceiveReturn = {
+  chain: Chain;
+  pool: Pool;
+  poolInfo: PoolInfo;
+  claimsIn: Claim;
+  result: {
+    asset: string;
+    collateral: string;
+  } | string;
+};
 
 type Dues = {
   pool: Pool;
@@ -145,6 +189,76 @@ type Dues = {
     };
   }[];
 }[];
+
+type QueryFull = {
+  chain: Chain,
+  pool: Pool;
+  dues: {
+    tokenId: Uint;
+    due: {
+      debt: Uint;
+      collateral: Uint;
+    };
+  }[];
+};
+
+type ReceiveFull = {
+  chain: Chain;
+  pool: Pool;
+  dues: {
+    tokenId: Uint;
+    due: {
+      debt: Uint;
+      collateral: Uint;
+    };
+  }[];
+  result: {
+    assetIn: Uint;
+    collateralOut: Uint;
+  } | string;
+};
+
+type QueryCustom = {
+  chain: Chain,
+  pool: Pool;
+  dues: {
+    tokenId: Uint;
+    due: {
+      debt: Uint;
+      collateral: Uint;
+    };
+  }[];
+  assetsIn: {
+    tokenId: Uint;
+    assetIn: Uint;
+  }[];
+};
+
+type ReceiveCustom = {
+  chain: Chain,
+  pool: Pool;
+  dues: {
+    tokenId: Uint;
+    due: {
+      debt: Uint;
+      collateral: Uint;
+    };
+  }[];
+  assetsIn: {
+    tokenId: Uint;
+    assetIn: Uint;
+  }[];
+  result: {
+    collateralsOut: {
+      tokenId: Uint;
+      collateralOut: Uint;
+    }[];
+    total?: {
+      assetIn: Uint;
+      collateralOut: Uint;
+    } | string
+  };
+};
 
 type Liqs = {
   pool: Pool;
@@ -201,8 +315,10 @@ interface PoolInfo {
   assetReserve: Uint;
   collateralReserve: Uint;
   totalLiquidity: Uint;
-  totalBond: Uint;
-  totalInsurance: Uint;
+  totalBondInterest: Uint;
+  totalBondPrincipal: Uint;
+  totalInsuranceInterest: Uint;
+  totalInsurancePrincipal: Uint;
   totalDebtCreated: Uint;
   assetSpot: number | null;
   collateralSpot: number | null;

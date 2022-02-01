@@ -41,7 +41,6 @@ import Element
         , padding
         , paddingXY
         , px
-        , rotate
         , row
         , shrink
         , spacing
@@ -58,7 +57,7 @@ import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Page.Answer as PoolInfoAnswer
 import Page.PoolInfo exposing (PoolInfo)
-import Page.Position.Claim.Error as Error exposing (Error)
+import Page.Position.Claim.Error exposing (Error)
 import Page.Position.Claim.Query as Query
 import Page.Position.Claim.Tooltip as Tooltip exposing (Tooltip)
 import Page.Query as PoolInfoQuery

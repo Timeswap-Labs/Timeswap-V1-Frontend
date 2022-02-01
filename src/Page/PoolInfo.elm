@@ -13,8 +13,10 @@ type alias PoolInfo =
     , assetReserve : Uint
     , collateralReserve : Uint
     , totalLiquidity : Uint
-    , totalBond : Uint
-    , totalInsurance : Uint
+    , totalBondInterest : Uint
+    , totalBondPrincipal : Uint
+    , totalInsuranceInterest : Uint
+    , totalInsurancePrincipal : Uint
     , totalDebtCreated : Uint
     , assetSpot : Maybe Float
     , collateralSpot : Maybe Float
@@ -31,8 +33,10 @@ dummy =
     , assetReserve = Uint.dummy
     , collateralReserve = Uint.dummy
     , totalLiquidity = Uint.dummy
-    , totalBond = Uint.dummy
-    , totalInsurance = Uint.dummy
+    , totalBondInterest = Uint.dummy
+    , totalBondPrincipal = Uint.dummy
+    , totalInsuranceInterest = Uint.dummy
+    , totalInsurancePrincipal = Uint.dummy
     , totalDebtCreated = Uint.dummy
     , assetSpot = Nothing
     , collateralSpot = Nothing
@@ -50,8 +54,10 @@ decoder =
         |> Pipeline.required "assetReserve" Uint.decoder
         |> Pipeline.required "collateralReserve" Uint.decoder
         |> Pipeline.required "totalLiquidity" Uint.decoder
-        |> Pipeline.required "totalBond" Uint.decoder
-        |> Pipeline.required "totalInsurance" Uint.decoder
+        |> Pipeline.required "totalBondInterest" Uint.decoder
+        |> Pipeline.required "totalBondPrincipal" Uint.decoder
+        |> Pipeline.required "totalInsuranceInterest" Uint.decoder
+        |> Pipeline.required "totalInsurancePrincipal" Uint.decoder
         |> Pipeline.required "totalDebtCreated" Uint.decoder
         |> Pipeline.required "assetSpot" (Decode.float |> Decode.nullable)
         |> Pipeline.required "collateralSpot" (Decode.float |> Decode.nullable)
@@ -73,11 +79,17 @@ encode poolInfo =
     , ( "totalLiquidity"
       , poolInfo.totalLiquidity |> Uint.encode
       )
-    , ( "totalBond"
-      , poolInfo.totalBond |> Uint.encode
+    , ( "totalBondInterest"
+      , poolInfo.totalBondInterest |> Uint.encode
       )
-    , ( "totalInsurance"
-      , poolInfo.totalInsurance |> Uint.encode
+    , ( "totalBondPrincipal"
+      , poolInfo.totalBondPrincipal |> Uint.encode
+      )
+    , ( "totalInsuranceInterest"
+      , poolInfo.totalInsuranceInterest |> Uint.encode
+      )
+    , ( "totalInsurancePrincipal"
+      , poolInfo.totalInsurancePrincipal |> Uint.encode
       )
     , ( "totalDebtCreated"
       , poolInfo.totalDebtCreated |> Uint.encode

@@ -104,15 +104,6 @@ export async function insuranceTransaction(
   await txn.wait();
 }
 
-interface Query {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetIn: string;
-  insuranceOut: string;
-  slippage: number;
-}
-
 interface Lend {
   bondTo: string;
   insuranceTo: string;
