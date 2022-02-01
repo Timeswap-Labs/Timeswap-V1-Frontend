@@ -42,7 +42,7 @@ export async function percentCalculate(
       query.poolInfo.assetSpot,
       due.collateral,
       query.pool.collateral.decimals,
-      query.poolInfo.assetSpot
+      query.poolInfo.collateralSpot
     );
 
     query.pool.maturity = query.pool.maturity.toString();
