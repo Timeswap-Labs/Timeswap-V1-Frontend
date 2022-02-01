@@ -501,15 +501,23 @@ update msg model =
             case model.blockchain of
                 Supported blockchain ->
                     blockchain
-                        |> Blockchain.update blockchainMsg
-                        |> Tuple.mapBoth
-                            (\updated ->
-                                { model
-                                    | blockchain =
-                                        updated |> Supported
-                                }
-                            )
-                            (Cmd.map BlockchainMsg)
+                        |> Blockchain.update model blockchainMsg
+                        |> (\( updated, cmd, maybeEffect ) ->
+                                maybeEffect
+                                    |> Maybe.map
+                                        (\effect ->
+                                            { model | blockchain = updated |> Supported }
+                                                |> blockchainEffect effect
+                                                |> Tuple.mapSecond List.singleton
+                                                |> Tuple.mapSecond
+                                                    ((::) (cmd |> Cmd.map BlockchainMsg))
+                                                |> Tuple.mapSecond Cmd.batch
+                                        )
+                                    |> Maybe.withDefault
+                                        ( { model | blockchain = updated |> Supported }
+                                        , cmd |> Cmd.map BlockchainMsg
+                                        )
+                           )
 
                 _ ->
                     ( model
@@ -584,6 +592,27 @@ update msg model =
             ( model |> Animator.update posix animator
             , Cmd.none
             )
+
+
+blockchainEffect :
+    Blockchain.Effect
+    -> Model
+    -> ( Model, Cmd Msg )
+blockchainEffect effect model =
+    case ( effect, model.blockchain ) of
+        ( Blockchain.AddERC20s erc20s, Supported blockchain ) ->
+            model.chains
+                |> Chains.insertAll (blockchain |> Blockchain.toChain) erc20s
+                |> (\chains ->
+                        ( { model | chains = chains }
+                        , chains
+                            |> Chains.encodeCustom
+                            |> cacheCustom
+                        )
+                   )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 pageEffects :

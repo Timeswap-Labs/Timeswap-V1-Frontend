@@ -4,11 +4,13 @@ module Data.Chains exposing
     , decoderChain
     , encodeCustom
     , fromFragment
+    , getDoesNotExist
     , getGivenAddress
     , getGivenChainId
     , head
     , init
     , insert
+    , insertAll
     , isMemberOf
     , remove
     , removeAll
@@ -20,8 +22,8 @@ module Data.Chains exposing
 
 import Data.Address exposing (Address)
 import Data.Chain as Chain exposing (Chain(..))
-import Data.ERC20 exposing (ERC20)
-import Data.ERC20s as ERC20s
+import Data.ERC20 as ERC20 exposing (ERC20)
+import Data.ERC20s as ERC20s exposing (ERC20s)
 import Data.Native as Native
 import Data.Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
@@ -29,6 +31,7 @@ import Data.Tokens as Tokens exposing (Tokens)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Sort.Dict as Dict exposing (Dict)
+import Sort.Set as Set
 
 
 type Chains
@@ -178,9 +181,31 @@ insert chain erc20 (Chains ({ defaultChain, defaultTokens, others } as chains)) 
                                 |> Dict.insert chain
                                     (tokens |> Tokens.insert erc20)
                     }
-                        |> Chains
                 )
-            |> Maybe.withDefault (Chains chains)
+            |> Maybe.withDefault chains
+            |> Chains
+
+
+insertAll : Chain -> ERC20s -> Chains -> Chains
+insertAll chain erc20s (Chains ({ defaultChain, defaultTokens, others } as chains)) =
+    if chain == defaultChain then
+        { chains | defaultTokens = defaultTokens |> Tokens.insertAll erc20s }
+            |> Chains
+
+    else
+        others
+            |> Dict.get chain
+            |> Maybe.map
+                (\tokens ->
+                    { chains
+                        | others =
+                            others
+                                |> Dict.insert chain
+                                    (tokens |> Tokens.insertAll erc20s)
+                    }
+                )
+            |> Maybe.withDefault chains
+            |> Chains
 
 
 remove : Chain -> ERC20 -> Chains -> Chains
@@ -280,3 +305,15 @@ getGivenAddress chain address chains =
         |> toDict
         |> Dict.get chain
         |> Maybe.andThen (Tokens.getGivenAddress address)
+
+
+getDoesNotExist : Chain -> Chains -> ERC20s -> ERC20s
+getDoesNotExist chain (Chains { defaultChain, defaultTokens, others }) erc20s =
+    if chain == defaultChain then
+        erc20s |> Tokens.getDoesNotExist defaultTokens
+
+    else
+        others
+            |> Dict.get chain
+            |> Maybe.map (\tokens -> erc20s |> Tokens.getDoesNotExist tokens)
+            |> Maybe.withDefault (Set.empty ERC20.sorter)

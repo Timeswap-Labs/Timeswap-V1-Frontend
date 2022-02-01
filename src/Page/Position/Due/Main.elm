@@ -397,7 +397,7 @@ borrowMoreDisabled =
 repayButton : Theme -> Element Msg
 repayButton theme =
     Input.button
-        [ width <| px 102
+        [ width <| px 153
         , height <| px 44
         , Border.rounded 4
         , theme |> ThemeColor.primaryBtn |> Background.color
@@ -413,14 +413,14 @@ repayButton theme =
                 , Font.color Color.light100
                 , Font.bold
                 ]
-                (text "Repay")
+                (text "Proceed to Repay")
         }
 
 
 repayDisabled : Theme -> Element msg
 repayDisabled theme =
     el
-        [ width <| px 102
+        [ width <| px 153
         , height <| px 44
         , Border.rounded 4
         , theme |> ThemeColor.btnBackground |> Background.color
@@ -434,7 +434,7 @@ repayDisabled theme =
             , Font.color Color.transparent300
             , Font.bold
             ]
-            (text "Repay")
+            (text "Proceed to Repay")
         )
 
 

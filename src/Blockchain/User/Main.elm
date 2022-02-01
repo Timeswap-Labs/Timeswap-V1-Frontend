@@ -1,5 +1,6 @@
 port module Blockchain.User.Main exposing
-    ( Flag
+    ( Effect(..)
+    , Flag
     , Msg
     , NotSupported
     , User
@@ -60,9 +61,10 @@ import Blockchain.User.WritePay as WritePay exposing (WritePay)
 import Blockchain.User.WriteWithdraw as WriteWithdraw exposing (WriteWithdraw)
 import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain)
-import Data.Chains exposing (Chains)
+import Data.Chains as Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
-import Data.ERC20 exposing (ERC20)
+import Data.ERC20 as ERC20 exposing (ERC20)
+import Data.ERC20s exposing (ERC20s)
 import Data.Hash exposing (Hash)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Token as Token exposing (Token)
@@ -75,6 +77,7 @@ import Json.Decode.Pipeline as Pipeline
 import Json.Encode exposing (Value)
 import Process
 import Sort.Dict as Dict
+import Sort.Set as Set
 import Task
 import Time exposing (Posix)
 
@@ -115,6 +118,10 @@ type Msg
     | ReceivePositions Value
     | BalancesTick Posix
     | AllowancesTick Posix
+
+
+type Effect
+    = AddERC20s ERC20s
 
 
 init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
@@ -240,16 +247,17 @@ receiveNotSupported value =
             Nothing
 
 
-update : Chain -> Msg -> User -> ( User, Cmd Msg )
-update chain msg (User user) =
+update : { model | chains : Chains } -> Chain -> Msg -> User -> ( User, Cmd Msg, Maybe Effect )
+update { chains } chain msg (User user) =
     case msg of
         QueryNatives () ->
             ( user |> User
             , getNatives chain
+            , Nothing
             )
 
         ReceiveBalances value ->
-            case value |> Decode.decodeValue Balances.decoder of
+            (case value |> Decode.decodeValue Balances.decoder of
                 Ok decoded ->
                     if
                         (decoded.chain == chain)
@@ -260,16 +268,17 @@ update chain msg (User user) =
                                 user.balances
                                     |> Dict.insertAll decoded.balances
                         }
-                            |> noCmd
 
                     else
-                        user |> noCmd
+                        user
 
                 Err _ ->
-                    user |> noCmd
+                    user
+            )
+                |> noCmdAndEffect
 
         ReceiveAllowances value ->
-            case value |> Decode.decodeValue Allowances.decoder of
+            (case value |> Decode.decodeValue Allowances.decoder of
                 Ok decoded ->
                     if
                         (decoded.chain == chain)
@@ -280,13 +289,14 @@ update chain msg (User user) =
                                 user.allowances
                                     |> Dict.insertAll decoded.allowances
                         }
-                            |> noCmd
 
                     else
-                        user |> noCmd
+                        user
 
                 Err _ ->
-                    user |> noCmd
+                    user
+            )
+                |> noCmdAndEffect
 
         ReceiveReceipt value ->
             case value |> Decode.decodeValue Write.decoder of
@@ -305,14 +315,15 @@ update chain msg (User user) =
                                     , txns
                                         |> Cache.encodeTxns chain user.address
                                         |> cacheTxns
+                                    , Nothing
                                     )
                                )
 
                     else
-                        user |> noCmd
+                        user |> noCmdAndEffect
 
                 Err _ ->
-                    user |> noCmd
+                    user |> noCmdAndEffect
 
         ReceiveNatives decodedChain (Ok natives) ->
             ( user |> User
@@ -327,6 +338,7 @@ update chain msg (User user) =
 
               else
                 Cmd.none
+            , Nothing
             )
 
         ReceiveNatives decodedChain (Err error) ->
@@ -335,59 +347,117 @@ update chain msg (User user) =
                     |> User
                 , Process.sleep 5000
                     |> Task.perform QueryNatives
+                , Nothing
                 )
 
             else
-                ( user |> User
-                , Cmd.none
-                )
+                user |> noCmdAndEffect
 
         ReceivePositions value ->
-            (case value |> Decode.decodeValue Positions.decoder of
+            case value |> Decode.decodeValue Positions.decoder of
                 Ok decoded ->
                     if
                         (decoded.chain == chain)
                             && (decoded.owner == user.address)
                     then
-                        { user
-                            | positions =
-                                user.positions
-                                    |> Remote.map
-                                        (\{ claims, dues, liqs } ->
-                                            { claims =
-                                                claims
-                                                    |> Dict.insertAll decoded.positions.claims
-                                            , dues =
-                                                dues
-                                                    |> Dict.insertAll decoded.positions.dues
-                                            , liqs =
-                                                liqs
-                                                    |> Dict.insertAll decoded.positions.liqs
-                                            }
-                                                |> Success
-                                        )
-                                    |> Remote.withDefault
-                                        (decoded.positions |> Success)
-                        }
+                        decoded.positions
+                            |> Positions.toERC20s
+                            |> Chains.getDoesNotExist chain chains
+                            |> (\erc20s ->
+                                    ( erc20s
+                                        |> Set.foldl
+                                            (\erc20 accumulator ->
+                                                user.balances
+                                                    |> Dict.get (Token.ERC20 erc20)
+                                                    |> Maybe.map (\_ -> accumulator)
+                                                    |> Maybe.withDefault
+                                                        (accumulator
+                                                            |> Set.insert (Token.ERC20 erc20)
+                                                        )
+                                            )
+                                            (Set.empty Token.sorter)
+                                    , erc20s
+                                        |> Set.foldl
+                                            (\erc20 accumulator ->
+                                                user.allowances
+                                                    |> Dict.get erc20
+                                                    |> Maybe.map (\_ -> accumulator)
+                                                    |> Maybe.withDefault
+                                                        (accumulator
+                                                            |> Set.insert erc20
+                                                        )
+                                            )
+                                            (Set.empty ERC20.sorter)
+                                    )
+                               )
+                            |> (\( tokens, erc20s ) ->
+                                    ( { user
+                                        | balances =
+                                            tokens
+                                                |> Set.foldl
+                                                    (\token accumulator ->
+                                                        accumulator
+                                                            |> Dict.insert token Remote.loading
+                                                    )
+                                                    user.balances
+                                        , allowances =
+                                            erc20s
+                                                |> Set.foldl
+                                                    (\erc20 accumulator ->
+                                                        accumulator
+                                                            |> Dict.insert erc20 Remote.loading
+                                                    )
+                                                    user.allowances
+                                        , positions =
+                                            user.positions
+                                                |> Remote.map
+                                                    (\{ claims, dues, liqs } ->
+                                                        { claims =
+                                                            claims
+                                                                |> Dict.insertAll decoded.positions.claims
+                                                        , dues =
+                                                            dues
+                                                                |> Dict.insertAll decoded.positions.dues
+                                                        , liqs =
+                                                            liqs
+                                                                |> Dict.insertAll decoded.positions.liqs
+                                                        }
+                                                            |> Success
+                                                    )
+                                                |> Remote.withDefault
+                                                    (decoded.positions |> Success)
+                                      }
+                                        |> User
+                                    , [ tokens
+                                            |> Balances.encodeMultiple chain user.address
+                                            |> balancesOf
+                                      , erc20s
+                                            |> Allowances.encodeMultiple chain user.address
+                                            |> allowancesOf
+                                      ]
+                                        |> Cmd.batch
+                                    , Nothing
+                                    )
+                               )
 
                     else
-                        user
+                        user |> noCmdAndEffect
 
                 _ ->
-                    user
-            )
-                |> noCmd
+                    user |> noCmdAndEffect
 
         BalancesTick posix ->
             ( { user | balances = user.balances |> Balances.update posix }
                 |> User
             , Cmd.none
+            , Nothing
             )
 
         AllowancesTick posix ->
             ( { user | allowances = user.allowances |> Allowances.update posix }
                 |> User
             , Cmd.none
+            , Nothing
             )
 
 
@@ -656,7 +726,7 @@ updateBurn chain writeBurn (User user) =
            )
 
 
-noCmd :
+noCmdAndEffect :
     { wallet : Wallet
     , address : Address
     , name : Maybe String
@@ -665,10 +735,11 @@ noCmd :
     , positions : Web Positions
     , txns : Txns
     }
-    -> ( User, Cmd Msg )
-noCmd user =
+    -> ( User, Cmd Msg, Maybe Effect )
+noCmdAndEffect user =
     ( user |> User
     , Cmd.none
+    , Nothing
     )
 
 

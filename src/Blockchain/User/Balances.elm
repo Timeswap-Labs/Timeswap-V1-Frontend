@@ -2,6 +2,7 @@ module Blockchain.User.Balances exposing
     ( Balances
     , decoder
     , encode
+    , encodeMultiple
     , encodeSingle
     , hasEnough
     , init
@@ -20,6 +21,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode exposing (Value)
 import Sort.Dict as Dict exposing (Dict)
+import Sort.Set as Set exposing (Set)
 import Time exposing (Posix)
 
 
@@ -63,6 +65,19 @@ encodeSingle chain address token =
     [ ( "chain", chain |> Chain.encode )
     , ( "address", address |> Address.encode )
     , ( "tokens", [ token ] |> Encode.list Token.encode )
+    ]
+        |> Encode.object
+
+
+encodeMultiple : Chain -> Address -> Set Token -> Value
+encodeMultiple chain address tokens =
+    [ ( "chain", chain |> Chain.encode )
+    , ( "address", address |> Address.encode )
+    , ( "tokens"
+      , tokens
+            |> Set.toList
+            |> Encode.list Token.encode
+      )
     ]
         |> Encode.object
 

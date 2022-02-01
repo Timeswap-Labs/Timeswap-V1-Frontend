@@ -1,5 +1,6 @@
 module Blockchain.Main exposing
     ( Blockchain
+    , Effect(..)
     , Msg
     , init
     , initDefault
@@ -35,6 +36,7 @@ import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.ERC20 exposing (ERC20)
+import Data.ERC20s exposing (ERC20s)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Time exposing (Posix)
@@ -50,6 +52,10 @@ type Blockchain
 
 type Msg
     = UserMsg User.Msg
+
+
+type Effect
+    = AddERC20s ERC20s
 
 
 init :
@@ -103,26 +109,34 @@ initGivenChain chain =
     )
 
 
-update : Msg -> Blockchain -> ( Blockchain, Cmd Msg )
-update msg (Blockchain blockchain) =
+update : { model | chains : Chains } -> Msg -> Blockchain -> ( Blockchain, Cmd Msg, Maybe Effect )
+update model msg (Blockchain blockchain) =
     case msg of
         UserMsg userMsg ->
             blockchain.user
-                |> Maybe.map (User.update blockchain.chain userMsg)
+                |> Maybe.map (User.update model blockchain.chain userMsg)
                 |> Maybe.map
-                    (Tuple.mapBoth
-                        (\user ->
-                            { blockchain
-                                | user = Just user
-                            }
-                                |> Blockchain
+                    (\( user, cmd, maybeEffect ) ->
+                        ( { blockchain
+                            | user = Just user
+                          }
+                            |> Blockchain
+                        , cmd |> Cmd.map UserMsg
+                        , maybeEffect |> Maybe.map userEffect
                         )
-                        (Cmd.map UserMsg)
                     )
                 |> Maybe.withDefault
                     ( blockchain |> Blockchain
                     , Cmd.none
+                    , Nothing
                     )
+
+
+userEffect : User.Effect -> Effect
+userEffect effect =
+    case effect of
+        User.AddERC20s erc20s ->
+            AddERC20s erc20s
 
 
 updateClearTxns : Blockchain -> ( Blockchain, Cmd Msg )

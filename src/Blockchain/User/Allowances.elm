@@ -2,6 +2,7 @@ module Blockchain.User.Allowances exposing
     ( Allowances
     , decoder
     , encode
+    , encodeMultiple
     , encodeSingle
     , hasEnough
     , init
@@ -13,6 +14,7 @@ import Data.Address as Address exposing (Address)
 import Data.Chain as Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
 import Data.ERC20 as ERC20 exposing (ERC20)
+import Data.ERC20s exposing (ERC20s)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Uint as Uint exposing (Uint)
 import Data.Web exposing (Web)
@@ -20,6 +22,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode as Encode exposing (Value)
 import Sort.Dict as Dict exposing (Dict)
+import Sort.Set as Set
 import Time exposing (Posix)
 
 
@@ -63,6 +66,19 @@ encodeSingle chain address erc20 =
     [ ( "chain", chain |> Chain.encode )
     , ( "address", address |> Address.encode )
     , ( "erc20s", [ erc20 ] |> Encode.list ERC20.encode )
+    ]
+        |> Encode.object
+
+
+encodeMultiple : Chain -> Address -> ERC20s -> Value
+encodeMultiple chain address erc20s =
+    [ ( "chain", chain |> Chain.encode )
+    , ( "address", address |> Address.encode )
+    , ( "erc20s"
+      , erc20s
+            |> Set.toList
+            |> Encode.list ERC20.encode
+      )
     ]
         |> Encode.object
 

@@ -4,9 +4,11 @@ module Data.Tokens exposing
     , decoderToken
     , encodeCustom
     , fromFragment
+    , getDoesNotExist
     , getGivenAddress
     , init
     , insert
+    , insertAll
     , isMemberOf
     , remove
     , removeAll
@@ -185,6 +187,19 @@ insert erc20 (Tokens tokens) =
         |> Tokens
 
 
+insertAll : ERC20s -> Tokens -> Tokens
+insertAll erc20s (Tokens tokens) =
+    { tokens
+        | custom =
+            tokens.custom
+                |> Set.union ERC20.sorter
+                    (erc20s
+                        |> Set.dropIf (Set.memberOf tokens.whitelist)
+                    )
+    }
+        |> Tokens
+
+
 remove : ERC20 -> Tokens -> Tokens
 remove erc20 (Tokens tokens) =
     { tokens
@@ -238,3 +253,10 @@ getGivenAddress address tokens =
                     accumulator
             )
             Nothing
+
+
+getDoesNotExist : Tokens -> ERC20s -> ERC20s
+getDoesNotExist (Tokens tokens) erc20s =
+    erc20s
+        |> Set.dropIf (Set.memberOf tokens.whitelist)
+        |> Set.dropIf (Set.memberOf tokens.custom)
