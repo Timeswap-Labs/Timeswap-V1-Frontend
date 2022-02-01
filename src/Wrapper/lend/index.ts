@@ -1,7 +1,6 @@
-import { Uint128, Uint256, ERC20Token, Pair, Uint112 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Uint128, Pair, Uint112 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
-import { getPool } from "../helper";
-import { WhiteList } from "../whitelist";
+import { getPool, getPoolSDK } from "../helper";
 import { bondCalculate, bondTransaction } from "./bond";
 import { insuranceCalculate, insuranceTransaction } from "./insurance";
 import { percentCalculate, percentTransaction } from "./percent";
@@ -62,22 +61,11 @@ export function lend(app: ElmApp<Ports>) {
 
 export function lendSigner(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   gp: GlobalParams
 ) {
-  app.ports.approveLend.subscribe(async ({ erc20 }) => {
-    (whitelist.getToken(erc20) as ERC20Token)
-      .upgrade(gp.metamaskSigner!)
-      .approve(whitelist.convenience, new Uint256((1n << 256n) - 1n));
-  });
-
   app.ports.lend.subscribe(async (params) => {
-    const pool = whitelist.getPool(
-      params.asset,
-      params.collateral,
-      params.maturity
-    );
-    const { percent, bondOut, insuranceOut, minBond, minInsurance } = params;
+    const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
+    const { percent, bondOut, insuranceOut, minBond, minInsurance } = params.send;
 
     if (
       percent !== undefined &&
@@ -85,20 +73,20 @@ export function lendSigner(
       minInsurance !== undefined
     ) {
       await percentTransaction(pool, gp, {
-        ...params,
+        ...params.send,
         percent,
         minBond,
         minInsurance,
       });
     } else if (bondOut !== undefined && minInsurance !== undefined) {
       await bondTransaction(pool, gp, {
-        ...params,
+        ...params.send,
         bondOut,
         minInsurance,
       });
     } else if (insuranceOut !== undefined && minBond !== undefined) {
       await insuranceTransaction(pool, gp, {
-        ...params,
+        ...params.send,
         insuranceOut,
         minBond,
       });

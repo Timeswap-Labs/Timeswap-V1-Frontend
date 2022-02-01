@@ -5,7 +5,7 @@ import { getProvider } from "./provider";
 import { pool } from "./pool";
 import { lend, lendSigner } from "./lend";
 import { GlobalParams } from "./global";
-import { balancesInit } from "./balances";
+import { balancesAllowancesInit, fetchBalancesOf } from "./balances";
 import { positionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
@@ -15,6 +15,7 @@ import { faucetSigner } from "./faucet";
 import { wallet } from "./wallet";
 // import { BalancesOf, ReceiveUser, Ports } from "./declaration";
 import { getChainData, getTokenList } from "./chains";
+import { approveSigner } from "./approve";
 
 export declare let window: any;
 
@@ -89,10 +90,11 @@ export async function init(
       tokens: getTokenList(network.chainId),
     };
 
-    balancesInit(app, gp, balancesOf);
+    balancesAllowancesInit(app, gp, balancesOf);
     positionsInit(app, gp);
   }
 
+  approveSigner(app, gp);
   // pool(app, whitelist, gp);
   lend(app);
   // lendSigner(app, whitelist, gp);
@@ -136,6 +138,10 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
   // app.ports.disconnect.subscribe(() => {
   //   app.ports.receiveUser.send(null);
   // });
+
+  app.ports.balancesOf.subscribe((balancesOf) => {
+    fetchBalancesOf(app, gp, balancesOf);
+  });
 
   app.ports.copyToClipboard.subscribe((copyStr) => {
     navigator.clipboard.writeText(copyStr);
@@ -317,7 +323,6 @@ function userInit(
   account: string
 ) {
   if (gp.network === "0x4") {
-    // balancesInit(app, gp, whitelist, account);
     // positionsInit(app, whitelist, gp, account);
     // pending(gp, account);
   }

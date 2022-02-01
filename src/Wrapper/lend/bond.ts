@@ -28,7 +28,7 @@ export function bondCalculate(
       bondOut,
       currentTime
     );
-    const insuranceOut = claims.insurance.toString();
+    const insuranceOut = new Uint128(claims.insuranceInterest).add(new Uint128(claims.insurancePrincipal));
 
     const percent = calculatePercent(
       pool,
@@ -49,8 +49,9 @@ export function bondCalculate(
       timeSlippage
     );
 
+    const insuranceSlippage = new Uint128(claimsSlippage.insuranceInterest).add(new Uint128(claimsSlippage.insurancePrincipal));
     const minInsurance = calculateMinValue(
-      claimsSlippage.insurance,
+      insuranceSlippage,
       query.slippage
     ).toString();
 
@@ -59,7 +60,7 @@ export function bondCalculate(
       query.assetIn,
       query.pool.asset.decimals,
       query.poolInfo.assetSpot,
-      claims.insurance,
+      insuranceOut,
       query.pool.collateral.decimals,
       query.poolInfo.collateralSpot
       );
@@ -70,7 +71,7 @@ export function bondCalculate(
       ...query,
       result: {
         percent: Number(percent.toBigInt()),
-        insuranceOut,
+        insuranceOut: insuranceOut.toString(),
         minInsurance,
         apr,
         cdp,

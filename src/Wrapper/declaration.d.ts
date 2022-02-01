@@ -14,7 +14,6 @@ declare interface Ports {
   disconnect: PortFromElm;
 
   sdkPoolsMsg: PortToElm<SdkPoolsMsg[]>;
-  sdkPositionsMsg: PortToElm<SdkPositionsMsg[]>;
 
   balancesOf: PortFromElm<BalancesOf>;
   allowancesOf: PortFromElm<AllowancesOf>;
@@ -26,7 +25,6 @@ declare interface Ports {
 
   queryLend: PortFromElm<LendQuery>;
   queryLendPerSecond: PortFromElm<LendQuery>;
-  approveLend: PortFromElm<Approve>;
   lend: PortFromElm<Lend>;
   receiveLendAnswer: PortToElm<LendCalculate>;
   querySum: PortFromElm<ClaimsSum>;
@@ -36,7 +34,6 @@ declare interface Ports {
 
   queryBorrow: PortFromElm<BorrowQuery>;
   queryBorrowPerSecond: PortFromElm<BorrowQuery>;
-  approveBorrow: PortFromElm<Approve>;
   borrow: PortFromElm<Borrow>;
   receiveBorrowAnswer: PortToElm<BorrowCalculate>;
   queryFull: PortFromElm<QueryFull>;
@@ -45,9 +42,10 @@ declare interface Ports {
   receiveCustom: PortToElm<ReceiveCustom>;
 
   queryPay: PortFromElm<PayQuery>;
-  approvePay: PortFromElm<Approve>;
   pay: PortFromElm<Pay>;
   sdkPayMsg: PortToElm<PayCalculate>;
+
+  approve: PortFromElm<Approve>;
 
   withdraw: PortFromElm<Withdraw>;
 
@@ -326,57 +324,12 @@ interface PoolInfo {
   protocolFee: number;
 }
 
-// type SdkPositionsMsg =
-//   | SdkPositionsMsg1
-//   | SdkPositionsMsg2
-//   | SdkPositionsMsg3
-//   | SdkPositionsMsg4
-//   | SdkPositionsMsg5;
-
-// interface SdkPositionsMsg1 {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   bond: string;
-// }
-
-// interface SdkPositionsMsg2 {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   insurance: string;
-// }
-
-// interface SdkPositionsMsg3 {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   bond: string;
-//   assetOut: string;
-// }
-
-// interface SdkPositionsMsg4 {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   insurance: string;
-//   collateralOut: string;
-// }
-
-// interface SdkPositionsMsg5 {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   dues: {
-//     id: string;
-//     debt: string;
-//     collateral: string;
-//   }[];
-// }
-
-// interface Approve {
-//   erc20: string;
-// }
+interface Approve {
+  id: number;
+  chain: Chain;
+  address: string;
+  erc20: ERC20Token;
+}
 
 interface LendQuery {
   assetIn: string;
@@ -400,20 +353,25 @@ interface BorrowQuery {
   slippage: number;
 }
 
-// interface Lend {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   bondTo: string;
-//   insuranceTo: string;
-//   assetIn: string;
-//   bondOut?: string;
-//   insuranceOut?: string;
-//   percent?: number;
-//   minBond?: string;
-//   minInsurance?: string;
-//   deadline: number;
-// }
+interface Lend {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    bondTo: string;
+    insuranceTo: string;
+    assetIn: string;
+    bondOut?: string;
+    insuranceOut?: string;
+    percent?: number;
+    minBond?: string;
+    minInsurance?: string;
+    deadline: number;
+  }
+}
 
 type LendCalculate = LendGivenPercent | LendGivenBond | LendGivenInsurance;
 

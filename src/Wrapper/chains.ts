@@ -31,7 +31,7 @@ export const whitelistChains = {
         decimals: 18
       }
     ],
-    custom: []
+    custom: getCustomTokens(String(0x4))
   },
   others: [
     {

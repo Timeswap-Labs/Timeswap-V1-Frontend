@@ -1,6 +1,8 @@
+import { GlobalParams } from './global';
 import { ERC20Token, NativeToken, Pool, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Contract } from "@ethersproject/contracts";
-import { BorrowQuery, LendQuery } from "./declaration";
+import { BorrowQuery, LendQuery, ERC20Token as ERC20, NativeToken as Native } from "./declaration";
 
 export function updateErc20Balance(
   contract: Contract,
@@ -67,4 +69,46 @@ export function getPool(query: LendQuery | BorrowQuery): Pool {
   }
 
   return new Pool(asset, collateral, query.pool.maturity, query.poolInfo.fee, query.poolInfo.protocolFee);
+}
+
+
+export function getPoolSDK(
+  gp: GlobalParams,
+  asset: ERC20 | Native,
+  collateral: ERC20 | Native,
+  maturity: number | string,
+  chain: Chain,
+): SDKPool {
+  let assetToken, collateralToken;
+
+  if ((asset as ERC20).address) {
+    assetToken = new ERC20Token(
+      chain.chainId,
+      asset.decimals,
+      (asset as ERC20).address
+    );
+  }
+  else {
+    assetToken = new NativeToken(
+      chain.chainId,
+      asset.decimals,
+      asset.symbol
+    );
+  }
+
+  if ((collateral as ERC20).address) {
+    collateralToken = new ERC20Token(
+      chain.chainId,
+      collateral.decimals,
+      (collateral as ERC20).address
+    );
+  } else {
+    collateralToken = new NativeToken(
+      chain.chainId,
+      collateral.decimals,
+      collateral.symbol
+    );
+  }
+
+  return new SDKPool(gp.metamaskProvider, chain.chainId, assetToken, collateralToken, new Uint256(maturity));
 }
