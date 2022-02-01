@@ -1,4 +1,4 @@
-module Page.Transaction.Price exposing (Price, decoder, dummy, encode)
+module Page.Transaction.Price exposing (Price, decoder, encode)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
@@ -8,13 +8,6 @@ import Json.Encode as Encode exposing (Value)
 type alias Price =
     { asset : Maybe Float
     , collateral : Maybe Float
-    }
-
-
-dummy : Price
-dummy =
-    { asset = Nothing
-    , collateral = Nothing
     }
 
 

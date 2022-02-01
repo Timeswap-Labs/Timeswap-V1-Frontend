@@ -851,58 +851,34 @@ repayList model ((Modal { state, pool, total, tooltip }) as modal) blockchain =
         ]
         (case state of
             Full tokenIdSet ->
-                -- blockchain
-                --     |> Blockchain.toUser
-                --     |> Maybe.map User.getDues
-                --     |> (Maybe.map << Remote.map) (Dues.getMultiple pool tokenIdSet)
-                --     |> (Maybe.map << Remote.map << Maybe.map) Dict.toList
-                --     |> (Maybe.map << Remote.map << Maybe.map << List.map)
-                --         (\( tokenId, due ) ->
-                --             fullPosition model modal tokenId due
-                --         )
-                --     |> (Maybe.map << Remote.map << Maybe.withDefault) [ none ]
-                --     |> (Maybe.map << Remote.withDefault) [ none ]
-                --     |> Maybe.withDefault [ none ]
-                (User.getDuesDummy
-                    |> Dues.getMultiple pool TokenId.dummy
-                    |> Maybe.map Dict.toList
-                    |> (Maybe.map << List.map)
+                blockchain
+                    |> Blockchain.toUser
+                    |> Maybe.map User.getDues
+                    |> (Maybe.map << Remote.map) (Dues.getMultiple pool tokenIdSet)
+                    |> (Maybe.map << Remote.map << Maybe.map) Dict.toList
+                    |> (Maybe.map << Remote.map << Maybe.map << List.map)
                         (\( tokenId, due ) ->
                             fullPosition model modal tokenId due
                         )
+                    |> (Maybe.map << Remote.map << Maybe.withDefault) [ none ]
+                    |> (Maybe.map << Remote.withDefault) [ none ]
                     |> Maybe.withDefault [ none ]
-                )
-                    ++ [ totalDebtCollateral model modal ]
 
             Custom dict ->
-                -- blockchain
-                --     |> Blockchain.toUser
-                --     |> Maybe.map
-                --         (\user ->
-                --             user
-                --                 |> User.getDues
-                --                 |> Remote.map (Dues.getMultiple pool (dict |> Dict.keys |> Set.fromList TokenId.sorter))
-                --                 |> (Remote.map << Maybe.map) Dict.toList
-                --                 |> (Remote.map << Maybe.map << List.map)
-                --                     (\( tokenId, due ) ->
-                --                         customPosition model modal user tokenId due dict
-                --                     )
-                --                 |> (Remote.map << Maybe.withDefault) [ none ]
-                --                 |> Remote.withDefault [ none ]
-                --         )
-                --     |> Maybe.withDefault [ none ]
                 blockchain
                     |> Blockchain.toUser
                     |> Maybe.map
                         (\user ->
-                            User.getDuesDummy
-                                |> Dues.getMultiple pool TokenId.dummy
-                                |> Maybe.map Dict.toList
-                                |> (Maybe.map << List.map)
+                            user
+                                |> User.getDues
+                                |> Remote.map (Dues.getMultiple pool (dict |> Dict.keys |> Set.fromList TokenId.sorter))
+                                |> (Remote.map << Maybe.map) Dict.toList
+                                |> (Remote.map << Maybe.map << List.map)
                                     (\( tokenId, due ) ->
                                         customPosition model modal user tokenId due dict
                                     )
-                                |> Maybe.withDefault [ none ]
+                                |> (Remote.map << Maybe.withDefault) [ none ]
+                                |> Remote.withDefault [ none ]
                         )
                     |> Maybe.withDefault [ none ]
         )

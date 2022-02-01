@@ -173,20 +173,13 @@ init { time } blockchain parameter =
         Just (Parameter.Pool pool) ->
             if pool.maturity |> Maturity.isActive time then
                 ( { state =
-                        Borrow.init
-                            |> Exist PoolInfo.dummy
-                            |> Success
+                        Remote.loading
                             |> Active
                             |> Pool pool
-
-                  -- Loading
-                  --     |> Active
-                  --     |> Pool pool
                   , tooltip = Nothing
                   }
                     |> Transaction
-                  -- , get blockchain pool
-                , Cmd.none
+                , get blockchain pool
                 )
 
             else

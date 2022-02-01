@@ -8,7 +8,6 @@ port module Blockchain.User.Main exposing
     , getBalance
     , getClaims
     , getDues
-    , getDuesDummy
     , getLiqs
     , hasEnoughAllowance
     , hasEnoughBalance
@@ -218,7 +217,6 @@ receiveUser ({ chains } as model) chain value user =
                   , getNatives chain
                   ]
                     |> Cmd.batch
-                  -- |> Debug.log "query for name"
                 )
                     |> Just
 
@@ -755,9 +753,7 @@ decoder { chains } chain =
             , name = Nothing
             , balances = Balances.init chains chain
             , allowances = Allowances.init chains chain
-            , positions = Success Positions.dummy
-
-            -- |> Debug.log "replace"
+            , positions = Remote.loading
             , txns = txns
             }
                 |> User
@@ -943,11 +939,6 @@ getDues : User -> Web Dues
 getDues (User { positions }) =
     positions
         |> Remote.map .dues
-
-
-getDuesDummy : Dues
-getDuesDummy =
-    Dues.dummy
 
 
 getLiqs : User -> Web Liqs

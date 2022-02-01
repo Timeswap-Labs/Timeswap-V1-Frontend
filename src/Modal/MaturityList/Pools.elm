@@ -1,4 +1,4 @@
-module Modal.MaturityList.Pools exposing (Pools, compareMaturity, compareRank, decoder, dummy)
+module Modal.MaturityList.Pools exposing (Pools, compareMaturity, compareRank, decoder)
 
 import Data.CDP exposing (CDP)
 import Data.Maturity as Maturity exposing (Maturity)
@@ -11,14 +11,6 @@ import Sort.Dict as Dict exposing (Dict)
 
 type alias Pools =
     Dict Maturity Summary
-
-
-dummy : Pools
-dummy =
-    Dict.fromList Maturity.sorter
-        [ ( Maturity.dummy, Summary 1 0.2285 (CDP (Just 2.5) Uint.dummy) )
-        , ( Maturity.dummy2, Summary 2 0.0396 (CDP (Just 10) Uint.dummy) )
-        ]
 
 
 decoder : Decoder Pools

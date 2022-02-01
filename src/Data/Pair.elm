@@ -1,8 +1,6 @@
 module Data.Pair exposing
     ( Pair
     , decoder
-    , dummy
-    , dummy2
     , init
     , opposite
     , sorter
@@ -26,22 +24,6 @@ type Pair
         { asset : Token
         , collateral : Token
         }
-
-
-dummy : Pair
-dummy =
-    { asset = ERC20.dummy |> Token.ERC20
-    , collateral = ERC20.dummy |> Token.ERC20
-    }
-        |> Pair
-
-
-dummy2 : Pair
-dummy2 =
-    { asset = ERC20.dummy2 |> Token.ERC20
-    , collateral = ERC20.dummy |> Token.ERC20
-    }
-        |> Pair
 
 
 init : Token -> Token -> Maybe Pair

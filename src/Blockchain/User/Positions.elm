@@ -1,7 +1,6 @@
 module Blockchain.User.Positions exposing
     ( Positions
     , decoder
-    , dummy
     , toERC20s
     )
 
@@ -30,14 +29,6 @@ type alias Answer =
     { chain : Chain
     , owner : Address
     , positions : Positions
-    }
-
-
-dummy : Positions
-dummy =
-    { claims = Dict.empty Pool.sorter
-    , dues = Dict.empty Pool.sorter
-    , liqs = Dict.empty Pool.sorter
     }
 
 

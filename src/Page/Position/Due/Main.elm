@@ -453,9 +453,10 @@ viewDue { images, theme } user { pool, checks, tooltip } =
         [ width fill
         , spacing 12
         ]
-        (User.getDuesDummy
-            |> Dict.get pool
-            |> Maybe.map
+        (user
+            |> User.getDues
+            |> Remote.map (Dict.get pool)
+            |> (Remote.map << Maybe.map)
                 (\dict ->
                     dict
                         |> Dict.toList
@@ -594,6 +595,6 @@ viewDue { images, theme } user { pool, checks, tooltip } =
                                     ]
                             )
                 )
-            |> Maybe.withDefault
-                [ none ]
+            |> (Remote.map << Maybe.withDefault) []
+            |> Remote.withDefault []
         )

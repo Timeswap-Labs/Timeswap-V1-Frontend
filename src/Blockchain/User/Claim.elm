@@ -1,7 +1,6 @@
 module Blockchain.User.Claim exposing
     ( Claim
     , decoder
-    , dummy
     , encode
     )
 
@@ -16,15 +15,6 @@ type alias Claim =
     , bondInterest : Uint
     , insurancePrincipal : Uint
     , insuranceInterest : Uint
-    }
-
-
-dummy : Claim
-dummy =
-    { bondPrincipal = Uint.dummy
-    , bondInterest = Uint.dummy
-    , insurancePrincipal = Uint.dummy
-    , insuranceInterest = Uint.dummy
     }
 
 

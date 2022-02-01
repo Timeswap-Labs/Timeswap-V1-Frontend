@@ -145,26 +145,20 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
          ]
             ++ Glass.background backdrop theme
         )
-        -- (case user |> User.getDues of
-        --     Loading timeline ->
-        --         loading model timeline
-        --     Failure error ->
-        --         none
-        --     -- |> Debug.log "error view"
-        --     Success dues ->
-        --         if dues |> Dict.isEmpty then
-        --             noDues model
-        --         else
-        --             viewDues model tooltip dues
-        -- )
-        (User.getDuesDummy
-            |> (\dues ->
-                    if dues |> Dict.isEmpty then
-                        noDues model
+        (case user |> User.getDues of
+            Loading timeline ->
+                loading model timeline
 
-                    else
-                        viewDues model tooltip dues
-               )
+            Failure error ->
+                none
+
+            -- |> Debug.log "error view"
+            Success dues ->
+                if dues |> Dict.isEmpty then
+                    noDues model
+
+                else
+                    viewDues model tooltip dues
         )
 
 

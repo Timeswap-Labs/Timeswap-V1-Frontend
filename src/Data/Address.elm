@@ -2,7 +2,6 @@ module Data.Address exposing
     ( Address
     , compare
     , decoder
-    , dummy
     , encode
     , fromString
     , sorter
@@ -21,11 +20,6 @@ import Url.Builder as Builder exposing (QueryParameter)
 
 type Address
     = Address String
-
-
-dummy : Address
-dummy =
-    "0x521c1c37fdd245c313457fcbc6d5ed156647c2f3" |> Address
 
 
 fromString : String -> Maybe Address

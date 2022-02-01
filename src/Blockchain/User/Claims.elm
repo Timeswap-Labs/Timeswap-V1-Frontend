@@ -1,7 +1,6 @@
 module Blockchain.User.Claims exposing
     ( Claims
     , decoder
-    , dummy
     , toERC20s
     , toList
     )
@@ -23,22 +22,6 @@ import Time exposing (Posix)
 
 type alias Claims =
     Dict Pool Claim
-
-
-dummy : Claims
-dummy =
-    Dict.fromList Pool.sorter
-        [ ( { pair = Pair.dummy
-            , maturity = Maturity.dummy
-            }
-          , Claim.dummy
-          )
-        , ( { pair = Pair.dummy
-            , maturity = Maturity.dummy2
-            }
-          , Claim.dummy
-          )
-        ]
 
 
 toList :

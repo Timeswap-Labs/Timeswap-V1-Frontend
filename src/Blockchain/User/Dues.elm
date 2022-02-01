@@ -1,7 +1,6 @@
 module Blockchain.User.Dues exposing
     ( Dues
     , decoder
-    , dummy
     , getMultiple
     , toERC20s
     , toList
@@ -25,48 +24,6 @@ import Time exposing (Posix)
 
 type alias Dues =
     Dict Pool (Dict TokenId Due)
-
-
-dummy : Dues
-dummy =
-    Dict.fromList Pool.sorter
-        [ ( { pair = Pair.dummy
-            , maturity = Maturity.dummy
-            }
-          , Dict.fromList TokenId.sorter
-                [ ( Uint.dummy
-                  , { debt = Uint.dummy, collateral = Uint.dummy }
-                  )
-                , ( Uint.dummy
-                  , { debt = Uint.dummy, collateral = Uint.dummy }
-                  )
-                ]
-          )
-        , ( { pair = Pair.dummy2
-            , maturity = Maturity.dummy2
-            }
-          , Dict.fromList TokenId.sorter
-                [ ( Uint.dummy
-                  , { debt = Uint.dummy, collateral = Uint.dummy }
-                  )
-                , ( Uint.dummy
-                  , { debt = Uint.dummy, collateral = Uint.dummy }
-                  )
-                ]
-          )
-        , ( { pair = Pair.dummy
-            , maturity = Maturity.dummy
-            }
-          , Dict.fromList TokenId.sorter
-                [ ( Uint.dummy2
-                  , { debt = Uint.dummy, collateral = Uint.dummy }
-                  )
-                , ( Uint.dummy
-                  , { debt = Uint.dummy, collateral = Uint.dummy }
-                  )
-                ]
-          )
-        ]
 
 
 toList :
