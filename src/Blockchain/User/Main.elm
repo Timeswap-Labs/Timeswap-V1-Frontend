@@ -112,7 +112,7 @@ type Msg
     = QueryNatives ()
     | ReceiveBalances Value
     | ReceiveAllowances Value
-    | ReceiveReceipt Value
+    | ReceiveConfirm Value
     | ReceiveNatives Chain (Result Http.Error Natives.Answer)
     | ReceivePositions Value
     | BalancesTick Posix
@@ -299,7 +299,7 @@ update { chains } chain msg (User user) =
             )
                 |> noCmdAndEffect
 
-        ReceiveReceipt value ->
+        ReceiveConfirm value ->
             case value |> Decode.decodeValue Write.decoder of
                 Ok receipt ->
                     case
@@ -879,7 +879,7 @@ port receiveAllowances : (Value -> msg) -> Sub msg
 port receivePositions : (Value -> msg) -> Sub msg
 
 
-port receiveReceipt : (Value -> msg) -> Sub msg
+port receiveConfirm : (Value -> msg) -> Sub msg
 
 
 subscriptions : User -> Sub Msg
@@ -887,7 +887,7 @@ subscriptions (User user) =
     [ receiveBalances ReceiveBalances
     , receiveAllowances ReceiveAllowances
     , receivePositions ReceivePositions
-    , receiveReceipt ReceiveReceipt
+    , receiveConfirm ReceiveConfirm
     , user.balances |> Balances.subscriptions BalancesTick
     , user.allowances |> Allowances.subscriptions AllowancesTick
     ]
