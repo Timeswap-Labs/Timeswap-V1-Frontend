@@ -85,7 +85,7 @@ disabled theme string =
             , centerY
             , Font.size 16
             , paddingXY 0 4
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text string)
         )
@@ -191,7 +191,7 @@ disabledApprove theme erc20 =
             , centerY
             , Font.size 16
             , paddingXY 0 4
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             ([ "Approve"
              , erc20
@@ -223,7 +223,7 @@ pendingApprove theme erc20 =
             , centerY
             , Font.size 16
             , paddingXY 0 4
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             ([ "approving"
              , erc20
@@ -339,7 +339,7 @@ selectMaturity theme =
             , centerY
             , paddingXY 0 4
             , Font.size 16
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text "Select Maturity First")
         )
@@ -359,7 +359,7 @@ loading theme =
             , centerY
             , Font.size 16
             , paddingXY 0 4
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text "Loading")
         )
@@ -380,7 +380,7 @@ matured theme =
             , paddingXY 0 4
             , Font.size 16
             , Font.bold
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text "Matured")
         )
@@ -401,7 +401,7 @@ doesNotExist theme =
             , paddingXY 0 4
             , Font.size 16
             , Font.bold
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text "Pool Does Not Exist")
         )
@@ -422,7 +422,7 @@ exist theme =
             , paddingXY 0 4
             , Font.size 16
             , Font.bold
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text "Pool Already Exists")
         )
