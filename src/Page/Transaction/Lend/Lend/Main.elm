@@ -2098,7 +2098,7 @@ buttons { theme } blockchain asset transaction =
                                 )
                             of
                                 ( Just (Success True), Just (Success True) ) ->
-                                    [ lendButton ]
+                                    [ lendButton theme ]
 
                                 ( Just (Success False), Just (Success True) ) ->
                                     [ Button.notEnoughBalance ]
@@ -2107,7 +2107,7 @@ buttons { theme } blockchain asset transaction =
                                     [ theme |> Button.checkingBalance |> map never ]
 
                                 ( Just (Success True), Just (Success False) ) ->
-                                    [ approveButton erc20
+                                    [ approveButton erc20 theme
                                     , theme |> disabledLend
                                     ]
 
@@ -2192,7 +2192,7 @@ buttons { theme } blockchain asset transaction =
                                         (Uint.hasEnough assetIn)
                             of
                                 Just (Success True) ->
-                                    [ lendButton ]
+                                    [ lendButton theme ]
 
                                 Just (Success False) ->
                                     [ theme |> disabledLend ]
@@ -2236,11 +2236,12 @@ buttons { theme } blockchain asset transaction =
         )
 
 
-lendButton : Element Msg
-lendButton =
+lendButton : Theme -> Element Msg
+lendButton theme =
     Button.view
         { onPress = ClickLend
         , text = "Lend"
+        , theme = theme
         }
 
 
@@ -2250,11 +2251,12 @@ disabledLend theme =
         |> map never
 
 
-approveButton : ERC20 -> Element Msg
-approveButton erc20 =
+approveButton : ERC20 -> Theme -> Element Msg
+approveButton erc20 theme =
     Button.approve
         { onPress = ClickApprove
         , erc20 = erc20
+        , theme = theme
         }
 
 

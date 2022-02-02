@@ -191,7 +191,7 @@ loading { images, theme } timeline =
             , centerY
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.transparent300
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             [ text "Fetching your Borrow positions..." ]
         , el

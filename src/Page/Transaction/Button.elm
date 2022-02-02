@@ -47,6 +47,7 @@ import Utility.ThemeColor as ThemeColor
 view :
     { onPress : msg
     , text : String
+    , theme : Theme
     }
     -> Element msg
 view params =
@@ -54,7 +55,7 @@ view params =
         [ Region.description params.text
         , width fill
         , height <| px 44
-        , Background.color Color.primary500
+        , params.theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
         ]
         { onPress = Just params.onPress
@@ -93,6 +94,7 @@ disabled theme string =
 approve :
     { onPress : msg
     , erc20 : ERC20
+    , theme : Theme
     }
     -> Element msg
 approve params =
@@ -105,7 +107,7 @@ approve params =
             |> Region.description
         , width fill
         , height <| px 44
-        , Background.color Color.primary500
+        , params.theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
         ]
         { onPress = Just params.onPress
@@ -257,13 +259,13 @@ connect theme msg =
         }
 
 
-approveAsset : msg -> Element msg
-approveAsset msg =
+approveAsset : msg -> Theme -> Element msg
+approveAsset msg theme =
     Input.button
         [ Region.description "approve asset"
         , width fill
         , height <| px 44
-        , Background.color Color.primary500
+        , theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
         ]
         { onPress = Just msg
@@ -280,13 +282,13 @@ approveAsset msg =
         }
 
 
-approveCollateral : msg -> Element msg
-approveCollateral msg =
+approveCollateral : msg -> Theme -> Element msg
+approveCollateral msg theme =
     Input.button
         [ Region.description "approve collateral"
         , width fill
         , height <| px 44
-        , Background.color Color.primary500
+        , theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
         ]
         { onPress = Just msg

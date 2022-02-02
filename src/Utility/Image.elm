@@ -5,7 +5,7 @@ module Utility.Image exposing
     , arrowLeft
     , arrowLeftDark
     , arrowSecondary
-    , calander
+    , calendar
     , checkbox
     , checkboxSelected
     , close
@@ -42,6 +42,7 @@ module Utility.Image exposing
     , option
     , plus
     , plusPositive
+    , semiCircle
     , setting
     , settingsSecondary
     , sun
@@ -163,6 +164,11 @@ copy =
 plusPositive : List (Attribute msg) -> Images -> Element msg
 plusPositive =
     view "PlusPositive"
+
+
+semiCircle : List (Attribute msg) -> Images -> Element msg
+semiCircle =
+    view "SemiCircle"
 
 
 sun : List (Attribute msg) -> Images -> Element msg
@@ -340,8 +346,8 @@ matured =
     view "Matured"
 
 
-calander : List (Attribute msg) -> Images -> Element msg
-calander =
+calendar : List (Attribute msg) -> Images -> Element msg
+calendar =
     view "Calendar"
 
 

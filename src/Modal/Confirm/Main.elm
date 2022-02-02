@@ -3,7 +3,7 @@ module Modal.Confirm.Main exposing (Modal, Msg, confirm, init, reject, update, v
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Data.Backdrop exposing (Backdrop)
 import Data.Images exposing (Images)
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -13,6 +13,7 @@ import Element
         , el
         , fill
         , height
+        , inFront
         , padding
         , paddingXY
         , px
@@ -22,12 +23,12 @@ import Element
         , text
         , width
         )
-import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Modal.Outside as Outside
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
+import Utility.Image as Image
 import Utility.ThemeColor as ThemeColor
 
 
@@ -84,7 +85,6 @@ view ({ backdrop, theme } as model) modal =
             column
                 ([ width <| px 375
                  , height shrink
-                 , padding 24
                  , centerX
                  , centerY
                  , spacing 16
@@ -94,22 +94,92 @@ view ({ backdrop, theme } as model) modal =
                  ]
                     ++ Glass.background backdrop theme
                 )
-                [ row
-                    [ width fill
-                    , height shrink
-                    , spacing 16
-                    ]
-                    [ el
-                        [ width shrink
-                        , height shrink
-                        , centerY
-                        , Font.size 18
-                        , Font.bold
-                        , paddingXY 0 3
-                        , theme |> ThemeColor.text |> Font.color
-                        ]
-                        (text "Transaction Submitted")
-                    , IconButton.exit model Exit
-                    ]
+                [ header model
+                , body model
                 ]
         }
+
+
+header : { model | images : Images, backdrop : Backdrop, theme : Theme } -> Element Msg
+header ({ theme } as model) =
+    row
+        [ width fill
+        , height shrink
+        , spacing 16
+        , padding 24
+        , Border.widthEach
+            { top = 0
+            , right = 0
+            , bottom = 1
+            , left = 0
+            }
+        , theme |> ThemeColor.textboxBorder |> Border.color
+        ]
+        [ el
+            [ width shrink
+            , height shrink
+            , centerY
+            , Font.size 18
+            , Font.bold
+            , paddingXY 0 3
+            , theme |> ThemeColor.text |> Font.color
+            ]
+            (text "Transaction Submitted")
+        , IconButton.exit model Exit
+        ]
+
+
+body : { model | images : Images, backdrop : Backdrop, theme : Theme } -> Element Msg
+body { images, theme } =
+    column
+        [ width fill
+        , centerX
+        , centerY
+        , Font.center
+        , padding 30
+        , spacing 24
+        ]
+        [ images
+            |> Image.semiCircle
+                [ width <| px 80
+                , height <| px 80
+                , centerX
+                , Font.center
+                , (images
+                    |> Image.matured
+                        [ width <| px 36, height <| px 36, centerX, centerY, Font.center ]
+                  )
+                    |> inFront
+                ]
+        , column
+            [ width fill
+            , centerX
+            , Font.center
+            , spacing 16
+            ]
+            [ el
+                [ centerX
+                , theme |> ThemeColor.text |> Font.color
+                , Font.center
+                , Font.size 14
+                ]
+                (text "Transaction Submitted")
+            , row [ spacing 8, centerX, centerY, Font.center ]
+                [ el
+                    [ Font.size 12
+                    , Font.center
+                    , theme |> ThemeColor.actionElemLabel |> Font.color
+                    ]
+                    (text "View on Etherscan")
+                , images
+                    |> (case theme of
+                            Theme.Dark ->
+                                Image.link
+
+                            Theme.Light ->
+                                Image.linkSecondary
+                       )
+                        [ width <| px 16, height <| px 16 ]
+                ]
+            ]
+        ]

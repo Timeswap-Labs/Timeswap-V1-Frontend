@@ -3000,7 +3000,7 @@ buttons { theme } blockchain collateral transaction =
                                 )
                             of
                                 ( Just (Success True), Just (Success True) ) ->
-                                    [ borrowButton ]
+                                    [ borrowButton theme ]
 
                                 ( Just (Success False), Just (Success True) ) ->
                                     [ Button.notEnoughBalance ]
@@ -3009,7 +3009,7 @@ buttons { theme } blockchain collateral transaction =
                                     [ theme |> Button.checkingBalance |> map never ]
 
                                 ( Just (Success True), Just (Success False) ) ->
-                                    [ approveButton erc20
+                                    [ approveButton erc20 theme
                                     , theme |> disabledBorrow
                                     ]
 
@@ -3094,7 +3094,7 @@ buttons { theme } blockchain collateral transaction =
                                         (Uint.hasEnough collateralIn)
                             of
                                 Just (Success True) ->
-                                    [ borrowButton ]
+                                    [ borrowButton theme ]
 
                                 Just (Success False) ->
                                     [ theme |> disabledBorrow ]
@@ -3138,11 +3138,12 @@ buttons { theme } blockchain collateral transaction =
         )
 
 
-borrowButton : Element Msg
-borrowButton =
+borrowButton : Theme -> Element Msg
+borrowButton theme =
     Button.view
         { onPress = ClickBorrow
         , text = "Borrow"
+        , theme = theme
         }
 
 
@@ -3152,11 +3153,12 @@ disabledBorrow theme =
         |> map never
 
 
-approveButton : ERC20 -> Element Msg
-approveButton erc20 =
+approveButton : ERC20 -> Theme -> Element Msg
+approveButton erc20 theme =
     Button.approve
         { onPress = ClickApprove
         , erc20 = erc20
+        , theme = theme
         }
 
 
