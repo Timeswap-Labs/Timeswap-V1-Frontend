@@ -57,7 +57,13 @@ export function borrowSigner(
           hash: txnConfirmation.hash
         });
 
-        await txnConfirmation.wait();
+        const txnReceipt = await txnConfirmation.wait();
+        app.ports.receiveReceipt.send({
+          chain: params.chain,
+          address: params.address,
+          hash: txnConfirmation.hash,
+          state: txnReceipt.status ? "success" : "failed"
+        });
       }
     } catch (error) {
       app.ports.receiveConfirm.send({

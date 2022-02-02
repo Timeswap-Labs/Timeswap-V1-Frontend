@@ -66,6 +66,7 @@ declare interface Ports {
   changeChain: PortFromElm<Chain>;
 
   receiveConfirm: PortToElm<ReceiveConfirm>;
+  receiveReceipt: PortToElm<ReceiveReceipt>;
 }
 
 interface NativeToken {
@@ -431,6 +432,9 @@ interface ReceiveConfirm {
   hash: string | null;
 }
 
-// interface Faucet {
-//   erc20: string;
-// }
+interface ReceiveReceipt {
+  chain: Chain;
+  address: string;
+  hash: string;
+  state: string;
+}
