@@ -23,6 +23,12 @@ export async function balancesAllowancesInit(
         gp.metamaskProviderMulti
       );
 
+      const subscriptionContract = new Contract(
+        (token as ERC20Token).address,
+        erc20Abi,
+        gp.metamaskProvider
+      );
+
       balancesToken.push(token as ERC20Token);
       balances.push(contract.balanceOf(balancesOf.address));
 
@@ -34,26 +40,27 @@ export async function balancesAllowancesInit(
         )
       );
 
-      const allowanceFilter = contract.filters.Approval(
+      const allowanceFilter = subscriptionContract.filters.Approval(
         balancesOf.address,
         CONVENIENCE[balancesOf.chain.chainId]
       );
 
-      updateErc20Balance(contract, balancesOf.address, async () => {
-        const balance = await contract.balanceOf(balancesOf.address);
+      updateErc20Balance(subscriptionContract, balancesOf.address, async () => {
+        const balance = await subscriptionContract.balanceOf(balancesOf.address);
+
         app.ports.receiveBalances.send({
           chain: balancesOf.chain,
           address: balancesOf.address,
-          tokens: balancesOf.tokens,
+          tokens: [token],
           balances: [balance.toString()],
         });
       });
 
-      contract.on(allowanceFilter, (_owner, _spender, value) => {
+      subscriptionContract.on(allowanceFilter, (_owner, _spender, value) => {
         app.ports.receiveAllowances.send({
           chain: balancesOf.chain,
           address: balancesOf.address,
-          erc20s: balancesOf.tokens as ERC20Token[],
+          erc20s: [token as ERC20Token],
           allowances: [value.toString()],
         });
       });
@@ -68,7 +75,7 @@ export async function balancesAllowancesInit(
         app.ports.receiveBalances.send({
           chain: balancesOf.chain,
           address: balancesOf.address,
-          tokens: balancesOf.tokens,
+          tokens: [token],
           balances: [balance.toString()],
         });
       });
@@ -86,6 +93,7 @@ export async function balancesAllowancesInit(
       balancesResult[index].toString()
     ),
   });
+
   app.ports.receiveAllowances.send({
     chain: balancesOf.chain,
     address: balancesOf.address,
@@ -116,7 +124,7 @@ export async function fetchBalancesOf(app: ElmApp<Ports>, gp: GlobalParams, bala
         app.ports.receiveBalances.send({
           chain: balancesOf.chain,
           address: balancesOf.address,
-          tokens: balancesOf.tokens,
+          tokens: [token],
           balances: [balance.toString()],
         });
       });
@@ -131,7 +139,7 @@ export async function fetchBalancesOf(app: ElmApp<Ports>, gp: GlobalParams, bala
         app.ports.receiveBalances.send({
           chain: balancesOf.chain,
           address: balancesOf.address,
-          tokens: balancesOf.tokens,
+          tokens: [token],
           balances: [balance.toString()],
         });
       });
@@ -183,7 +191,7 @@ export async function fetchAllowancesOf(
         app.ports.receiveAllowances.send({
           chain: allowancesOf.chain,
           address: allowancesOf.address,
-          erc20s: allowancesOf.erc20s,
+          erc20s: [token],
           allowances: [value.toString()],
         });
       });

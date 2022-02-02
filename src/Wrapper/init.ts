@@ -1,6 +1,3 @@
-import rinkeby from "../../whitelist/rinkeby.json";
-
-import { WhiteList } from "./whitelist";
 import { getProvider } from "./provider";
 import { pool } from "./pool";
 import { lend, lendSigner } from "./lend";
@@ -73,26 +70,7 @@ export async function init(
   user: ReceiveUser | null
 ) {
   const provider = await getProvider(gp);
-  const network = await provider.getNetwork();
   gp.provider = provider;
-
-  const whitelist = new WhiteList(rinkeby, gp.provider, network);
-  const wlChain = getChainData(network.chainId);
-
-  if (user && wlChain) {
-    const balancesOf: BalancesOf = {
-      chain: {
-        chainId: wlChain.chainId,
-        name: wlChain.name,
-        etherscan: wlChain.etherscan,
-      },
-      address: user.address,
-      tokens: getTokenList(network.chainId),
-    };
-
-    balancesAllowancesInit(app, gp, balancesOf);
-    positionsInit(app, gp);
-  }
 
   approveSigner(app, gp);
   // pool(app, whitelist, gp);
@@ -109,20 +87,20 @@ export async function init(
 
   // faucetSigner(app, gp);
 
-  portsInit(app, whitelist, gp);
+  portsInit(app, gp);
 
   if (gp.metamaskProvider) {
-    metamaskConnected(app, whitelist, gp);
-    metamaskChainChange(app, whitelist, gp);
-    metamaskAccountsChange(app, whitelist, gp);
+    metamaskConnected(app, gp);
+    metamaskChainChange(app, gp);
+    metamaskAccountsChange(app, gp);
   }
 }
 
-function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
+function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
   app.ports.connect.subscribe((walletName) => {
     if (wallet[walletName]) {
       gp.metamaskProvider = wallet[walletName]!; //TODO: Fix null val
-      receiveUser(app, whitelist, gp, walletName);
+      receiveUser(app, gp, walletName);
     } else {
       app.ports.receiveNoConnect.send(walletName);
     }
@@ -200,7 +178,6 @@ function portsInit(app: ElmApp<Ports>, whitelist: WhiteList, gp: GlobalParams) {
 
 function receiveUser(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   gp: GlobalParams,
   walletName: string
 ) {
@@ -219,7 +196,7 @@ function receiveUser(
       });
       gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
-      userInit(app, whitelist, gp, accounts[0]);
+      userInit(app, gp, accounts[0]);
     })
     .catch(() => {
       console.log("Wrapper", "Failed");
@@ -229,7 +206,6 @@ function receiveUser(
 
 function metamaskConnected(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   gp: GlobalParams
 ) {
   gp.metamaskProvider.send("eth_accounts", []).then((accounts: string[]) => {
@@ -245,14 +221,13 @@ function metamaskConnected(
       });
       gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
-      userInit(app, whitelist, gp, accounts[0]);
+      userInit(app, gp, accounts[0]);
     }
   });
 }
 
 function metamaskChainChange(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   gp: GlobalParams
 ) {
   ethereum.on("chainChanged", (chainId: string) => {
@@ -274,7 +249,7 @@ function metamaskChainChange(
         gp.metamaskProvider = window.ethereum;
         gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
-        chainInit(app, whitelist, gp, accounts[0]);
+        chainInit(app, gp, accounts[0]);
       }
     });
   });
@@ -282,7 +257,6 @@ function metamaskChainChange(
 
 function metamaskAccountsChange(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   gp: GlobalParams
 ) {
   ethereum.on("accountsChanged", (accounts: string[]) => {
@@ -302,7 +276,7 @@ function metamaskAccountsChange(
       gp.metamaskProvider = window.ethereum;
       gp.metamaskSigner = gp.metamaskProvider.getSigner();
 
-      userInit(app, whitelist, gp, accounts[0]);
+      userInit(app, gp, accounts[0]);
     } else {
       app.ports.receiveUser.send(null);
     }
@@ -311,23 +285,33 @@ function metamaskAccountsChange(
 
 async function chainInit(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   gp: GlobalParams,
   account: string
 ) {
   gp.provider = await getProvider(gp);
   gp.network = await gp.metamaskProvider.send("eth_chainId", []);
-  userInit(app, whitelist, gp, account);
+  userInit(app, gp, account);
 }
 
 function userInit(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   gp: GlobalParams,
-  account: string
+  userAddress: string
 ) {
-  if (gp.network === "0x4") {
-    // positionsInit(app, whitelist, gp, account);
-    // pending(gp, account);
+  const wlChain = getChainData(Number(gp.network));
+
+  if (userAddress && wlChain) {
+    const balancesOf: BalancesOf = {
+      chain: {
+        chainId: wlChain.chainId,
+        name: wlChain.name,
+        etherscan: wlChain.etherscan,
+      },
+      address: userAddress,
+      tokens: getTokenList(Number(gp.network)),
+    };
+
+    balancesAllowancesInit(app, gp, balancesOf);
+    positionsInit(app, gp);
   }
 }

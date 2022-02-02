@@ -71,7 +71,6 @@ export function getPool(query: LendQuery | BorrowQuery): Pool {
   return new Pool(asset, collateral, query.pool.maturity, query.poolInfo.fee, query.poolInfo.protocolFee);
 }
 
-
 export function getPoolSDK(
   gp: GlobalParams,
   asset: ERC20 | Native,
