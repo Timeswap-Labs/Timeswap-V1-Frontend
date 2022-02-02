@@ -2,6 +2,7 @@ module Modal.Main exposing
     ( Effect(..)
     , Modal
     , Msg
+    , confirm
     , initChainList
     , initConfirm
     , initConnect
@@ -11,6 +12,7 @@ module Modal.Main exposing
     , initSettings
     , initTokenList
     , receiveUser
+    , reject
     , subscriptions
     , update
     , view
@@ -28,6 +30,7 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Deadline exposing (Deadline)
 import Data.Device exposing (Device)
 import Data.ERC20 exposing (ERC20)
+import Data.Hash exposing (Hash)
 import Data.Images exposing (Images)
 import Data.Offset exposing (Offset)
 import Data.Pair exposing (Pair)
@@ -122,6 +125,30 @@ initConfirm : Int -> TxnWrite -> Modal
 initConfirm id txnWrite =
     Confirm.init id txnWrite
         |> Confirm
+
+
+confirm : Int -> Hash -> Modal -> Modal
+confirm id hash modal =
+    case modal of
+        Confirm confirmModal ->
+            confirmModal
+                |> Confirm.confirm id hash
+                |> Confirm
+
+        _ ->
+            modal
+
+
+reject : Int -> Modal -> Modal
+reject id modal =
+    case modal of
+        Confirm confirmModal ->
+            confirmModal
+                |> Confirm.reject id
+                |> Confirm
+
+        _ ->
+            modal
 
 
 initMaturityList :
@@ -429,6 +456,7 @@ view model modal =
                 _ ->
                     none
 
-        Confirm confirm ->
-            Confirm.view model confirm
+        Confirm confirmModal ->
+            confirmModal
+                |> Confirm.view model
                 |> map ConfirmMsg

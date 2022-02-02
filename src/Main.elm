@@ -624,6 +624,32 @@ blockchainEffect effect model =
             , Cmd.none
             )
 
+        ( Blockchain.ConfirmTxn id hash, Supported _ ) ->
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (model.modal
+                                |> Animator.current
+                                |> Maybe.map (Modal.confirm id hash)
+                            )
+              }
+            , Cmd.none
+            )
+
+        ( Blockchain.RejectTxn id, Supported _ ) ->
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (model.modal
+                                |> Animator.current
+                                |> Maybe.map (Modal.reject id)
+                            )
+              }
+            , Cmd.none
+            )
+
         _ ->
             ( model, Cmd.none )
 

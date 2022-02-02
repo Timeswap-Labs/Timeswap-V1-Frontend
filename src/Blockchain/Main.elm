@@ -38,6 +38,7 @@ import Data.Chains as Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.ERC20 exposing (ERC20)
 import Data.ERC20s exposing (ERC20s)
+import Data.Hash exposing (Hash)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
 import Time exposing (Posix)
@@ -58,6 +59,8 @@ type Msg
 type Effect
     = AddERC20s ERC20s
     | OpenConfirm Int TxnWrite
+    | ConfirmTxn Int Hash
+    | RejectTxn Int
 
 
 init :
@@ -142,6 +145,12 @@ userEffect effect =
 
         User.OpenConfirm id txnWrite ->
             OpenConfirm id txnWrite
+
+        User.ConfirmTxn id hash ->
+            ConfirmTxn id hash
+
+        User.RejectTxn id ->
+            RejectTxn id
 
 
 updateClearTxns : Blockchain -> ( Blockchain, Cmd Msg )

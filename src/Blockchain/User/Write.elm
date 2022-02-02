@@ -12,7 +12,7 @@ type alias Receipt =
     { id : Int
     , chain : Chain
     , address : Address
-    , hash : Hash
+    , hash : Maybe Hash
     }
 
 
@@ -22,7 +22,7 @@ decoder =
         |> Pipeline.required "id" Decode.int
         |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "address" Address.decoder
-        |> Pipeline.required "hash" Hash.decoder
+        |> Pipeline.required "hash" (Hash.decoder |> Decode.nullable)
 
 
 encode :

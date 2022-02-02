@@ -122,6 +122,8 @@ type Msg
 type Effect
     = AddERC20s ERC20s
     | OpenConfirm Int TxnWrite
+    | ConfirmTxn Int Hash
+    | RejectTxn Int
 
 
 init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
@@ -300,26 +302,35 @@ update { chains } chain msg (User user) =
         ReceiveReceipt value ->
             case value |> Decode.decodeValue Write.decoder of
                 Ok receipt ->
-                    if
-                        (receipt.chain == chain)
+                    case
+                        ( (receipt.chain == chain)
                             && (receipt.address == user.address)
-                    then
-                        user.txns
-                            |> Txns.confirm receipt.id
-                                receipt.hash
-                                Txn.Pending
-                            |> (\txns ->
-                                    ( { user | txns = txns }
-                                        |> User
-                                    , txns
-                                        |> Cache.encodeTxns chain user.address
-                                        |> cacheTxns
-                                    , Nothing
-                                    )
-                               )
+                        , receipt.hash
+                        )
+                    of
+                        ( True, Just hash ) ->
+                            user.txns
+                                |> Txns.confirm receipt.id
+                                    hash
+                                    Txn.Pending
+                                |> (\txns ->
+                                        ( { user | txns = txns }
+                                            |> User
+                                        , txns
+                                            |> Cache.encodeTxns chain user.address
+                                            |> cacheTxns
+                                        , ConfirmTxn receipt.id hash |> Just
+                                        )
+                                   )
 
-                    else
-                        user |> noCmdAndEffect
+                        ( True, Nothing ) ->
+                            ( user |> User
+                            , Cmd.none
+                            , RejectTxn receipt.id |> Just
+                            )
+
+                        _ ->
+                            user |> noCmdAndEffect
 
                 Err _ ->
                     user |> noCmdAndEffect
