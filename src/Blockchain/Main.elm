@@ -24,6 +24,7 @@ module Blockchain.Main exposing
     )
 
 import Blockchain.User.Main as User exposing (User)
+import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Blockchain.User.WriteBorrow exposing (WriteBorrow)
 import Blockchain.User.WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate exposing (WriteCreate)
@@ -56,6 +57,7 @@ type Msg
 
 type Effect
     = AddERC20s ERC20s
+    | OpenConfirm Int TxnWrite
 
 
 init :
@@ -138,6 +140,9 @@ userEffect effect =
         User.AddERC20s erc20s ->
             AddERC20s erc20s
 
+        User.OpenConfirm id txnWrite ->
+            OpenConfirm id txnWrite
+
 
 updateClearTxns : Blockchain -> ( Blockchain, Cmd Msg )
 updateClearTxns (Blockchain ({ chain } as blockchain)) =
@@ -179,23 +184,25 @@ updateAddERC20 erc20 (Blockchain ({ chain } as blockchain)) =
             )
 
 
-updateApprove : ERC20 -> Blockchain -> ( Blockchain, Cmd Msg )
+updateApprove : ERC20 -> Blockchain -> ( Blockchain, Cmd Msg, Maybe Effect )
 updateApprove erc20 (Blockchain ({ chain } as blockchain)) =
     blockchain.user
         |> Maybe.map
             (\user ->
                 user
                     |> User.updateApprove chain erc20
-                    |> Tuple.mapBoth
-                        (\updated ->
-                            { blockchain | user = Just updated }
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
                                 |> Blockchain
-                        )
-                        (Cmd.map UserMsg)
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
             )
         |> Maybe.withDefault
             ( blockchain |> Blockchain
             , Cmd.none
+            , Nothing
             )
 
 
@@ -203,23 +210,25 @@ updateLend :
     { model | time : Posix, deadline : Deadline }
     -> WriteLend
     -> Blockchain
-    -> ( Blockchain, Cmd Msg )
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
 updateLend model writeLend (Blockchain ({ chain } as blockchain)) =
     blockchain.user
         |> Maybe.map
             (\user ->
                 user
                     |> User.updateLend model chain writeLend
-                    |> Tuple.mapBoth
-                        (\updated ->
-                            { blockchain | user = Just updated }
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
                                 |> Blockchain
-                        )
-                        (Cmd.map UserMsg)
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
             )
         |> Maybe.withDefault
             ( blockchain |> Blockchain
             , Cmd.none
+            , Nothing
             )
 
 
@@ -227,23 +236,25 @@ updateBorrow :
     { model | time : Posix, deadline : Deadline }
     -> WriteBorrow
     -> Blockchain
-    -> ( Blockchain, Cmd Msg )
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
 updateBorrow model writeBorrow (Blockchain ({ chain } as blockchain)) =
     blockchain.user
         |> Maybe.map
             (\user ->
                 user
                     |> User.updateBorrow model chain writeBorrow
-                    |> Tuple.mapBoth
-                        (\updated ->
-                            { blockchain | user = Just updated }
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
                                 |> Blockchain
-                        )
-                        (Cmd.map UserMsg)
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
             )
         |> Maybe.withDefault
             ( blockchain |> Blockchain
             , Cmd.none
+            , Nothing
             )
 
 
@@ -251,23 +262,25 @@ updateLiquidity :
     { model | time : Posix, deadline : Deadline }
     -> WriteLiquidity
     -> Blockchain
-    -> ( Blockchain, Cmd Msg )
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
 updateLiquidity model writeLiquidity (Blockchain ({ chain } as blockchain)) =
     blockchain.user
         |> Maybe.map
             (\user ->
                 user
                     |> User.updateLiquidity model chain writeLiquidity
-                    |> Tuple.mapBoth
-                        (\updated ->
-                            { blockchain | user = Just updated }
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
                                 |> Blockchain
-                        )
-                        (Cmd.map UserMsg)
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
             )
         |> Maybe.withDefault
             ( blockchain |> Blockchain
             , Cmd.none
+            , Nothing
             )
 
 
@@ -275,46 +288,50 @@ updateCreate :
     { model | time : Posix, deadline : Deadline }
     -> WriteCreate
     -> Blockchain
-    -> ( Blockchain, Cmd Msg )
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
 updateCreate model writeCreate (Blockchain ({ chain } as blockchain)) =
     blockchain.user
         |> Maybe.map
             (\user ->
                 user
                     |> User.updateCreate model chain writeCreate
-                    |> Tuple.mapBoth
-                        (\updated ->
-                            { blockchain | user = Just updated }
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
                                 |> Blockchain
-                        )
-                        (Cmd.map UserMsg)
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
             )
         |> Maybe.withDefault
             ( blockchain |> Blockchain
             , Cmd.none
+            , Nothing
             )
 
 
 updateWithdraw :
     WriteWithdraw
     -> Blockchain
-    -> ( Blockchain, Cmd Msg )
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
 updateWithdraw writeWithdraw (Blockchain ({ chain } as blockchain)) =
     blockchain.user
         |> Maybe.map
             (\user ->
                 user
                     |> User.updateWithdraw chain writeWithdraw
-                    |> Tuple.mapBoth
-                        (\updated ->
-                            { blockchain | user = Just updated }
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
                                 |> Blockchain
-                        )
-                        (Cmd.map UserMsg)
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
             )
         |> Maybe.withDefault
             ( blockchain |> Blockchain
             , Cmd.none
+            , Nothing
             )
 
 
@@ -322,46 +339,50 @@ updatePay :
     { model | time : Posix, deadline : Deadline }
     -> WritePay
     -> Blockchain
-    -> ( Blockchain, Cmd Msg )
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
 updatePay model writePay (Blockchain ({ chain } as blockchain)) =
     blockchain.user
         |> Maybe.map
             (\user ->
                 user
                     |> User.updatePay model chain writePay
-                    |> Tuple.mapBoth
-                        (\updated ->
-                            { blockchain | user = Just updated }
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
                                 |> Blockchain
-                        )
-                        (Cmd.map UserMsg)
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
             )
         |> Maybe.withDefault
             ( blockchain |> Blockchain
             , Cmd.none
+            , Nothing
             )
 
 
 updateBurn :
     WriteBurn
     -> Blockchain
-    -> ( Blockchain, Cmd Msg )
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
 updateBurn writeBurn (Blockchain ({ chain } as blockchain)) =
     blockchain.user
         |> Maybe.map
             (\user ->
                 user
                     |> User.updateBurn chain writeBurn
-                    |> Tuple.mapBoth
-                        (\updated ->
-                            { blockchain | user = Just updated }
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
                                 |> Blockchain
-                        )
-                        (Cmd.map UserMsg)
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
             )
         |> Maybe.withDefault
             ( blockchain |> Blockchain
             , Cmd.none
+            , Nothing
             )
 
 

@@ -118,9 +118,9 @@ initTokenList tokenParam =
         |> TokenList
 
 
-initConfirm : TxnWrite -> Modal
-initConfirm txnWrite =
-    Confirm.init txnWrite
+initConfirm : Int -> TxnWrite -> Modal
+initConfirm id txnWrite =
+    Confirm.init id txnWrite
         |> Confirm
 
 

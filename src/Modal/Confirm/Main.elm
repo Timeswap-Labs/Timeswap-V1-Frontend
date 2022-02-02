@@ -2,6 +2,7 @@ module Modal.Confirm.Main exposing (Modal, Msg, confirm, init, reject, update, v
 
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Data.Backdrop exposing (Backdrop)
+import Data.Hash exposing (Hash)
 import Data.Images exposing (Images)
 import Data.Theme exposing (Theme)
 import Element
@@ -39,18 +40,19 @@ type Modal
 
 
 type State
-    = Confirming
+    = Confirming Int
     | Rejected
+    | Confirmed Hash
 
 
 type Msg
     = Exit
 
 
-init : TxnWrite -> Modal
-init txnWrite =
+init : Int -> TxnWrite -> Modal
+init id txnWrite =
     { write = txnWrite
-    , state = Confirming
+    , state = Confirming id
     }
         |> Modal
 
@@ -62,14 +64,39 @@ update msg =
             Nothing
 
 
-confirm : Maybe Never
-confirm =
-    Nothing
+confirm : Int -> Hash -> Modal -> Modal
+confirm id hash (Modal modal) =
+    { modal
+        | state =
+            case modal.state of
+                Confirming currentId ->
+                    if id == currentId then
+                        Confirmed hash
+
+                    else
+                        modal.state
+
+                _ ->
+                    modal.state
+    }
+        |> Modal
 
 
-reject : Modal -> Modal
-reject (Modal modal) =
-    { modal | state = Rejected }
+reject : Int -> Modal -> Modal
+reject id (Modal modal) =
+    { modal
+        | state =
+            case modal.state of
+                Confirming currentId ->
+                    if id == currentId then
+                        Rejected
+
+                    else
+                        modal.state
+
+                _ ->
+                    modal.state
+    }
         |> Modal
 
 

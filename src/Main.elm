@@ -611,6 +611,19 @@ blockchainEffect effect model =
                         )
                    )
 
+        ( Blockchain.OpenConfirm id txnWrite, Supported _ ) ->
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (txnWrite
+                                |> Modal.initConfirm id
+                                |> Just
+                            )
+              }
+            , Cmd.none
+            )
+
         _ ->
             ( model, Cmd.none )
 
@@ -716,140 +729,142 @@ pageEffects blockchain effect model =
         Page.Approve erc20 ->
             blockchain
                 |> Blockchain.updateApprove erc20
-                |> Tuple.mapBoth
-                    (\updated ->
-                        { model
-                            | blockchain = Supported updated
-                            , modal =
-                                model.modal
-                                    |> Animator.go Animator.quickly
-                                        (TxnWrite.Approve erc20
-                                            |> Modal.initConfirm
-                                            |> Just
-                                        )
-                        }
-                    )
-                    (Cmd.map BlockchainMsg)
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
 
         Page.Lend writeLend ->
             blockchain
                 |> Blockchain.updateLend model writeLend
-                |> Tuple.mapBoth
-                    (\updated ->
-                        { model
-                            | blockchain = Supported updated
-                            , modal =
-                                model.modal
-                                    |> Animator.go Animator.quickly
-                                        (writeLend
-                                            |> WriteLend.toPool
-                                            |> TxnWrite.Lend
-                                            |> Modal.initConfirm
-                                            |> Just
-                                        )
-                        }
-                    )
-                    (Cmd.map BlockchainMsg)
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
 
         Page.Borrow writeBorrow ->
             blockchain
                 |> Blockchain.updateBorrow model writeBorrow
-                |> Tuple.mapBoth
-                    (\updated ->
-                        { model
-                            | blockchain = Supported updated
-                            , modal =
-                                model.modal
-                                    |> Animator.go Animator.quickly
-                                        (writeBorrow
-                                            |> WriteBorrow.toPool
-                                            |> TxnWrite.Borrow
-                                            |> Modal.initConfirm
-                                            |> Just
-                                        )
-                        }
-                    )
-                    (Cmd.map BlockchainMsg)
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
 
         Page.Liquidity writeLiquidity ->
             blockchain
                 |> Blockchain.updateLiquidity model writeLiquidity
-                |> Tuple.mapBoth
-                    (\updated ->
-                        { model
-                            | blockchain = Supported updated
-                            , modal =
-                                model.modal
-                                    |> Animator.go Animator.quickly
-                                        (writeLiquidity
-                                            |> WriteLiquidity.toPool
-                                            |> TxnWrite.Liquidity
-                                            |> Modal.initConfirm
-                                            |> Just
-                                        )
-                        }
-                    )
-                    (Cmd.map BlockchainMsg)
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
 
         Page.Create writeCreate ->
             blockchain
                 |> Blockchain.updateCreate model writeCreate
-                |> Tuple.mapBoth
-                    (\updated ->
-                        { model
-                            | blockchain = Supported updated
-                            , modal =
-                                model.modal
-                                    |> Animator.go Animator.quickly
-                                        (writeCreate
-                                            |> WriteCreate.toPool
-                                            |> TxnWrite.Create
-                                            |> Modal.initConfirm
-                                            |> Just
-                                        )
-                        }
-                    )
-                    (Cmd.map BlockchainMsg)
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
 
         Page.Withdraw writeWithdraw ->
             blockchain
                 |> Blockchain.updateWithdraw writeWithdraw
-                |> Tuple.mapBoth
-                    (\updated ->
-                        { model
-                            | blockchain = Supported updated
-                            , modal =
-                                model.modal
-                                    |> Animator.go Animator.quickly
-                                        (writeWithdraw
-                                            |> WriteWithdraw.toPool
-                                            |> TxnWrite.Withdraw
-                                            |> Modal.initConfirm
-                                            |> Just
-                                        )
-                        }
-                    )
-                    (Cmd.map BlockchainMsg)
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
 
         Page.Burn writeBurn ->
             blockchain
                 |> Blockchain.updateBurn writeBurn
-                |> Tuple.mapBoth
-                    (\updated ->
-                        { model
-                            | blockchain = Supported updated
-                            , modal =
-                                model.modal
-                                    |> Animator.go Animator.quickly
-                                        (writeBurn
-                                            |> WriteBurn.toPool
-                                            |> TxnWrite.Burn
-                                            |> Modal.initConfirm
-                                            |> Just
-                                        )
-                        }
-                    )
-                    (Cmd.map BlockchainMsg)
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
 
 
 modalEffects :
@@ -1003,20 +1018,22 @@ modalEffects effect model =
                 Supported blockchain ->
                     blockchain
                         |> Blockchain.updateApprove erc20
-                        |> Tuple.mapBoth
-                            (\updated ->
-                                { model
-                                    | blockchain = Supported updated
-                                    , modal =
-                                        model.modal
-                                            |> Animator.go Animator.quickly
-                                                (TxnWrite.Approve erc20
-                                                    |> Modal.initConfirm
-                                                    |> Just
-                                                )
-                                }
-                            )
-                            (Cmd.map BlockchainMsg)
+                        |> (\( updated, cmd, maybeEffect ) ->
+                                maybeEffect
+                                    |> Maybe.map
+                                        (\pageEffect ->
+                                            { model | blockchain = Supported updated }
+                                                |> blockchainEffect pageEffect
+                                                |> Tuple.mapSecond List.singleton
+                                                |> Tuple.mapSecond
+                                                    ((::) (cmd |> Cmd.map BlockchainMsg))
+                                                |> Tuple.mapSecond Cmd.batch
+                                        )
+                                    |> Maybe.withDefault
+                                        ( { model | blockchain = Supported updated }
+                                        , cmd |> Cmd.map BlockchainMsg
+                                        )
+                           )
 
                 NotSupported _ ->
                     ( model
@@ -1028,22 +1045,22 @@ modalEffects effect model =
                 Supported blockchain ->
                     blockchain
                         |> Blockchain.updatePay model writePay
-                        |> Tuple.mapBoth
-                            (\updated ->
-                                { model
-                                    | blockchain = Supported updated
-                                    , modal =
-                                        model.modal
-                                            |> Animator.go Animator.quickly
-                                                (writePay
-                                                    |> WritePay.toPool
-                                                    |> TxnWrite.Pay
-                                                    |> Modal.initConfirm
-                                                    |> Just
-                                                )
-                                }
-                            )
-                            (Cmd.map BlockchainMsg)
+                        |> (\( updated, cmd, maybeEffect ) ->
+                                maybeEffect
+                                    |> Maybe.map
+                                        (\pageEffect ->
+                                            { model | blockchain = Supported updated }
+                                                |> blockchainEffect pageEffect
+                                                |> Tuple.mapSecond List.singleton
+                                                |> Tuple.mapSecond
+                                                    ((::) (cmd |> Cmd.map BlockchainMsg))
+                                                |> Tuple.mapSecond Cmd.batch
+                                        )
+                                    |> Maybe.withDefault
+                                        ( { model | blockchain = Supported updated }
+                                        , cmd |> Cmd.map BlockchainMsg
+                                        )
+                           )
 
                 NotSupported _ ->
                     ( model
@@ -1572,7 +1589,8 @@ tabs ({ device, backdrop, theme } as model) =
         )
         [ tab model Tab.Lend
         , tab model Tab.Borrow
-        , tab model Tab.Liquidity
+
+        --, tab model Tab.Liquidity -- Remove liquidity
         ]
 
 

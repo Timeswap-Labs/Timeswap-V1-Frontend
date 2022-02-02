@@ -48,7 +48,7 @@ import Blockchain.User.Natives as Natives
 import Blockchain.User.Positions as Positions exposing (Positions)
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
 import Blockchain.User.Txns.Txn as Txn exposing (Txn)
-import Blockchain.User.Txns.TxnWrite as TxnWrite
+import Blockchain.User.Txns.TxnWrite as TxnWrite exposing (TxnWrite)
 import Blockchain.User.Write as Write
 import Blockchain.User.WriteApprove as WriteApprove
 import Blockchain.User.WriteBorrow as WriteBorrow exposing (WriteBorrow)
@@ -121,6 +121,7 @@ type Msg
 
 type Effect
     = AddERC20s ERC20s
+    | OpenConfirm Int TxnWrite
 
 
 init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
@@ -511,7 +512,7 @@ updateAddERC20 chain erc20 (User user) =
            )
 
 
-updateApprove : Chain -> ERC20 -> User -> ( User, Cmd Msg )
+updateApprove : Chain -> ERC20 -> User -> ( User, Cmd Msg, Effect )
 updateApprove chain erc20 (User user) =
     user.txns
         |> Txns.insert (TxnWrite.Approve erc20)
@@ -526,6 +527,7 @@ updateApprove chain erc20 (User user) =
                         |> cacheTxns
                   ]
                     |> Cmd.batch
+                , OpenConfirm id (TxnWrite.Approve erc20)
                 )
            )
 
@@ -535,7 +537,7 @@ updateLend :
     -> Chain
     -> WriteLend
     -> User
-    -> ( User, Cmd Msg )
+    -> ( User, Cmd Msg, Effect )
 updateLend model chain writeLend (User user) =
     user.txns
         |> Txns.insert
@@ -554,6 +556,10 @@ updateLend model chain writeLend (User user) =
                         |> cacheTxns
                   ]
                     |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.Lend
+                        (writeLend |> WriteLend.toPool)
+                    )
                 )
            )
 
@@ -563,7 +569,7 @@ updateBorrow :
     -> Chain
     -> WriteBorrow
     -> User
-    -> ( User, Cmd Msg )
+    -> ( User, Cmd Msg, Effect )
 updateBorrow model chain writeBorrow (User user) =
     user.txns
         |> Txns.insert
@@ -582,6 +588,10 @@ updateBorrow model chain writeBorrow (User user) =
                         |> cacheTxns
                   ]
                     |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.Borrow
+                        (writeBorrow |> WriteBorrow.toPool)
+                    )
                 )
            )
 
@@ -591,7 +601,7 @@ updateLiquidity :
     -> Chain
     -> WriteLiquidity
     -> User
-    -> ( User, Cmd Msg )
+    -> ( User, Cmd Msg, Effect )
 updateLiquidity model chain writeLiquidity (User user) =
     user.txns
         |> Txns.insert
@@ -610,6 +620,10 @@ updateLiquidity model chain writeLiquidity (User user) =
                         |> cacheTxns
                   ]
                     |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.Liquidity
+                        (writeLiquidity |> WriteLiquidity.toPool)
+                    )
                 )
            )
 
@@ -619,7 +633,7 @@ updateCreate :
     -> Chain
     -> WriteCreate
     -> User
-    -> ( User, Cmd Msg )
+    -> ( User, Cmd Msg, Effect )
 updateCreate model chain writeCreate (User user) =
     user.txns
         |> Txns.insert
@@ -638,6 +652,10 @@ updateCreate model chain writeCreate (User user) =
                         |> cacheTxns
                   ]
                     |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.Create
+                        (writeCreate |> WriteCreate.toPool)
+                    )
                 )
            )
 
@@ -646,7 +664,7 @@ updateWithdraw :
     Chain
     -> WriteWithdraw
     -> User
-    -> ( User, Cmd Msg )
+    -> ( User, Cmd Msg, Effect )
 updateWithdraw chain writeWithdraw (User user) =
     user.txns
         |> Txns.insert
@@ -665,6 +683,10 @@ updateWithdraw chain writeWithdraw (User user) =
                         |> cacheTxns
                   ]
                     |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.Withdraw
+                        (writeWithdraw |> WriteWithdraw.toPool)
+                    )
                 )
            )
 
@@ -674,7 +696,7 @@ updatePay :
     -> Chain
     -> WritePay
     -> User
-    -> ( User, Cmd Msg )
+    -> ( User, Cmd Msg, Effect )
 updatePay model chain writePay (User user) =
     user.txns
         |> Txns.insert
@@ -693,6 +715,10 @@ updatePay model chain writePay (User user) =
                         |> cacheTxns
                   ]
                     |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.Pay
+                        (writePay |> WritePay.toPool)
+                    )
                 )
            )
 
@@ -701,7 +727,7 @@ updateBurn :
     Chain
     -> WriteBurn
     -> User
-    -> ( User, Cmd Msg )
+    -> ( User, Cmd Msg, Effect )
 updateBurn chain writeBurn (User user) =
     user.txns
         |> Txns.insert
@@ -720,6 +746,10 @@ updateBurn chain writeBurn (User user) =
                         |> cacheTxns
                   ]
                     |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.Burn
+                        (writeBurn |> WriteBurn.toPool)
+                    )
                 )
            )
 
@@ -845,6 +875,8 @@ subscriptions : User -> Sub Msg
 subscriptions (User user) =
     [ receiveBalances ReceiveBalances
     , receiveAllowances ReceiveAllowances
+    , receivePositions ReceivePositions
+    , receiveReceipt ReceiveReceipt
     , user.balances |> Balances.subscriptions BalancesTick
     , user.allowances |> Allowances.subscriptions AllowancesTick
     ]
