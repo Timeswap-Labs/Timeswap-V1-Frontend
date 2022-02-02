@@ -39,7 +39,6 @@ import Element
         , none
         , padding
         , paddingXY
-        , px
         , row
         , shrink
         , spacing
@@ -67,7 +66,6 @@ import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Url.Builder as Builder
-import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
@@ -1898,6 +1896,106 @@ toStateGivenCollateral result =
             Failure error
 
 
+hasTransaction :
+    { transaction | state : State }
+    -> Bool
+hasTransaction transaction =
+    case transaction.state of
+        Default { assetOut, dues } ->
+            (assetOut
+                |> Input.isZero
+                |> not
+            )
+                && (dues
+                        |> Remote.map (\_ -> True)
+                        |> Remote.withDefault False
+                   )
+
+        DefaultMax { collateralIn, out } ->
+            (collateralIn
+                |> Input.isZero
+                |> not
+            )
+                && (out
+                        |> Remote.map (\_ -> True)
+                        |> Remote.withDefault False
+                   )
+
+        Slider { assetOut, dues } ->
+            (assetOut
+                |> Input.isZero
+                |> not
+            )
+                && (dues
+                        |> Remote.map (\_ -> True)
+                        |> Remote.withDefault False
+                   )
+
+        Debt { assetOut, dues } ->
+            (assetOut
+                |> Input.isZero
+                |> not
+            )
+                && (dues
+                        |> Remote.map (\_ -> True)
+                        |> Remote.withDefault False
+                   )
+
+        Collateral { assetOut, dues } ->
+            (assetOut
+                |> Input.isZero
+                |> not
+            )
+                && (dues
+                        |> Remote.map (\_ -> True)
+                        |> Remote.withDefault False
+                   )
+
+        AdvancedMax { collateralIn, out } ->
+            (collateralIn
+                |> Input.isZero
+                |> not
+            )
+                && (out
+                        |> Remote.map (\_ -> True)
+                        |> Remote.withDefault False
+                   )
+
+
+toCollateral : Token -> { transaction | state : State } -> Maybe Uint
+toCollateral collateral transaction =
+    case transaction.state of
+        Default { dues } ->
+            dues
+                |> Remote.map .maxCollateral
+                |> Remote.map Just
+                |> Remote.withDefault Nothing
+
+        DefaultMax { collateralIn } ->
+            collateralIn
+                |> Uint.fromAmount collateral
+
+        Slider { dues } ->
+            dues
+                |> Remote.map .maxCollateral
+                |> Remote.map Just
+                |> Remote.withDefault Nothing
+
+        Debt { dues } ->
+            dues
+                |> Remote.map .maxCollateral
+                |> Remote.map Just
+                |> Remote.withDefault Nothing
+
+        Collateral { collateralIn } ->
+            collateralIn
+                |> Uint.fromAmount collateral
+
+        AdvancedMax { collateralIn } ->
+            collateralIn
+                |> Uint.fromAmount collateral
+
+
 noCmd :
     { state : State
     , tooltip : Maybe Tooltip
@@ -2230,7 +2328,9 @@ view model blockchain pool (Transaction transaction) =
     , second =
         transaction
             |> duesInSection model blockchain pool
-    , buttons = buttons model.theme blockchain
+    , buttons =
+        transaction
+            |> buttons model blockchain (pool.pair |> Pair.toCollateral)
     }
 
 
@@ -2864,8 +2964,13 @@ advancedCollateralInSection model blockchain collateral { tooltip } or =
         ]
 
 
-buttons : Theme -> Blockchain -> Element Msg
-buttons theme blockchain =
+buttons :
+    { model | theme : Theme }
+    -> Blockchain
+    -> Token
+    -> { transaction | state : State }
+    -> Element Msg
+buttons { theme } blockchain collateral transaction =
     column
         [ width fill
         , height shrink
@@ -2874,7 +2979,188 @@ buttons theme blockchain =
         (blockchain
             |> Blockchain.toUser
             |> Maybe.map
-                (\_ -> [])
+                (\user ->
+                    case
+                        ( transaction
+                            |> toCollateral collateral
+                        , collateral |> Token.toERC20
+                        , transaction |> hasTransaction
+                        )
+                    of
+                        ( Just collateralIn, Just erc20, True ) ->
+                            case
+                                ( user
+                                    |> User.getBalance collateral
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough collateralIn)
+                                , user
+                                    |> User.getAllowance erc20
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough collateralIn)
+                                )
+                            of
+                                ( Just (Success True), Just (Success True) ) ->
+                                    [ borrowButton ]
+
+                                ( Just (Success False), Just (Success True) ) ->
+                                    [ Button.notEnoughBalance ]
+
+                                ( Just (Loading _), Just (Success True) ) ->
+                                    [ theme |> Button.checkingBalance |> map never ]
+
+                                ( Just (Success True), Just (Success False) ) ->
+                                    [ approveButton erc20
+                                    , theme |> disabledBorrow
+                                    ]
+
+                                ( Just (Success False), Just (Success False) ) ->
+                                    [ disabledApprove theme erc20
+                                    , theme |> disabledBorrow
+                                    ]
+
+                                ( Just (Loading _), Just (Success False) ) ->
+                                    [ disabledApprove theme erc20
+                                    , theme |> Button.checkingBalance |> map never
+                                    ]
+
+                                ( Just (Success True), Just (Loading _) ) ->
+                                    [ theme |> Button.checkingAllowance |> map never
+                                    , theme |> disabledBorrow
+                                    ]
+
+                                ( Just (Success False), Just (Loading _) ) ->
+                                    [ theme |> Button.checkingAllowance |> map never
+                                    , Button.notEnoughBalance |> map never
+                                    ]
+
+                                ( Just (Loading _), Just (Loading _) ) ->
+                                    [ theme |> Button.checkingAllowance |> map never
+                                    , theme |> Button.checkingBalance |> map never
+                                    ]
+
+                                ( Just (Failure error), _ ) ->
+                                    [ Button.error error |> map never ]
+
+                                ( _, Just (Failure error) ) ->
+                                    [ Button.error error |> map never ]
+
+                                _ ->
+                                    []
+
+                        ( Just collateralIn, Just erc20, False ) ->
+                            case
+                                ( user
+                                    |> User.getBalance collateral
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough collateralIn)
+                                , user
+                                    |> User.getAllowance erc20
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough collateralIn)
+                                )
+                            of
+                                ( Just (Failure error), _ ) ->
+                                    [ Button.error error |> map never ]
+
+                                ( _, Just (Failure error) ) ->
+                                    [ Button.error error |> map never ]
+
+                                ( _, Just (Success True) ) ->
+                                    [ theme |> disabledBorrow ]
+
+                                ( _, Just (Success False) ) ->
+                                    [ disabledApprove theme erc20
+                                    , theme |> disabledBorrow
+                                    ]
+
+                                ( Just (Loading _), Just (Loading _) ) ->
+                                    [ theme |> Button.checkingAllowance |> map never
+                                    , theme |> Button.checkingBalance |> map never
+                                    ]
+
+                                ( _, Just (Loading _) ) ->
+                                    [ theme |> Button.checkingAllowance |> map never
+                                    , theme |> disabledBorrow
+                                    ]
+
+                                _ ->
+                                    []
+
+                        ( Just collateralIn, Nothing, True ) ->
+                            case
+                                user
+                                    |> User.getBalance collateral
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough collateralIn)
+                            of
+                                Just (Success True) ->
+                                    [ borrowButton ]
+
+                                Just (Success False) ->
+                                    [ theme |> disabledBorrow ]
+
+                                Just (Loading _) ->
+                                    [ theme |> Button.checkingBalance |> map never ]
+
+                                Just (Failure error) ->
+                                    [ Button.error error |> map never ]
+
+                                Nothing ->
+                                    []
+
+                        ( Just collateralIn, Nothing, False ) ->
+                            case
+                                user
+                                    |> User.getBalance collateral
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough collateralIn)
+                            of
+                                Just (Success True) ->
+                                    [ theme |> disabledBorrow ]
+
+                                Just (Success False) ->
+                                    [ theme |> disabledBorrow ]
+
+                                Just (Loading _) ->
+                                    [ theme |> Button.checkingBalance |> map never ]
+
+                                Just (Failure error) ->
+                                    [ Button.error error |> map never ]
+
+                                Nothing ->
+                                    []
+
+                        _ ->
+                            []
+                )
             |> Maybe.withDefault
                 [ Button.connect theme ClickConnect ]
         )
+
+
+borrowButton : Element Msg
+borrowButton =
+    Button.view
+        { onPress = ClickBorrow
+        , text = "Borrow"
+        }
+
+
+disabledBorrow : Theme -> Element msg
+disabledBorrow theme =
+    Button.disabled theme "Borrow"
+        |> map never
+
+
+approveButton : ERC20 -> Element Msg
+approveButton erc20 =
+    Button.approve
+        { onPress = ClickApprove
+        , erc20 = erc20
+        }
+
+
+disabledApprove : Theme -> ERC20 -> Element msg
+disabledApprove theme erc20 =
+    Button.disabledApprove theme erc20
+        |> map never

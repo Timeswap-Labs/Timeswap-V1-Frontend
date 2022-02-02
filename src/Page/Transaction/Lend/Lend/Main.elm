@@ -1595,7 +1595,7 @@ view model blockchain pool (Transaction transaction) =
             |> claimsOutSection model pool
     , buttons =
         transaction
-            |> buttons model.theme
+            |> buttons model
                 blockchain
                 (pool.pair |> Pair.toAsset)
     }
@@ -2063,12 +2063,12 @@ advancedInsuranceOutSection model collateral { tooltip } or =
 
 
 buttons :
-    Theme
+    { model | theme : Theme }
     -> Blockchain
     -> Token
     -> { transaction | assetIn : String, claimsOut : ClaimsOut }
     -> Element Msg
-buttons theme blockchain asset transaction =
+buttons { theme } blockchain asset transaction =
     column
         [ width fill
         , height shrink

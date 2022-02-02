@@ -976,9 +976,9 @@ fromSymbol token =
         |> Token.toSymbol
         |> (\string ->
                 ( string |> String.toUpper
-                , if (string |> String.length) > 5 then
+                , if (string |> String.length) > 6 then
                     string
-                        |> String.left 5
+                        |> String.left 6
                         |> String.toUpper
                         |> Just
 
