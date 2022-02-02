@@ -90,7 +90,7 @@ export async function bondTransaction(
   gp: GlobalParams,
   lend: Lend
 ) {
-  const txn = await pool.upgrade(gp.metamaskSigner!).lendGivenBond({
+  return await pool.upgrade(gp.metamaskSigner!).lendGivenBond({
     bondTo: lend.bondTo,
     insuranceTo: lend.insuranceTo,
     assetIn: new Uint112(lend.assetIn),
@@ -98,17 +98,6 @@ export async function bondTransaction(
     minInsurance: new Uint128(lend.minInsurance),
     deadline: new Uint256(lend.deadline),
   });
-
-  await txn.wait();
-}
-
-interface Query {
-  asset: string;
-  collateral: string;
-  maturity: number;
-  assetIn: string;
-  bondOut: string;
-  slippage: number;
 }
 
 interface Lend {

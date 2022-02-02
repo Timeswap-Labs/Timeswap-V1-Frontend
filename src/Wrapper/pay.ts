@@ -1,56 +1,106 @@
-import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
 import { Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "./global";
-import { WhiteList } from "./whitelist";
+import { getPoolSDK } from "./helper";
 
 export function pay(app: ElmApp<Ports>) {
-  app.ports.queryPay.subscribe((query) => {
-    payQueryCalculate(app, query);
+  app.ports.queryFull.subscribe((duesData) => {
+    try {
+      let totalDebt = new Uint256(0);
+      let totalCollateral = new Uint256(0);
+
+      duesData.dues.forEach(dueData => {
+        totalDebt = totalDebt.add(new Uint256(dueData.due.debt));
+        totalCollateral = totalCollateral.add(new Uint256(dueData.due.collateral));
+      });
+
+      app.ports.receiveFull.send({
+        ...duesData,
+        result: {
+          assetIn: totalDebt.toString(),
+          collateralOut: totalCollateral.toString()
+        }
+      });
+    } catch {
+      app.ports.receiveFull.send({
+        ...duesData,
+        result: "invalid"
+      });
+    }
+  });
+
+  app.ports.queryCustom.subscribe((query) => {
+    let result: {
+      collateralsOut: { tokenId: string, collateralOut: string }[];
+      total?: { assetIn: string, collateralOut: string } | string
+    } = { collateralsOut : []};
+
+    let totalCollateralOut = new Uint256(0);
+    let totalAssetIn = new Uint256(0);
+
+    try {
+      query.assetsIn.forEach((dueInput, index) => {
+        const tokenDebt = new Uint256(query.dues[index].due.debt);
+        const tokenCollateral = new Uint256(query.dues[index].due.collateral);
+        const customDebt = new Uint256(dueInput.assetIn);
+
+        if (customDebt > tokenDebt) {
+          result.total = "invalid";
+          result.collateralsOut[index] = {
+            tokenId: dueInput.tokenId,
+            collateralOut: "invalid"
+          }
+        } else {
+          const proportionalCollateral = customDebt.mul(tokenCollateral).div(tokenDebt);
+
+          totalCollateralOut.add(proportionalCollateral);
+          totalAssetIn.add(dueInput.assetIn);
+
+          result.collateralsOut[index] = {
+            tokenId: dueInput.tokenId,
+            collateralOut: proportionalCollateral.toString()
+          }
+        }
+      });
+
+      if (result.total !== "invalid") {
+        result.total = {
+          assetIn: totalAssetIn.toString(),
+          collateralOut: totalCollateralOut.toString()
+        }
+      }
+
+      app.ports.receiveCustom.send({
+        ...query,
+        result
+      });
+    } catch (error) {
+      app.ports.receiveCustom.send({
+        ...query,
+        result: {
+          collateralsOut: [],
+          total: "invalid"
+        }
+      });
+    }
   });
 }
 
 export function paySigner(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   gp: GlobalParams
 ) {
-  app.ports.approvePay.subscribe(async ({ erc20 }) => {
-    (whitelist.getToken(erc20) as ERC20Token)
-      .upgrade(gp.metamaskSigner!)
-      .approve(whitelist.convenience, new Uint256((1n << 256n) - 1n));
-  });
-
   app.ports.pay.subscribe(async (params) => {
-    const pool = whitelist.getPool(
-      params.asset,
-      params.collateral,
-      params.maturity
-    );
+    const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
 
     const txn = await pool.upgrade(gp.metamaskSigner!).repay({
-      collateralTo: params.collateralTo,
-      ids: params.ids.map((id) => new Uint256(id)),
-      maxAssetsIn: params.maxAssetsIn.map(
+      collateralTo: params.send.collateralTo,
+      ids: params.send.ids.map((id) => new Uint256(id)),
+      maxAssetsIn: params.send.maxAssetsIn.map(
         (maxAssetIn) => new Uint112(maxAssetIn)
       ),
-      deadline: new Uint256(params.deadline),
+      deadline: new Uint256(params.send.deadline),
     });
 
     await txn.wait();
-  });
-}
-
-export function payQueryCalculate(app: ElmApp<Ports>, query: PayQuery) {
-  const assetIn = query.dues
-    .reduce((sum, due) => sum + BigInt(due.debt), 0n)
-    .toString();
-  const collateralOut = query.dues
-    .reduce((sum, due) => sum + BigInt(due.collateral), 0n)
-    .toString();
-
-  app.ports.sdkPayMsg.send({
-    ...query,
-    assetIn,
-    collateralOut,
   });
 }

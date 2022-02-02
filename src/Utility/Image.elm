@@ -42,7 +42,8 @@ module Utility.Image exposing
     , option
     , plus
     , plusPositive
-    , semiCircle
+    , semiCircleGreen
+    , semiCircleRed
     , setting
     , settingsSecondary
     , sun
@@ -166,9 +167,14 @@ plusPositive =
     view "PlusPositive"
 
 
-semiCircle : List (Attribute msg) -> Images -> Element msg
-semiCircle =
-    view "SemiCircle"
+semiCircleGreen : List (Attribute msg) -> Images -> Element msg
+semiCircleGreen =
+    view "SemiCircleGreen"
+
+
+semiCircleRed : List (Attribute msg) -> Images -> Element msg
+semiCircleRed =
+    view "SemiCircleRed"
 
 
 sun : List (Attribute msg) -> Images -> Element msg

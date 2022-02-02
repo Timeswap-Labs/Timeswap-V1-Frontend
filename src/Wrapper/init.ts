@@ -74,16 +74,16 @@ export async function init(
 
   approveSigner(app, gp);
   // pool(app, whitelist, gp);
+
   lend(app);
   lendSigner(app, gp);
-
-  // withdrawSigner(app, whitelist, gp);
+  withdrawSigner(app, gp);
 
   borrow(app);
   borrowSigner(app, gp);
 
-  // pay(app);
-  // paySigner(app, whitelist, gp);
+  pay(app);
+  paySigner(app, gp);
 
   // faucetSigner(app, gp);
 

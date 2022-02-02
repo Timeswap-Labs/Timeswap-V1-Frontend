@@ -457,6 +457,11 @@ view model modal =
                     none
 
         Confirm confirmModal ->
-            confirmModal
-                |> Confirm.view model
-                |> map ConfirmMsg
+            case model.blockchain of
+                Supported blockchain ->
+                    confirmModal
+                        |> Confirm.view model blockchain
+                        |> map ConfirmMsg
+
+                _ ->
+                    none

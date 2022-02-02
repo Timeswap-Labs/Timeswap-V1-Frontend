@@ -5,11 +5,14 @@ module Data.Hash exposing
     , fromString
     , sorter
     , toString
+    , toUrlString
     )
 
+import Data.Chain as Chain exposing (Chain)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Sort exposing (Sorter)
+import Url.Builder as Builder
 
 
 type Hash
@@ -51,6 +54,13 @@ fromString string =
 toString : Hash -> String
 toString (Hash string) =
     string
+
+
+toUrlString : Chain -> Hash -> String
+toUrlString chain hash =
+    Builder.crossOrigin (chain |> Chain.toEtherscan)
+        [ "tx", hash |> toString ]
+        []
 
 
 decoder : Decoder Hash

@@ -751,7 +751,7 @@ updateBurn chain writeBurn (User user) =
                 , [ writeBurn
                         |> WriteBurn.encode user.address
                         |> Write.encode id chain user.address
-                        |> withdraw
+                        |> burn
                   , txns
                         |> Cache.encodeTxns chain user.address
                         |> cacheTxns
@@ -859,6 +859,9 @@ port borrow : Value -> Cmd msg
 
 
 port liquidity : Value -> Cmd msg
+
+
+port burn : Value -> Cmd msg
 
 
 port create : Value -> Cmd msg

@@ -94,7 +94,7 @@ export async function insuranceTransaction(
   gp: GlobalParams,
   lend: Lend
 ) {
-  const txn = await pool.upgrade(gp.metamaskSigner!).lendGivenInsurance({
+  return await pool.upgrade(gp.metamaskSigner!).lendGivenInsurance({
     bondTo: lend.bondTo,
     insuranceTo: lend.insuranceTo,
     assetIn: new Uint112(lend.assetIn),
@@ -102,8 +102,6 @@ export async function insuranceTransaction(
     minBond: new Uint128(lend.minBond),
     deadline: new Uint256(lend.deadline),
   });
-
-  await txn.wait();
 }
 
 interface Lend {

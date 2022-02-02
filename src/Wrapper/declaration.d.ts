@@ -64,6 +64,8 @@ declare interface Ports {
   cacheTxns: PortFromElm<ReceiveUser>;
 
   changeChain: PortFromElm<Chain>;
+
+  receiveConfirm: PortToElm<ReceiveConfirm>;
 }
 
 interface NativeToken {
@@ -373,7 +375,6 @@ interface Lend {
   }
 }
 
-
 interface Borrow {
   id: number;
   chain: Chain;
@@ -394,97 +395,41 @@ interface Borrow {
   }
 }
 
-// type BorrowCalculate =
-//   | BorrowGivenPercent
-//   | BorrowGivenDebt
-//   | BorrowGivenCollateral;
+interface Withdraw {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    assetTo: string;
+    collateralTo: string;
+    claimsIn: Claim;
+  }
+}
 
-// interface BorrowGivenPercent {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetOut: string;
-//   percent: number;
-//   result:
-//     | {
-//         debtIn: string;
-//         collateralIn: string;
-//         maxDebt: string;
-//         maxCollateral: string;
-//         apr: number;
-//         cf: string;
-//       }
-//     | number;
-// }
+interface Pay {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    collateralTo: string;
+    ids: string[];
+    maxAssetsIn: string[];
+    deadline: number;
+  }
+}
 
-// interface BorrowGivenDebt {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetOut: string;
-//   debtIn: string;
-//   result:
-//     | {
-//         percent: number;
-//         collateralIn: string;
-//         maxCollateral: string;
-//         apr: number;
-//         cf: string;
-//       }
-//     | number;
-// }
-
-// interface BorrowGivenCollateral {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetOut: string;
-//   collateralIn: string;
-//   result:
-//     | {
-//         percent: number;
-//         debtIn: string;
-//         maxDebt: string;
-//         apr: number;
-//         cf: string;
-//       }
-//     | number;
-// }
-
-// interface PayQuery {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   dues: { id: string; debt: string; collateral: string }[];
-// }
-
-// interface Pay {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   collateralTo: string;
-//   ids: string[];
-//   maxAssetsIn: string[];
-//   deadline: number;
-// }
-
-// interface PayCalculate {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   dues: { id: string; debt: string; collateral: string }[];
-//   assetIn: string;
-//   collateralOut: string;
-// }
-
-// interface Withdraw {
-//   asset: string;
-//   collateral: string;
-//   maturity: number;
-//   assetTo: string;
-//   collateralTo: string;
-//   claimsIn: { bond: string; insurance: string };
-// }
+interface ReceiveConfirm {
+  id: number;
+  chain: Chain;
+  address: string;
+  hash: string | null;
+}
 
 // interface Faucet {
 //   erc20: string;

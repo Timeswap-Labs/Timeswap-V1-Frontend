@@ -1,8 +1,9 @@
 module Modal.Confirm.Main exposing (Modal, Msg, confirm, init, reject, update, view)
 
+import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Data.Backdrop exposing (Backdrop)
-import Data.Hash exposing (Hash)
+import Data.Hash as Hash exposing (Hash)
 import Data.Images exposing (Images)
 import Data.Theme as Theme exposing (Theme)
 import Element
@@ -15,6 +16,8 @@ import Element
         , fill
         , height
         , inFront
+        , newTabLink
+        , none
         , padding
         , paddingXY
         , px
@@ -103,9 +106,10 @@ reject id (Modal modal) =
 
 view :
     { model | images : Images, backdrop : Backdrop, theme : Theme }
+    -> Blockchain
     -> Modal
     -> Element Msg
-view ({ backdrop, theme } as model) modal =
+view ({ backdrop, theme } as model) blockchain modal =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -121,14 +125,17 @@ view ({ backdrop, theme } as model) modal =
                  ]
                     ++ Glass.background backdrop theme
                 )
-                [ header model
-                , body model
+                [ header model modal
+                , body model blockchain modal
                 ]
         }
 
 
-header : { model | images : Images, backdrop : Backdrop, theme : Theme } -> Element Msg
-header ({ theme } as model) =
+header :
+    { model | images : Images, backdrop : Backdrop, theme : Theme }
+    -> Modal
+    -> Element Msg
+header ({ theme } as model) (Modal modal) =
     row
         [ width fill
         , height shrink
@@ -151,13 +158,28 @@ header ({ theme } as model) =
             , paddingXY 0 3
             , theme |> ThemeColor.text |> Font.color
             ]
-            (text "Transaction Submitted")
+            (text
+                (case modal.state of
+                    Confirming _ ->
+                        "Awaiting Submission"
+
+                    Rejected ->
+                        "Transaction Rejected"
+
+                    Confirmed _ ->
+                        "Transaction Submitted"
+                )
+            )
         , IconButton.exit model Exit
         ]
 
 
-body : { model | images : Images, backdrop : Backdrop, theme : Theme } -> Element Msg
-body { images, theme } =
+body :
+    { model | images : Images, backdrop : Backdrop, theme : Theme }
+    -> Blockchain
+    -> Modal
+    -> Element Msg
+body { images, theme } blockchain (Modal { state }) =
     column
         [ width fill
         , centerX
@@ -167,13 +189,28 @@ body { images, theme } =
         , spacing 24
         ]
         [ images
-            |> Image.semiCircle
+            |> (case state of
+                    Rejected ->
+                        Image.semiCircleRed
+
+                    _ ->
+                        Image.semiCircleGreen
+               )
                 [ width <| px 80
                 , height <| px 80
                 , centerX
                 , Font.center
                 , (images
-                    |> Image.matured
+                    |> (case state of
+                            Confirmed hash ->
+                                Image.matured
+
+                            Confirming int ->
+                                Image.hourglassPrimary
+
+                            Rejected ->
+                                Image.error
+                       )
                         [ width <| px 36, height <| px 36, centerX, centerY, Font.center ]
                   )
                     |> inFront
@@ -190,23 +227,44 @@ body { images, theme } =
                 , Font.center
                 , Font.size 14
                 ]
-                (text "Transaction Submitted")
-            , row [ spacing 8, centerX, centerY, Font.center ]
-                [ el
-                    [ Font.size 12
-                    , Font.center
-                    , theme |> ThemeColor.actionElemLabel |> Font.color
-                    ]
-                    (text "View on Etherscan")
-                , images
-                    |> (case theme of
-                            Theme.Dark ->
-                                Image.link
+                (text
+                    (case state of
+                        Confirming _ ->
+                            "Transaction is being initiated"
 
-                            Theme.Light ->
-                                Image.linkSecondary
-                       )
-                        [ width <| px 16, height <| px 16 ]
-                ]
+                        Rejected ->
+                            "Transaction not submitted"
+
+                        Confirmed _ ->
+                            "Transaction submitted"
+                    )
+                )
+            , case state of
+                Confirmed hash ->
+                    newTabLink [ width fill, centerX, Font.center ]
+                        { url = Hash.toUrlString (blockchain |> Blockchain.toChain) hash
+                        , label =
+                            row [ spacing 8, centerX, centerY, Font.center ]
+                                [ el
+                                    [ Font.size 12
+                                    , Font.center
+                                    , centerX
+                                    , theme |> ThemeColor.actionElemLabel |> Font.color
+                                    ]
+                                    (text "View on Etherscan")
+                                , images
+                                    |> (case theme of
+                                            Theme.Dark ->
+                                                Image.link
+
+                                            Theme.Light ->
+                                                Image.linkSecondary
+                                       )
+                                        [ width <| px 16, height <| px 16 ]
+                                ]
+                        }
+
+                _ ->
+                    none
             ]
         ]

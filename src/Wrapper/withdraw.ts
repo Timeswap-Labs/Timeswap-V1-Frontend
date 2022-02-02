@@ -1,25 +1,22 @@
-import { Uint128 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Uint112 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "./global";
-import { WhiteList } from "./whitelist";
+import { getPoolSDK } from "./helper";
 
 export function withdrawSigner(
   app: ElmApp<Ports>,
-  whitelist: WhiteList,
   gp: GlobalParams
 ) {
   app.ports.withdraw.subscribe(async (params) => {
-    const pool = whitelist.getPool(
-      params.asset,
-      params.collateral,
-      params.maturity
-    );
+    const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
 
     const txn = await pool.upgrade(gp.metamaskSigner!).collect({
-      assetTo: params.assetTo,
-      collateralTo: params.collateralTo,
+      assetTo: params.send.assetTo,
+      collateralTo: params.send.collateralTo,
       claimsIn: {
-        bond: new Uint128(params.claimsIn.bond),
-        insurance: new Uint128(params.claimsIn.insurance),
+        bondInterest: new Uint112(params.send.claimsIn.bondInterest),
+        bondPrincipal: new Uint112(params.send.claimsIn.bondPrincipal),
+        insuranceInterest: new Uint112(params.send.claimsIn.insuranceInterest),
+        insurancePrincipal: new Uint112(params.send.claimsIn.insurancePrincipal)
       },
     });
 

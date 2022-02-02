@@ -93,7 +93,7 @@ export async function percentTransaction(
   gp: GlobalParams,
   lend: Lend
 ) {
-  const txn = await pool.upgrade(gp.metamaskSigner!).lendGivenPercent({
+  return await pool.upgrade(gp.metamaskSigner!).lendGivenPercent({
     bondTo: lend.bondTo,
     insuranceTo: lend.insuranceTo,
     assetIn: new Uint112(lend.assetIn),
@@ -102,8 +102,6 @@ export async function percentTransaction(
     minInsurance: new Uint128(lend.minInsurance),
     deadline: new Uint256(lend.deadline),
   });
-
-  await txn.wait();
 }
 
 interface Lend {
