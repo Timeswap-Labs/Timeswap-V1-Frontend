@@ -15,8 +15,24 @@ export function approveSigner(
       approveErc20.erc20.address
     );
 
-    erc20
-      .upgrade(gp.metamaskSigner)
-      .approve(CONVENIENCE[approveErc20.chain.chainId], new Uint256((1n << 256n) - 1n));
+    try {
+      const txnConfirmation = await erc20
+        .upgrade(gp.metamaskSigner)
+        .approve(CONVENIENCE[approveErc20.chain.chainId], new Uint256((1n << 256n) - 1n));
+
+      app.ports.receiveConfirm.send({
+        id: approveErc20.id,
+        chain: approveErc20.chain,
+        address: approveErc20.address,
+        hash: txnConfirmation ? txnConfirmation.hash : null
+      });
+    } catch (error) {
+      app.ports.receiveConfirm.send({
+        id: approveErc20.id,
+        chain: approveErc20.chain,
+        address: approveErc20.address,
+        hash: null
+      });
+    }
   });
 }

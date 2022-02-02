@@ -77,7 +77,7 @@ export async function debtTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  const txn = await pool.upgrade(gp.metamaskSigner!).borrowGivenDebt({
+  return await pool.upgrade(gp.metamaskSigner!).borrowGivenDebt({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,
     assetOut: new Uint112(borrow.assetOut),
@@ -85,8 +85,6 @@ export async function debtTransaction(
     maxCollateral: new Uint112(borrow.maxCollateral),
     deadline: new Uint256(borrow.deadline),
   });
-
-  await txn.wait();
 }
 
 interface Borrow {

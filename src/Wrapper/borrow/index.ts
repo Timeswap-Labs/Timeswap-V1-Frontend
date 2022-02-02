@@ -21,29 +21,50 @@ export function borrowSigner(
   app.ports.borrow.subscribe(async (params) => {
     const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
     const { percent, debtIn, collateralIn, maxDebt, maxCollateral } = params.send;
+    let txnConfirmation;
 
-    if (
-      percent !== undefined &&
-      maxDebt !== undefined &&
-      maxCollateral !== undefined
-    ) {
-      await percentTransaction(pool, gp, {
-        ...params.send,
-        percent,
-        maxDebt,
-        maxCollateral,
-      });
-    } else if (debtIn !== undefined && maxCollateral !== undefined) {
-      await debtTransaction(pool, gp, {
-        ...params.send,
-        debtIn,
-        maxCollateral,
-      });
-    } else if (collateralIn !== undefined && maxDebt !== undefined) {
-      await collateralTransaction(pool, gp, {
-        ...params.send,
-        collateralIn,
-        maxDebt,
+    try {
+      if (
+        percent !== undefined &&
+        maxDebt !== undefined &&
+        maxCollateral !== undefined
+      ) {
+        txnConfirmation = await percentTransaction(pool, gp, {
+          ...params.send,
+          percent,
+          maxDebt,
+          maxCollateral,
+        });
+      } else if (debtIn !== undefined && maxCollateral !== undefined) {
+        txnConfirmation = await debtTransaction(pool, gp, {
+          ...params.send,
+          debtIn,
+          maxCollateral,
+        });
+      } else if (collateralIn !== undefined && maxDebt !== undefined) {
+        txnConfirmation = await collateralTransaction(pool, gp, {
+          ...params.send,
+          collateralIn,
+          maxDebt,
+        });
+      }
+
+      if (txnConfirmation) {
+        app.ports.receiveConfirm.send({
+          id: params.id,
+          chain: params.chain,
+          address: params.address,
+          hash: txnConfirmation.hash
+        });
+
+        await txnConfirmation.wait();
+      }
+    } catch (error) {
+      app.ports.receiveConfirm.send({
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: null
       });
     }
   });

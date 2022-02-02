@@ -71,7 +71,7 @@ export async function percentTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  const txn = await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
+  return await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,
     assetOut: new Uint112(borrow.assetOut),
@@ -80,8 +80,6 @@ export async function percentTransaction(
     maxCollateral: new Uint112(borrow.maxCollateral),
     deadline: new Uint256(borrow.deadline),
   });
-
-  await txn.wait();
 }
 
 interface Borrow {

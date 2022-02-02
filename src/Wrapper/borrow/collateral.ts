@@ -81,7 +81,7 @@ export async function collateralTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  const txn = await pool.upgrade(gp.metamaskSigner!).borrowGivenCollateral({
+  return await pool.upgrade(gp.metamaskSigner!).borrowGivenCollateral({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,
     assetOut: new Uint112(borrow.assetOut),
@@ -89,8 +89,6 @@ export async function collateralTransaction(
     maxDebt: new Uint112(borrow.maxDebt),
     deadline: new Uint256(borrow.deadline),
   });
-
-  await txn.wait();
 }
 
 interface Borrow {

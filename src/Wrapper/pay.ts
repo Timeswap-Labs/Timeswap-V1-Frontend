@@ -92,15 +92,33 @@ export function paySigner(
   app.ports.pay.subscribe(async (params) => {
     const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
 
-    const txn = await pool.upgrade(gp.metamaskSigner!).repay({
-      collateralTo: params.send.collateralTo,
-      ids: params.send.ids.map((id) => new Uint256(id)),
-      maxAssetsIn: params.send.maxAssetsIn.map(
-        (maxAssetIn) => new Uint112(maxAssetIn)
-      ),
-      deadline: new Uint256(params.send.deadline),
-    });
+    try {
+      const txnConfirmation = await pool.upgrade(gp.metamaskSigner!).repay({
+        collateralTo: params.send.collateralTo,
+        ids: params.send.ids.map((id) => new Uint256(id)),
+        maxAssetsIn: params.send.maxAssetsIn.map(
+          (maxAssetIn) => new Uint112(maxAssetIn)
+        ),
+        deadline: new Uint256(params.send.deadline),
+      });
 
-    await txn.wait();
+      if (txnConfirmation) {
+        app.ports.receiveConfirm.send({
+          id: params.id,
+          chain: params.chain,
+          address: params.address,
+          hash: txnConfirmation.hash
+        });
+
+        await txnConfirmation.wait();
+      }
+    } catch (error) {
+      app.ports.receiveConfirm.send({
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: null
+      });
+    }
   });
 }
