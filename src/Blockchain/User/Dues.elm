@@ -68,6 +68,8 @@ decoder =
 toERC20s : Dues -> ERC20s
 toERC20s dues =
     dues
+        |> Dict.map (\_ dict -> dict |> Due.dropZero)
+        |> Dict.dropIf (\_ dict -> dict |> Dict.isEmpty)
         |> Dict.keys
         |> List.concatMap
             (\pool ->

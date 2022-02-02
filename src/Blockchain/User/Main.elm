@@ -47,6 +47,7 @@ import Blockchain.User.Liqs exposing (Liqs)
 import Blockchain.User.Natives as Natives
 import Blockchain.User.Positions as Positions exposing (Positions)
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
+import Blockchain.User.Txns.Receipt as Receipt
 import Blockchain.User.Txns.Txn as Txn exposing (Txn)
 import Blockchain.User.Txns.TxnWrite as TxnWrite exposing (TxnWrite)
 import Blockchain.User.Write as Write
@@ -113,6 +114,7 @@ type Msg
     | ReceiveBalances Value
     | ReceiveAllowances Value
     | ReceiveConfirm Value
+    | ReceiveReceipt Value
     | ReceiveNatives Chain (Result Http.Error Natives.Answer)
     | ReceivePositions Value
     | BalancesTick Posix
@@ -301,16 +303,16 @@ update { chains } chain msg (User user) =
 
         ReceiveConfirm value ->
             case value |> Decode.decodeValue Write.decoder of
-                Ok receipt ->
+                Ok decoded ->
                     case
-                        ( (receipt.chain == chain)
-                            && (receipt.address == user.address)
-                        , receipt.hash
+                        ( (decoded.chain == chain)
+                            && (decoded.address == user.address)
+                        , decoded.hash
                         )
                     of
                         ( True, Just hash ) ->
                             user.txns
-                                |> Txns.confirm receipt.id
+                                |> Txns.confirm decoded.id
                                     hash
                                     Txn.Pending
                                 |> (\txns ->
@@ -319,14 +321,14 @@ update { chains } chain msg (User user) =
                                         , txns
                                             |> Cache.encodeTxns chain user.address
                                             |> cacheTxns
-                                        , ConfirmTxn receipt.id hash |> Just
+                                        , ConfirmTxn decoded.id hash |> Just
                                         )
                                    )
 
                         ( True, Nothing ) ->
                             ( user |> User
                             , Cmd.none
-                            , RejectTxn receipt.id |> Just
+                            , RejectTxn decoded.id |> Just
                             )
 
                         _ ->
@@ -334,6 +336,37 @@ update { chains } chain msg (User user) =
 
                 Err _ ->
                     user |> noCmdAndEffect
+
+        ReceiveReceipt value ->
+            (case value |> Decode.decodeValue Receipt.decoder of
+                Ok decoded ->
+                    if
+                        (decoded.chain == chain)
+                            && (decoded.address == user.address)
+                            && (decoded.hash
+                                    |> Set.memberOf
+                                        (user.txns |> Txns.getPending)
+                               )
+                    then
+                        { user
+                            | txns =
+                                case decoded.state of
+                                    Receipt.Failed ->
+                                        user.txns
+                                            |> Txns.updateFailed decoded.hash
+
+                                    Receipt.Success ->
+                                        user.txns
+                                            |> Txns.updateSuccess decoded.hash
+                        }
+
+                    else
+                        user
+
+                Err _ ->
+                    user
+            )
+                |> noCmdAndEffect
 
         ReceiveNatives decodedChain (Ok natives) ->
             ( user |> User
@@ -885,12 +918,16 @@ port receivePositions : (Value -> msg) -> Sub msg
 port receiveConfirm : (Value -> msg) -> Sub msg
 
 
+port receiveReceipt : (Value -> msg) -> Sub msg
+
+
 subscriptions : User -> Sub Msg
 subscriptions (User user) =
     [ receiveBalances ReceiveBalances
     , receiveAllowances ReceiveAllowances
     , receivePositions ReceivePositions
     , receiveConfirm ReceiveConfirm
+    , receiveReceipt ReceiveReceipt
     , user.balances |> Balances.subscriptions BalancesTick
     , user.allowances |> Allowances.subscriptions AllowancesTick
     ]

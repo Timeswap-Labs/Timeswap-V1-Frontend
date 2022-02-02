@@ -49,6 +49,7 @@ decoder =
 toERC20s : Liqs -> ERC20s
 toERC20s liqs =
     liqs
+        |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
         |> Dict.keys
         |> List.concatMap
             (\pool ->

@@ -1,4 +1,4 @@
-module Blockchain.User.Liq exposing (Liq, decoder, encode)
+module Blockchain.User.Liq exposing (Liq, decoder, encode, isZero)
 
 import Data.Uint as Uint exposing (Uint)
 import Json.Decode exposing (Decoder)
@@ -17,3 +17,8 @@ decoder =
 encode : Liq -> Value
 encode =
     Uint.encode
+
+
+isZero : Liq -> Bool
+isZero =
+    Uint.isZero

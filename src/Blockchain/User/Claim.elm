@@ -2,6 +2,7 @@ module Blockchain.User.Claim exposing
     ( Claim
     , decoder
     , encode
+    , isZero
     )
 
 import Data.Uint as Uint exposing (Uint)
@@ -35,3 +36,11 @@ encode { bondPrincipal, bondInterest, insurancePrincipal, insuranceInterest } =
     , ( "insuranceInterest", insuranceInterest |> Uint.encode )
     ]
         |> Encode.object
+
+
+isZero : Claim -> Bool
+isZero { bondPrincipal, bondInterest, insurancePrincipal, insuranceInterest } =
+    (bondPrincipal |> Uint.isZero)
+        && (bondInterest |> Uint.isZero)
+        && (insurancePrincipal |> Uint.isZero)
+        && (insuranceInterest |> Uint.isZero)

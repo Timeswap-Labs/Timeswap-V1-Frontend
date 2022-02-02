@@ -2,6 +2,7 @@ module Blockchain.User.Due exposing
     ( Due
     , decoder
     , decoderMultiple
+    , dropZero
     , encode
     , encodeMultiple
     )
@@ -57,3 +58,14 @@ decoderMultiple =
         |> Pipeline.required "due" decoder
         |> Decode.list
         |> Decode.map (Dict.fromList TokenId.sorter)
+
+
+isZeroSingle : Due -> Bool
+isZeroSingle { collateral } =
+    collateral |> Uint.isZero
+
+
+dropZero : Dict TokenId Due -> Dict TokenId Due
+dropZero dict =
+    dict
+        |> Dict.dropIf (\_ due -> due |> isZeroSingle)

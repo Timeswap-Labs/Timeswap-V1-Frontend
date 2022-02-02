@@ -55,6 +55,8 @@ decoder =
 toERC20s : Claims -> ERC20s
 toERC20s claims =
     claims
+        |> Dict.dropIf
+            (\_ claim -> claim |> Claim.isZero)
         |> Dict.keys
         |> List.concatMap
             (\pool ->
