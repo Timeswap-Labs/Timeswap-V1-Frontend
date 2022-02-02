@@ -249,8 +249,8 @@ chainRow model chain =
                         , height <| px 54
                         , paddingXY 18 0
                         , spacing 8
-                        , Background.color Color.primary100
-                        , mouseOver [ Background.color Color.primary200 ]
+                        , model.theme |> ThemeColor.btnBackground |> Background.color
+                        , mouseOver [ model.theme |> ThemeColor.btnHoverBG |> Background.color ]
                         , Border.rounded 8
                         ]
                         [ model.images
@@ -266,7 +266,7 @@ chainRow model chain =
                             , centerY
                             , Font.size 16
                             , paddingXY 0 4
-                            , Font.color Color.light100
+                            , model.theme |> ThemeColor.text |> Font.color
                             ]
                             (chain
                                 |> Chain.toString

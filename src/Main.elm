@@ -1577,7 +1577,7 @@ tabs ({ device, backdrop, theme } as model) =
 
 
 tab : { model | device : Device, page : Page, theme : Theme } -> Tab -> Element Never
-tab { device, page, theme } givenTab =
+tab { page, theme } givenTab =
     if (page |> Page.toTab) == givenTab then
         el
             [ width <| px 84
@@ -1856,7 +1856,7 @@ connectButton ({ device, images, theme } as model) =
                                         [ width shrink
                                         , height shrink
                                         , Font.size 16
-                                        , Font.color Color.transparent400
+                                        , theme |> ThemeColor.primaryBtn |> Font.color
                                         ]
                                         (user
                                             |> User.toAddressNotSupported
@@ -2010,8 +2010,6 @@ themeButton { theme, images } =
             el
                 [ centerX
                 , centerY
-                , Font.size 16
-                , Font.color Color.transparent400
                 ]
                 (case theme of
                     Theme.Light ->
@@ -2097,7 +2095,7 @@ notSupportedBody { backdrop, images, theme } =
     column
         ([ width <| px 375
          , height shrink
-         , spacing 36
+         , spacing 4
          , centerX
          , centerY
          , Border.rounded 8
@@ -2107,18 +2105,28 @@ notSupportedBody { backdrop, images, theme } =
             ++ Glass.background backdrop theme
         )
         [ el
-            [ width shrink
+            [ width fill
             , height shrink
             , centerX
-            , Font.color Color.light100
+            , theme |> ThemeColor.text |> Font.color
             , Font.size 18
-            , paddingXY 0 3
+            , Font.bold
+            , Font.center
+            , paddingXY 10 24
+            , Border.widthEach
+                { top = 0
+                , right = 0
+                , bottom = 1
+                , left = 0
+                }
+            , theme |> ThemeColor.textboxBorder |> Border.color
             ]
             (text "Unsupported Network")
         , column
             [ width fill
             , height shrink
             , spacing 16
+            , padding 24
             ]
             [ images
                 |> Image.error
@@ -2126,41 +2134,51 @@ notSupportedBody { backdrop, images, theme } =
                     , height <| px 30
                     , centerX
                     ]
-            , paragraph
-                [ width fill
-                , height shrink
-                , Font.center
-                ]
-                [ el
-                    [ width shrink
+            , column [ width fill, spacing 24 ]
+                [ paragraph
+                    [ width fill
                     , height shrink
-                    , Font.size 14
-                    , paddingXY 0 3
-                    , Font.color Color.light100
+                    , Font.center
                     ]
-                    (text "Please switch to a supported network.")
-                ]
-            , Input.button
-                [ width shrink
-                , height <| px 44
-                , paddingXY 12 0
-                , centerX
-                , Background.color Color.negative500
-                , Border.rounded 8
-                ]
-                { onPress = Just OpenChainList
-                , label =
-                    el
+                    [ el
                         [ width shrink
                         , height shrink
-                        , Font.color Color.light100
-                        , Font.bold
-                        , Font.size 16
-                        , paddingXY 0 4
-                        , centerX
-                        , centerY
+                        , Font.size 14
+                        , paddingXY 0 3
+                        , theme |> ThemeColor.text |> Font.color
                         ]
-                        (text "Switch Network")
-                }
+                        (text "Please switch to a supported network.")
+                    ]
+                , Input.button
+                    [ width shrink
+                    , height <| px 44
+                    , paddingXY 12 0
+                    , centerX
+                    , Background.color Color.negative500
+                    , Border.rounded 4
+                    ]
+                    { onPress = Just OpenChainList
+                    , label =
+                        row
+                            [ width shrink
+                            , height shrink
+                            , Font.color Color.light100
+                            , Font.bold
+                            , Font.size 16
+                            , paddingXY 0 4
+                            , centerX
+                            , centerY
+                            , spacing 8
+                            ]
+                            [ images
+                                |> Image.energy
+                                    [ width <| px 20
+                                    , height <| px 20
+                                    , centerX
+                                    ]
+                            , text "Switch Network"
+                            ]
+                    }
+                ]
             ]
         ]
