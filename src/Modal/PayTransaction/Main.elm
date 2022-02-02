@@ -844,7 +844,7 @@ repayList :
     -> Modal
     -> Blockchain
     -> Element Msg
-repayList model ((Modal { state, pool, total, tooltip }) as modal) blockchain =
+repayList model ((Modal { state, pool }) as modal) blockchain =
     column
         [ width fill
         , spacing 12

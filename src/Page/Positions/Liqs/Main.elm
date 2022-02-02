@@ -189,7 +189,7 @@ loading { images, theme } timeline =
             , centerY
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.transparent300
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             [ text "Fetching your Lend positions..." ]
         , el
@@ -234,7 +234,7 @@ noLiqs { device, images, theme } =
             , centerY
             , Font.size 14
             , paddingXY 0 3
-            , Font.color Color.transparent300
+            , theme |> ThemeColor.textLight |> Font.color
             ]
             [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section. Your Liquidity positions will appear here..." ]
         ]
