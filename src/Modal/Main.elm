@@ -429,5 +429,6 @@ view model modal =
                 _ ->
                     none
 
-        _ ->
-            none
+        Confirm confirm ->
+            Confirm.view model confirm
+                |> map ConfirmMsg

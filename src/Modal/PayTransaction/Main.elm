@@ -646,7 +646,7 @@ view :
     -> Blockchain
     -> Modal
     -> Element Msg
-view ({ backdrop, images, theme } as model) blockchain modal =
+view ({ backdrop, theme } as model) blockchain modal =
     Outside.view model
         { onClick = Exit
         , modal =

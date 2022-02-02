@@ -42,14 +42,14 @@ export function percentCalculate(
       timeSlippage
     );
 
-    const bondSlippage = new Uint128(claimsSlippage.bondInterest).add(new Uint128(claimsSlippage.bondPrincipal));
+    // const bondSlippage = new Uint128(claimsSlippage.bondInterest).add(new Uint128(claimsSlippage.bondPrincipal));
     const insuranceSlippage = new Uint128(claimsSlippage.insuranceInterest).add(new Uint128(claimsSlippage.insurancePrincipal));
 
     const minBond = calculateMinValue(
-      bondSlippage.sub(query.assetIn),
+      new Uint128(claimsSlippage.bondInterest),
       query.slippage
     )
-      .add(query.assetIn)
+      .add(new Uint128(claimsSlippage.bondPrincipal))
       .toString();
 
     const minInsurance = calculateMinValue(

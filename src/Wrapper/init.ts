@@ -97,12 +97,12 @@ export async function init(
   approveSigner(app, gp);
   // pool(app, whitelist, gp);
   lend(app);
-  // lendSigner(app, whitelist, gp);
+  lendSigner(app, gp);
 
   // withdrawSigner(app, whitelist, gp);
 
   borrow(app);
-  // borrowSigner(app, whitelist, gp);
+  borrowSigner(app, gp);
 
   // pay(app);
   // paySigner(app, whitelist, gp);
