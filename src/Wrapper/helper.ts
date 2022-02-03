@@ -132,3 +132,24 @@ export function updateCachedTxns(txnReceipt: ReceiveReceipt) {
     }
   }
 }
+
+export function listenForPendingTxns(app: ElmApp<Ports>, gp: GlobalParams) {
+  const storedTxns = window.localStorage.getItem("txns");
+
+  if (storedTxns) {
+    const parsedTxnData: { chain: Chain; address: string; txns: Txns } = JSON.parse(storedTxns);
+    const pendingTxns = parsedTxnData.txns.confirmed.filter(txn => txn.state === 'pending');
+
+    pendingTxns.forEach(async pendingTxn => {
+      const txnReceipt = await gp.provider.waitForTransaction(pendingTxn.hash);
+      const receiveReceipt = {
+        chain: parsedTxnData.chain,
+        address: parsedTxnData.address,
+        hash: pendingTxn.hash,
+        state: txnReceipt.status ? "success" : "failed"
+      }
+      app.ports.receiveReceipt.send(receiveReceipt);
+      updateCachedTxns(receiveReceipt);
+    });
+  }
+}

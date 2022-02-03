@@ -190,6 +190,7 @@ update :
     { model
         | chains : Chains
         , blockchain : Support User.NotSupported Blockchain
+        , time : Posix
     }
     -> Msg
     -> Modal
@@ -237,7 +238,7 @@ update model msg modal =
 
         ( MaturityListMsg maturityListMsg, MaturityList maturityList, Supported blockchain ) ->
             maturityList
-                |> MaturityList.update blockchain maturityListMsg
+                |> MaturityList.update model.time blockchain maturityListMsg
                 |> (\( updated, cmd, maybeEffect ) ->
                         ( updated |> Maybe.map MaturityList
                         , cmd |> Cmd.map MaturityListMsg

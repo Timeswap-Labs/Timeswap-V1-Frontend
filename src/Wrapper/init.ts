@@ -8,11 +8,10 @@ import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
 import { withdrawSigner } from "./withdraw";
 import { faucetSigner } from "./faucet";
-// import { pending } from "./pending";
 import { wallet } from "./wallet";
-// import { BalancesOf, ReceiveUser, Ports } from "./declaration";
 import { getChainData, getTokenList } from "./chains";
 import { approveSigner } from "./approve";
+import { listenForPendingTxns } from "./helper";
 
 export declare let window: any;
 
@@ -71,6 +70,8 @@ export async function init(
 ) {
   const provider = await getProvider(gp);
   gp.provider = provider;
+
+  listenForPendingTxns(app, gp);
 
   approveSigner(app, gp);
   // pool(app, whitelist, gp);

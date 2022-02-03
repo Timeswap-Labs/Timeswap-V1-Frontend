@@ -15,7 +15,7 @@ import Data.Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
-import Data.Maturity exposing (Maturity)
+import Data.Maturity as Maturity exposing (Maturity)
 import Data.Offset exposing (Offset)
 import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
@@ -134,11 +134,12 @@ init blockchain pair =
 
 
 update :
-    Blockchain
+    Posix
+    -> Blockchain
     -> Msg
     -> Modal
     -> ( Maybe Modal, Cmd Msg, Maybe Effect )
-update blockchain msg (Modal modal) =
+update now blockchain msg (Modal modal) =
     case msg of
         GoToSortMaturity ->
             ( { modal
@@ -198,7 +199,16 @@ update blockchain msg (Modal modal) =
                 (chain == (blockchain |> Blockchain.toChain))
                     && (pair == modal.pair)
             then
-                ( { modal | pools = result |> Web.fromResult }
+                ( { modal
+                    | pools =
+                        result
+                            |> Result.map
+                                (\answer ->
+                                    answer
+                                        |> Dict.keepIf (\maturity _ -> maturity |> Maturity.isActive now)
+                                )
+                            |> Web.fromResult
+                  }
                     |> Modal
                     |> Just
                 , case result |> Web.fromResult of
