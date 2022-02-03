@@ -111,3 +111,24 @@ export function getPoolSDK(
 
   return new SDKPool(gp.metamaskProvider, chain.chainId, assetToken, collateralToken, new Uint256(maturity));
 }
+
+export function updateCachedTxns(txnReceipt: ReceiveReceipt) {
+  const storedTxns = window.localStorage.getItem("txns");
+
+  if (storedTxns) {
+    try {
+      const parsedTxns: { chain: Chain; address: string; txns: Txns } = JSON.parse(storedTxns);
+
+      if (parsedTxns.address === txnReceipt.address && parsedTxns.chain.chainId === txnReceipt.chain.chainId) {
+        const txnIndex = parsedTxns.txns.confirmed.findIndex(txn => txn.hash === txnReceipt.hash);
+
+        if (txnIndex >= 0) {
+          parsedTxns.txns.confirmed[txnIndex].state = txnReceipt.state;
+          window.localStorage.setItem("txns", JSON.stringify(parsedTxns));
+        }
+      }
+    } catch {
+      // parse error
+    }
+  }
+}

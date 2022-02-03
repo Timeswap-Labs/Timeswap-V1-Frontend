@@ -35,6 +35,7 @@ import Element
         , el
         , fill
         , height
+        , inFront
         , newTabLink
         , none
         , padding
@@ -923,7 +924,7 @@ recentTransactions theme =
             , paddingXY 0 3
             , theme |> ThemeColor.textLight |> Font.color
             ]
-            (text "Recent transactionss")
+            (text "Recent transactions")
         , Input.button
             [ width shrink
             , height shrink
@@ -961,6 +962,16 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                     , height <| px 40
                     , Border.rounded 999
                     , Background.color Color.warning100
+                    , (images
+                        |> Image.semiCircleYellow
+                            [ width <| px 20
+                            , height <| px 20
+                            , centerX
+                            , centerY
+                            , Font.center
+                            ]
+                      )
+                        |> inFront
                     ]
                     none
 
@@ -970,6 +981,16 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                     , height <| px 40
                     , Border.rounded 999
                     , Background.color Color.negative100
+                    , (images
+                        |> Image.error
+                            [ width <| px 20
+                            , height <| px 20
+                            , centerX
+                            , centerY
+                            , Font.center
+                            ]
+                      )
+                        |> inFront
                     ]
                     none
 
@@ -979,6 +1000,16 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                     , height <| px 40
                     , Border.rounded 999
                     , Background.color Color.positive100
+                    , (images
+                        |> Image.matured
+                            [ width <| px 20
+                            , height <| px 20
+                            , centerX
+                            , centerY
+                            , Font.center
+                            ]
+                      )
+                        |> inFront
                     ]
                     none
         , el
@@ -986,6 +1017,7 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
             , height shrink
             , centerY
             , Font.size 14
+            , theme |> ThemeColor.text |> Font.color
             , paddingXY 0 3
             ]
             ((case txn.write of
@@ -998,49 +1030,49 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                         |> String.join " "
 
                 TxnWrite.Lend pool ->
-                    [ "Lend to"
+                    [ "Lend :"
                     , pool |> Pool.toString
                     , "pool"
                     ]
                         |> String.join " "
 
                 TxnWrite.Borrow pool ->
-                    [ "Borrow from"
+                    [ "Borrow :"
                     , pool |> Pool.toString
                     , "pool"
                     ]
                         |> String.join " "
 
                 TxnWrite.Liquidity pool ->
-                    [ "Add liquidity to"
+                    [ "Add liq :"
                     , pool |> Pool.toString
                     , "pool"
                     ]
                         |> String.join " "
 
                 TxnWrite.Create pool ->
-                    [ "Create new"
+                    [ "Create :"
                     , pool |> Pool.toString
                     , "pool"
                     ]
                         |> String.join " "
 
                 TxnWrite.Withdraw pool ->
-                    [ "Withdraw from"
+                    [ "Withdraw :"
                     , pool |> Pool.toString
                     , "pool"
                     ]
                         |> String.join " "
 
                 TxnWrite.Pay pool ->
-                    [ "Pay to"
+                    [ "Pay :"
                     , pool |> Pool.toString
                     , "pool"
                     ]
                         |> String.join " "
 
                 TxnWrite.Burn pool ->
-                    [ "Withdraw Liquidity from"
+                    [ "Burn :"
                     , pool |> Pool.toString
                     , "pool"
                     ]

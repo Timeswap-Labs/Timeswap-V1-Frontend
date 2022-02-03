@@ -1,6 +1,6 @@
 import { Uint112 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "./global";
-import { getPoolSDK } from "./helper";
+import { getPoolSDK, updateCachedTxns } from "./helper";
 
 export function withdrawSigner(
   app: ElmApp<Ports>,
@@ -30,12 +30,14 @@ export function withdrawSigner(
         });
 
         const txnReceipt = await txnConfirmation.wait();
-        app.ports.receiveReceipt.send({
+        const receiveReceipt = {
           chain: params.chain,
           address: params.address,
           hash: txnConfirmation.hash,
           state: txnReceipt.status ? "success" : "failed"
-        });
+        }
+        app.ports.receiveReceipt.send(receiveReceipt);
+        updateCachedTxns(receiveReceipt);
       }
     } catch (error) {
       app.ports.receiveConfirm.send({

@@ -1,5 +1,5 @@
 import { GlobalParams } from "../global";
-import { getPool, getPoolSDK } from "../helper";
+import { getPool, getPoolSDK, updateCachedTxns } from "../helper";
 import { collateralCalculate, collateralTransaction } from "./collateral";
 import { debtCalculate, debtTransaction } from "./debt";
 import { percentCalculate, percentTransaction } from "./percent";
@@ -58,12 +58,14 @@ export function borrowSigner(
         });
 
         const txnReceipt = await txnConfirmation.wait();
-        app.ports.receiveReceipt.send({
+        const receiveReceipt = {
           chain: params.chain,
           address: params.address,
           hash: txnConfirmation.hash,
           state: txnReceipt.status ? "success" : "failed"
-        });
+        }
+        app.ports.receiveReceipt.send(receiveReceipt);
+        updateCachedTxns(receiveReceipt);
       }
     } catch (error) {
       app.ports.receiveConfirm.send({

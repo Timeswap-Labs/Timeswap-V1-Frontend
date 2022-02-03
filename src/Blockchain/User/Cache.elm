@@ -8,7 +8,7 @@ import Json.Encode as Encode exposing (Value)
 
 encodeTxns : Chain -> Address -> Txns -> Value
 encodeTxns chain address txns =
-    [ ( "chainId", chain |> Chain.encode )
+    [ ( "chain", chain |> Chain.encode )
     , ( "address", address |> Address.encode )
     , ( "txns", txns |> Txns.encode )
     ]

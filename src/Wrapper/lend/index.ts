@@ -1,6 +1,6 @@
 import { Uint128, Pair, Uint112 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
-import { getPool, getPoolSDK } from "../helper";
+import { getPool, getPoolSDK, updateCachedTxns } from "../helper";
 import { bondCalculate, bondTransaction } from "./bond";
 import { insuranceCalculate, insuranceTransaction } from "./insurance";
 import { percentCalculate, percentTransaction } from "./percent";
@@ -103,12 +103,14 @@ export function lendSigner(
         });
 
         const txnReceipt = await txnConfirmation.wait();
-        app.ports.receiveReceipt.send({
+        const receiveReceipt = {
           chain: params.chain,
           address: params.address,
           hash: txnConfirmation.hash,
           state: txnReceipt.status ? "success" : "failed"
-        });
+        }
+        app.ports.receiveReceipt.send(receiveReceipt);
+        updateCachedTxns(receiveReceipt);
       }
     } catch (error) {
       app.ports.receiveConfirm.send({

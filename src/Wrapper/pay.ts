@@ -1,6 +1,6 @@
 import { Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "./global";
-import { getPoolSDK } from "./helper";
+import { getPoolSDK, updateCachedTxns } from "./helper";
 
 export function pay(app: ElmApp<Ports>) {
   app.ports.queryFull.subscribe((duesData) => {
@@ -111,12 +111,14 @@ export function paySigner(
         });
 
         const txnReceipt = await txnConfirmation.wait();
-        app.ports.receiveReceipt.send({
+        const receiveReceipt = {
           chain: params.chain,
           address: params.address,
           hash: txnConfirmation.hash,
           state: txnReceipt.status ? "success" : "failed"
-        });
+        }
+        app.ports.receiveReceipt.send(receiveReceipt);
+        updateCachedTxns(receiveReceipt);
       }
     } catch (error) {
       app.ports.receiveConfirm.send({

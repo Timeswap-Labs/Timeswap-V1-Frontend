@@ -26,12 +26,12 @@ export async function elmUser(): Promise<{
     gp.metamaskProvider = window.ethereum;
     gp.network = await gp.metamaskProvider.send("eth_chainId", []);
 
-    if (gp.network !== "0x4") {
-      gp.metamaskProvider.send("wallet_switchEthereumChain", [
-        { chain: "0x4" },
-      ]);
-      return { gp, user: null };
-    }
+    // if (gp.network !== "0x4") {
+    //   gp.metamaskProvider.send("wallet_switchEthereumChain", [
+    //     { chainId: "0x4" },
+    //   ]);
+    //   return { gp, user: null };
+    // }
 
     const accounts: string[] = await gp.metamaskProvider.send(
       "eth_accounts",
@@ -41,15 +41,15 @@ export async function elmUser(): Promise<{
     if (accounts[0]) {
       let txns: Txns = { confirmed: [], uncomfirmed: [] };
       const wallet = "metamask";
-      const chainId = 4;
+      const chainId = Number(gp.network);
       const storedTxns = window.localStorage.getItem("txns");
 
       if (storedTxns) {
         try {
-          const parsedTxns: { chainId: number; address: string; txns: Txns } =
+          const parsedTxns: { chain: Chain; address: string; txns: Txns } =
             JSON.parse(storedTxns);
           txns =
-            parsedTxns.address === accounts[0] && parsedTxns.chainId === chainId
+            parsedTxns.address === accounts[0] && parsedTxns.chain.chainId === chainId
               ? parsedTxns.txns
               : txns;
         } catch (err) {

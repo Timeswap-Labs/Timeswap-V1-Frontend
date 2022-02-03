@@ -35,6 +35,7 @@ export function percentCalculate(
       currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
+
     const { claims: claimsSlippage } = pool.lendGivenPercent(
       state,
       new Uint112(query.assetIn),
