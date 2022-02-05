@@ -32,6 +32,8 @@ toList :
     -> List ( Pool, Dict TokenId Due )
 toList posix dues =
     dues
+        |> Dict.map (\_ dict -> dict |> Due.dropZero)
+        |> Dict.dropIf (\_ dict -> dict |> Dict.isEmpty)
         |> Dict.partition
             (\{ maturity } _ ->
                 maturity |> Maturity.isActive posix

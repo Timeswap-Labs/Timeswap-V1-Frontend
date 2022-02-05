@@ -24,6 +24,7 @@ toList :
     -> List ( Pool, Liq )
 toList posix claims =
     claims
+        |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
         |> Dict.partition
             (\{ maturity } _ ->
                 maturity |> Maturity.isActive posix

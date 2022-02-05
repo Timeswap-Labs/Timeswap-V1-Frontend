@@ -30,6 +30,8 @@ toList :
     -> List ( Pool, Claim )
 toList posix claims =
     claims
+        |> Dict.dropIf
+            (\_ claim -> claim |> Claim.isZero)
         |> Dict.partition
             (\{ maturity } _ ->
                 maturity |> Maturity.isActive posix
