@@ -147,7 +147,7 @@ type Claims = {
 }[];
 
 type ClaimsSum = {
-  chain: Chain,
+  chain: Chain;
   pool: Pool;
   claim: Claim;
 };
@@ -174,10 +174,12 @@ type ReceiveReturn = {
   pool: Pool;
   poolInfo: PoolInfo;
   claimsIn: Claim;
-  result: {
-    asset: string;
-    collateral: string;
-  } | string;
+  result:
+    | {
+        asset: string;
+        collateral: string;
+      }
+    | string;
 };
 
 type Dues = {
@@ -192,7 +194,7 @@ type Dues = {
 }[];
 
 type QueryFull = {
-  chain: Chain,
+  chain: Chain;
   pool: Pool;
   dues: {
     tokenId: Uint;
@@ -213,14 +215,16 @@ type ReceiveFull = {
       collateral: Uint;
     };
   }[];
-  result: {
-    assetIn: Uint;
-    collateralOut: Uint;
-  } | string;
+  result:
+    | {
+        assetIn: Uint;
+        collateralOut: Uint;
+      }
+    | string;
 };
 
 type QueryCustom = {
-  chain: Chain,
+  chain: Chain;
   pool: Pool;
   dues: {
     tokenId: Uint;
@@ -236,7 +240,7 @@ type QueryCustom = {
 };
 
 type ReceiveCustom = {
-  chain: Chain,
+  chain: Chain;
   pool: Pool;
   dues: {
     tokenId: Uint;
@@ -254,10 +258,12 @@ type ReceiveCustom = {
       tokenId: Uint;
       collateralOut: Uint;
     }[];
-    total?: {
-      assetIn: Uint;
-      collateralOut: Uint;
-    } | string
+    total?:
+      | {
+          assetIn: Uint;
+          collateralOut: Uint;
+        }
+      | string;
   };
 };
 
@@ -373,7 +379,7 @@ interface Lend {
     minBond?: string;
     minInsurance?: string;
     deadline: number;
-  }
+  };
 }
 
 interface Borrow {
@@ -393,7 +399,7 @@ interface Borrow {
     maxDebt?: string;
     maxCollateral?: string;
     deadline: number;
-  }
+  };
 }
 
 interface Withdraw {
@@ -407,7 +413,7 @@ interface Withdraw {
     assetTo: string;
     collateralTo: string;
     claimsIn: Claim;
-  }
+  };
 }
 
 interface Pay {
@@ -422,7 +428,7 @@ interface Pay {
     ids: string[];
     maxAssetsIn: string[];
     deadline: number;
-  }
+  };
 }
 
 interface ReceiveConfirm {

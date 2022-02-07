@@ -27,6 +27,7 @@ export async function borrowPositionsInit(
     for (let i = 0n; i < cdTokenBalances[index]; i++) {
       temp.push(cdToken.tokenOfOwnerByIndex(positionsOf.owner, i));
     }
+    promiseCDTokenOwnerIndex.push(temp);
   }
   const cdTokenOwnerIndex: string[][] = (
     await Promise.all(
@@ -34,12 +35,15 @@ export async function borrowPositionsInit(
     )
   ).map((x) => x.map((y) => y.toString()));
 
+  console.log("cdTokenOwnerIndex", cdTokenOwnerIndex);
+
   const promiseCDTokenDues: any[][] = [];
   for (const [index, cdToken] of cdTokens.entries()) {
     const temp = [];
     for (const ownerIndex of cdTokenOwnerIndex[index]) {
       temp.push(cdToken.dueOf(ownerIndex));
     }
+    promiseCDTokenDues.push(temp);
   }
   const cdTokenDues: {
     debt: string;
@@ -54,6 +58,8 @@ export async function borrowPositionsInit(
       startBlock: y[2].toString(),
     }))
   );
+
+  console.log("cdTokenDues", cdTokenDues);
 
   return positionsOf.natives.map(({ pool }, index) => ({
     pool,

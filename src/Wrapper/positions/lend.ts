@@ -58,13 +58,28 @@ export async function lendPositionsInit(
     await Promise.all(promiseInsuranceInterestBalances)
   ).map((x) => x.toString());
 
-  return positionsOf.natives.map(({ pool }, index) => ({
-    pool,
-    claim: {
-      bondPrincipal: bondPrincipalBalances[index],
-      bondInterest: bondInterestBalances[index],
-      insurancePrincipal: insurancePrincipalBalances[index],
-      insuranceInterest: insuranceInterestBalances[index],
-    },
-  }));
+  return positionsOf.natives
+    .map(({ pool }, index) => ({
+      pool,
+      claim: {
+        bondPrincipal: bondPrincipalBalances[index],
+        bondInterest: bondInterestBalances[index],
+        insurancePrincipal: insurancePrincipalBalances[index],
+        insuranceInterest: insuranceInterestBalances[index],
+      },
+    }))
+    .filter(
+      ({
+        claim: {
+          bondPrincipal,
+          bondInterest,
+          insurancePrincipal,
+          insuranceInterest,
+        },
+      }) =>
+        bondPrincipal !== "0" ||
+        bondInterest !== "0" ||
+        insurancePrincipal !== "0" ||
+        insuranceInterest !== "0"
+    );
 }
