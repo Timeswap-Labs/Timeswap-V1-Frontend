@@ -15,8 +15,8 @@ export function lend(app: ElmApp<Ports>) {
   );
 
   app.ports.querySum.subscribe((claimsData) => {
-    const bond = new Uint128(claimsData.claim.bondInterest).add(new Uint128(claimsData.claim.bondPrincipal));
-    const insurance = new Uint128(claimsData.claim.insuranceInterest).add(new Uint128(claimsData.claim.insurancePrincipal));
+    const bond = new Uint128(claimsData.claims.bondInterest).add(new Uint128(claimsData.claims.bondPrincipal));
+    const insurance = new Uint128(claimsData.claims.insuranceInterest).add(new Uint128(claimsData.claims.insurancePrincipal));
 
     app.ports.receiveSum.send({
       ...claimsData,

@@ -149,13 +149,13 @@ type Claims = {
 type ClaimsSum = {
   chain: Chain;
   pool: Pool;
-  claim: Claim;
+  claims: Claim;
 };
 
 type ReceiveSum = {
   chain: Chain;
   pool: Pool;
-  claim: Claim;
+  claims: Claim;
   result: {
     asset: string;
     collateral: string;
