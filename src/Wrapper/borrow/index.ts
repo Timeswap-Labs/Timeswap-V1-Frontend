@@ -4,13 +4,13 @@ import { collateralCalculate, collateralTransaction } from "./collateral";
 import { debtCalculate, debtTransaction } from "./debt";
 import { percentCalculate, percentTransaction } from "./percent";
 
-export function borrow(app: ElmApp<Ports>) {
+export function borrow(gp: GlobalParams, app: ElmApp<Ports>) {
   app.ports.queryBorrow.subscribe((query) =>
-    borrowQueryCalculation(app, query)
+    borrowQueryCalculation(gp, app, query)
   );
 
   app.ports.queryBorrowPerSecond.subscribe((query) =>
-    borrowQueryCalculation(app, query)
+    borrowQueryCalculation(gp, app, query)
   );
 }
 
@@ -79,6 +79,7 @@ export function borrowSigner(
 }
 
 async function borrowQueryCalculation(
+  gp: GlobalParams,
   app: ElmApp<Ports>,
   query: BorrowQuery
 ) {
@@ -86,7 +87,7 @@ async function borrowQueryCalculation(
   const { percent, debtIn, collateralIn } = query;
 
   if (percent !== undefined) {
-    await percentCalculate(app, pool, { ...query, percent });
+    await percentCalculate(gp, app, pool, { ...query, percent });
   } else if (debtIn !== undefined) {
     await debtCalculate(app, pool, { ...query, debtIn });
   } else if (collateralIn !== undefined) {

@@ -11,6 +11,7 @@ import {
 } from "./common";
 
 export function bondCalculate(
+  gp: GlobalParams,
   app: ElmApp<Ports>,
   pool: Pool,
   query: LendQuery

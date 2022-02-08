@@ -87,7 +87,7 @@ viewPairSymbol param =
                     none
                   )
                     |> below
-                , Font.size 14
+                , Font.size param.fontSize
                 , param.theme |> ThemeColor.text |> Font.color
                 ]
                 (text short)

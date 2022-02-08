@@ -6,6 +6,7 @@ import { getCurrentTime } from "../helper";
 import { calculateApr, calculateCdp, calculateMaxValue } from "./common";
 
 export async function percentCalculate(
+  gp: GlobalParams,
   app: ElmApp<Ports>,
   pool: Pool,
   query: BorrowQuery
@@ -15,12 +16,19 @@ export async function percentCalculate(
     const currentTime = getCurrentTime();
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const { due } = pool.borrowGivenPercent(
-      state,
+    const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
+    const { due } = await sdkPool.calculateBorrowGivenPercent(
       new Uint112(query.assetOut),
       new Uint40(query.percent!),
       currentTime
     );
+
+    // const { due } = pool.borrowGivenPercent(
+    //   state,
+    //   new Uint112(query.assetOut),
+    //   new Uint40(query.percent!),
+    //   currentTime
+    // );
     const debtIn = due.debt.toString();
     const collateralIn = due.collateral.toString();
 
@@ -30,6 +38,7 @@ export async function percentCalculate(
     )
       .add(query.assetOut)
       .toString();
+
     const maxCollateral = calculateMaxValue(
       due.collateral,
       query.slippage
@@ -71,15 +80,22 @@ export async function percentTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  return await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
-    assetTo: borrow.assetTo,
-    dueTo: borrow.dueTo,
-    assetOut: new Uint112(borrow.assetOut),
-    percent: new Uint40(borrow.percent),
-    maxDebt: new Uint112(borrow.maxDebt),
-    maxCollateral: new Uint112(borrow.maxCollateral),
-    deadline: new Uint256(borrow.deadline),
-  });
+  try {
+    console.log("borrow params", borrow);
+
+    return await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
+      assetTo: borrow.assetTo,
+      dueTo: borrow.dueTo,
+      assetOut: new Uint112(borrow.assetOut),
+      percent: new Uint40(borrow.percent),
+      maxDebt: new Uint112(borrow.maxDebt),
+      maxCollateral: new Uint112(borrow.maxCollateral),
+      deadline: new Uint256(borrow.deadline),
+    });
+
+  } catch (error) {
+    console.log("borrow Perc", error);
+  }
 }
 
 interface Borrow {
