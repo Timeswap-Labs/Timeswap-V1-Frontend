@@ -4,11 +4,13 @@ import Blockchain.User.TokenId exposing (TokenId)
 
 
 type Tooltip
-    = Debt TokenId
-    | Collateral TokenId
+    = DebtAmount TokenId
+    | DebtSymbol TokenId
+    | CollateralAmount TokenId
+    | CollateralSymbol TokenId
     | TextboxToken TokenId
     | Balance TokenId
     | TotalDebt
     | TotalCollateral
-    | DebtSymbol
-    | CollateralSymbol
+    | TotalDebtSymbol
+    | TotalCollateralSymbol
