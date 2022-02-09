@@ -23,36 +23,36 @@ export async function collateralCalculate(
     const collateralIn = new Uint112(query.collateralIn!);
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
-    const { due, yIncrease } = await sdkPool.calculateBorrowGivenCollateral(
-      assetOut,
-      collateralIn,
-      currentTime
-    );
-
-    // const { due, yIncrease } = await pool.borrowGivenCollateral(
-    //   state,
+    // const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
+    // const { due, yIncrease } = await sdkPool.calculateBorrowGivenCollateral(
     //   assetOut,
     //   collateralIn,
     //   currentTime
     // );
+
+    const { due, yIncrease } = await pool.borrowGivenCollateral(
+      state,
+      assetOut,
+      collateralIn,
+      currentTime
+    );
     const debtIn = due.debt.toString();
 
-    // const percent = await calculatePercent(
-    //   pool,
-    //   state,
-    //   assetOut,
-    //   yIncrease,
-    //   currentTime
-    // );
-
     const percent = await calculatePercent(
-      sdkPool,
+      pool,
       state,
       assetOut,
       yIncrease,
       currentTime
     );
+
+    // const percent = await calculatePercent(
+    //   sdkPool,
+    //   state,
+    //   assetOut,
+    //   yIncrease,
+    //   currentTime
+    // );
 
     const maxDebt = calculateMaxValue(
       due.debt.sub(query.assetOut),
@@ -60,7 +60,6 @@ export async function collateralCalculate(
     )
       .add(query.assetOut)
       .toString();
-
 
     console.log("borrow calc", debtIn, maxDebt);
 

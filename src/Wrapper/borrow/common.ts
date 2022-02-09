@@ -65,35 +65,35 @@ export function calculateMaxValue(value: Uint112, slippage: number): Uint256 {
 }
 
 export async function calculatePercent(
-  pool: SDKPool,
+  pool: Pool,
   state : CP,
   assetOut: Uint112,
   yIncrease: Uint112,
   currentTime: Uint256
 ): Promise<Uint256> {
-  // const { yIncrease: yMin } = await pool.borrowGivenPercent(
-  //   state,
-  //   assetOut,
-  //   new Uint40(0),
-  //   currentTime
-  // );
-  // const { yIncrease: yMax } = await pool.borrowGivenPercent(
-  //   state,
-  //   assetOut,
-  //   new Uint40(1n << 32n),
-  //   currentTime
-  // );
-
-  const { yIncrease: yMin } = await pool.calculateBorrowGivenPercent(
+  const { yIncrease: yMin } = await pool.borrowGivenPercent(
+    state,
     assetOut,
     new Uint40(0),
     currentTime
   );
-  const { yIncrease: yMax } = await pool.calculateBorrowGivenPercent(
+  const { yIncrease: yMax } = await pool.borrowGivenPercent(
+    state,
     assetOut,
     new Uint40(1n << 32n),
     currentTime
   );
+
+  // const { yIncrease: yMin } = await pool.calculateBorrowGivenPercent(
+  //   assetOut,
+  //   new Uint40(0),
+  //   currentTime
+  // );
+  // const { yIncrease: yMax } = await pool.calculateBorrowGivenPercent(
+  //   assetOut,
+  //   new Uint40(1n << 32n),
+  //   currentTime
+  // );
 
   return new Uint256(yIncrease)
     .sub(yMin)

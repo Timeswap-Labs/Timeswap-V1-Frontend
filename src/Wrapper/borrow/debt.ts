@@ -22,24 +22,24 @@ export async function debtCalculate(
     const debtIn = new Uint112(query.debtIn!);
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
-    const { due, yIncrease } = await sdkPool.calculateBorrowGivenDebt(
-      assetOut,
-      debtIn,
-      currentTime
-    );
-
-    // const { due, yIncrease } = await pool.borrowGivenDebt(
-    //   state,
+    // const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
+    // const { due, yIncrease } = await sdkPool.calculateBorrowGivenDebt(
     //   assetOut,
     //   debtIn,
     //   currentTime
     // );
 
+    const { due, yIncrease } = await pool.borrowGivenDebt(
+      state,
+      assetOut,
+      debtIn,
+      currentTime
+    );
+
     const collateralIn = due.collateral.toString();
 
     const percent = await calculatePercent(
-      sdkPool,
+      pool,
       state,
       assetOut,
       yIncrease,

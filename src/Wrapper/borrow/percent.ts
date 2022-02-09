@@ -16,19 +16,19 @@ export async function percentCalculate(
     const currentTime = getCurrentTime();
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
-    const { due } = await sdkPool.calculateBorrowGivenPercent(
-      new Uint112(query.assetOut),
-      new Uint40(query.percent!),
-      currentTime
-    );
-
-    // const { due } = pool.borrowGivenPercent(
-    //   state,
+    // const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
+    // const { due } = await sdkPool.calculateBorrowGivenPercent(
     //   new Uint112(query.assetOut),
     //   new Uint40(query.percent!),
     //   currentTime
     // );
+
+    const { due } = pool.borrowGivenPercent(
+      state,
+      new Uint112(query.assetOut),
+      new Uint40(query.percent!),
+      currentTime
+    );
     const debtIn = due.debt.toString();
     const collateralIn = due.collateral.toString();
 
