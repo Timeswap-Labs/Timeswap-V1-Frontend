@@ -81,7 +81,7 @@ export async function percentTransaction(
   borrow: Borrow
 ) {
   try {
-    console.log("borrow params", borrow);
+    console.log("borrowPerc params", borrow);
 
     return await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
       assetTo: borrow.assetTo,

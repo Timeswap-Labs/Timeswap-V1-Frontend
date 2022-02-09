@@ -89,8 +89,8 @@ async function borrowQueryCalculation(
   if (percent !== undefined) {
     await percentCalculate(gp, app, pool, { ...query, percent });
   } else if (debtIn !== undefined) {
-    await debtCalculate(app, pool, { ...query, debtIn });
+    await debtCalculate(gp, app, pool, { ...query, debtIn });
   } else if (collateralIn !== undefined) {
-    await collateralCalculate(app, pool, { ...query, collateralIn });
+    await collateralCalculate(gp, app, pool, { ...query, collateralIn });
   }
 }

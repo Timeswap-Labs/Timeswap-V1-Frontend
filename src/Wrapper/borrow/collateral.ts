@@ -2,7 +2,7 @@ import { Pool, Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 
 import { GlobalParams } from "../global";
-import { getCurrentTime } from "../helper";
+import { getCurrentTime, getPoolSDK } from "../helper";
 import {
   calculateApr,
   calculateCdp,
@@ -11,6 +11,7 @@ import {
 } from "./common";
 
 export async function collateralCalculate(
+  gp: GlobalParams,
   app: ElmApp<Ports>,
   pool: Pool,
   query: BorrowQuery
@@ -22,16 +23,31 @@ export async function collateralCalculate(
     const collateralIn = new Uint112(query.collateralIn!);
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const { due, yIncrease } = await pool.borrowGivenCollateral(
-      state,
+    const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
+    const { due, yIncrease } = await sdkPool.calculateBorrowGivenCollateral(
       assetOut,
       collateralIn,
       currentTime
     );
+
+    // const { due, yIncrease } = await pool.borrowGivenCollateral(
+    //   state,
+    //   assetOut,
+    //   collateralIn,
+    //   currentTime
+    // );
     const debtIn = due.debt.toString();
 
+    // const percent = await calculatePercent(
+    //   pool,
+    //   state,
+    //   assetOut,
+    //   yIncrease,
+    //   currentTime
+    // );
+
     const percent = await calculatePercent(
-      pool,
+      sdkPool,
       state,
       assetOut,
       yIncrease,

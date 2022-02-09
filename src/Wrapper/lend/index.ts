@@ -1,5 +1,4 @@
 import { GlobalParams } from './../global';
-import { Uint128, Pair, Uint112 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { getPool, getPoolSDK, updateCachedTxns } from "../helper";
 import { bondCalculate, bondTransaction } from "./bond";
 import { insuranceCalculate, insuranceTransaction } from "./insurance";
@@ -13,50 +12,6 @@ export function lend(gp: GlobalParams, app: ElmApp<Ports>) {
   app.ports.queryLendPerSecond.subscribe((query) =>
     lendQueryCalculation(gp, app, query)
   );
-
-  app.ports.querySum.subscribe((claimsData) => {
-    const bond = new Uint128(claimsData.claims.bondInterest).add(new Uint128(claimsData.claims.bondPrincipal));
-    const insurance = new Uint128(claimsData.claims.insuranceInterest).add(new Uint128(claimsData.claims.insurancePrincipal));
-
-    app.ports.receiveSum.send({
-      ...claimsData,
-      result: {
-        asset: bond.toString(),
-        collateral: insurance.toString()
-      }
-    });
-  });
-
-  app.ports.queryClaim.subscribe((claimsData) => {
-    const reserves = {
-      asset: new Uint128(claimsData.poolInfo.assetReserve),
-      collateral: new Uint128(claimsData.poolInfo.collateralReserve)
-    }
-
-    const totalClaims = {
-      bondInterest: new Uint112(claimsData.poolInfo.totalBondInterest),
-      bondPrincipal: new Uint112(claimsData.poolInfo.totalBondPrincipal),
-      insuranceInterest: new Uint112(claimsData.poolInfo.totalInsuranceInterest),
-      insurancePrincipal: new Uint112(claimsData.poolInfo.totalInsurancePrincipal)
-    }
-
-    const claimsIn = {
-      bondInterest: new Uint112(claimsData.claimsIn.bondInterest),
-      bondPrincipal: new Uint112(claimsData.claimsIn.bondPrincipal),
-      insuranceInterest: new Uint112(claimsData.claimsIn.insuranceInterest),
-      insurancePrincipal: new Uint112(claimsData.claimsIn.insurancePrincipal)
-    }
-
-    const { asset, collateral } = Pair.calculateWithdraw(reserves, totalClaims, claimsIn)
-
-    app.ports.receiveReturn.send({
-      ...claimsData,
-      result: {
-        asset: asset.toString(),
-        collateral: collateral.toString()
-      }
-    });
-  });
 }
 
 export function lendSigner(
