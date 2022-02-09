@@ -61,6 +61,9 @@ export async function collateralCalculate(
       .add(query.assetOut)
       .toString();
 
+
+    console.log("borrow calc", debtIn, maxDebt);
+
     const apr = calculateApr(due.debt, query.assetOut, maturity, currentTime);
     const cdp = calculateCdp(
       query.assetOut,
@@ -97,6 +100,9 @@ export async function collateralTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
+
+  console.log("borrow txn", borrow.maxDebt);
+
   return await pool.upgrade(gp.metamaskSigner!).borrowGivenCollateral({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,

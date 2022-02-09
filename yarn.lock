@@ -1647,23 +1647,23 @@
   resolved "https://registry.yarnpkg.com/@swc/helpers/-/helpers-0.2.13.tgz#95d69aaed0998040d455832efbe1342ed79d0809"
   integrity sha512-HxfZHtTgDlME7fH+KIwBrm1B1+2iB3UpbcSbPCZzDAHxZ3z+qfjflHverm33sXrdyQYx4s3J7r6ot76433mwEg==
 
-"@timeswap-labs/timeswap-v1-sdk-core@0.1.28", "@timeswap-labs/timeswap-v1-sdk-core@^0.1.28":
-  version "0.1.28"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk-core/0.1.28/fc919cd4035ac6e806c1566ad2985ffb4bee8c87239bf556098c7a358e60d171#0c1f001615d8ed1f0af8f67a4f50dba13c24350d"
-  integrity sha512-3+t2Lj/dFKX/n4M3nSTlRwRMZgcmhyM5gBPj/FGVXtstn103DrU/+tNgoHeMfNDAXjMcpcKuxpnJh8+/9kWwOQ==
+"@timeswap-labs/timeswap-v1-sdk-core@0.1.29", "@timeswap-labs/timeswap-v1-sdk-core@^0.1.29":
+  version "0.1.29"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk-core/0.1.29/e6f50c2c401cc4e2e81623ecaafd1b8504865681263382a1ee8887921ca52c06#4b74892a49be7563dc7abd7e32198a177d7748c0"
+  integrity sha512-skjC5DJLrLd/k0Rwwvgw2FKNHKqSR1X/g2YG6BG3VOsCfShK2H+pt0PC1MoqjcIghx4fMsfX7dsRtIpyD6Wo4g==
   dependencies:
     "@ethersproject/address" "^5.5.0"
     tiny-invariant "^1.1.0"
 
-"@timeswap-labs/timeswap-v1-sdk@^0.1.56":
-  version "0.1.56"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.56/343649e27ebad26578e84a45cd32381cf6d31308a0af8806c6600b86abec1237#adcad53524b86c434e9d29c926e66a81fd509784"
-  integrity sha512-mDupezRabzbxLGuBxhu99I28X0xSWb4wC/tcgaock2Oxuut7dubWdeda5Y9+43cXeEOCz2Mq6a9hBFiimV8cbA==
+"@timeswap-labs/timeswap-v1-sdk@^0.1.57":
+  version "0.1.57"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.57/28b610e0ea6053ecfaa82413dcabd9fa40b35ba1f1cb7ded072f7024b47eab6d#6c15ca3f00cbdba32a8cfff08efa8bdffc54dd49"
+  integrity sha512-N6h3vHVd+Eb6a7t8bMHo5FMxM9pN77Y5JVhna5FOXzlzvY/rDcgGNaobGa+bKhUpDix1of/N4YTzKU6wnHlZZw==
   dependencies:
     "@ethersproject/abstract-provider" "^5.5.1"
     "@ethersproject/abstract-signer" "^5.5.0"
     "@ethersproject/contracts" "^5.5.0"
-    "@timeswap-labs/timeswap-v1-sdk-core" "0.1.28"
+    "@timeswap-labs/timeswap-v1-sdk-core" "0.1.29"
     tiny-invariant "^1.1.0"
 
 "@trysound/sax@0.2.0":
