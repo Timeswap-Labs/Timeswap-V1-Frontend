@@ -238,7 +238,7 @@ update model msg modal =
 
         ( MaturityListMsg maturityListMsg, MaturityList maturityList, Supported blockchain ) ->
             maturityList
-                |> MaturityList.update model.time blockchain maturityListMsg
+                |> MaturityList.update model blockchain maturityListMsg
                 |> (\( updated, cmd, maybeEffect ) ->
                         ( updated |> Maybe.map MaturityList
                         , cmd |> Cmd.map MaturityListMsg

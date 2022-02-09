@@ -134,12 +134,12 @@ init blockchain pair =
 
 
 update :
-    Posix
+    { model | time : Posix }
     -> Blockchain
     -> Msg
     -> Modal
     -> ( Maybe Modal, Cmd Msg, Maybe Effect )
-update now blockchain msg (Modal modal) =
+update { time } blockchain msg (Modal modal) =
     case msg of
         GoToSortMaturity ->
             ( { modal
@@ -205,7 +205,7 @@ update now blockchain msg (Modal modal) =
                             |> Result.map
                                 (\answer ->
                                     answer
-                                        |> Dict.keepIf (\maturity _ -> maturity |> Maturity.isActive now)
+                                        |> Dict.keepIf (\maturity _ -> maturity |> Maturity.isActive time)
                                 )
                             |> Web.fromResult
                   }
