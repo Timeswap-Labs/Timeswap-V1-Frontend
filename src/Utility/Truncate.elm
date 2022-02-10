@@ -998,13 +998,13 @@ fromCDPSymbol pair =
             |> String.join " "
         , if
             (collateral |> String.length)
-                > 5
+                > 6
                 || (asset |> String.length)
-                > 5
+                > 6
           then
-            [ collateral |> String.left 5
+            [ collateral |> String.left 6
             , "per"
-            , asset |> String.left 5
+            , asset |> String.left 6
             ]
                 |> String.join " "
                 |> Just
@@ -1020,8 +1020,8 @@ fromCDPSymbol pair =
 fromPairSymbol : Pair -> ( String, Maybe String )
 fromPairSymbol pair =
     (\collateral asset ->
-        ( [ collateral
-          , asset
+        ( [ asset
+          , collateral
           ]
             |> String.join " - "
         , if
@@ -1030,8 +1030,8 @@ fromPairSymbol pair =
                 || (asset |> String.length)
                 > 5
           then
-            [ asset |> String.left 5
-            , collateral |> String.left 5
+            [ asset |> String.left 6
+            , collateral |> String.left 6
             ]
                 |> String.join " - "
                 |> Just
