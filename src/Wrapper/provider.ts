@@ -4,7 +4,7 @@ import { GlobalParams } from "./global";
 export declare let window: any;
 
 export async function getProvider(gp: GlobalParams): Promise<BaseProvider> {
-  if (gp.metamaskProvider && gp.network === "0x4") {
+  if (gp.metamaskProvider) {
     return gp.metamaskProvider;
   } else {
     const alchemyProvider = AlchemyProvider.getWebSocketProvider(

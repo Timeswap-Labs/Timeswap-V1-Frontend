@@ -1,5 +1,10 @@
 // import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Pool, Uint112, Uint256, Uint40 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import {
+  Pool,
+  Uint112,
+  Uint256,
+  Uint40,
+} from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
@@ -14,7 +19,11 @@ export async function percentCalculate(
   try {
     const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
-    const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
+    const state = {
+      x: new Uint112(query.poolInfo.x),
+      y: new Uint112(query.poolInfo.y),
+      z: new Uint112(query.poolInfo.z),
+    };
 
     // const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
     // const { due } = await sdkPool.calculateBorrowGivenPercent(
@@ -32,15 +41,23 @@ export async function percentCalculate(
     const debtIn = due.debt.toString();
     const collateralIn = due.collateral.toString();
 
+    const timeSlippage = currentTime.sub(60);
+    const { due: dueSlippage } = await pool.borrowGivenPercent(
+      state,
+      new Uint112(query.assetOut),
+      new Uint40(query.percent!),
+      timeSlippage
+    );
+
     const maxDebt = calculateMaxValue(
-      due.debt.sub(query.assetOut),
+      dueSlippage.debt.sub(query.assetOut),
       query.slippage
     )
       .add(query.assetOut)
       .toString();
 
     const maxCollateral = calculateMaxValue(
-      due.collateral,
+      dueSlippage.collateral,
       query.slippage
     ).toString();
 
@@ -92,7 +109,6 @@ export async function percentTransaction(
       maxCollateral: new Uint112(borrow.maxCollateral),
       deadline: new Uint256(borrow.deadline),
     });
-
   } catch (error) {
     console.log("borrow Perc", error);
   }

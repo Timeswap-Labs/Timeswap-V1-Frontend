@@ -8,31 +8,33 @@ export function pay(app: ElmApp<Ports>) {
       let totalDebt = new Uint256(0);
       let totalCollateral = new Uint256(0);
 
-      duesData.dues.forEach(dueData => {
+      duesData.dues.forEach((dueData) => {
         totalDebt = totalDebt.add(new Uint256(dueData.due.debt));
-        totalCollateral = totalCollateral.add(new Uint256(dueData.due.collateral));
+        totalCollateral = totalCollateral.add(
+          new Uint256(dueData.due.collateral)
+        );
       });
 
       app.ports.receiveFull.send({
         ...duesData,
         result: {
           assetIn: totalDebt.toString(),
-          collateralOut: totalCollateral.toString()
-        }
+          collateralOut: totalCollateral.toString(),
+        },
       });
     } catch {
       app.ports.receiveFull.send({
         ...duesData,
-        result: "invalid"
+        result: "invalid",
       });
     }
   });
 
   app.ports.queryCustom.subscribe((query) => {
     let result: {
-      collateralsOut: { tokenId: string, collateralOut: string }[];
-      total?: { assetIn: string, collateralOut: string } | string
-    } = { collateralsOut : []};
+      collateralsOut: { tokenId: string; collateralOut: string }[];
+      total?: { assetIn: string; collateralOut: string } | string;
+    } = { collateralsOut: [] };
 
     let totalCollateralOut = new Uint256(0);
     let totalAssetIn = new Uint256(0);
@@ -43,54 +45,59 @@ export function pay(app: ElmApp<Ports>) {
         const tokenCollateral = new Uint256(query.dues[index].due.collateral);
         const customDebt = new Uint256(dueInput.assetIn);
 
-        if (customDebt > tokenDebt) {
+        if (customDebt.gt(tokenDebt)) {
           result.total = "invalid";
           result.collateralsOut[index] = {
             tokenId: dueInput.tokenId,
-            collateralOut: "invalid"
-          }
+            collateralOut: "invalid",
+          };
         } else {
-          const proportionalCollateral = customDebt.mul(tokenCollateral).div(tokenDebt);
+          const proportionalCollateral = customDebt
+            .mul(tokenCollateral)
+            .div(tokenDebt);
 
           totalCollateralOut.add(proportionalCollateral);
-          totalAssetIn.add(dueInput.assetIn);
+          totalAssetIn.add(customDebt);
 
           result.collateralsOut[index] = {
             tokenId: dueInput.tokenId,
-            collateralOut: proportionalCollateral.toString()
-          }
+            collateralOut: proportionalCollateral.toString(),
+          };
         }
       });
 
       if (result.total !== "invalid") {
         result.total = {
           assetIn: totalAssetIn.toString(),
-          collateralOut: totalCollateralOut.toString()
-        }
+          collateralOut: totalCollateralOut.toString(),
+        };
       }
 
       app.ports.receiveCustom.send({
         ...query,
-        result
+        result,
       });
     } catch (error) {
       app.ports.receiveCustom.send({
         ...query,
         result: {
           collateralsOut: [],
-          total: "invalid"
-        }
+          total: "invalid",
+        },
       });
     }
   });
 }
 
-export function paySigner(
-  app: ElmApp<Ports>,
-  gp: GlobalParams
-) {
+export function paySigner(app: ElmApp<Ports>, gp: GlobalParams) {
   app.ports.pay.subscribe(async (params) => {
-    const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
+    const pool = getPoolSDK(
+      gp,
+      params.send.asset,
+      params.send.collateral,
+      params.send.maturity,
+      params.chain
+    );
 
     try {
       const txnConfirmation = await pool.upgrade(gp.metamaskSigner!).repay({
@@ -107,7 +114,7 @@ export function paySigner(
           id: params.id,
           chain: params.chain,
           address: params.address,
-          hash: txnConfirmation.hash
+          hash: txnConfirmation.hash,
         });
 
         const txnReceipt = await txnConfirmation.wait();
@@ -115,8 +122,8 @@ export function paySigner(
           chain: params.chain,
           address: params.address,
           hash: txnConfirmation.hash,
-          state: txnReceipt.status ? "success" : "failed"
-        }
+          state: txnReceipt.status ? "success" : "failed",
+        };
         app.ports.receiveReceipt.send(receiveReceipt);
         updateCachedTxns(receiveReceipt);
       }
@@ -125,7 +132,7 @@ export function paySigner(
         id: params.id,
         chain: params.chain,
         address: params.address,
-        hash: null
+        hash: null,
       });
     }
   });

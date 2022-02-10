@@ -2,7 +2,11 @@ import { getProvider } from "./provider";
 import { pool } from "./pool";
 import { lend, lendSigner } from "./lend";
 import { GlobalParams } from "./global";
-import { balancesAllowancesInit, fetchAllowancesOf, fetchBalancesOf } from "./balances";
+import {
+  balancesAllowancesInit,
+  fetchAllowancesOf,
+  fetchBalancesOf,
+} from "./balances";
 import { positionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
@@ -48,7 +52,8 @@ export async function elmUser(): Promise<{
           const parsedTxns: { chain: Chain; address: string; txns: Txns } =
             JSON.parse(storedTxns);
           txns =
-            parsedTxns.address === accounts[0] && parsedTxns.chain.chainId === chainId
+            parsedTxns.address === accounts[0] &&
+            parsedTxns.chain.chainId === chainId
               ? parsedTxns.txns
               : txns;
         } catch (err) {
@@ -168,7 +173,7 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
         {
           chainId: chain.chainId.toString().startsWith("0x")
             ? chain.chainId
-            : "0x" + chain.chainId,
+            : "0x" + Number(chain.chainId.toString().trim()).toString(16),
         },
       ]);
     }
@@ -179,11 +184,7 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
   });
 }
 
-function receiveUser(
-  app: ElmApp<Ports>,
-  gp: GlobalParams,
-  walletName: string
-) {
+function receiveUser(app: ElmApp<Ports>, gp: GlobalParams, walletName: string) {
   gp.metamaskProvider
     .send("eth_requestAccounts", [])
     .then((accounts: string[]) => {
@@ -207,10 +208,7 @@ function receiveUser(
     });
 }
 
-function metamaskConnected(
-  app: ElmApp<Ports>,
-  gp: GlobalParams
-) {
+function metamaskConnected(app: ElmApp<Ports>, gp: GlobalParams) {
   gp.metamaskProvider.send("eth_accounts", []).then((accounts: string[]) => {
     if (accounts[0]) {
       app.ports.receiveUser.send({
@@ -229,10 +227,7 @@ function metamaskConnected(
   });
 }
 
-function metamaskChainChange(
-  app: ElmApp<Ports>,
-  gp: GlobalParams
-) {
+function metamaskChainChange(app: ElmApp<Ports>, gp: GlobalParams) {
   ethereum.on("chainChanged", (chainId: string) => {
     gp.metamaskProvider!.send("eth_accounts", []).then((accounts: string[]) => {
       if (accounts[0]) {
@@ -258,10 +253,7 @@ function metamaskChainChange(
   });
 }
 
-function metamaskAccountsChange(
-  app: ElmApp<Ports>,
-  gp: GlobalParams
-) {
+function metamaskAccountsChange(app: ElmApp<Ports>, gp: GlobalParams) {
   ethereum.on("accountsChanged", (accounts: string[]) => {
     if (accounts[0]) {
       app.ports.receiveUser.send({
@@ -296,11 +288,7 @@ async function chainInit(
   userInit(app, gp, account);
 }
 
-function userInit(
-  app: ElmApp<Ports>,
-  gp: GlobalParams,
-  userAddress: string
-) {
+function userInit(app: ElmApp<Ports>, gp: GlobalParams, userAddress: string) {
   const wlChain = getChainData(Number(gp.network));
 
   if (userAddress && wlChain) {
