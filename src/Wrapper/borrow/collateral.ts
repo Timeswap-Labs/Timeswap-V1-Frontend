@@ -41,16 +41,31 @@ export async function collateralCalculate(
     //   currentTime
     // );
 
-    const { due, yIncrease } = await pool.borrowGivenCollateral(
-      state,
+    const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
+    const { due, yIncrease } = await sdkPool.calculateBorrowGivenCollateral(
       assetOut,
       collateralIn,
       currentTime
     );
+
+    // const { due, yIncrease } = await pool.borrowGivenCollateral(
+    //   state,
+    //   assetOut,
+    //   collateralIn,
+    //   currentTime
+    // );
     const debtIn = due.debt.toString();
 
+    // const percent = await calculatePercent(
+    //   pool,
+    //   state,
+    //   assetOut,
+    //   yIncrease,
+    //   currentTime
+    // );
+
     const percent = await calculatePercent(
-      pool,
+      sdkPool,
       state,
       assetOut,
       yIncrease,
@@ -118,6 +133,7 @@ export async function collateralTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
+
   console.log("borrow txn", borrow.maxDebt);
 
   return await pool.upgrade(gp.metamaskSigner!).borrowGivenCollateral({

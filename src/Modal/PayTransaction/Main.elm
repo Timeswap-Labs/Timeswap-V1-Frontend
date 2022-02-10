@@ -694,9 +694,10 @@ view :
         , theme : Theme
     }
     -> Blockchain
+    -> User
     -> Modal
     -> Element Msg
-view ({ backdrop, theme } as model) blockchain modal =
+view ({ backdrop, theme } as model) blockchain user modal =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -716,7 +717,7 @@ view ({ backdrop, theme } as model) blockchain modal =
                     [ width fill
                     ]
                     [ header model
-                    , body model modal blockchain
+                    , body model modal blockchain user
                     ]
                 ]
         }
@@ -767,8 +768,9 @@ body :
     }
     -> Modal
     -> Blockchain
+    -> User
     -> Element Msg
-body model modal blockchain =
+body model modal blockchain user =
     column
         [ width fill
         , padding 20
@@ -785,7 +787,7 @@ body model modal blockchain =
             [ switchRepayFull model modal
             , switchRepayCustom model modal
             ]
-        , repayList model blockchain modal
+        , repayList model blockchain user modal
         , buttons model blockchain modal
         ]
 
@@ -892,9 +894,10 @@ repayList :
         , images : Images
     }
     -> Blockchain
+    -> User
     -> Modal
     -> Element Msg
-repayList model blockchain ((Modal { state, pool }) as modal) =
+repayList model blockchain user ((Modal { state, pool }) as modal) =
     column
         [ width fill
         , spacing 12
@@ -917,22 +920,20 @@ repayList model blockchain ((Modal { state, pool }) as modal) =
                     ++ [ totalDebtCollateral model modal ]
 
             Custom dict ->
-                blockchain
-                    |> Blockchain.toUser
-                    |> Maybe.map
-                        (\user ->
-                            user
-                                |> User.getDues
-                                |> Remote.map (Dues.getMultiple pool (dict |> Dict.keys |> Set.fromList TokenId.sorter))
-                                |> (Remote.map << Maybe.map) Dict.toList
-                                |> (Remote.map << Maybe.map << List.map)
-                                    (\( tokenId, due ) ->
-                                        customPosition model modal user tokenId due dict
-                                    )
-                                |> (Remote.map << Maybe.withDefault) [ none ]
-                                |> Remote.withDefault [ none ]
-                        )
-                    |> Maybe.withDefault [ none ]
+                List.map2
+                    (\( tokenId, due ) customInfo ->
+                        customPosition model user modal ( tokenId, due, customInfo )
+                    )
+                    (user
+                        |> User.getDues
+                        |> Remote.map (Dues.getMultiple pool (dict |> Dict.keys |> Set.fromList TokenId.sorter))
+                        |> (Remote.map << Maybe.map) Dict.toList
+                        |> (Remote.map << Maybe.withDefault) []
+                        |> Remote.withDefault []
+                    )
+                    (dict
+                        |> Dict.values
+                    )
         )
 
 
@@ -1189,13 +1190,11 @@ customPosition :
         | theme : Theme
         , images : Images
     }
-    -> Modal
     -> User
-    -> TokenId
-    -> Due
-    -> Dict TokenId CustomInfo
+    -> Modal
+    -> ( TokenId, Due, CustomInfo )
     -> Element Msg
-customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as modal) user tokenId due customInfoDict =
+customPosition ({ theme, images } as model) user (Modal { pool, tooltip }) ( tokenId, due, customInfo ) =
     column
         [ width fill
         , paddingXY 16 14
@@ -1311,10 +1310,7 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
             , token = pool.pair |> Pair.toAsset
             , onClick = Nothing
             , onChange = InputAssetIn tokenId
-            , text =
-                Dict.get tokenId customInfoDict
-                    |> Maybe.map (\customInfo -> customInfo.assetIn |> Left)
-                    |> Maybe.withDefault ("0" |> Left)
+            , text = customInfo.assetIn |> Left
             , description = "asset in textbox"
             }
         , row [ width fill, spacing 6, centerY ]
@@ -1323,23 +1319,30 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                 , theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "Collateral to unlock")
-            , el
-                [ Font.size 14
-                , Font.bold
-                , alignRight
-                , theme |> ThemeColor.text |> Font.color
-                ]
-                (Truncate.viewAmount
-                    { onMouseEnter = OnMouseEnter
-                    , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.CollateralAmount tokenId
-                    , opened = tooltip
-                    , token = pool.pair |> Pair.toCollateral
-                    , amount = due.collateral
-                    , theme = theme
-                    , customStyles = [ Font.size 14 ]
-                    }
-                )
+            , customInfo.collateralOut
+                |> Remote.map
+                    (\collateralOut ->
+                        el
+                            [ Font.size 14
+                            , Font.bold
+                            , alignRight
+                            , theme |> ThemeColor.text |> Font.color
+                            ]
+                            (Truncate.viewAmount
+                                { onMouseEnter = OnMouseEnter
+                                , onMouseLeave = OnMouseLeave
+                                , tooltip = Tooltip.CollateralAmount tokenId
+                                , opened = tooltip
+                                , token = pool.pair |> Pair.toCollateral
+                                , amount = collateralOut
+                                , theme = theme
+                                , customStyles = [ Font.size 14 ]
+                                }
+                            )
+                    )
+                |> Remote.withDefault none
+
+            -- Fix this soon
             , el
                 [ alignRight
                 , paddingXY 3 1
@@ -1368,6 +1371,192 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                 )
             ]
         ]
+
+
+
+-- customPosition :
+--     { model
+--         | theme : Theme
+--         , images : Images
+--     }
+--     -> Modal
+--     -> User
+--     -> TokenId
+--     -> Due
+--     -> Dict TokenId CustomInfo
+--     -> Element Msg
+-- customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as modal) user tokenId due customInfoDict =
+--     column
+--         [ width fill
+--         , paddingXY 16 14
+--         , spacing 12
+--         , theme |> ThemeColor.sectionBackground |> Background.color
+--         , Border.rounded 8
+--         ]
+--         [ row [ width fill, spacing 6, centerY ]
+--             [ el
+--                 [ Font.size 14
+--                 , theme |> ThemeColor.textLight |> Font.color
+--                 ]
+--                 (text "Position ID")
+--             , el
+--                 [ alignRight
+--                 , theme |> ThemeColor.textLight |> Font.color
+--                 , Font.size 14
+--                 , Font.bold
+--                 ]
+--                 (text (tokenId |> TokenId.toString))
+--             , images
+--                 |> (case theme of
+--                         Theme.Dark ->
+--                             Image.link
+--                         Theme.Light ->
+--                             Image.linkSecondary
+--                    )
+--                     [ width <| px 14, height <| px 14 ]
+--             ]
+--         , row [ width fill, spacing 6, centerY ]
+--             [ el
+--                 [ Font.size 14
+--                 , theme |> ThemeColor.textLight |> Font.color
+--                 ]
+--                 (text "Total debt to pay")
+--             , el
+--                 [ Font.size 14
+--                 , Font.bold
+--                 , alignRight
+--                 , theme |> ThemeColor.textLight |> Font.color
+--                 ]
+--                 (Truncate.viewAmount
+--                     { onMouseEnter = OnMouseEnter
+--                     , onMouseLeave = OnMouseLeave
+--                     , tooltip = Tooltip.DebtAmount tokenId
+--                     , opened = tooltip
+--                     , token = pool.pair |> Pair.toAsset
+--                     , amount = due.debt
+--                     , theme = theme
+--                     , customStyles = [ Font.size 14 ]
+--                     }
+--                 )
+--             , el
+--                 [ alignRight
+--                 , paddingXY 3 1
+--                 , Border.rounded 4
+--                 , theme |> ThemeColor.border |> Background.color
+--                 ]
+--                 (Truncate.viewSymbol
+--                     { onMouseEnter = OnMouseEnter
+--                     , onMouseLeave = OnMouseLeave
+--                     , tooltip = Tooltip.DebtSymbol tokenId
+--                     , opened = tooltip
+--                     , token = pool.pair |> Pair.toAsset
+--                     , theme = theme
+--                     , customStyles =
+--                         [ Font.size 14
+--                         , theme |> ThemeColor.textLight |> Font.color
+--                         , Font.regular
+--                         , paddingEach
+--                             { top = 4
+--                             , right = 0
+--                             , bottom = 2
+--                             , left = 0
+--                             }
+--                         ]
+--                     }
+--                 )
+--             ]
+--         , row
+--             [ width fill
+--             , spacing 8
+--             , centerY
+--             ]
+--             [ el
+--                 [ Font.size 14
+--                 , theme |> ThemeColor.actionElemLabel |> Font.color
+--                 ]
+--                 (text "Enter amount to repay")
+--             , user
+--                 |> User.getBalance (pool.pair |> Pair.toAsset)
+--                 |> Maybe.map
+--                     (\balance ->
+--                         MaxButton.view
+--                             { onPress = InputMax tokenId
+--                             , onMouseEnter = OnMouseEnter
+--                             , onMouseLeave = OnMouseLeave
+--                             , tooltip = Tooltip.Balance tokenId
+--                             , opened = tooltip
+--                             , token = pool.pair |> Pair.toAsset
+--                             , balance = balance
+--                             , theme = model.theme
+--                             }
+--                     )
+--                 |> Maybe.withDefault none
+--             ]
+--         , Textbox.view model
+--             { onMouseEnter = OnMouseEnter
+--             , onMouseLeave = OnMouseLeave
+--             , tooltip = Tooltip.TextboxToken tokenId
+--             , opened = tooltip
+--             , token = pool.pair |> Pair.toAsset
+--             , onClick = Nothing
+--             , onChange = InputAssetIn tokenId
+--             , text =
+--                 Dict.get tokenId customInfoDict
+--                     |> Maybe.map (\customInfo -> customInfo.assetIn |> Left)
+--                     |> Maybe.withDefault ("0" |> Left)
+--             , description = "asset in textbox"
+--             }
+--         , row [ width fill, spacing 6, centerY ]
+--             [ el
+--                 [ Font.size 14
+--                 , theme |> ThemeColor.textLight |> Font.color
+--                 ]
+--                 (text "Collateral to unlock")
+--             , el
+--                 [ Font.size 14
+--                 , Font.bold
+--                 , alignRight
+--                 , theme |> ThemeColor.text |> Font.color
+--                 ]
+--                 (Truncate.viewAmount
+--                     { onMouseEnter = OnMouseEnter
+--                     , onMouseLeave = OnMouseLeave
+--                     , tooltip = Tooltip.CollateralAmount tokenId
+--                     , opened = tooltip
+--                     , token = pool.pair |> Pair.toCollateral
+--                     , amount = due.collateral
+--                     , theme = theme
+--                     , customStyles = [ Font.size 14 ]
+--                     }
+--                 )
+--             , el
+--                 [ alignRight
+--                 , paddingXY 3 1
+--                 , Border.rounded 4
+--                 , theme |> ThemeColor.border |> Background.color
+--                 ]
+--                 (Truncate.viewSymbol
+--                     { onMouseEnter = OnMouseEnter
+--                     , onMouseLeave = OnMouseLeave
+--                     , tooltip = Tooltip.CollateralSymbol tokenId
+--                     , opened = tooltip
+--                     , token = pool.pair |> Pair.toCollateral
+--                     , theme = theme
+--                     , customStyles =
+--                         [ Font.size 14
+--                         , theme |> ThemeColor.textLight |> Font.color
+--                         , Font.regular
+--                         , paddingEach
+--                             { top = 4
+--                             , right = 0
+--                             , bottom = 2
+--                             , left = 0
+--                             }
+--                         ]
+--                     }
+--                 )
+--             ]
+--         ]
 
 
 buttons :

@@ -451,8 +451,15 @@ view model modal =
         PayTransaction payTransaction ->
             case model.blockchain of
                 Supported blockchain ->
-                    PayTransaction.view model blockchain payTransaction
-                        |> map PayTransactionMsg
+                    blockchain
+                        |> Blockchain.toUser
+                        |> Maybe.map
+                            (\user ->
+                                payTransaction
+                                    |> PayTransaction.view model blockchain user
+                                    |> map PayTransactionMsg
+                            )
+                        |> Maybe.withDefault none
 
                 _ ->
                     none
