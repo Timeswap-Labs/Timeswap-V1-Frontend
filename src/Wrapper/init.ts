@@ -182,8 +182,8 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
             {
               chainId,
               chainName: chain.name,
-              rpcUrls: ["https://rpc-mumbai.matic.today"],
-              blockExplorerUrls: [chain.etherscan],
+              rpcUrls: [chain.rpcUrl],
+              blockExplorerUrls: [chain.blockExplorerUrl],
             },
           ]);
         }
@@ -320,7 +320,8 @@ function userInit(app: ElmApp<Ports>, gp: GlobalParams, userAddress: string) {
       chain: {
         chainId: wlChain.chainId,
         name: wlChain.name,
-        etherscan: wlChain.etherscan,
+        rpcUrl: wlChain.rpcUrl,
+        blockExplorerUrl: wlChain.blockExplorerUrl
       },
       address: userAddress,
       tokens: getTokenList(Number(gp.network)),

@@ -8,7 +8,7 @@ module Page.Positions.Claims.Main exposing
     )
 
 import Animator exposing (Timeline)
-import Blockchain.User.Claim exposing (Claim)
+import Blockchain.User.Claim as Claim exposing (Claim)
 import Blockchain.User.Claims as Claims exposing (Claims)
 import Blockchain.User.Main as User exposing (User)
 import Data.Backdrop exposing (Backdrop)
@@ -153,11 +153,15 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
 
             -- |> Debug.log "error view"
             Success claims ->
-                if claims |> Dict.isEmpty then
-                    noClaims model
+                claims
+                    |> Dict.dropIf (\_ claim -> claim |> Claim.isZero)
+                    |> (\filteredClaims ->
+                            if filteredClaims |> Dict.isEmpty then
+                                noClaims model
 
-                else
-                    viewClaims model tooltip claims
+                            else
+                                viewClaims model tooltip filteredClaims
+                       )
         )
 
 

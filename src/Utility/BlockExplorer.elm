@@ -1,4 +1,4 @@
-module Utility.Etherscan exposing (fromHash, fromToken, fromUser)
+module Utility.BlockExplorer exposing (fromHash, fromToken, fromUser)
 
 import Blockchain.User.Main as User exposing (User)
 import Data.Address as Address
@@ -11,7 +11,7 @@ import Url.Builder as Builder
 fromUser : Chain -> User -> String
 fromUser chain user =
     Builder.crossOrigin
-        (chain |> Chain.toEtherscan)
+        (chain |> Chain.toBlockExplorerUrl)
         [ "address"
         , user
             |> User.toName
@@ -27,7 +27,7 @@ fromUser chain user =
 fromHash : Chain -> Hash -> String
 fromHash chain hash =
     Builder.crossOrigin
-        (chain |> Chain.toEtherscan)
+        (chain |> Chain.toBlockExplorerUrl)
         [ "tx"
         , hash |> Hash.toString
         ]
@@ -37,7 +37,7 @@ fromHash chain hash =
 fromToken : Chain -> Token -> String
 fromToken chain token =
     Builder.crossOrigin
-        (chain |> Chain.toEtherscan)
+        (chain |> Chain.toBlockExplorerUrl)
         [ "address"
         , token
             |> Token.toString

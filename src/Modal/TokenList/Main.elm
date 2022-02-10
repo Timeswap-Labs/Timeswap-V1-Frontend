@@ -19,7 +19,6 @@ import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
-import Data.Uint as Uint
 import Data.Web as Web exposing (Web)
 import Element
     exposing
@@ -65,8 +64,8 @@ import Modal.TokenList.Query as Query
 import Modal.TokenList.Tooltip as Tooltip exposing (Tooltip)
 import Process
 import Task
+import Utility.BlockExplorer as BlockExplorer
 import Utility.Color as Color
-import Utility.Etherscan as Etherscan
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
@@ -759,7 +758,7 @@ customToken model blockchain ((Modal { state }) as modal) token =
                         }
                     , newTabLink
                         [ alpha 0.64 ]
-                        { url = token |> Etherscan.fromToken (blockchain |> Blockchain.toChain)
+                        { url = token |> BlockExplorer.fromToken (blockchain |> Blockchain.toChain)
                         , label =
                             model.images
                                 |> (case model.theme of

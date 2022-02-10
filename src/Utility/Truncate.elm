@@ -1030,8 +1030,8 @@ fromPairSymbol pair =
                 || (asset |> String.length)
                 > 5
           then
-            [ collateral |> String.left 5
-            , asset |> String.left 5
+            [ asset |> String.left 5
+            , collateral |> String.left 5
             ]
                 |> String.join " - "
                 |> Just

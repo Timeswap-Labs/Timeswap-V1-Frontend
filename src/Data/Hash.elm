@@ -58,7 +58,7 @@ toString (Hash string) =
 
 toUrlString : Chain -> Hash -> String
 toUrlString chain hash =
-    Builder.crossOrigin (chain |> Chain.toEtherscan)
+    Builder.crossOrigin (chain |> Chain.toBlockExplorerUrl)
         [ "tx", hash |> toString ]
         []
 

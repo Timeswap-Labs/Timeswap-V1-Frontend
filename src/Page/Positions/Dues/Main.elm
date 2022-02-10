@@ -9,7 +9,7 @@ module Page.Positions.Dues.Main exposing
     )
 
 import Animator exposing (Timeline)
-import Blockchain.User.Due exposing (Due)
+import Blockchain.User.Due as Due exposing (Due)
 import Blockchain.User.Dues as Dues exposing (Dues)
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.TokenId exposing (TokenId)
@@ -154,11 +154,16 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
 
             -- |> Debug.log "error view"
             Success dues ->
-                if dues |> Dict.isEmpty then
-                    noDues model
+                dues
+                    |> Dict.map (\_ dict -> dict |> Due.dropZero)
+                    |> Dict.dropIf (\_ dict -> dict |> Dict.isEmpty)
+                    |> (\filteredDues ->
+                            if filteredDues |> Dict.isEmpty then
+                                noDues model
 
-                else
-                    viewDues model tooltip dues
+                            else
+                                viewDues model tooltip filteredDues
+                       )
         )
 
 

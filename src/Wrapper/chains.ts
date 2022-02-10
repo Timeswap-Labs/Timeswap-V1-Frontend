@@ -4,9 +4,10 @@ export const whitelistChains = {
   default: {
     chainId: 80001,
     name: "Polygon Testnet",
-    etherscan: "https://mumbai.polygonscan.com",
+    rpcUrl : "https://rpc-mumbai.matic.today",
+    blockExplorerUrl : "https://mumbai.polygonscan.com",
     native: {
-      name: "Polygon",
+      name: "MATIC",
       symbol: "MATIC",
       decimals: 18,
     },
@@ -30,13 +31,15 @@ export const whitelistChains = {
         decimals: 18,
       },
     ],
-    custom: getCustomTokens(String(80001)),
+    // custom: getCustomTokens(String(80001)),
+    custom: []
   },
   others: [
     {
       chainId: 0x4,
       name: "Rinkeby",
-      etherscan: "https://rinkeby.etherscan.io",
+      rpcUrl : "https://rinkeby.infura.io/v3/",
+      blockExplorerUrl : "https://rinkeby.etherscan.io",
       native: {
         name: "Ether",
         symbol: "ETH",

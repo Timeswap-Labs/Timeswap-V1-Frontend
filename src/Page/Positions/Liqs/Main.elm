@@ -8,7 +8,7 @@ module Page.Positions.Liqs.Main exposing
     )
 
 import Animator exposing (Timeline)
-import Blockchain.User.Liq exposing (Liq)
+import Blockchain.User.Liq as Liq exposing (Liq)
 import Blockchain.User.Liqs as Liqs exposing (Liqs)
 import Blockchain.User.Main as User exposing (User)
 import Data.Backdrop exposing (Backdrop)
@@ -152,11 +152,15 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
 
             -- |> Debug.log "error view"
             Success liqs ->
-                if liqs |> Dict.isEmpty then
-                    noLiqs model
+                liqs
+                    |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
+                    |> (\filteredLiqs ->
+                            if filteredLiqs |> Dict.isEmpty then
+                                noLiqs model
 
-                else
-                    viewLiqs model tooltip liqs
+                            else
+                                viewLiqs model tooltip filteredLiqs
+                       )
         )
 
 

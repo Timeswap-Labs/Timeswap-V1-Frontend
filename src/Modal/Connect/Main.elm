@@ -59,8 +59,8 @@ import Modal.Connect.Terms as Terms
 import Modal.Outside as Outside
 import Sort.Set as Set
 import Time exposing (Posix)
+import Utility.BlockExplorer as BlockExplorer
 import Utility.Color as Color
-import Utility.Etherscan as Etherscan
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
@@ -810,7 +810,7 @@ walletConnected { images, theme } blockchain user =
                 ]
                 { url =
                     user
-                        |> Etherscan.fromUser
+                        |> BlockExplorer.fromUser
                             (blockchain |> Blockchain.toChain)
                 , label =
                     el
@@ -1088,7 +1088,7 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
             ]
             { url =
                 hash
-                    |> Etherscan.fromHash
+                    |> BlockExplorer.fromHash
                         (blockchain |> Blockchain.toChain)
             , label =
                 images

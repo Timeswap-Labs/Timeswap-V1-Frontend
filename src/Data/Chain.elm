@@ -3,8 +3,8 @@ module Data.Chain exposing
     , decoder
     , encode
     , sorter
+    , toBlockExplorerUrl
     , toChainId
-    , toEtherscan
     , toQueryParameter
     , toString
     )
@@ -20,30 +20,34 @@ type Chain
     = Chain
         { chainId : Int
         , name : String
-        , etherscan : String
+        , rpcUrl : String
+        , blockExplorerUrl : String
         }
 
 
 decoder : Decoder Chain
 decoder =
     Decode.succeed
-        (\chainId name etherscan ->
+        (\chainId name rpcUrl blockExplorerUrl ->
             { chainId = chainId
             , name = name
-            , etherscan = etherscan
+            , rpcUrl = rpcUrl
+            , blockExplorerUrl = blockExplorerUrl
             }
                 |> Chain
         )
         |> Pipeline.required "chainId" Decode.int
         |> Pipeline.required "name" Decode.string
-        |> Pipeline.required "etherscan" Decode.string
+        |> Pipeline.required "rpcUrl" Decode.string
+        |> Pipeline.required "blockExplorerUrl" Decode.string
 
 
 encode : Chain -> Value
-encode (Chain { chainId, name, etherscan }) =
+encode (Chain { chainId, name, rpcUrl, blockExplorerUrl }) =
     [ ( "chainId", chainId |> Encode.int )
     , ( "name", name |> Encode.string )
-    , ( "etherscan", etherscan |> Encode.string )
+    , ( "rpcUrl", rpcUrl |> Encode.string )
+    , ( "blockExplorerUrl", blockExplorerUrl |> Encode.string )
     ]
         |> Encode.object
 
@@ -64,9 +68,9 @@ toString (Chain { name }) =
     name
 
 
-toEtherscan : Chain -> String
-toEtherscan (Chain { etherscan }) =
-    etherscan
+toBlockExplorerUrl : Chain -> String
+toBlockExplorerUrl (Chain { blockExplorerUrl }) =
+    blockExplorerUrl
 
 
 toQueryParameter : Chain -> QueryParameter

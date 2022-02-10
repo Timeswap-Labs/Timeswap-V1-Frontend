@@ -251,7 +251,7 @@ body { images, theme } blockchain (Modal { state }) =
                                     , centerX
                                     , theme |> ThemeColor.actionElemLabel |> Font.color
                                     ]
-                                    (text "View on Etherscan")
+                                    (text "View on Explorer")
                                 , images
                                     |> (case theme of
                                             Theme.Dark ->

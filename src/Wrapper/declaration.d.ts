@@ -301,7 +301,8 @@ type Uint = string;
 interface Chain {
   chainId: number;
   name: string;
-  etherscan: string;
+  rpcUrl: string;
+  blockExplorerUrl: string;
 }
 
 interface CDP {
