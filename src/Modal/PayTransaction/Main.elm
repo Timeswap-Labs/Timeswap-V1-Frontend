@@ -525,6 +525,8 @@ update blockchain user msg (Modal modal) =
                                         )
                                         dict
                                     |> Custom
+                            , total =
+                                answer.result.total |> toRemote
                         }
 
                     else
@@ -1373,198 +1375,12 @@ customPosition ({ theme, images } as model) user (Modal { pool, tooltip }) ( tok
         ]
 
 
-
--- customPosition :
---     { model
---         | theme : Theme
---         , images : Images
---     }
---     -> Modal
---     -> User
---     -> TokenId
---     -> Due
---     -> Dict TokenId CustomInfo
---     -> Element Msg
--- customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as modal) user tokenId due customInfoDict =
---     column
---         [ width fill
---         , paddingXY 16 14
---         , spacing 12
---         , theme |> ThemeColor.sectionBackground |> Background.color
---         , Border.rounded 8
---         ]
---         [ row [ width fill, spacing 6, centerY ]
---             [ el
---                 [ Font.size 14
---                 , theme |> ThemeColor.textLight |> Font.color
---                 ]
---                 (text "Position ID")
---             , el
---                 [ alignRight
---                 , theme |> ThemeColor.textLight |> Font.color
---                 , Font.size 14
---                 , Font.bold
---                 ]
---                 (text (tokenId |> TokenId.toString))
---             , images
---                 |> (case theme of
---                         Theme.Dark ->
---                             Image.link
---                         Theme.Light ->
---                             Image.linkSecondary
---                    )
---                     [ width <| px 14, height <| px 14 ]
---             ]
---         , row [ width fill, spacing 6, centerY ]
---             [ el
---                 [ Font.size 14
---                 , theme |> ThemeColor.textLight |> Font.color
---                 ]
---                 (text "Total debt to pay")
---             , el
---                 [ Font.size 14
---                 , Font.bold
---                 , alignRight
---                 , theme |> ThemeColor.textLight |> Font.color
---                 ]
---                 (Truncate.viewAmount
---                     { onMouseEnter = OnMouseEnter
---                     , onMouseLeave = OnMouseLeave
---                     , tooltip = Tooltip.DebtAmount tokenId
---                     , opened = tooltip
---                     , token = pool.pair |> Pair.toAsset
---                     , amount = due.debt
---                     , theme = theme
---                     , customStyles = [ Font.size 14 ]
---                     }
---                 )
---             , el
---                 [ alignRight
---                 , paddingXY 3 1
---                 , Border.rounded 4
---                 , theme |> ThemeColor.border |> Background.color
---                 ]
---                 (Truncate.viewSymbol
---                     { onMouseEnter = OnMouseEnter
---                     , onMouseLeave = OnMouseLeave
---                     , tooltip = Tooltip.DebtSymbol tokenId
---                     , opened = tooltip
---                     , token = pool.pair |> Pair.toAsset
---                     , theme = theme
---                     , customStyles =
---                         [ Font.size 14
---                         , theme |> ThemeColor.textLight |> Font.color
---                         , Font.regular
---                         , paddingEach
---                             { top = 4
---                             , right = 0
---                             , bottom = 2
---                             , left = 0
---                             }
---                         ]
---                     }
---                 )
---             ]
---         , row
---             [ width fill
---             , spacing 8
---             , centerY
---             ]
---             [ el
---                 [ Font.size 14
---                 , theme |> ThemeColor.actionElemLabel |> Font.color
---                 ]
---                 (text "Enter amount to repay")
---             , user
---                 |> User.getBalance (pool.pair |> Pair.toAsset)
---                 |> Maybe.map
---                     (\balance ->
---                         MaxButton.view
---                             { onPress = InputMax tokenId
---                             , onMouseEnter = OnMouseEnter
---                             , onMouseLeave = OnMouseLeave
---                             , tooltip = Tooltip.Balance tokenId
---                             , opened = tooltip
---                             , token = pool.pair |> Pair.toAsset
---                             , balance = balance
---                             , theme = model.theme
---                             }
---                     )
---                 |> Maybe.withDefault none
---             ]
---         , Textbox.view model
---             { onMouseEnter = OnMouseEnter
---             , onMouseLeave = OnMouseLeave
---             , tooltip = Tooltip.TextboxToken tokenId
---             , opened = tooltip
---             , token = pool.pair |> Pair.toAsset
---             , onClick = Nothing
---             , onChange = InputAssetIn tokenId
---             , text =
---                 Dict.get tokenId customInfoDict
---                     |> Maybe.map (\customInfo -> customInfo.assetIn |> Left)
---                     |> Maybe.withDefault ("0" |> Left)
---             , description = "asset in textbox"
---             }
---         , row [ width fill, spacing 6, centerY ]
---             [ el
---                 [ Font.size 14
---                 , theme |> ThemeColor.textLight |> Font.color
---                 ]
---                 (text "Collateral to unlock")
---             , el
---                 [ Font.size 14
---                 , Font.bold
---                 , alignRight
---                 , theme |> ThemeColor.text |> Font.color
---                 ]
---                 (Truncate.viewAmount
---                     { onMouseEnter = OnMouseEnter
---                     , onMouseLeave = OnMouseLeave
---                     , tooltip = Tooltip.CollateralAmount tokenId
---                     , opened = tooltip
---                     , token = pool.pair |> Pair.toCollateral
---                     , amount = due.collateral
---                     , theme = theme
---                     , customStyles = [ Font.size 14 ]
---                     }
---                 )
---             , el
---                 [ alignRight
---                 , paddingXY 3 1
---                 , Border.rounded 4
---                 , theme |> ThemeColor.border |> Background.color
---                 ]
---                 (Truncate.viewSymbol
---                     { onMouseEnter = OnMouseEnter
---                     , onMouseLeave = OnMouseLeave
---                     , tooltip = Tooltip.CollateralSymbol tokenId
---                     , opened = tooltip
---                     , token = pool.pair |> Pair.toCollateral
---                     , theme = theme
---                     , customStyles =
---                         [ Font.size 14
---                         , theme |> ThemeColor.textLight |> Font.color
---                         , Font.regular
---                         , paddingEach
---                             { top = 4
---                             , right = 0
---                             , bottom = 2
---                             , left = 0
---                             }
---                         ]
---                     }
---                 )
---             ]
---         ]
-
-
 buttons :
     { model | theme : Theme }
     -> Blockchain
     -> Modal
     -> Element Msg
-buttons ({ theme } as model) blockchain (Modal { pool, state, total }) =
+buttons ({ theme } as model) blockchain (Modal { pool, total }) =
     blockchain
         |> Blockchain.toUser
         |> Maybe.map
@@ -1603,7 +1419,29 @@ buttons ({ theme } as model) blockchain (Modal { pool, state, total }) =
                             _ ->
                                 disabledRepay theme
 
-                    ( _, _ ) ->
+                    ( Success { assetIn }, Nothing ) ->
+                        case
+                            user
+                                |> User.getBalance (pool.pair |> Pair.toAsset)
+                                |> (Maybe.map << Remote.map)
+                                    (Uint.hasEnough assetIn)
+                        of
+                            Just (Success True) ->
+                                confirmBtn model
+
+                            Just (Success False) ->
+                                Button.notEnoughBalance
+
+                            Just (Loading _) ->
+                                theme |> Button.checkingBalance |> map never
+
+                            Just (Failure error) ->
+                                Button.error error |> map never
+
+                            _ ->
+                                disabledRepay theme
+
+                    _ ->
                         disabledRepay theme
             )
         |> Maybe.withDefault
