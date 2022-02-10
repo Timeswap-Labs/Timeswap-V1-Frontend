@@ -175,6 +175,7 @@ type Msg
     | SwitchTheme
     | OpenConnect
     | OpenChainList
+    | OpenSwap
     | ReceiveMetamaskInstalled ()
     | ReceiveUser Value
     | BlockchainMsg Blockchain.Msg
@@ -403,6 +404,24 @@ update msg model =
                     model.modal
                         |> Animator.go Animator.quickly
                             (Modal.initChainList |> Just)
+              }
+            , Cmd.none
+            )
+
+        OpenSwap ->
+            ( { model
+                | modal =
+                    case model.blockchain of
+                        Supported blockchain ->
+                            model.modal
+                                |> Animator.go Animator.quickly
+                                    (Modal.initSwap { chains = model.chains, blockchain = blockchain }
+                                        |> Tuple.first
+                                        |> Just
+                                    )
+
+                        _ ->
+                            model.modal
               }
             , Cmd.none
             )
@@ -1383,7 +1402,8 @@ header ({ device, backdrop, theme } as model) =
                 , alignRight
                 , centerY
                 ]
-                [ chainListButton model
+                [ swapButton model
+                , chainListButton model
                 , connectButton model
                 , zoneButton model
                 , themeButton model
@@ -1665,6 +1685,70 @@ tab { page, theme } givenTab =
                         |> text
                     )
             }
+
+
+swapButton :
+    { model | device : Device, images : Images, theme : Theme }
+    -> Element Msg
+swapButton { device, images, theme } =
+    Input.button
+        [ width shrink
+        , height <| px 44
+        , paddingEach
+            { top = 0
+            , right =
+                if Device.isPhoneOrTablet device then
+                    8
+
+                else
+                    16
+            , bottom = 0
+            , left =
+                if Device.isPhoneOrTablet device then
+                    8
+
+                else
+                    16
+            }
+        , Border.rounded 4
+        , Font.size 16
+        , paddingXY 12 0
+        , theme |> ThemeColor.btnBackground |> Background.color
+        , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
+        , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
+        ]
+        { onPress = Just OpenSwap
+        , label =
+            row
+                [ width shrink
+                , spacing 6
+                , centerX
+                , centerY
+                , paddingXY 0 3
+                , spacing 6
+                , Font.size 16
+                , theme |> ThemeColor.primaryBtn |> Font.color
+                ]
+                (if Device.isPhoneOrTablet device then
+                    [ images
+                        |> Image.swap
+                            [ width <| px 19
+                            , centerX
+                            , centerY
+                            ]
+                    ]
+
+                 else
+                    [ images
+                        |> Image.swap
+                            [ width <| px 19
+                            , centerX
+                            , centerY
+                            ]
+                    , text "Swap"
+                    ]
+                )
+        }
 
 
 chainListButton :
