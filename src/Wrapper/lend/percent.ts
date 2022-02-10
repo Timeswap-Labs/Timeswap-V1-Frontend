@@ -20,20 +20,20 @@ export async function percentCalculate(
     const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
 
-    // const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
-    // const { claims } = pool.lendGivenPercent(
-    //   state,
-    //   new Uint112(query.assetIn),
-    //   new Uint40(query.percent!),
-    //   currentTime
-    // );
-
-    const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
-    const { claims } = await sdkPool.calculateLendGivenPercent(
+    const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
+    const { claims } = pool.lendGivenPercent(
+      state,
       new Uint112(query.assetIn),
       new Uint40(query.percent!),
       currentTime
     );
+
+    // const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
+    // const { claims } = await sdkPool.calculateLendGivenPercent(
+    //   new Uint112(query.assetIn),
+    //   new Uint40(query.percent!),
+    //   currentTime
+    // );
 
     const bondOut = new Uint128(claims.bondInterest).add(new Uint128(claims.bondPrincipal));
     const insuranceOut = new Uint128(claims.insuranceInterest).add(new Uint128(claims.insurancePrincipal));
@@ -43,18 +43,18 @@ export async function percentCalculate(
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
 
-    const { claims: claimsSlippage } = await sdkPool.calculateLendGivenPercent(
-      new Uint112(query.assetIn),
-      new Uint40(query.percent!),
-      timeSlippage
-    );
-
-    // const { claims: claimsSlippage } = pool.lendGivenPercent(
-    //   state,
+    // const { claims: claimsSlippage } = await sdkPool.calculateLendGivenPercent(
     //   new Uint112(query.assetIn),
     //   new Uint40(query.percent!),
-    //   new Uint256(1644328605)
+    //   timeSlippage
     // );
+
+    const { claims: claimsSlippage } = pool.lendGivenPercent(
+      state,
+      new Uint112(query.assetIn),
+      new Uint40(query.percent!),
+      new Uint256(timeSlippage)
+    );
 
     // const bondSlippage = new Uint128(claimsSlippage.bondInterest).add(new Uint128(claimsSlippage.bondPrincipal));
     const insuranceSlippage = new Uint128(claimsSlippage.insuranceInterest).add(new Uint128(claimsSlippage.insurancePrincipal));

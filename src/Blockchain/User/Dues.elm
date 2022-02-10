@@ -2,6 +2,7 @@ module Blockchain.User.Dues exposing
     ( Dues
     , decoder
     , getMultiple
+    , getSingle
     , toERC20s
     , toList
     )
@@ -14,7 +15,6 @@ import Data.Maturity as Maturity
 import Data.Pair as Pair
 import Data.Pool as Pool exposing (Pool)
 import Data.Token as Token
-import Data.Uint as Uint
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
@@ -56,6 +56,14 @@ getMultiple pool tokenIds dues =
                 tokenId
                     |> Set.memberOf tokenIds
             )
+
+
+getSingle : Pool -> TokenId -> Dues -> Maybe Due
+getSingle pool tokenId dues =
+    dues
+        |> Dict.get pool
+        |> Maybe.map (Dict.get tokenId)
+        |> Maybe.withDefault Nothing
 
 
 decoder : Decoder Dues

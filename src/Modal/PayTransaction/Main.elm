@@ -28,6 +28,7 @@ import Element
         , el
         , fill
         , height
+        , map
         , minimum
         , none
         , padding
@@ -51,6 +52,7 @@ import Modal.PayTransaction.Error exposing (Error)
 import Modal.PayTransaction.Query as Query
 import Modal.PayTransaction.Tooltip as Tooltip exposing (Tooltip)
 import Modal.PayTransaction.Total exposing (Total)
+import Page.Transaction.Button as Button
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Textbox as Textbox
 import Sort.Dict as Dict exposing (Dict)
@@ -206,6 +208,54 @@ update blockchain user msg (Modal modal) =
 
             else
                 modal |> noCmdAndEffect
+
+        ( InputMax tokenId, Custom dict ) ->
+            case ( user |> User.getDues, user |> User.getBalance (modal.pool.pair |> Pair.toAsset) ) of
+                ( Success dues, Just (Success balance) ) ->
+                    dues
+                        |> Dues.getSingle modal.pool tokenId
+                        |> Maybe.map
+                            (\due ->
+                                (if Uint.hasEnough due.debt balance then
+                                    due.debt
+
+                                 else
+                                    balance
+                                )
+                                    |> (\assetIn ->
+                                            dict
+                                                |> Dict.insert tokenId
+                                                    { assetIn = assetIn |> Uint.toAmount (modal.pool.pair |> Pair.toAsset)
+                                                    , collateralOut = Remote.loading
+                                                    }
+                                                |> Dict.map
+                                                    (\_ customInfo ->
+                                                        case customInfo.collateralOut of
+                                                            Failure _ ->
+                                                                { customInfo
+                                                                    | collateralOut = Remote.loading
+                                                                }
+
+                                                            _ ->
+                                                                customInfo
+                                                    )
+                                                |> (\updatedDict ->
+                                                        ( { modal
+                                                            | state = updatedDict |> Custom
+                                                            , total = Remote.loading
+                                                          }
+                                                            |> Modal
+                                                            |> Just
+                                                        , queryCustomCmd blockchain user modal.pool updatedDict
+                                                        , Nothing
+                                                        )
+                                                   )
+                                       )
+                            )
+                        |> Maybe.withDefault (modal |> noCmdAndEffect)
+
+                ( _, _ ) ->
+                    modal |> noCmdAndEffect
 
         ( QueryFullAgain _, Full set ) ->
             ( modal
@@ -735,8 +785,8 @@ body model modal blockchain =
             [ switchRepayFull model modal
             , switchRepayCustom model modal
             ]
-        , repayList model modal blockchain
-        , confirmBtn model modal
+        , repayList model blockchain modal
+        , buttons model blockchain modal
         ]
 
 
@@ -841,17 +891,17 @@ repayList :
         | theme : Theme
         , images : Images
     }
-    -> Modal
     -> Blockchain
+    -> Modal
     -> Element Msg
-repayList model ((Modal { state, pool }) as modal) blockchain =
+repayList model blockchain ((Modal { state, pool }) as modal) =
     column
         [ width fill
         , spacing 12
         ]
         (case state of
             Full tokenIdSet ->
-                blockchain
+                (blockchain
                     |> Blockchain.toUser
                     |> Maybe.map User.getDues
                     |> (Maybe.map << Remote.map) (Dues.getMultiple pool tokenIdSet)
@@ -863,6 +913,8 @@ repayList model ((Modal { state, pool }) as modal) blockchain =
                     |> (Maybe.map << Remote.map << Maybe.withDefault) [ none ]
                     |> (Maybe.map << Remote.withDefault) [ none ]
                     |> Maybe.withDefault [ none ]
+                )
+                    ++ [ totalDebtCollateral model modal ]
 
             Custom dict ->
                 blockchain
@@ -939,7 +991,7 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
                 (Truncate.viewAmount
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Debt tokenId
+                    , tooltip = Tooltip.DebtAmount tokenId
                     , opened = tooltip
                     , token = pool.pair |> Pair.toAsset
                     , amount = due.debt
@@ -956,7 +1008,7 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
                 (Truncate.viewSymbol
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Debt tokenId
+                    , tooltip = Tooltip.DebtSymbol tokenId
                     , opened = tooltip
                     , token = pool.pair |> Pair.toAsset
                     , theme = theme
@@ -989,7 +1041,7 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
                 (Truncate.viewAmount
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Collateral tokenId
+                    , tooltip = Tooltip.CollateralAmount tokenId
                     , opened = tooltip
                     , token = pool.pair |> Pair.toCollateral
                     , amount = due.collateral
@@ -1006,7 +1058,7 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
                 (Truncate.viewSymbol
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Collateral tokenId
+                    , tooltip = Tooltip.CollateralSymbol tokenId
                     , opened = tooltip
                     , token = pool.pair |> Pair.toCollateral
                     , theme = theme
@@ -1071,7 +1123,7 @@ totalDebtCollateral { theme, images } (Modal { pool, total, tooltip }) =
                 (Truncate.viewSymbol
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.DebtSymbol
+                    , tooltip = Tooltip.TotalDebtSymbol
                     , opened = tooltip
                     , token = pool.pair |> Pair.toAsset
                     , theme = theme
@@ -1117,7 +1169,7 @@ totalDebtCollateral { theme, images } (Modal { pool, total, tooltip }) =
                 (Truncate.viewSymbol
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.CollateralSymbol
+                    , tooltip = Tooltip.TotalCollateralSymbol
                     , opened = tooltip
                     , token = pool.pair |> Pair.toCollateral
                     , theme = theme
@@ -1189,7 +1241,7 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                 (Truncate.viewAmount
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Debt tokenId
+                    , tooltip = Tooltip.DebtAmount tokenId
                     , opened = tooltip
                     , token = pool.pair |> Pair.toAsset
                     , amount = due.debt
@@ -1206,7 +1258,7 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                 (Truncate.viewSymbol
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Debt tokenId
+                    , tooltip = Tooltip.DebtSymbol tokenId
                     , opened = tooltip
                     , token = pool.pair |> Pair.toAsset
                     , theme = theme
@@ -1280,7 +1332,7 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                 (Truncate.viewAmount
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Collateral tokenId
+                    , tooltip = Tooltip.CollateralAmount tokenId
                     , opened = tooltip
                     , token = pool.pair |> Pair.toCollateral
                     , amount = due.collateral
@@ -1297,7 +1349,7 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
                 (Truncate.viewSymbol
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Collateral tokenId
+                    , tooltip = Tooltip.CollateralSymbol tokenId
                     , opened = tooltip
                     , token = pool.pair |> Pair.toCollateral
                     , theme = theme
@@ -1318,14 +1370,78 @@ customPosition ({ theme, images } as model) ((Modal { pool, state, tooltip }) as
         ]
 
 
+buttons :
+    { model | theme : Theme }
+    -> Blockchain
+    -> Modal
+    -> Element Msg
+buttons ({ theme } as model) blockchain (Modal { pool, state, total }) =
+    blockchain
+        |> Blockchain.toUser
+        |> Maybe.map
+            (\user ->
+                case ( total, pool.pair |> Pair.toAsset |> Token.toERC20 ) of
+                    ( Success { assetIn }, Just erc20 ) ->
+                        case
+                            ( user
+                                |> User.getBalance (pool.pair |> Pair.toAsset)
+                                |> (Maybe.map << Remote.map)
+                                    (Uint.hasEnough assetIn)
+                            , user
+                                |> User.getAllowance erc20
+                                |> (Maybe.map << Remote.map)
+                                    (Uint.hasEnough assetIn)
+                            )
+                        of
+                            ( Just (Success True), Just (Success True) ) ->
+                                confirmBtn model
+
+                            ( Just (Success False), Just (Success True) ) ->
+                                Button.notEnoughBalance
+
+                            ( Just (Success True), Just (Success False) ) ->
+                                approveButton erc20 theme
+
+                            ( Just (Loading _), Just (Success True) ) ->
+                                theme |> Button.checkingBalance |> map never
+
+                            ( Just (Failure error), _ ) ->
+                                Button.error error |> map never
+
+                            ( _, Just (Failure error) ) ->
+                                Button.error error |> map never
+
+                            _ ->
+                                disabledRepay theme
+
+                    ( _, _ ) ->
+                        disabledRepay theme
+            )
+        |> Maybe.withDefault
+            none
+
+
+approveButton : ERC20 -> Theme -> Element Msg
+approveButton erc20 theme =
+    Button.approve
+        { onPress = ClickApprove
+        , erc20 = erc20
+        , theme = theme
+        }
+
+
+disabledRepay : Theme -> Element msg
+disabledRepay theme =
+    Button.disabled theme "Repay"
+        |> map never
+
+
 confirmBtn :
     { model
         | theme : Theme
-        , images : Images
     }
-    -> Modal
     -> Element Msg
-confirmBtn { theme, images } ((Modal { state, pool }) as modal) =
+confirmBtn { theme } =
     Input.button
         [ width fill
         , centerY

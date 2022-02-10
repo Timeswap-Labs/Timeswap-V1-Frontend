@@ -6,7 +6,7 @@ import { balancesAllowancesInit, fetchAllowancesOf, fetchBalancesOf } from "./ba
 import { positionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
-import { withdrawSigner } from "./withdraw";
+import { withdraw, withdrawSigner } from "./withdraw";
 import { faucetSigner } from "./faucet";
 import { wallet } from "./wallet";
 import { getChainData, getTokenList } from "./chains";
@@ -78,6 +78,8 @@ export async function init(
 
   lend(gp, app);
   lendSigner(app, gp);
+
+  withdraw(app);
   withdrawSigner(app, gp);
 
   borrow(gp, app);

@@ -1,4 +1,5 @@
 import { CP, Pool, Uint112, Uint256, Uint40 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 
 export function calculateApr(
   debt: Uint112,
@@ -82,6 +83,17 @@ export async function calculatePercent(
     new Uint40(1n << 32n),
     currentTime
   );
+
+  // const { yIncrease: yMin } = await pool.calculateBorrowGivenPercent(
+  //   assetOut,
+  //   new Uint40(0),
+  //   currentTime
+  // );
+  // const { yIncrease: yMax } = await pool.calculateBorrowGivenPercent(
+  //   assetOut,
+  //   new Uint40(1n << 32n),
+  //   currentTime
+  // );
 
   return new Uint256(yIncrease)
     .sub(yMin)

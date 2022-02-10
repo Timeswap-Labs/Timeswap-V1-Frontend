@@ -16,19 +16,19 @@ export async function percentCalculate(
     const currentTime = getCurrentTime();
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
-    const { due } = await sdkPool.calculateBorrowGivenPercent(
-      new Uint112(query.assetOut),
-      new Uint40(query.percent!),
-      currentTime
-    );
-
-    // const { due } = pool.borrowGivenPercent(
-    //   state,
+    // const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
+    // const { due } = await sdkPool.calculateBorrowGivenPercent(
     //   new Uint112(query.assetOut),
     //   new Uint40(query.percent!),
     //   currentTime
     // );
+
+    const { due } = pool.borrowGivenPercent(
+      state,
+      new Uint112(query.assetOut),
+      new Uint40(query.percent!),
+      currentTime
+    );
     const debtIn = due.debt.toString();
     const collateralIn = due.collateral.toString();
 
@@ -80,17 +80,22 @@ export async function percentTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  console.log("percent tx start")
-  return await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
-    assetTo: borrow.assetTo,
-    dueTo: borrow.dueTo,
-    assetOut: new Uint112(borrow.assetOut),
-    percent: new Uint40(borrow.percent),
-    maxDebt: new Uint112(borrow.maxDebt),
-    maxCollateral: new Uint112(borrow.maxCollateral),
-    deadline: new Uint256(borrow.deadline),
-  });
-  console.log("percent tx end")
+  try {
+    console.log("borrowPerc params", borrow);
+
+    return await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
+      assetTo: borrow.assetTo,
+      dueTo: borrow.dueTo,
+      assetOut: new Uint112(borrow.assetOut),
+      percent: new Uint40(borrow.percent),
+      maxDebt: new Uint112(borrow.maxDebt),
+      maxCollateral: new Uint112(borrow.maxCollateral),
+      deadline: new Uint256(borrow.deadline),
+    });
+
+  } catch (error) {
+    console.log("borrow Perc", error);
+  }
 }
 
 interface Borrow {

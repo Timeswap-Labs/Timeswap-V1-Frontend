@@ -23,19 +23,19 @@ export async function insuranceCalculate(
     const insuranceOut = new Uint128(query.insuranceOut!);
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
-    const { claims, yDecrease } = await sdkPool.calculateLendGivenInsurance(
-      assetIn,
-      insuranceOut,
-      currentTime
-    );
-
-    // const { claims, yDecrease } = pool.lendGivenInsurance(
-    //   state,
+    // const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
+    // const { claims, yDecrease } = await sdkPool.calculateLendGivenInsurance(
     //   assetIn,
     //   insuranceOut,
     //   currentTime
     // );
+
+    const { claims, yDecrease } = pool.lendGivenInsurance(
+      state,
+      assetIn,
+      insuranceOut,
+      currentTime
+    );
     const bondOut = new Uint128(claims.bondInterest).add(new Uint128(claims.bondPrincipal));
 
     const percent = calculatePercent(
@@ -52,19 +52,18 @@ export async function insuranceCalculate(
         : currentTime.add(3 * 60);
 
 
-    const { claims: claimsSlippage } = await sdkPool.calculateLendGivenInsurance(
-      assetIn,
-      insuranceOut,
-      timeSlippage
-    );
-
-    // const { claims: claimsSlippage } = pool.lendGivenInsurance(
-    //   state,
+    // const { claims: claimsSlippage } = await sdkPool.calculateLendGivenInsurance(
     //   assetIn,
     //   insuranceOut,
     //   timeSlippage
     // );
 
+    const { claims: claimsSlippage } = pool.lendGivenInsurance(
+      state,
+      assetIn,
+      insuranceOut,
+      timeSlippage
+    );
 
     const bondSlippage = new Uint128(claimsSlippage.bondInterest).add(new Uint128(claimsSlippage.bondPrincipal));
 
