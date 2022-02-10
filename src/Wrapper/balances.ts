@@ -46,8 +46,9 @@ export async function balancesAllowancesInit(
       );
 
       updateErc20Balance(subscriptionContract, balancesOf.address, async () => {
-        const balance = await subscriptionContract.balanceOf(balancesOf.address);
-
+        const balance = await subscriptionContract.balanceOf(
+          balancesOf.address
+        );
         app.ports.receiveBalances.send({
           chain: balancesOf.chain,
           address: balancesOf.address,
@@ -67,7 +68,6 @@ export async function balancesAllowancesInit(
     } else {
       balancesToken.push(token);
       balances.push(gp.metamaskProviderMulti.getBalance(balancesOf.address));
-
       gp.metamaskProvider.on("block", async () => {
         const balance = await gp.metamaskProvider.getBalance(
           balancesOf.address
@@ -104,7 +104,11 @@ export async function balancesAllowancesInit(
   });
 }
 
-export async function fetchBalancesOf(app: ElmApp<Ports>, gp: GlobalParams, balancesOf: BalancesOf) {
+export async function fetchBalancesOf(
+  app: ElmApp<Ports>,
+  gp: GlobalParams,
+  balancesOf: BalancesOf
+) {
   const balancesToken: (ERC20Token | NativeToken)[] = [];
   const balances: Promise<any>[] = [];
 
@@ -161,7 +165,7 @@ export async function fetchBalancesOf(app: ElmApp<Ports>, gp: GlobalParams, bala
 export async function fetchAllowancesOf(
   app: ElmApp<Ports>,
   gp: GlobalParams,
-  allowancesOf: { chain: Chain, address: string, erc20s: ERC20Token[]}
+  allowancesOf: { chain: Chain; address: string; erc20s: ERC20Token[] }
 ) {
   const allowancesToken: ERC20Token[] = [];
   const allowances: Promise<any>[] = [];

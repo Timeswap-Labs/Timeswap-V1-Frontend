@@ -1,4 +1,9 @@
-import { Pool, Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import {
+  Pool,
+  Uint112,
+  Uint128,
+  Uint256,
+} from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 
 import { GlobalParams } from "../global";
@@ -18,10 +23,16 @@ export async function collateralCalculate(
 ) {
   try {
     const maturity = new Uint256(query.pool.maturity);
+    // const now = (await gp.metamaskProvider.getBlock("latest")).timestamp;
+    // const currentTime = new Uint256(now);
     const currentTime = getCurrentTime();
     const assetOut = new Uint112(query.assetOut);
     const collateralIn = new Uint112(query.collateralIn!);
-    const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
+    const state = {
+      x: new Uint112(query.poolInfo.x),
+      y: new Uint112(query.poolInfo.y),
+      z: new Uint112(query.poolInfo.z),
+    };
 
     // const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
     // const { due, yIncrease } = await sdkPool.calculateBorrowGivenCollateral(
@@ -46,6 +57,14 @@ export async function collateralCalculate(
       currentTime
     );
 
+    const timeSlippage = currentTime.sub(60);
+    const { due: dueSlippage } = await pool.borrowGivenCollateral(
+      state,
+      assetOut,
+      collateralIn,
+      timeSlippage
+    );
+
     // const percent = await calculatePercent(
     //   sdkPool,
     //   state,
@@ -55,7 +74,7 @@ export async function collateralCalculate(
     // );
 
     const maxDebt = calculateMaxValue(
-      due.debt.sub(query.assetOut),
+      dueSlippage.debt.sub(query.assetOut),
       query.slippage
     )
       .add(query.assetOut)
@@ -99,7 +118,6 @@ export async function collateralTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-
   console.log("borrow txn", borrow.maxDebt);
 
   return await pool.upgrade(gp.metamaskSigner!).borrowGivenCollateral({

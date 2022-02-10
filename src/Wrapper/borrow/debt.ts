@@ -20,7 +20,11 @@ export async function debtCalculate(
     const currentTime = getCurrentTime();
     const assetOut = new Uint112(query.assetOut);
     const debtIn = new Uint112(query.debtIn!);
-    const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
+    const state = {
+      x: new Uint112(query.poolInfo.x),
+      y: new Uint112(query.poolInfo.y),
+      z: new Uint112(query.poolInfo.z),
+    };
 
     // const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
     // const { due, yIncrease } = await sdkPool.calculateBorrowGivenDebt(
@@ -35,7 +39,6 @@ export async function debtCalculate(
       debtIn,
       currentTime
     );
-
     const collateralIn = due.collateral.toString();
 
     const percent = await calculatePercent(
@@ -46,8 +49,16 @@ export async function debtCalculate(
       currentTime
     );
 
+    const timeSlippage = currentTime.sub(60);
+    const { due: dueSlippage } = await pool.borrowGivenDebt(
+      state,
+      assetOut,
+      debtIn,
+      timeSlippage
+    );
+
     const maxCollateral = calculateMaxValue(
-      due.collateral,
+      dueSlippage.collateral,
       query.slippage
     ).toString();
 
