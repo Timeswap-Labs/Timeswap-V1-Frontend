@@ -1,5 +1,5 @@
 import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-sdk";
-import { updateErc20Balance } from "./helper";
+import { updateTransferEventBalance } from "./helper";
 import erc20Abi from "./abi/erc20";
 import { Contract } from "@ethersproject/contracts";
 import { GlobalParams } from "./global";
@@ -45,17 +45,21 @@ export async function balancesAllowancesInit(
         CONVENIENCE[balancesOf.chain.chainId]
       );
 
-      updateErc20Balance(subscriptionContract, balancesOf.address, async () => {
-        const balance = await subscriptionContract.balanceOf(
-          balancesOf.address
-        );
-        app.ports.receiveBalances.send({
-          chain: balancesOf.chain,
-          address: balancesOf.address,
-          tokens: [token],
-          balances: [balance.toString()],
-        });
-      });
+      updateTransferEventBalance(
+        subscriptionContract,
+        balancesOf.address,
+        async () => {
+          const balance = await subscriptionContract.balanceOf(
+            balancesOf.address
+          );
+          app.ports.receiveBalances.send({
+            chain: balancesOf.chain,
+            address: balancesOf.address,
+            tokens: [token],
+            balances: [balance.toString()],
+          });
+        }
+      );
 
       subscriptionContract.on(allowanceFilter, (_owner, _spender, value) => {
         app.ports.receiveAllowances.send({
@@ -123,7 +127,7 @@ export async function fetchBalancesOf(
       balancesToken.push(token as ERC20Token);
       balances.push(contract.balanceOf(balancesOf.address));
 
-      updateErc20Balance(contract, balancesOf.address, async () => {
+      updateTransferEventBalance(contract, balancesOf.address, async () => {
         const balance = await contract.balanceOf(balancesOf.address);
         app.ports.receiveBalances.send({
           chain: balancesOf.chain,

@@ -1,6 +1,6 @@
 import { GlobalParams } from "../global";
 import { lendPositionsInit, lendPositionsUpdate } from "./lend";
-import { borrowPositionsInit } from "./borrow";
+import { borrowPositionsInit, borrowPositionsUpdate } from "./borrow";
 import { liquidityPositionsInit, liquidityPositionsUpdate } from "./liquidity";
 
 export async function positionsInit(app: ElmApp<Ports>, gp: GlobalParams) {
@@ -24,6 +24,7 @@ export async function positionsInit(app: ElmApp<Ports>, gp: GlobalParams) {
     });
 
     lendPositionsUpdate(app, gp, positionsOf);
+    borrowPositionsUpdate(app, gp, positionsOf);
     liquidityPositionsUpdate(app, gp, positionsOf);
   });
 }

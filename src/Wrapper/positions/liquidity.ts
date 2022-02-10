@@ -1,7 +1,7 @@
 import { Contract } from "@ethersproject/contracts";
 import { GlobalParams } from "../global";
 import erc20Abi from "../abi/erc20";
-import { updateErc20Balance } from "../helper";
+import { updateTransferEventBalance } from "../helper";
 
 export async function liquidityPositionsInit(
   gp: GlobalParams,
@@ -37,7 +37,7 @@ export function liquidityPositionsUpdate(
   );
 
   liquidityTokens.map((liquidityToken, index) => {
-    updateErc20Balance(liquidityToken, positionsOf.owner, async () => {
+    updateTransferEventBalance(liquidityToken, positionsOf.owner, async () => {
       const balance = await liquidityToken.balanceOf(positionsOf.owner);
       const liq = balance.toString();
 

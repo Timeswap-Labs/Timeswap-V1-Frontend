@@ -1,7 +1,7 @@
 import { Contract } from "@ethersproject/contracts";
 import { GlobalParams } from "../global";
 import erc20Abi from "../abi/erc20";
-import { updateErc20Balance } from "../helper";
+import { updateTransferEventBalance } from "../helper";
 
 export async function lendPositionsInit(
   gp: GlobalParams,
@@ -136,22 +136,22 @@ export function lendPositionsUpdate(
   };
 
   bondPrincipalTokens.map((bondPrincipalToken, index) => {
-    updateErc20Balance(bondPrincipalToken, positionsOf.owner, () =>
+    updateTransferEventBalance(bondPrincipalToken, positionsOf.owner, () =>
       updateFunction(positionsOf.natives[index].pool, index)
     );
   });
   bondInterestTokens.map((bondInterestToken, index) => {
-    updateErc20Balance(bondInterestToken, positionsOf.owner, () =>
+    updateTransferEventBalance(bondInterestToken, positionsOf.owner, () =>
       updateFunction(positionsOf.natives[index].pool, index)
     );
   });
   insurancePrincipalTokens.map((insurancePrincipalToken, index) => {
-    updateErc20Balance(insurancePrincipalToken, positionsOf.owner, () =>
+    updateTransferEventBalance(insurancePrincipalToken, positionsOf.owner, () =>
       updateFunction(positionsOf.natives[index].pool, index)
     );
   });
   insuranceInterestTokens.map((insuranceInterestToken, index) => {
-    updateErc20Balance(insuranceInterestToken, positionsOf.owner, () =>
+    updateTransferEventBalance(insuranceInterestToken, positionsOf.owner, () =>
       updateFunction(positionsOf.natives[index].pool, index)
     );
   });

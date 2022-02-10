@@ -125,10 +125,12 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
   //   app.ports.receiveUser.send(null);
   // });
 
+  // FIXME: This causes an issue during chain change
   app.ports.balancesOf.subscribe((balancesOf) => {
     fetchBalancesOf(app, gp, balancesOf);
   });
 
+  // FIXME: This causes an issue during chain change
   app.ports.allowancesOf.subscribe((allowancesOf) => {
     fetchAllowancesOf(app, gp, allowancesOf);
   });
@@ -321,7 +323,7 @@ function userInit(app: ElmApp<Ports>, gp: GlobalParams, userAddress: string) {
         chainId: wlChain.chainId,
         name: wlChain.name,
         rpcUrl: wlChain.rpcUrl,
-        blockExplorerUrl: wlChain.blockExplorerUrl
+        blockExplorerUrl: wlChain.blockExplorerUrl,
       },
       address: userAddress,
       tokens: getTokenList(Number(gp.network)),

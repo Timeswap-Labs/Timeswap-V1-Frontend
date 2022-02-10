@@ -1,10 +1,20 @@
-import { GlobalParams } from './global';
-import { ERC20Token, NativeToken, Pool, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { GlobalParams } from "./global";
+import {
+  ERC20Token,
+  NativeToken,
+  Pool,
+  Uint256,
+} from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Contract } from "@ethersproject/contracts";
-import { BorrowQuery, LendQuery, ERC20Token as ERC20, NativeToken as Native } from "./declaration";
+import {
+  BorrowQuery,
+  LendQuery,
+  ERC20Token as ERC20,
+  NativeToken as Native,
+} from "./declaration";
 
-export function updateErc20Balance(
+export function updateTransferEventBalance(
   contract: Contract,
   address: string,
   updateBalance: () => void
@@ -26,7 +36,7 @@ export function getCustomTokens(chainId: string): ERC20Token[] {
 
   if (storeData) {
     try {
-      const parsedData : {[key: string] : ERC20Token[]}  = JSON.parse(storeData);
+      const parsedData: { [key: string]: ERC20Token[] } = JSON.parse(storeData);
       customTokens = parsedData[chainId];
     } catch (error) {
       return [];
@@ -45,8 +55,7 @@ export function getPool(query: LendQuery | BorrowQuery): Pool {
       query.pool.asset.decimals,
       (query.pool.asset as ERC20Token).address
     );
-  }
-  else {
+  } else {
     asset = new NativeToken(
       query.chain.chainId,
       query.pool.asset.decimals,
@@ -68,7 +77,13 @@ export function getPool(query: LendQuery | BorrowQuery): Pool {
     );
   }
 
-  return new Pool(asset, collateral, query.pool.maturity, query.poolInfo.fee, query.poolInfo.protocolFee);
+  return new Pool(
+    asset,
+    collateral,
+    query.pool.maturity,
+    query.poolInfo.fee,
+    query.poolInfo.protocolFee
+  );
 }
 
 export function getPoolSDK(
@@ -76,7 +91,7 @@ export function getPoolSDK(
   asset: ERC20 | Native,
   collateral: ERC20 | Native,
   maturity: number | string,
-  chain: Chain,
+  chain: Chain
 ): SDKPool {
   let assetToken, collateralToken;
 
@@ -86,13 +101,8 @@ export function getPoolSDK(
       asset.decimals,
       (asset as ERC20).address
     );
-  }
-  else {
-    assetToken = new NativeToken(
-      chain.chainId,
-      asset.decimals,
-      asset.symbol
-    );
+  } else {
+    assetToken = new NativeToken(chain.chainId, asset.decimals, asset.symbol);
   }
 
   if ((collateral as ERC20).address) {
@@ -109,7 +119,13 @@ export function getPoolSDK(
     );
   }
 
-  return new SDKPool(gp.metamaskProvider, chain.chainId, assetToken, collateralToken, new Uint256(maturity));
+  return new SDKPool(
+    gp.metamaskProvider,
+    chain.chainId,
+    assetToken,
+    collateralToken,
+    new Uint256(maturity)
+  );
 }
 
 export function updateCachedTxns(txnReceipt: ReceiveReceipt) {
@@ -117,10 +133,16 @@ export function updateCachedTxns(txnReceipt: ReceiveReceipt) {
 
   if (storedTxns) {
     try {
-      const parsedTxns: { chain: Chain; address: string; txns: Txns } = JSON.parse(storedTxns);
+      const parsedTxns: { chain: Chain; address: string; txns: Txns } =
+        JSON.parse(storedTxns);
 
-      if (parsedTxns.address === txnReceipt.address && parsedTxns.chain.chainId === txnReceipt.chain.chainId) {
-        const txnIndex = parsedTxns.txns.confirmed.findIndex(txn => txn.hash === txnReceipt.hash);
+      if (
+        parsedTxns.address === txnReceipt.address &&
+        parsedTxns.chain.chainId === txnReceipt.chain.chainId
+      ) {
+        const txnIndex = parsedTxns.txns.confirmed.findIndex(
+          (txn) => txn.hash === txnReceipt.hash
+        );
 
         if (txnIndex >= 0) {
           parsedTxns.txns.confirmed[txnIndex].state = txnReceipt.state;
@@ -137,17 +159,20 @@ export function listenForPendingTxns(app: ElmApp<Ports>, gp: GlobalParams) {
   const storedTxns = window.localStorage.getItem("txns");
 
   if (storedTxns) {
-    const parsedTxnData: { chain: Chain; address: string; txns: Txns } = JSON.parse(storedTxns);
-    const pendingTxns = parsedTxnData.txns.confirmed.filter(txn => txn.state === 'pending');
+    const parsedTxnData: { chain: Chain; address: string; txns: Txns } =
+      JSON.parse(storedTxns);
+    const pendingTxns = parsedTxnData.txns.confirmed.filter(
+      (txn) => txn.state === "pending"
+    );
 
-    pendingTxns.forEach(async pendingTxn => {
+    pendingTxns.forEach(async (pendingTxn) => {
       const txnReceipt = await gp.provider.waitForTransaction(pendingTxn.hash);
       const receiveReceipt = {
         chain: parsedTxnData.chain,
         address: parsedTxnData.address,
         hash: pendingTxn.hash,
-        state: txnReceipt.status ? "success" : "failed"
-      }
+        state: txnReceipt.status ? "success" : "failed",
+      };
       app.ports.receiveReceipt.send(receiveReceipt);
       updateCachedTxns(receiveReceipt);
     });
