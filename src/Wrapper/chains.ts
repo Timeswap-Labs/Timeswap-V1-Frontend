@@ -3,7 +3,7 @@ import { getCustomTokens } from "./helper";
 export const whitelistChains = {
   default: {
     chainId: 80001,
-    name: "Polygon",
+    name: "Polygon Testnet",
     etherscan: "https://mumbai.polygonscan.com",
     native: {
       name: "Polygon",

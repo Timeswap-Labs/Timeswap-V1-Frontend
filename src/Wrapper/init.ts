@@ -165,17 +165,41 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
     window.localStorage.setItem("txns", JSON.stringify(txns));
   });
 
-  app.ports.changeChain.subscribe((chain) => {
+  app.ports.changeChain.subscribe(async (chain) => {
     if (window.ethereum && ethereum) {
       gp.metamaskProvider = window.ethereum;
+      const chainId = chain.chainId.toString().startsWith("0x")
+        ? chain.chainId
+        : "0x" + Number(chain.chainId.toString().trim()).toString(16);
 
-      gp.metamaskProvider.send("wallet_switchEthereumChain", [
-        {
-          chainId: chain.chainId.toString().startsWith("0x")
-            ? chain.chainId
-            : "0x" + Number(chain.chainId.toString().trim()).toString(16),
-        },
-      ]);
+      try {
+        await gp.metamaskProvider.send("wallet_switchEthereumChain", [
+          { chainId },
+        ]);
+      } catch (error: any) {
+        if ((error.code = 4902)) {
+          await gp.metamaskProvider.send("wallet_addEthereumChain", [
+            {
+              chainId,
+              chainName: chain.name,
+              rpcUrls: ["https://rpc-mumbai.matic.today"],
+              blockExplorerUrls: [chain.etherscan],
+            },
+          ]);
+        }
+      }
+
+      //   [{
+      //     chainId: '0x13881',
+      //     chainName: 'Polygon Testnet',
+      //     nativeCurrency: {
+      //         name: 'MATIC',
+      //         symbol: 'MATIC',
+      //         decimals: 18
+      //     },
+      //     rpcUrls: ['https://matic-mumbai.chainstacklabs.com'],
+      //     blockExplorerUrls: ['https://mumbai.polygonscan.com/']
+      // }]
     }
   });
 

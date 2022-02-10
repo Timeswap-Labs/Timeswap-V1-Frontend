@@ -1,6 +1,7 @@
 import { Contract } from "@ethersproject/contracts";
 import { GlobalParams } from "../global";
 import erc20Abi from "../abi/erc20";
+import { updateErc20Balance } from "../helper";
 
 export async function lendPositionsInit(
   gp: GlobalParams,
@@ -58,28 +59,100 @@ export async function lendPositionsInit(
     await Promise.all(promiseInsuranceInterestBalances)
   ).map((x) => x.toString());
 
-  return positionsOf.natives
-    .map(({ pool }, index) => ({
-      pool,
-      claim: {
-        bondPrincipal: bondPrincipalBalances[index],
-        bondInterest: bondInterestBalances[index],
-        insurancePrincipal: insurancePrincipalBalances[index],
-        insuranceInterest: insuranceInterestBalances[index],
+  return positionsOf.natives.map(({ pool }, index) => ({
+    pool,
+    claim: {
+      bondPrincipal: bondPrincipalBalances[index],
+      bondInterest: bondInterestBalances[index],
+      insurancePrincipal: insurancePrincipalBalances[index],
+      insuranceInterest: insuranceInterestBalances[index],
+    },
+  }));
+}
+
+export function lendPositionsUpdate(
+  app: ElmApp<Ports>,
+  gp: GlobalParams,
+  positionsOf: PositionsOf
+) {
+  const bondPrincipalMulticallTokens = positionsOf.natives.map(
+    ({ natives: { bondPrincipal } }) =>
+      new Contract(bondPrincipal, erc20Abi, gp.metamaskProviderMulti)
+  );
+  const bondInterestMulticallTokens = positionsOf.natives.map(
+    ({ natives: { bondInterest } }) =>
+      new Contract(bondInterest, erc20Abi, gp.metamaskProviderMulti)
+  );
+  const insurancePrincipalMulticallTokens = positionsOf.natives.map(
+    ({ natives: { insurancePrincipal } }) =>
+      new Contract(insurancePrincipal, erc20Abi, gp.metamaskProviderMulti)
+  );
+  const insuranceInterestMulticallTokens = positionsOf.natives.map(
+    ({ natives: { insuranceInterest } }) =>
+      new Contract(insuranceInterest, erc20Abi, gp.metamaskProviderMulti)
+  );
+
+  const bondPrincipalTokens = positionsOf.natives.map(
+    ({ natives: { bondPrincipal } }) =>
+      new Contract(bondPrincipal, erc20Abi, gp.metamaskProvider)
+  );
+  const bondInterestTokens = positionsOf.natives.map(
+    ({ natives: { bondInterest } }) =>
+      new Contract(bondInterest, erc20Abi, gp.metamaskProvider)
+  );
+  const insurancePrincipalTokens = positionsOf.natives.map(
+    ({ natives: { insurancePrincipal } }) =>
+      new Contract(insurancePrincipal, erc20Abi, gp.metamaskProvider)
+  );
+  const insuranceInterestTokens = positionsOf.natives.map(
+    ({ natives: { insuranceInterest } }) =>
+      new Contract(insuranceInterest, erc20Abi, gp.metamaskProvider)
+  );
+
+  const updateFunction = async (pool: Pool, index: number) => {
+    const promiseBalances = [
+      bondPrincipalMulticallTokens[index].balanceOf(positionsOf.owner),
+      bondInterestMulticallTokens[index].balanceOf(positionsOf.owner),
+      insurancePrincipalMulticallTokens[index].balanceOf(positionsOf.owner),
+      insuranceInterestMulticallTokens[index].balanceOf(positionsOf.owner),
+    ];
+    const balances = await Promise.all(promiseBalances);
+    const claim = {
+      bondPrincipal: balances[0].toString(),
+      bondInterest: balances[1].toString(),
+      insurancePrincipal: balances[2].toString(),
+      insuranceInterest: balances[3].toString(),
+    };
+
+    app.ports.receivePositions.send({
+      chain: positionsOf.chain,
+      owner: positionsOf.owner,
+      positions: {
+        claims: [{ pool, claim }],
+        dues: [],
+        liqs: [],
       },
-    }))
-    .filter(
-      ({
-        claim: {
-          bondPrincipal,
-          bondInterest,
-          insurancePrincipal,
-          insuranceInterest,
-        },
-      }) =>
-        bondPrincipal !== "0" ||
-        bondInterest !== "0" ||
-        insurancePrincipal !== "0" ||
-        insuranceInterest !== "0"
+    });
+  };
+
+  bondPrincipalTokens.map((bondPrincipalToken, index) => {
+    updateErc20Balance(bondPrincipalToken, positionsOf.owner, () =>
+      updateFunction(positionsOf.natives[index].pool, index)
     );
+  });
+  bondInterestTokens.map((bondInterestToken, index) => {
+    updateErc20Balance(bondInterestToken, positionsOf.owner, () =>
+      updateFunction(positionsOf.natives[index].pool, index)
+    );
+  });
+  insurancePrincipalTokens.map((insurancePrincipalToken, index) => {
+    updateErc20Balance(insurancePrincipalToken, positionsOf.owner, () =>
+      updateFunction(positionsOf.natives[index].pool, index)
+    );
+  });
+  insuranceInterestTokens.map((insuranceInterestToken, index) => {
+    updateErc20Balance(insuranceInterestToken, positionsOf.owner, () =>
+      updateFunction(positionsOf.natives[index].pool, index)
+    );
+  });
 }

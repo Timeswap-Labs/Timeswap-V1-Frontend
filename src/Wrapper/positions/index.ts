@@ -1,7 +1,7 @@
 import { GlobalParams } from "../global";
-import { lendPositionsInit } from "./lend";
+import { lendPositionsInit, lendPositionsUpdate } from "./lend";
 import { borrowPositionsInit } from "./borrow";
-import { liquidityPositionsInit } from "./liquidity";
+import { liquidityPositionsInit, liquidityPositionsUpdate } from "./liquidity";
 
 export async function positionsInit(app: ElmApp<Ports>, gp: GlobalParams) {
   app.ports.positionsOf.subscribe(async (positionsOf) => {
@@ -22,5 +22,8 @@ export async function positionsInit(app: ElmApp<Ports>, gp: GlobalParams) {
         liqs,
       },
     });
+
+    lendPositionsUpdate(app, gp, positionsOf);
+    liquidityPositionsUpdate(app, gp, positionsOf);
   });
 }
