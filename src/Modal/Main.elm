@@ -262,7 +262,7 @@ update model msg modal =
                 |> Maybe.map
                     (\user ->
                         payTransaction
-                            |> PayTransaction.update blockchain user payTransactionMsg
+                            |> PayTransaction.update user payTransactionMsg
                             |> (\( updated, cmd, maybeEffect ) ->
                                     ( updated |> Maybe.map PayTransaction
                                     , cmd |> Cmd.map PayTransactionMsg
@@ -381,11 +381,6 @@ subscriptions modal =
             maturityList
                 |> MaturityList.subscriptions
                 |> Sub.map MaturityListMsg
-
-        PayTransaction payTransaction ->
-            payTransaction
-                |> PayTransaction.subscriptions
-                |> Sub.map PayTransactionMsg
 
         _ ->
             Sub.none
