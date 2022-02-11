@@ -1,5 +1,6 @@
 module Data.Uint exposing
     ( Uint
+    , add
     , decoder
     , encode
     , fromAmount
@@ -7,6 +8,7 @@ module Data.Uint exposing
     , hasEnough
     , isAmount
     , isZero
+    , proportion
     , sorter
     , toAmount
     , toLP
@@ -14,11 +16,13 @@ module Data.Uint exposing
     , zero
     )
 
+import BigInt
 import Data.Token as Token exposing (Token)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode as Encode exposing (Value)
 import Sort exposing (Sorter)
 import Utility.Input as Input
+import Utility.Maybe as Maybe
 
 
 type Uint
@@ -266,3 +270,31 @@ zero =
 isZero : Uint -> Bool
 isZero (Uint string) =
     string == "0"
+
+
+add : Uint -> Uint -> Maybe Uint
+add (Uint uint1) (Uint uint2) =
+    Just BigInt.add
+        |> Maybe.apply (uint1 |> BigInt.fromIntString)
+        |> Maybe.apply (uint2 |> BigInt.fromIntString)
+        |> Maybe.map BigInt.toString
+        |> Maybe.andThen fromString
+
+
+proportion : Uint -> Uint -> Uint -> Maybe Uint
+proportion (Uint uint1) (Uint uint2) (Uint uint3) =
+    Just
+        (\num1 num2 den ->
+            if BigInt.lte num1 den then
+                BigInt.div (BigInt.mul num1 num2) den
+                    |> Just
+
+            else
+                Nothing
+        )
+        |> Maybe.apply (uint1 |> BigInt.fromIntString)
+        |> Maybe.apply (uint2 |> BigInt.fromIntString)
+        |> Maybe.apply (uint3 |> BigInt.fromIntString)
+        |> Maybe.andThen identity
+        |> Maybe.map BigInt.toString
+        |> Maybe.andThen fromString
