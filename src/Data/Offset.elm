@@ -18,7 +18,7 @@ init =
 
 toZone : Offset -> Zone
 toZone offset =
-    Time.customZone offset []
+    Time.customZone -offset []
 
 
 toString : Offset -> String

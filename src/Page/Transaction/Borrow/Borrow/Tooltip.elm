@@ -8,3 +8,4 @@ type Tooltip
     | CollateralOutSymbol
     | CDPSymbol
     | CDP
+    | Liquidity
