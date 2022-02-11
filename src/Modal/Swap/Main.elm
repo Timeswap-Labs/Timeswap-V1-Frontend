@@ -7,10 +7,10 @@ import Browser.Events
 import Data.Address exposing (toString)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chains as Chains exposing (Chains)
-import Data.Device exposing (Device)
+import Data.Device as Device exposing (Device)
 import Data.Images exposing (Images)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token exposing (Token(..))
 import Data.Uint as Uint
 import Dict
@@ -28,6 +28,7 @@ import Element
         , height
         , htmlAttribute
         , inFront
+        , minimum
         , mouseDown
         , mouseOver
         , moveDown
@@ -460,12 +461,16 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ backdrop, blockchain, theme } as model) modal =
+view ({ device, backdrop, blockchain, theme } as model) modal =
     Outside.view model
         { onClick = Exit
         , modal =
             column
-                ([ width <| px 375
+                ([ if device |> Device.isPhoneOrTablet then
+                    width <| px 375
+
+                   else
+                    width <| px 500
                  , height shrink
                  , padding 24
                  , centerX
@@ -481,8 +486,14 @@ view ({ backdrop, blockchain, theme } as model) modal =
                     [ width fill
                     , height shrink
                     , spacing 16
+                    , paddingEach
+                        { top = 4
+                        , right = 0
+                        , bottom = 12
+                        , left = 0
+                        }
                     ]
-                    [ title
+                    [ title theme
                     , IconButton.exit model Exit
                     ]
                 , content model modal
@@ -492,8 +503,8 @@ view ({ backdrop, blockchain, theme } as model) modal =
         }
 
 
-title : Element msg
-title =
+title : Theme -> Element msg
+title theme =
     el
         [ width shrink
         , height shrink
@@ -501,7 +512,7 @@ title =
         , Font.family [ Font.typeface "Supreme" ]
         , Font.bold
         , Font.size 16
-        , Font.color Color.light100
+        , theme |> ThemeColor.text |> Font.color
         , Font.center
         ]
         (text "Swap Your Token")
@@ -511,6 +522,7 @@ content :
     { model
         | device : Device
         , images : Images
+        , theme : Theme
     }
     -> Modal
     -> Element Msg
@@ -529,6 +541,7 @@ inputContent :
     { model
         | device : Device
         , images : Images
+        , theme : Theme
     }
     -> Modal
     -> Element Msg
@@ -538,23 +551,28 @@ inputContent model (Modal { dropdown, options, inToken, input }) =
         , height shrink
         ]
         [ inTokenDropdownButton model inToken dropdown options
-        , inputAmount input
+        , inputAmount input model.theme
         ]
 
 
 inTokenDropdownButton :
     { model
         | images : Images
+        , theme : Theme
     }
     -> Maybe Token
     -> Maybe Dropdown
     -> List Token
     -> Element Msg
-inTokenDropdownButton ({ images } as model) inToken dropdown options =
+inTokenDropdownButton ({ images, theme } as model) inToken dropdown options =
     Input.button
         [ width <| px 150
         , height <| px 44
         , padding 12
+        , theme |> ThemeColor.border |> Border.color
+        , Border.rounded 4
+        , Border.width 1
+        , theme |> ThemeColor.btnBackground |> Background.color
         , (if dropdown == Just InToken then
             inTokenDropdown model options
 
@@ -587,7 +605,7 @@ inTokenDropdownButton ({ images } as model) inToken dropdown options =
                 , alignLeft
                 , centerY
                 , spacing 8
-                , Font.color Color.transparent400
+                , theme |> ThemeColor.text |> Font.color
                 ]
                 (case inToken of
                     Just token ->
@@ -599,7 +617,13 @@ inTokenDropdownButton ({ images } as model) inToken dropdown options =
                                 token
                         , el [ Font.size 18 ] (token |> Token.toSymbol |> text)
                         , images
-                            |> Image.discloser
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.discloser
+
+                                    Theme.Light ->
+                                        Image.arrowDownDark
+                               )
                                 [ width <| px 12
                                 , centerY
                                 , alignRight
@@ -612,8 +636,8 @@ inTokenDropdownButton ({ images } as model) inToken dropdown options =
         }
 
 
-inTokenDropdown : { model | images : Images } -> List Token -> Element Msg
-inTokenDropdown { images } options =
+inTokenDropdown : { model | images : Images, theme : Theme } -> List Token -> Element Msg
+inTokenDropdown { images, theme } options =
     column
         [ width fill
         , height shrink
@@ -622,8 +646,8 @@ inTokenDropdown { images } options =
         , moveDown 4
         , Font.regular
         , Font.size 14
-        , Font.color Color.transparent400
-        , Background.color Color.darkModal
+        , theme |> ThemeColor.text |> Font.color
+        , theme |> ThemeColor.dropdownBG |> Background.color
         , Border.widthEach
             { bottom = 1
             , left = 1
@@ -673,8 +697,8 @@ inTokenOptions images gameToken =
         }
 
 
-inputAmount : String -> Element Msg
-inputAmount input =
+inputAmount : String -> Theme -> Element Msg
+inputAmount input theme =
     row
         [ width fill
         , height <| px 44
@@ -691,7 +715,7 @@ inputAmount input =
             , left = 0
             }
         , Border.solid
-        , Border.color Color.transparent100
+        , theme |> ThemeColor.textboxBorder |> Border.color
         , Border.roundEach
             { topLeft = 0
             , topRight = 4
@@ -714,7 +738,7 @@ inputAmount input =
             , Border.color Color.none
             , Font.regular
             , Font.size 16
-            , Color.transparent500 |> Font.color
+            , theme |> ThemeColor.text |> Font.color
             ]
             { onChange = Input
             , text = input
@@ -748,6 +772,7 @@ outputContent :
     { model
         | device : Device
         , images : Images
+        , theme : Theme
     }
     -> Modal
     -> Element Msg
@@ -758,25 +783,30 @@ outputContent model (Modal { dropdown, options, outToken, input, cache }) =
             , height shrink
             ]
             [ outTokenDropdownButton model outToken dropdown options
-            , outputAmount input cache
+            , outputAmount input model.theme cache
             ]
-        , priceDisclaimer
+        , priceDisclaimer model.theme
         ]
 
 
 outTokenDropdownButton :
     { model
         | images : Images
+        , theme : Theme
     }
     -> Maybe Token
     -> Maybe Dropdown
     -> List Token
     -> Element Msg
-outTokenDropdownButton ({ images } as model) outToken dropdown options =
+outTokenDropdownButton ({ images, theme } as model) outToken dropdown options =
     Input.button
         [ width <| px 150
         , height <| px 44
         , padding 12
+        , theme |> ThemeColor.border |> Border.color
+        , Border.rounded 4
+        , Border.width 1
+        , theme |> ThemeColor.btnBackground |> Background.color
         , (if dropdown == Just OutToken then
             outTokenDropdown model options
 
@@ -809,7 +839,7 @@ outTokenDropdownButton ({ images } as model) outToken dropdown options =
                 , alignLeft
                 , centerY
                 , spacing 8
-                , Font.color Color.transparent400
+                , theme |> ThemeColor.text |> Font.color
                 ]
                 (case outToken of
                     Just token ->
@@ -821,7 +851,13 @@ outTokenDropdownButton ({ images } as model) outToken dropdown options =
                                 token
                         , el [ Font.size 18 ] (token |> Token.toSymbol |> text)
                         , images
-                            |> Image.discloser
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.discloser
+
+                                    Theme.Light ->
+                                        Image.arrowDownDark
+                               )
                                 [ width <| px 12
                                 , centerY
                                 , alignRight
@@ -834,8 +870,8 @@ outTokenDropdownButton ({ images } as model) outToken dropdown options =
         }
 
 
-outTokenDropdown : { model | images : Images } -> List Token -> Element Msg
-outTokenDropdown { images } options =
+outTokenDropdown : { model | images : Images, theme : Theme } -> List Token -> Element Msg
+outTokenDropdown { images, theme } options =
     column
         [ width fill
         , height shrink
@@ -844,8 +880,8 @@ outTokenDropdown { images } options =
         , moveDown 4
         , Font.regular
         , Font.size 14
-        , Font.color Color.transparent400
-        , Background.color Color.darkModal
+        , theme |> ThemeColor.text |> Font.color
+        , theme |> ThemeColor.positionBG |> Background.color
         , Border.widthEach
             { bottom = 1
             , left = 1
@@ -897,9 +933,10 @@ outTokenOptions images outToken =
 
 outputAmount :
     String
+    -> Theme
     -> Remote Error PriceCache
     -> Element Msg
-outputAmount input cache =
+outputAmount input theme cache =
     el
         [ width fill
         , height <| px 44
@@ -908,19 +945,12 @@ outputAmount input cache =
         , Background.color Color.none
         , Font.regular
         , Font.size 16
-        , Color.transparent500 |> Font.color
+        , theme |> ThemeColor.text |> Font.color
         , paddingEach
             { top = 12
             , right = 12
             , bottom = 0
             , left = 12
-            }
-        , Border.color Color.transparent100
-        , Border.roundEach
-            { topLeft = 0
-            , topRight = 4
-            , bottomRight = 4
-            , bottomLeft = 0
             }
         ]
         (case cache of
@@ -948,13 +978,13 @@ outputAmount input cache =
         )
 
 
-priceDisclaimer : Element Msg
-priceDisclaimer =
+priceDisclaimer : Theme -> Element Msg
+priceDisclaimer theme =
     row
         [ width fill
         , alignRight
         , Font.size 12
-        , Font.color Color.transparent300
+        , theme |> ThemeColor.textLight |> Font.color
         , paddingEach
             { top = 6
             , bottom = 0

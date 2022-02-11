@@ -4,6 +4,7 @@ module Data.Address exposing
     , decoder
     , encode
     , fromString
+    , participantAddresses
     , sorter
     , toQueryParameter
     , toString
@@ -20,6 +21,28 @@ import Url.Builder as Builder exposing (QueryParameter)
 
 type Address
     = Address String
+
+
+participantAddresses : List Address
+participantAddresses =
+    [ "0xD5451D0C1ec4cAEF1197c9544Ac1C6782F588DFC"
+    , "0x0717C21AC72F2B7C64F196c13ee504c726dDb8fD"
+    , "0xb932c0d5c87B5F8354CC8898Ba74E5F28510C10E"
+    , "0x4830212faCF11d2E22Cdd46aF6b9992b226B5A67"
+    , "0x94c820722D1A9F2Ce3aa640a272a63cE2e032aCE"
+    , "0xd1B856ee12Bd00922cae8DD86ab068f8c0F95224"
+    , "0xc840D0A9bb73e1C76915c013804B7b6Cb67462ec"
+    , "0xa1d1a9E75Ba80725890eed232869A8321E84Bb32"
+    , "0xf402B174B1D6C1DCCc0725ACa2D0F1f6Bb4823F0"
+    , "0x99b56b239EbA2Ff5249E0f88C5aD7A29611BDd92"
+    , "0x641B87A1a09f6261e8c85179afFe14135ECd4aB0"
+    , "0xb33ea596194B7d0cA77263246B5E9AF4a619853C"
+    , "0x2f70859627952d4DC8237d13c15bd1620f507BAF"
+    , "0x781938b7Ce5474097849EeCDF6c803E8C353191C"
+    , "0xe91A790292870eF71F70Bf8A98A01e11DeeF3a74"
+    ]
+        |> List.map String.toLower
+        |> List.map Address
 
 
 fromString : String -> Maybe Address

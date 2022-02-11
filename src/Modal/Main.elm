@@ -422,6 +422,11 @@ subscriptions modal =
                 |> PayTransaction.subscriptions
                 |> Sub.map PayTransactionMsg
 
+        Swap swap ->
+            swap
+                |> Swap.subscriptions
+                |> Sub.map SwapMsg
+
         _ ->
             Sub.none
 
