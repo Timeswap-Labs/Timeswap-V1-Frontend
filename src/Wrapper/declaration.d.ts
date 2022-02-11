@@ -67,6 +67,9 @@ declare interface Ports {
 
   receiveConfirm: PortToElm<ReceiveConfirm>;
   receiveReceipt: PortToElm<ReceiveReceipt>;
+
+  signSwapTxn: PortFromElm;
+  swapSignatureMsg: PortToElm<String>;
 }
 
 interface NativeToken {

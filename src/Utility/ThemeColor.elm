@@ -6,6 +6,7 @@ module Utility.ThemeColor exposing
     , btnHoverBG
     , btnPressBG
     , completelyTransparent
+    , dropdownBG
     , modalBackground
     , modalOutside
     , none
@@ -243,6 +244,16 @@ positionBG theme =
 
         Theme.Light ->
             Color.transparent200
+
+
+dropdownBG : Theme -> Color
+dropdownBG theme =
+    case theme of
+        Theme.Dark ->
+            Color.dark500
+
+        Theme.Light ->
+            rgba255 225 236 244 1
 
 
 warning100 : Color

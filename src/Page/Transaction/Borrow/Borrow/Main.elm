@@ -30,6 +30,7 @@ import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , alignRight
         , centerY
         , column
         , el
@@ -69,6 +70,7 @@ import Url.Builder as Builder
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
+import Utility.Truncate as Truncate
 
 
 type Transaction
@@ -2314,17 +2316,19 @@ view :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
+    -> PoolInfo
     -> Transaction
     ->
         { first : Element Msg
         , second : Element Msg
         , buttons : Element Msg
         }
-view model blockchain pool (Transaction transaction) =
+view model blockchain pool poolInfo (Transaction transaction) =
     { first =
         transaction
             |> assetOutSection model
                 (pool.pair |> Pair.toAsset)
+                poolInfo
     , second =
         transaction
             |> duesInSection model blockchain pool
@@ -2337,15 +2341,16 @@ view model blockchain pool (Transaction transaction) =
 assetOutSection :
     { model | images : Images, theme : Theme }
     -> Token
+    -> PoolInfo
     -> { transaction | state : State, tooltip : Maybe Tooltip }
     -> Element Msg
-assetOutSection model asset { state, tooltip } =
+assetOutSection model asset poolInfo { state, tooltip } =
     column
         [ Region.description "borrow asset"
         , width fill
         , height shrink
         , padding 16
-        , spacing 10
+        , spacing 8
         , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
@@ -2435,6 +2440,36 @@ assetOutSection model asset { state, tooltip } =
                         , description = "asset out textbox"
                         }
                )
+        , row
+            [ width fill
+            , height shrink
+            , paddingXY 0 4
+            ]
+            [ el
+                [ width shrink
+                , Font.size 14
+                , model.theme |> ThemeColor.textLight |> Font.color
+                ]
+                (text "Pool Liquidity")
+            , row
+                [ Font.size 14
+                , model.theme |> ThemeColor.text |> Font.color
+                , alignRight
+                , spacing 6
+                ]
+                [ Truncate.viewAmount
+                    { onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.Liquidity
+                    , opened = tooltip
+                    , token = asset
+                    , amount = poolInfo.x
+                    , theme = model.theme
+                    , customStyles = [ Font.size 14 ]
+                    }
+                , text (asset |> Token.toSymbol)
+                ]
+            ]
         ]
 
 

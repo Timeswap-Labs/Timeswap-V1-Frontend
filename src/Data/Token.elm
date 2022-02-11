@@ -4,6 +4,7 @@ module Data.Token exposing
     , decoder
     , encode
     , sorter
+    , toApiTokenId
     , toDecimals
     , toERC20
     , toName
@@ -155,3 +156,21 @@ containsString token input =
                         |> String.toLower
                         |> String.contains (input |> String.toLower)
                    )
+
+
+toApiTokenId : Token -> String
+toApiTokenId token =
+    if (token |> toSymbol) == "MATIC" then
+        "matic-network"
+
+    else if (token |> toSymbol) == "AVAX" then
+        "avalanche"
+
+    else if (token |> toSymbol) == "DAI" then
+        "dai"
+
+    else if (token |> toSymbol) == "ETH" then
+        "ethereum"
+
+    else
+        ""

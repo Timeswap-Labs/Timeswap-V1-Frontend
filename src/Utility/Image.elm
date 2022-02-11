@@ -48,6 +48,7 @@ module Utility.Image exposing
     , setting
     , settingsSecondary
     , sun
+    , swap
     , telegram
     , tripleDots
     , twitter
@@ -391,6 +392,11 @@ warning =
 tripleDots : List (Attribute msg) -> Images -> Element msg
 tripleDots =
     view "TripleDots"
+
+
+swap : List (Attribute msg) -> Images -> Element msg
+swap =
+    view "Swap"
 
 
 gitbook : List (Attribute msg) -> Images -> Element msg

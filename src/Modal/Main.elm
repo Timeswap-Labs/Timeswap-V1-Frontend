@@ -10,6 +10,7 @@ module Modal.Main exposing
     , initMaturityList
     , initPayTransaction
     , initSettings
+    , initSwap
     , initTokenList
     , receiveUser
     , reject
@@ -55,6 +56,7 @@ import Modal.InputMaturity.Main as InputMaturity
 import Modal.MaturityList.Main as MaturityList
 import Modal.PayTransaction.Main as PayTransaction
 import Modal.Settings.Main as Settings
+import Modal.Swap.Main as Swap
 import Modal.TokenList.Main as TokenList
 import Sort.Set exposing (Set)
 import Time exposing (Posix)
@@ -64,6 +66,7 @@ type Modal
     = Connect Connect.Modal
     | Settings Settings.Modal
     | ChainList
+    | Swap Swap.Modal
     | TokenList TokenList.Modal
     | MaturityList MaturityList.Modal
     | InputMaturity InputMaturity.Modal
@@ -75,6 +78,7 @@ type Msg
     = ConnectMsg Connect.Msg
     | SettingsMsg Settings.Msg
     | ChainListMsg ChainList.Msg
+    | SwapMsg Swap.Msg
     | TokenListMsg TokenList.Msg
     | MaturityListMsg MaturityList.Msg
     | InputMaturityMsg InputMaturity.Msg
@@ -171,6 +175,17 @@ initInputMaturity pair =
 initChainList : Modal
 initChainList =
     ChainList
+
+
+initSwap :
+    { model
+        | chains : Chains
+        , blockchain : Blockchain
+    }
+    -> ( Modal, Cmd Msg )
+initSwap model =
+    Swap.init model
+        |> Tuple.mapBoth Swap (Cmd.map SwapMsg)
 
 
 initPayTransaction :
@@ -285,6 +300,26 @@ update model msg modal =
                         )
                    )
 
+        ( SwapMsg swapMsg, Swap swap, Supported blockchain ) ->
+            blockchain
+                |> Blockchain.toUser
+                |> Maybe.map
+                    (\user ->
+                        swap
+                            |> Swap.update { time = model.time, user = user } swapMsg
+                            |> (\( updated, cmd ) ->
+                                    ( updated |> Maybe.map Swap
+                                    , cmd |> Cmd.map SwapMsg
+                                    , Nothing
+                                    )
+                               )
+                    )
+                |> Maybe.withDefault
+                    ( modal |> Just
+                    , Cmd.none
+                    , Nothing
+                    )
+
         _ ->
             ( modal |> Just
             , Cmd.none
@@ -382,6 +417,11 @@ subscriptions modal =
                 |> MaturityList.subscriptions
                 |> Sub.map MaturityListMsg
 
+        Swap swap ->
+            swap
+                |> Swap.subscriptions
+                |> Sub.map SwapMsg
+
         _ ->
             Sub.none
 
@@ -415,6 +455,22 @@ view model modal =
         ChainList ->
             ChainList.view model
                 |> map ChainListMsg
+
+        Swap swap ->
+            case model.blockchain of
+                Supported blockchain ->
+                    Swap.view
+                        { device = model.device
+                        , backdrop = model.backdrop
+                        , images = model.images
+                        , blockchain = blockchain
+                        , theme = model.theme
+                        }
+                        swap
+                        |> map SwapMsg
+
+                _ ->
+                    none
 
         TokenList tokenList ->
             case model.blockchain of
