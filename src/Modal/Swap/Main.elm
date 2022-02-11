@@ -497,7 +497,7 @@ view ({ device, backdrop, blockchain, theme } as model) modal =
                     , IconButton.exit model Exit
                     ]
                 , content model modal
-                , swapButton (blockchain |> Blockchain.toUser) modal
+                , swapButton (blockchain |> Blockchain.toUser) theme modal
                 , notificationInfo modal
                 ]
         }
@@ -959,7 +959,7 @@ outputAmount input theme cache =
                     [ width <| px 50
                     , height shrink
                     ]
-                    (timeline |> Loading.view)
+                    (Loading.view timeline theme)
 
             Success cacheData ->
                 text
@@ -997,9 +997,10 @@ priceDisclaimer theme =
 
 swapButton :
     Maybe User
+    -> Theme
     -> Modal
     -> Element Msg
-swapButton maybeUser (Modal modal) =
+swapButton maybeUser theme (Modal modal) =
     if (modal.input == "") || (modal.input |> InputUtil.isZero) then
         disabledSwapBtn
 
@@ -1019,13 +1020,13 @@ swapButton maybeUser (Modal modal) =
                                     , left = 10
                                     }
                                 , centerY
-                                , Background.color Color.primary500
+                                , theme |> ThemeColor.primaryBtn |> Background.color
                                 , Border.rounded 4
                                 , Font.size 16
                                 , Font.color Color.light100
                                 , Font.bold
-                                , mouseDown [ Background.color Color.primary400 ]
-                                , mouseOver [ Background.color Color.primary300 ]
+                                , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
+                                , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
                                 ]
                                 { onPress = Just SignMsg
                                 , label =
@@ -1044,7 +1045,7 @@ swapButton maybeUser (Modal modal) =
                             Button.notEnoughBalance
 
                     ( Just _, Just (Loading timeline) ) ->
-                        loadingSwapBtn timeline
+                        loadingSwapBtn timeline theme
 
                     ( _, _ ) ->
                         disabledSwapBtn
@@ -1086,8 +1087,9 @@ disabledSwapBtn =
 
 loadingSwapBtn :
     Timeline ()
+    -> Theme
     -> Element msg
-loadingSwapBtn timeline =
+loadingSwapBtn timeline theme =
     el
         [ width fill
         , height <| px 44
@@ -1104,7 +1106,7 @@ loadingSwapBtn timeline =
             , centerY
             , Font.color Color.transparent100
             ]
-            (Loading.view timeline)
+            (Loading.view timeline theme)
         )
 
 
