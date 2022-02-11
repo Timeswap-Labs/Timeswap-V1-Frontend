@@ -96,6 +96,7 @@ type Mode
 type Msg
     = SwitchMode Mode
     | InputAssetIn TokenId String
+    | QueryAfterInput (Cmd Msg)
     | InputMax TokenId
     | QueryFullAgain Posix
     | QueryCustomAgain Posix
@@ -209,6 +210,12 @@ update blockchain user msg (Modal modal) =
             else
                 modal |> noCmdAndEffect
 
+        ( QueryAfterInput cmd, Custom dict ) ->
+            ( modal |> Modal |> Just
+            , cmd
+            , Nothing
+            )
+
         ( InputMax tokenId, Custom dict ) ->
             case ( user |> User.getDues, user |> User.getBalance (modal.pool.pair |> Pair.toAsset) ) of
                 ( Success dues, Just (Success balance) ) ->
@@ -254,7 +261,7 @@ update blockchain user msg (Modal modal) =
                             )
                         |> Maybe.withDefault (modal |> noCmdAndEffect)
 
-                ( _, _ ) ->
+                _ ->
                     modal |> noCmdAndEffect
 
         ( QueryFullAgain _, Full set ) ->
@@ -498,7 +505,7 @@ update blockchain user msg (Modal modal) =
                                )
                             && (dict
                                     |> toAssetsIn (modal.pool.pair |> Pair.toAsset)
-                                    |> Maybe.map ((==) answer.assetsIn)
+                                    |> Maybe.map (Dict.eq answer.assetsIn)
                                     |> Maybe.withDefault False
                                )
                     then
@@ -695,11 +702,10 @@ view :
         , images : Images
         , theme : Theme
     }
-    -> Blockchain
     -> User
     -> Modal
     -> Element Msg
-view ({ backdrop, theme } as model) blockchain user modal =
+view ({ backdrop, theme } as model) user (Modal modal) =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -719,7 +725,7 @@ view ({ backdrop, theme } as model) blockchain user modal =
                     [ width fill
                     ]
                     [ header model
-                    , body model modal blockchain user
+                    , body model user modal
                     ]
                 ]
         }
@@ -768,11 +774,16 @@ body :
         | theme : Theme
         , images : Images
     }
-    -> Modal
-    -> Blockchain
     -> User
+    ->
+        { modal
+            | pool : Pool
+            , state : State
+            , total : Remote Error Total
+            , tooltip : Maybe Tooltip
+        }
     -> Element Msg
-body model modal blockchain user =
+body model user modal =
     column
         [ width fill
         , padding 20
@@ -789,8 +800,8 @@ body model modal blockchain user =
             [ switchRepayFull model modal
             , switchRepayCustom model modal
             ]
-        , repayList model blockchain user modal
-        , buttons model blockchain modal
+        , repayList model user modal
+        , buttons model user modal
         ]
 
 
@@ -798,15 +809,15 @@ switchRepayFull :
     { model
         | theme : Theme
     }
-    -> Modal
+    -> { modal | state : State }
     -> Element Msg
-switchRepayFull { theme } (Modal modal) =
+switchRepayFull { theme } { state } =
     Input.button
         ([ width fill
          , height <| px 36
          , paddingXY 12 8
          ]
-            ++ (case modal.state of
+            ++ (case state of
                     Full _ ->
                         [ theme |> ThemeColor.primaryBtn |> Background.color
                         , Border.rounded 4
@@ -817,7 +828,7 @@ switchRepayFull { theme } (Modal modal) =
                )
         )
         { onPress =
-            case modal.state of
+            case state of
                 Full _ ->
                     Nothing
 
@@ -827,7 +838,7 @@ switchRepayFull { theme } (Modal modal) =
             el
                 [ centerX
                 , centerY
-                , (case modal.state of
+                , (case state of
                     Full _ ->
                         Color.light100
 
@@ -843,18 +854,16 @@ switchRepayFull { theme } (Modal modal) =
 
 
 switchRepayCustom :
-    { model
-        | theme : Theme
-    }
-    -> Modal
+    { model | theme : Theme }
+    -> { modal | state : State }
     -> Element Msg
-switchRepayCustom { theme } (Modal modal) =
+switchRepayCustom { theme } { state } =
     Input.button
         ([ width fill
          , height <| px 36
          , paddingXY 12 8
          ]
-            ++ (case modal.state of
+            ++ (case state of
                     Custom _ ->
                         [ theme |> ThemeColor.primaryBtn |> Background.color
                         , Border.rounded 4
@@ -865,7 +874,7 @@ switchRepayCustom { theme } (Modal modal) =
                )
         )
         { onPress =
-            case modal.state of
+            case state of
                 Full _ ->
                     Just (SwitchMode RepayCustom)
 
@@ -875,7 +884,7 @@ switchRepayCustom { theme } (Modal modal) =
             el
                 [ centerX
                 , centerY
-                , (case modal.state of
+                , (case state of
                     Full _ ->
                         theme |> ThemeColor.textLight
 
@@ -895,37 +904,33 @@ repayList :
         | theme : Theme
         , images : Images
     }
-    -> Blockchain
     -> User
-    -> Modal
+    ->
+        { modal
+            | pool : Pool
+            , state : State
+            , total : Remote Error Total
+            , tooltip : Maybe Tooltip
+        }
     -> Element Msg
-repayList model blockchain user ((Modal { state, pool }) as modal) =
+repayList model user ({ state, pool } as modal) =
     column
         [ width fill
         , spacing 12
         ]
         (case state of
             Full tokenIdSet ->
-                (blockchain
-                    |> Blockchain.toUser
-                    |> Maybe.map User.getDues
-                    |> (Maybe.map << Remote.map) (Dues.getMultiple pool tokenIdSet)
-                    |> (Maybe.map << Remote.map << Maybe.map) Dict.toList
-                    |> (Maybe.map << Remote.map << Maybe.map << List.map)
-                        (\( tokenId, due ) ->
-                            fullPosition model modal tokenId due
-                        )
-                    |> (Maybe.map << Remote.map << Maybe.withDefault) [ none ]
-                    |> (Maybe.map << Remote.withDefault) [ none ]
-                    |> Maybe.withDefault [ none ]
-                )
-                    ++ [ totalDebtCollateral model modal ]
+                user
+                    |> User.getDues
+                    |> Remote.map (Dues.getMultiple pool tokenIdSet)
+                    |> (Remote.map << Maybe.map) Dict.toList
+                    |> (Remote.map << Maybe.map << List.map) (fullPosition model modal)
+                    |> (Remote.map << Maybe.withDefault) []
+                    |> Remote.withDefault []
+                    |> (\list -> list ++ [ totalDebtCollateral model modal ])
 
             Custom dict ->
-                List.map2
-                    (\( tokenId, due ) customInfo ->
-                        customPosition model user modal ( tokenId, due, customInfo )
-                    )
+                List.map2 (customPosition model user modal)
                     (user
                         |> User.getDues
                         |> Remote.map (Dues.getMultiple pool (dict |> Dict.keys |> Set.fromList TokenId.sorter))
@@ -944,11 +949,14 @@ fullPosition :
         | theme : Theme
         , images : Images
     }
-    -> Modal
-    -> TokenId
-    -> Due
+    ->
+        { modal
+            | pool : Pool
+            , tooltip : Maybe Tooltip
+        }
+    -> ( TokenId, Due )
     -> Element Msg
-fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due =
+fullPosition { theme, images } { pool, tooltip } ( tokenId, due ) =
     column
         [ width fill
         , paddingXY 16 12
@@ -956,7 +964,11 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
         , theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
         ]
-        [ row [ width fill, spacing 6, centerY ]
+        [ row
+            [ width fill
+            , spacing 6
+            , centerY
+            ]
             [ el
                 [ Font.size 14
                 , theme |> ThemeColor.textLight |> Font.color
@@ -977,9 +989,15 @@ fullPosition { theme, images } ((Modal { pool, tooltip }) as modal) tokenId due 
                         Theme.Light ->
                             Image.linkSecondary
                    )
-                    [ width <| px 14, height <| px 14 ]
+                    [ width <| px 14
+                    , height <| px 14
+                    ]
             ]
-        , row [ width fill, spacing 6, centerY ]
+        , row
+            [ width fill
+            , spacing 6
+            , centerY
+            ]
             [ el
                 [ Font.size 14
                 , theme |> ThemeColor.textLight |> Font.color
@@ -1087,14 +1105,28 @@ totalDebtCollateral :
         | theme : Theme
         , images : Images
     }
-    -> Modal
+    ->
+        { modal
+            | pool : Pool
+            , total : Remote Error Total
+            , tooltip : Maybe Tooltip
+        }
     -> Element Msg
-totalDebtCollateral { theme, images } (Modal { pool, total, tooltip }) =
+totalDebtCollateral { theme, images } { pool, total, tooltip } =
     column
-        [ width fill, spacing 12, paddingXY 0 4 ]
+        [ width fill
+        , spacing 12
+        , paddingXY 0 4
+        ]
         [ row
-            [ width fill, centerY, spacing 4 ]
-            [ el [ Font.size 14, theme |> ThemeColor.actionElemLabel |> Font.color ]
+            [ width fill
+            , centerY
+            , spacing 4
+            ]
+            [ el
+                [ Font.size 14
+                , theme |> ThemeColor.actionElemLabel |> Font.color
+                ]
                 (text "Total amount to repay")
             , el [ alignRight ]
                 (case total of
@@ -1139,8 +1171,14 @@ totalDebtCollateral { theme, images } (Modal { pool, total, tooltip }) =
                 )
             ]
         , row
-            [ width fill, centerY, spacing 4 ]
-            [ el [ Font.size 14, theme |> ThemeColor.actionElemLabel |> Font.color ]
+            [ width fill
+            , centerY
+            , spacing 4
+            ]
+            [ el
+                [ Font.size 14
+                , theme |> ThemeColor.actionElemLabel |> Font.color
+                ]
                 (text "Total collateral to unlock")
             , el [ alignRight ]
                 (case total of
@@ -1193,10 +1231,15 @@ customPosition :
         , images : Images
     }
     -> User
-    -> Modal
-    -> ( TokenId, Due, CustomInfo )
+    ->
+        { modal
+            | pool : Pool
+            , tooltip : Maybe Tooltip
+        }
+    -> ( TokenId, Due )
+    -> CustomInfo
     -> Element Msg
-customPosition ({ theme, images } as model) user (Modal { pool, tooltip }) ( tokenId, due, customInfo ) =
+customPosition ({ theme, images } as model) user { pool, tooltip } ( tokenId, due ) customInfo =
     column
         [ width fill
         , paddingXY 16 14
@@ -1225,9 +1268,15 @@ customPosition ({ theme, images } as model) user (Modal { pool, tooltip }) ( tok
                         Theme.Light ->
                             Image.linkSecondary
                    )
-                    [ width <| px 14, height <| px 14 ]
+                    [ width <| px 14
+                    , height <| px 14
+                    ]
             ]
-        , row [ width fill, spacing 6, centerY ]
+        , row
+            [ width fill
+            , spacing 6
+            , centerY
+            ]
             [ el
                 [ Font.size 14
                 , theme |> ThemeColor.textLight |> Font.color
@@ -1377,75 +1426,72 @@ customPosition ({ theme, images } as model) user (Modal { pool, tooltip }) ( tok
 
 buttons :
     { model | theme : Theme }
-    -> Blockchain
-    -> Modal
+    -> User
+    ->
+        { modal
+            | pool : Pool
+            , total : Remote Error Total
+        }
     -> Element Msg
-buttons ({ theme } as model) blockchain (Modal { pool, total }) =
-    blockchain
-        |> Blockchain.toUser
-        |> Maybe.map
-            (\user ->
-                case ( total, pool.pair |> Pair.toAsset |> Token.toERC20 ) of
-                    ( Success { assetIn }, Just erc20 ) ->
-                        case
-                            ( user
-                                |> User.getBalance (pool.pair |> Pair.toAsset)
-                                |> (Maybe.map << Remote.map)
-                                    (Uint.hasEnough assetIn)
-                            , user
-                                |> User.getAllowance erc20
-                                |> (Maybe.map << Remote.map)
-                                    (Uint.hasEnough assetIn)
-                            )
-                        of
-                            ( Just (Success True), Just (Success True) ) ->
-                                confirmBtn model
+buttons ({ theme } as model) user { pool, total } =
+    case ( total, pool.pair |> Pair.toAsset |> Token.toERC20 ) of
+        ( Success { assetIn }, Just erc20 ) ->
+            case
+                ( user
+                    |> User.getBalance (pool.pair |> Pair.toAsset)
+                    |> (Maybe.map << Remote.map)
+                        (Uint.hasEnough assetIn)
+                , user
+                    |> User.getAllowance erc20
+                    |> (Maybe.map << Remote.map)
+                        (Uint.hasEnough assetIn)
+                )
+            of
+                ( Just (Success True), Just (Success True) ) ->
+                    confirmBtn model
 
-                            ( Just (Success False), Just (Success True) ) ->
-                                Button.notEnoughBalance
+                ( Just (Success False), Just (Success True) ) ->
+                    Button.notEnoughBalance
 
-                            ( Just (Success True), Just (Success False) ) ->
-                                approveButton erc20 theme
+                ( Just (Success True), Just (Success False) ) ->
+                    approveButton erc20 theme
 
-                            ( Just (Loading _), Just (Success True) ) ->
-                                theme |> Button.checkingBalance |> map never
+                ( Just (Loading _), Just (Success True) ) ->
+                    theme |> Button.checkingBalance |> map never
 
-                            ( Just (Failure error), _ ) ->
-                                Button.error error |> map never
+                ( Just (Failure error), _ ) ->
+                    Button.error error |> map never
 
-                            ( _, Just (Failure error) ) ->
-                                Button.error error |> map never
+                ( _, Just (Failure error) ) ->
+                    Button.error error |> map never
 
-                            _ ->
-                                disabledRepay theme
+                _ ->
+                    disabledRepay theme
 
-                    ( Success { assetIn }, Nothing ) ->
-                        case
-                            user
-                                |> User.getBalance (pool.pair |> Pair.toAsset)
-                                |> (Maybe.map << Remote.map)
-                                    (Uint.hasEnough assetIn)
-                        of
-                            Just (Success True) ->
-                                confirmBtn model
+        ( Success { assetIn }, Nothing ) ->
+            case
+                user
+                    |> User.getBalance (pool.pair |> Pair.toAsset)
+                    |> (Maybe.map << Remote.map)
+                        (Uint.hasEnough assetIn)
+            of
+                Just (Success True) ->
+                    confirmBtn model
 
-                            Just (Success False) ->
-                                Button.notEnoughBalance
+                Just (Success False) ->
+                    Button.notEnoughBalance
 
-                            Just (Loading _) ->
-                                theme |> Button.checkingBalance |> map never
+                Just (Loading _) ->
+                    theme |> Button.checkingBalance |> map never
 
-                            Just (Failure error) ->
-                                Button.error error |> map never
+                Just (Failure error) ->
+                    Button.error error |> map never
 
-                            _ ->
-                                disabledRepay theme
+                _ ->
+                    disabledRepay theme
 
-                    _ ->
-                        disabledRepay theme
-            )
-        |> Maybe.withDefault
-            none
+        _ ->
+            disabledRepay theme
 
 
 approveButton : ERC20 -> Theme -> Element Msg
