@@ -7,6 +7,7 @@ module Page.Position.Due.Main exposing
     , view
     )
 
+import Blockchain.User.Due as Due
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.TokenId as TokenId exposing (TokenId)
 import Data.Backdrop exposing (Backdrop)
@@ -459,6 +460,7 @@ viewDue { images, theme } user { pool, checks, tooltip } =
             |> (Remote.map << Maybe.map)
                 (\dict ->
                     dict
+                        |> Due.dropZero
                         |> Dict.toList
                         |> List.map
                             (\( tokenId, dues ) ->
