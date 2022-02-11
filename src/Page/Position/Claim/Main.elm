@@ -873,7 +873,7 @@ viewBond { images, theme } { pool, tooltip } remote =
                         [ width shrink
                         , height shrink
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline theme)
 
                 Failure error ->
                     none
@@ -950,7 +950,7 @@ viewInsurance { images, theme } { pool, tooltip } remote =
                         [ width shrink
                         , height shrink
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline theme)
 
                 Failure error ->
                     none
@@ -1028,7 +1028,7 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
                         [ width shrink
                         , height shrink
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline theme)
 
                 Failure error ->
                     none
@@ -1039,7 +1039,7 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
                         [ width shrink
                         , height shrink
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline theme)
 
                 Success ( _, Failure error ) ->
                     none
@@ -1117,7 +1117,7 @@ viewCollateralReturn { images, theme } { pool, tooltip } remote =
                         [ width shrink
                         , height shrink
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline theme)
 
                 Failure error ->
                     none
@@ -1128,7 +1128,7 @@ viewCollateralReturn { images, theme } { pool, tooltip } remote =
                         [ width shrink
                         , height shrink
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline theme)
 
                 Success ( _, Failure error ) ->
                     none

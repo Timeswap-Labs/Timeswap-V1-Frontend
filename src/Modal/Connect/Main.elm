@@ -661,7 +661,7 @@ walletWaiting { images, theme } { wallet } timeline =
             , theme |> ThemeColor.text |> Font.color
             , Font.size 16
             ]
-            (Loading.view timeline)
+            (Loading.view timeline theme)
         ]
 
 

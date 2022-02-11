@@ -951,7 +951,7 @@ liqOutSection model pool { liquidityOut } =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline model.theme)
 
                 _ ->
                     none

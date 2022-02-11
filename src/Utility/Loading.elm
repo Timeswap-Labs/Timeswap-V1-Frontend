@@ -2,6 +2,7 @@ module Utility.Loading exposing (view)
 
 import Animator exposing (Timeline)
 import Animator.Css
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Element
@@ -22,25 +23,25 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
-import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
-view : Timeline () -> Element msg
-view timeline =
+view : Timeline () -> Theme -> Element msg
+view timeline theme =
     row
         [ width shrink
         , height shrink
         , padding 2
         , spacing 2
         ]
-        [ blinkingCircle 0.2 timeline
-        , blinkingCircle 0.1 timeline
-        , blinkingCircle 0 timeline
+        [ blinkingCircle 0.2 theme timeline
+        , blinkingCircle 0.1 theme timeline
+        , blinkingCircle 0 theme timeline
         ]
 
 
-blinkingCircle : Float -> Timeline () -> Element msg
-blinkingCircle offset timeline =
+blinkingCircle : Float -> Theme -> Timeline () -> Element msg
+blinkingCircle offset theme timeline =
     el
         [ width shrink
         , height shrink
@@ -57,7 +58,7 @@ blinkingCircle offset timeline =
             [ layoutWith { options = options }
                 [ width <| px 5
                 , height <| px 5
-                , Background.color Color.transparent100
+                , theme |> ThemeColor.textLight |> Background.color
                 , Border.rounded 999
                 ]
                 none

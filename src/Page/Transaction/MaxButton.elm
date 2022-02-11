@@ -110,7 +110,7 @@ userBalance param =
                     , height shrink
                     , centerY
                     ]
-                    (Loading.view timeline)
+                    (Loading.view timeline param.theme)
 
             Failure error ->
                 el

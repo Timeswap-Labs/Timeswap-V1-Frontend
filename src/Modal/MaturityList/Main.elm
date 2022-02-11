@@ -659,7 +659,7 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
         ]
         (case pools of
             Loading timeline ->
-                [ el [ centerX, centerY ] (Loading.view timeline) ]
+                [ el [ centerX, centerY ] (Loading.view timeline theme) ]
 
             Failure err ->
                 [ el [ centerX, centerY, Font.color Color.negative400 ] (text "Error") ]

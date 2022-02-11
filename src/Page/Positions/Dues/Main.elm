@@ -201,7 +201,7 @@ loading { images, theme } timeline =
             [ text "Fetching your Borrow positions..." ]
         , el
             []
-            (Loading.view timeline)
+            (Loading.view timeline theme)
         ]
 
 
