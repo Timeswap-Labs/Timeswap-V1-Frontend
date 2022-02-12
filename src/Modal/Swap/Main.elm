@@ -575,15 +575,6 @@ inTokenDropdownButton ({ images, theme } as model) inToken dropdown options =
             , Border.rounded 4
             , Border.width 1
             , theme |> ThemeColor.btnBackground |> Background.color
-
-            -- , el
-            --     [ width fill
-            --     , height fill
-            --     , Html.Attributes.id "swap-dropdown"
-            --         |> htmlAttribute
-            --     ]
-            --     none
-            --     |> inFront
             ]
             { onPress =
                 (case dropdown of
@@ -821,8 +812,6 @@ outTokenDropdownButton ({ images, theme } as model) outToken dropdown options =
         , el
             [ width fill
             , height fill
-            , Html.Attributes.id "swap-dropdown"
-                |> htmlAttribute
             ]
             none
             |> inFront
