@@ -48,6 +48,7 @@ type alias Flags =
         , name : String
         , rpcUrl : String
         , blockExplorerUrl : String
+        , nftExplorerUrl : String
         , native : Native.Flag
         , whitelist : ERC20s.Flags
         , custom : ERC20s.Flags
@@ -58,6 +59,7 @@ type alias Flags =
             , name : String
             , rpcUrl : String
             , blockExplorerUrl : String
+            , nftExplorerUrl : String
             , native : Native.Flag
             , whitelist : ERC20s.Flags
             , custom : ERC20s.Flags
@@ -72,6 +74,7 @@ init { default, others } =
         , name = default.name
         , rpcUrl = default.rpcUrl
         , blockExplorerUrl = default.blockExplorerUrl
+        , nftExplorerUrl = default.nftExplorerUrl
         }
             |> Chain
     , defaultTokens =
@@ -82,11 +85,12 @@ init { default, others } =
     , others =
         others
             |> List.map
-                (\{ chainId, name, rpcUrl, blockExplorerUrl, native, whitelist, custom } ->
+                (\{ chainId, name, rpcUrl, blockExplorerUrl, nftExplorerUrl, native, whitelist, custom } ->
                     ( { chainId = chainId
                       , name = name
                       , rpcUrl = rpcUrl
                       , blockExplorerUrl = blockExplorerUrl
+                      , nftExplorerUrl = nftExplorerUrl
                       }
                         |> Chain
                     , Tokens.init

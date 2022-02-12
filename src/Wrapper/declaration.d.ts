@@ -306,6 +306,7 @@ interface Chain {
   name: string;
   rpcUrl: string;
   blockExplorerUrl: string;
+  nftExplorerUrl: string;
 }
 
 interface CDP {

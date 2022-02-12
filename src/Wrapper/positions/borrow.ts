@@ -58,17 +58,16 @@ export async function borrowPositionsInit(
     }))
   );
 
-  return positionsOf.natives
-    .map(({ pool }, index) => ({
-      pool,
-      dues: cdTokenOwnerIndex[index].map((tokenId, tokenIdIndex) => ({
-        tokenId,
-        due: {
-          debt: cdTokenDues[index][tokenIdIndex].debt,
-          collateral: cdTokenDues[index][tokenIdIndex].collateral,
-        },
-      })),
-    }))
+  return positionsOf.natives.map(({ pool }, index) => ({
+    pool,
+    dues: cdTokenOwnerIndex[index].map((tokenId, tokenIdIndex) => ({
+      tokenId,
+      due: {
+        debt: cdTokenDues[index][tokenIdIndex].debt,
+        collateral: cdTokenDues[index][tokenIdIndex].collateral,
+      },
+    })),
+  }));
 }
 
 export function borrowPositionsUpdate(

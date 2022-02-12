@@ -22,17 +22,19 @@ type Chain
         , name : String
         , rpcUrl : String
         , blockExplorerUrl : String
+        , nftExplorerUrl : String
         }
 
 
 decoder : Decoder Chain
 decoder =
     Decode.succeed
-        (\chainId name rpcUrl blockExplorerUrl ->
+        (\chainId name rpcUrl blockExplorerUrl nftExplorerUrl ->
             { chainId = chainId
             , name = name
             , rpcUrl = rpcUrl
             , blockExplorerUrl = blockExplorerUrl
+            , nftExplorerUrl = nftExplorerUrl
             }
                 |> Chain
         )
@@ -40,14 +42,16 @@ decoder =
         |> Pipeline.required "name" Decode.string
         |> Pipeline.required "rpcUrl" Decode.string
         |> Pipeline.required "blockExplorerUrl" Decode.string
+        |> Pipeline.required "nftExplorerUrl" Decode.string
 
 
 encode : Chain -> Value
-encode (Chain { chainId, name, rpcUrl, blockExplorerUrl }) =
+encode (Chain { chainId, name, rpcUrl, blockExplorerUrl, nftExplorerUrl }) =
     [ ( "chainId", chainId |> Encode.int )
     , ( "name", name |> Encode.string )
     , ( "rpcUrl", rpcUrl |> Encode.string )
     , ( "blockExplorerUrl", blockExplorerUrl |> Encode.string )
+    , ( "nftExplorerUrl", nftExplorerUrl |> Encode.string )
     ]
         |> Encode.object
 

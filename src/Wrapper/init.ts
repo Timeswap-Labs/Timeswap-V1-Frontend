@@ -193,18 +193,6 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
           ]);
         }
       }
-
-      //   [{
-      //     chainId: '0x13881',
-      //     chainName: 'Polygon Testnet',
-      //     nativeCurrency: {
-      //         name: 'MATIC',
-      //         symbol: 'MATIC',
-      //         decimals: 18
-      //     },
-      //     rpcUrls: ['https://matic-mumbai.chainstacklabs.com'],
-      //     blockExplorerUrls: ['https://mumbai.polygonscan.com/']
-      // }]
     }
   });
 
@@ -325,6 +313,7 @@ function userInit(app: ElmApp<Ports>, gp: GlobalParams, userAddress: string) {
         name: wlChain.name,
         rpcUrl: wlChain.rpcUrl,
         blockExplorerUrl: wlChain.blockExplorerUrl,
+        nftExplorerUrl: wlChain.nftExplorerUrl,
       },
       address: userAddress,
       tokens: getTokenList(Number(gp.network)),

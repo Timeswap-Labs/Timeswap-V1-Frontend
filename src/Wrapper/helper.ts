@@ -1,18 +1,12 @@
 import { GlobalParams } from "./global";
 import {
-  ERC20Token,
-  NativeToken,
+  ERC20Token as SDKCoreERC20Token,
+  NativeToken as SDKCoreNativeToken,
   Pool,
   Uint256,
 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Contract } from "@ethersproject/contracts";
-import {
-  BorrowQuery,
-  LendQuery,
-  ERC20Token as ERC20,
-  NativeToken as Native,
-} from "./declaration";
 
 export function updateTransferEventBalance(
   contract: Contract,
@@ -50,13 +44,13 @@ export function getPool(query: LendQuery | BorrowQuery): Pool {
   let asset, collateral;
 
   if ((query.pool.asset as ERC20Token).address) {
-    asset = new ERC20Token(
+    asset = new SDKCoreERC20Token(
       query.chain.chainId,
       query.pool.asset.decimals,
       (query.pool.asset as ERC20Token).address
     );
   } else {
-    asset = new NativeToken(
+    asset = new SDKCoreNativeToken(
       query.chain.chainId,
       query.pool.asset.decimals,
       query.pool.asset.symbol
@@ -64,13 +58,13 @@ export function getPool(query: LendQuery | BorrowQuery): Pool {
   }
 
   if ((query.pool.collateral as ERC20Token).address) {
-    collateral = new ERC20Token(
+    collateral = new SDKCoreERC20Token(
       query.chain.chainId,
       query.pool.collateral.decimals,
       (query.pool.collateral as ERC20Token).address
     );
   } else {
-    collateral = new NativeToken(
+    collateral = new SDKCoreNativeToken(
       query.chain.chainId,
       query.pool.collateral.decimals,
       query.pool.collateral.symbol
@@ -88,31 +82,35 @@ export function getPool(query: LendQuery | BorrowQuery): Pool {
 
 export function getPoolSDK(
   gp: GlobalParams,
-  asset: ERC20 | Native,
-  collateral: ERC20 | Native,
+  asset: ERC20Token | NativeToken,
+  collateral: ERC20Token | NativeToken,
   maturity: number | string,
   chain: Chain
 ): SDKPool {
   let assetToken, collateralToken;
 
-  if ((asset as ERC20).address) {
-    assetToken = new ERC20Token(
+  if ((asset as ERC20Token).address) {
+    assetToken = new SDKCoreERC20Token(
       chain.chainId,
       asset.decimals,
-      (asset as ERC20).address
+      (asset as ERC20Token).address
     );
   } else {
-    assetToken = new NativeToken(chain.chainId, asset.decimals, asset.symbol);
+    assetToken = new SDKCoreNativeToken(
+      chain.chainId,
+      asset.decimals,
+      asset.symbol
+    );
   }
 
-  if ((collateral as ERC20).address) {
-    collateralToken = new ERC20Token(
+  if ((collateral as ERC20Token).address) {
+    collateralToken = new SDKCoreERC20Token(
       chain.chainId,
       collateral.decimals,
-      (collateral as ERC20).address
+      (collateral as ERC20Token).address
     );
   } else {
-    collateralToken = new NativeToken(
+    collateralToken = new SDKCoreNativeToken(
       chain.chainId,
       collateral.decimals,
       collateral.symbol

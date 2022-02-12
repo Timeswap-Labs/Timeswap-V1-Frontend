@@ -1,11 +1,12 @@
 import { getCustomTokens } from "./helper";
 
-export const whitelistChains = {
+export const whitelistChains: Whitelist = {
   default: {
     chainId: 80001,
     name: "Polygon Testnet",
     rpcUrl: "https://rpc-mumbai.matic.today",
     blockExplorerUrl: "https://mumbai.polygonscan.com",
+    nftExplorerUrl: "https://testnets.opensea.io/assets/mumbai",
     native: {
       name: "MATIC",
       symbol: "MATIC",
@@ -85,4 +86,20 @@ export function getTokenList(chainId: number): (NativeToken | ERC20Token)[] {
   }
 
   return tokenList;
+}
+
+interface Whitelist {
+  default: WhitelistChain;
+  others: WhitelistChain[];
+}
+
+interface WhitelistChain {
+  chainId: number;
+  name: string;
+  rpcUrl: string;
+  blockExplorerUrl: string;
+  nftExplorerUrl: string;
+  native: NativeToken;
+  whitelist: ERC20Token[];
+  custom: ERC20Token[];
 }
