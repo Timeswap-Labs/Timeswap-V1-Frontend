@@ -36,6 +36,7 @@ import Element
         , padding
         , paddingEach
         , paddingXY
+        , pointer
         , px
         , row
         , shrink
@@ -48,6 +49,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Html.Attributes
+import Html.Events
 import Http
 import Json.Decode as Decode exposing (Decoder)
 import Json.Encode exposing (Value)
@@ -380,34 +382,18 @@ subscriptions modal =
     Sub.batch
         [ Time.every 10000 ReceiveTime
         , swapSignatureMsg SwapSignatureMsg
-
-        --, onClickOutsideDropdown modal
+        , onClick modal
         ]
 
 
-onClickOutsideDropdown : Modal -> Sub Msg
-onClickOutsideDropdown (Modal { dropdown }) =
+onClick : Modal -> Sub Msg
+onClick (Modal { dropdown }) =
     case dropdown of
         Just _ ->
-            Browser.Events.onClick
-                --(Decode.at [ "target", "id" ] decoderOutsideDropdown)
-                (Decode.succeed CloseDropdown)
+            Browser.Events.onClick (Decode.succeed CloseDropdown)
 
         Nothing ->
             Sub.none
-
-
-decoderOutsideDropdown : Decoder Msg
-decoderOutsideDropdown =
-    Decode.string
-        |> Decode.andThen
-            (\string ->
-                if string /= "swap-dropdown" then
-                    Decode.succeed CloseDropdown
-
-                else
-                    Decode.fail "Its the dropdown"
-            )
 
 
 fetchPrice :
@@ -654,8 +640,6 @@ inTokenDropdown { images, theme } options =
     column
         [ width fill
         , height shrink
-        , padding 0
-        , spacing 0
         , moveDown 4
         , Font.regular
         , Font.size 14
@@ -681,35 +665,40 @@ inTokenDropdown { images, theme } options =
 
 inTokenOptions : Images -> Token -> Element Msg
 inTokenOptions images gameToken =
-    Input.button
+    el
         [ width fill
         , height <| px 36
         , paddingEach { top = 6, right = 6, bottom = 6, left = 8 }
         , mouseDown [ Background.color Color.primary400 ]
         , mouseOver [ Background.color Color.primary300 ]
-        , Html.Attributes.id "swap-dropdown"
-            |> htmlAttribute
+        , Html.Events.custom "click" (inDecoderMsg gameToken) |> htmlAttribute
+        , pointer
         ]
-        { onPress =
-            SelectInToken gameToken
-                |> Just
-        , label =
-            row
-                [ width shrink
-                , height shrink
-                , alignLeft
-                , centerY
-                , spacing 8
-                ]
-                [ images
-                    |> Image.viewToken [ width (px 18), height (px 18) ] gameToken
-                , el [ Font.size 16 ]
-                    (gameToken
-                        |> Token.toName
-                        |> text
-                    )
-                ]
-        }
+        (row
+            [ width shrink
+            , height shrink
+            , alignLeft
+            , centerY
+            , spacing 8
+            ]
+            [ images
+                |> Image.viewToken [ width (px 18), height (px 18) ] gameToken
+            , el [ Font.size 16 ]
+                (gameToken
+                    |> Token.toName
+                    |> text
+                )
+            ]
+        )
+
+
+inDecoderMsg : Token -> Decoder { message : Msg, stopPropagation : Bool, preventDefault : Bool }
+inDecoderMsg gameToken =
+    { message = SelectInToken gameToken
+    , stopPropagation = True
+    , preventDefault = False
+    }
+        |> Decode.succeed
 
 
 inputAmount : String -> Theme -> Element Msg
@@ -917,33 +906,40 @@ outTokenDropdown { images, theme } options =
 
 outTokenOptions : Images -> Token -> Element Msg
 outTokenOptions images outToken =
-    Input.button
+    el
         [ width fill
         , height <| px 36
         , paddingEach { top = 6, right = 6, bottom = 6, left = 8 }
         , mouseDown [ Background.color Color.primary400 ]
         , mouseOver [ Background.color Color.primary300 ]
+        , Html.Events.custom "click" (outDecoderMsg outToken) |> htmlAttribute
+        , pointer
         ]
-        { onPress =
-            SelectOutToken outToken
-                |> Just
-        , label =
-            row
-                [ width shrink
-                , height shrink
-                , alignLeft
-                , centerY
-                , spacing 8
-                ]
-                [ images
-                    |> Image.viewToken [ width (px 18), height (px 18) ] outToken
-                , el [ Font.size 16 ]
-                    (outToken
-                        |> Token.toName
-                        |> text
-                    )
-                ]
-        }
+        (row
+            [ width shrink
+            , height shrink
+            , alignLeft
+            , centerY
+            , spacing 8
+            ]
+            [ images
+                |> Image.viewToken [ width (px 18), height (px 18) ] outToken
+            , el [ Font.size 16 ]
+                (outToken
+                    |> Token.toName
+                    |> text
+                )
+            ]
+        )
+
+
+outDecoderMsg : Token -> Decoder { message : Msg, stopPropagation : Bool, preventDefault : Bool }
+outDecoderMsg gameToken =
+    { message = SelectOutToken gameToken
+    , stopPropagation = True
+    , preventDefault = False
+    }
+        |> Decode.succeed
 
 
 outputAmount :
