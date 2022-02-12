@@ -154,25 +154,11 @@ update :
     -> ( Maybe Modal, Cmd Msg )
 update { time, user } msg (Modal modal) =
     case msg of
-        OpenDropdown dropdown ->
-            ( { modal | dropdown = Just dropdown }
-                |> Modal
-                |> Just
-            , Cmd.none
-            )
-
-        CloseDropdown ->
-            ( { modal | dropdown = Nothing }
-                |> Modal
-                |> Just
-            , Cmd.none
-            )
-
         SelectInToken selectedToken ->
             case ( modal.inToken, modal.outToken ) of
                 ( Just inToken, Just outToken ) ->
                     if selectedToken == inToken then
-                        ( modal |> Modal |> Just, Cmd.none )
+                        ( { modal | dropdown = Nothing } |> Modal |> Just, Cmd.none )
 
                     else
                         { modal
@@ -185,7 +171,9 @@ update { time, user } msg (Modal modal) =
                             , inToken = selectedToken |> Just
                             , cache = Remote.loading
                             , notification = Nothing
+                            , dropdown = Nothing
                         }
+                            |> Debug.log "select token"
                             |> (\updatedService ->
                                     ( updatedService |> Modal |> Just
                                     , fetchPrice updatedService
@@ -199,7 +187,7 @@ update { time, user } msg (Modal modal) =
             case ( modal.inToken, modal.outToken ) of
                 ( Just inToken, Just outToken ) ->
                     if selectedToken == outToken then
-                        ( modal |> Modal |> Just, Cmd.none )
+                        ( { modal | dropdown = Nothing } |> Modal |> Just, Cmd.none )
 
                     else
                         { modal
@@ -212,6 +200,7 @@ update { time, user } msg (Modal modal) =
                             , outToken = selectedToken |> Just
                             , cache = Remote.loading
                             , notification = Nothing
+                            , dropdown = Nothing
                         }
                             |> (\updatedService ->
                                     ( updatedService |> Modal |> Just
@@ -221,6 +210,21 @@ update { time, user } msg (Modal modal) =
 
                 _ ->
                     ( modal |> Modal |> Just, Cmd.none )
+
+        OpenDropdown dropdown ->
+            ( { modal | dropdown = Just dropdown }
+                |> Modal
+                |> Just
+            , Cmd.none
+            )
+
+        CloseDropdown ->
+            ( { modal | dropdown = Nothing }
+                |> Debug.log "close dropdown"
+                |> Modal
+                |> Just
+            , Cmd.none
+            )
 
         ReceiveTime currentTime ->
             ( modal |> Modal |> Just
@@ -376,7 +380,8 @@ subscriptions modal =
     Sub.batch
         [ Time.every 10000 ReceiveTime
         , swapSignatureMsg SwapSignatureMsg
-        , onClickOutsideDropdown modal
+
+        --, onClickOutsideDropdown modal
         ]
 
 
@@ -385,7 +390,8 @@ onClickOutsideDropdown (Modal { dropdown }) =
     case dropdown of
         Just _ ->
             Browser.Events.onClick
-                (Decode.at [ "target", "id" ] decoderOutsideDropdown)
+                --(Decode.at [ "target", "id" ] decoderOutsideDropdown)
+                (Decode.succeed CloseDropdown)
 
         Nothing ->
             Sub.none
@@ -565,14 +571,9 @@ inTokenDropdownButton :
     -> List Token
     -> Element Msg
 inTokenDropdownButton ({ images, theme } as model) inToken dropdown options =
-    Input.button
+    el
         [ width <| px 150
         , height <| px 44
-        , padding 12
-        , theme |> ThemeColor.border |> Border.color
-        , Border.rounded 4
-        , Border.width 1
-        , theme |> ThemeColor.btnBackground |> Background.color
         , (if dropdown == Just InToken then
             inTokenDropdown model options
 
@@ -580,60 +581,72 @@ inTokenDropdownButton ({ images, theme } as model) inToken dropdown options =
             none
           )
             |> below
-        , el
+        , Input.button
             [ width fill
             , height fill
-            , Html.Attributes.id "swap-dropdown"
-                |> htmlAttribute
+            , padding 12
+            , theme |> ThemeColor.border |> Border.color
+            , Border.rounded 4
+            , Border.width 1
+            , theme |> ThemeColor.btnBackground |> Background.color
+
+            -- , el
+            --     [ width fill
+            --     , height fill
+            --     , Html.Attributes.id "swap-dropdown"
+            --         |> htmlAttribute
+            --     ]
+            --     none
+            --     |> inFront
             ]
-            none
-            |> inFront
-        ]
-        { onPress =
-            (case dropdown of
-                Just InToken ->
-                    CloseDropdown
-
-                _ ->
-                    OpenDropdown InToken
-            )
-                |> Just
-        , label =
-            row
-                [ width fill
-                , height shrink
-                , alignLeft
-                , centerY
-                , spacing 8
-                , theme |> ThemeColor.text |> Font.color
-                ]
-                (case inToken of
-                    Just token ->
-                        [ images
-                            |> Image.viewToken
-                                [ width (px 20)
-                                , height (px 20)
-                                ]
-                                token
-                        , el [ Font.size 18 ] (token |> Token.toSymbol |> text)
-                        , images
-                            |> (case theme of
-                                    Theme.Dark ->
-                                        Image.discloser
-
-                                    Theme.Light ->
-                                        Image.arrowDownDark
-                               )
-                                [ width <| px 12
-                                , centerY
-                                , alignRight
-                                ]
-                        ]
+            { onPress =
+                (case dropdown of
+                    Just InToken ->
+                        CloseDropdown
 
                     _ ->
-                        [ el [ Font.size 14 ] ("Select token" |> text) ]
+                        OpenDropdown InToken
                 )
-        }
+                    |> Just
+            , label =
+                row
+                    [ width fill
+                    , height shrink
+                    , alignLeft
+                    , centerY
+                    , spacing 8
+                    , theme |> ThemeColor.text |> Font.color
+                    ]
+                    (case inToken of
+                        Just token ->
+                            [ images
+                                |> Image.viewToken
+                                    [ width (px 20)
+                                    , height (px 20)
+                                    ]
+                                    token
+                            , el [ Font.size 18 ] (token |> Token.toSymbol |> text)
+                            , images
+                                |> (case theme of
+                                        Theme.Dark ->
+                                            Image.discloser
+
+                                        Theme.Light ->
+                                            Image.arrowDownDark
+                                   )
+                                    [ width <| px 12
+                                    , centerY
+                                    , alignRight
+                                    ]
+                            ]
+
+                        _ ->
+                            [ el [ Font.size 14 ] ("Select token" |> text) ]
+                    )
+            }
+            |> inFront
+        ]
+        none
 
 
 inTokenDropdown : { model | images : Images, theme : Theme } -> List Token -> Element Msg
@@ -674,6 +687,8 @@ inTokenOptions images gameToken =
         , paddingEach { top = 6, right = 6, bottom = 6, left = 8 }
         , mouseDown [ Background.color Color.primary400 ]
         , mouseOver [ Background.color Color.primary300 ]
+        , Html.Attributes.id "swap-dropdown"
+            |> htmlAttribute
         ]
         { onPress =
             SelectInToken gameToken
