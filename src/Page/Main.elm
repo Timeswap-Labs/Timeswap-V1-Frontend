@@ -803,7 +803,7 @@ view model blockchain page =
             BorrowPage borrowPage ->
                 Just
                     (\position user ->
-                        Due.view model user position
+                        Due.view model (blockchain |> Blockchain.toChain) user position
                             |> map DueMsg
                             |> List.singleton
                     )

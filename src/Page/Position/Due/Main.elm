@@ -10,7 +10,9 @@ module Page.Position.Due.Main exposing
 import Blockchain.User.Due as Due
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.TokenId as TokenId exposing (TokenId)
+import Data.Address as Address
 import Data.Backdrop exposing (Backdrop)
+import Data.Chain as Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.Images exposing (Images)
@@ -32,6 +34,7 @@ import Element
         , el
         , fill
         , height
+        , newTabLink
         , none
         , padding
         , paddingXY
@@ -51,6 +54,7 @@ import Page.Position.Due.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Dict as Dict
 import Sort.Set as Set exposing (Set)
 import Time exposing (Posix)
+import Url.Builder as Builder
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
@@ -192,10 +196,11 @@ view :
         , theme : Theme
         , images : Images
     }
+    -> Chain
     -> User
     -> Position
     -> Element Msg
-view ({ device, backdrop, theme } as model) user (Position position) =
+view ({ device, backdrop, theme } as model) chain user (Position position) =
     column
         [ width shrink
         , height shrink
@@ -230,7 +235,7 @@ view ({ device, backdrop, theme } as model) user (Position position) =
                 ++ Glass.background backdrop theme
             )
             [ header model position
-            , viewDue model user position
+            , viewDue model chain user position
             ]
         ]
 
@@ -441,7 +446,8 @@ repayDisabled theme =
 
 
 viewDue :
-    { model | images : Images, theme : Theme }
+    { model | images : Images, theme : Theme, time : Posix }
+    -> Chain
     -> User
     ->
         { pool : Pool
@@ -449,7 +455,7 @@ viewDue :
         , tooltip : Maybe Tooltip
         }
     -> Element Msg
-viewDue { images, theme } user { pool, checks, tooltip } =
+viewDue { images, theme, time } chain user { pool, checks, tooltip } =
     column
         [ width fill
         , spacing 12
@@ -472,17 +478,21 @@ viewDue { images, theme } user { pool, checks, tooltip } =
                                     , paddingXY 24 16
                                     , spacing 48
                                     ]
-                                    [ Input.checkbox
-                                        [ width <| px 24
-                                        , height <| px 24
-                                        , Border.rounded 4
-                                        ]
-                                        { onChange = Check tokenId
-                                        , icon = Input.defaultCheckbox
-                                        , checked = tokenId |> Set.memberOf checks
-                                        , label =
-                                            Input.labelHidden "Due checkbox"
-                                        }
+                                    [ if pool.maturity |> Maturity.isActive time then
+                                        Input.checkbox
+                                            [ width <| px 24
+                                            , height <| px 24
+                                            , Border.rounded 4
+                                            ]
+                                            { onChange = Check tokenId
+                                            , icon = Input.defaultCheckbox
+                                            , checked = tokenId |> Set.memberOf checks
+                                            , label =
+                                                Input.labelHidden "Due checkbox"
+                                            }
+
+                                      else
+                                        none
                                     , column
                                         [ width shrink
                                         , height shrink
@@ -594,6 +604,26 @@ viewDue { images, theme } user { pool, checks, tooltip } =
                                                 }
                                             ]
                                         ]
+                                    , case user |> User.getPoolNatives pool of
+                                        Success (Just natives) ->
+                                            newTabLink
+                                                [ alignRight ]
+                                                { url =
+                                                    Builder.crossOrigin (chain |> Chain.toNftExplorerUrl)
+                                                        [ natives.collateralizedDebt |> Address.toString
+                                                        , tokenId |> Uint.toString
+                                                        ]
+                                                        []
+                                                , label =
+                                                    images
+                                                        |> Image.openSea
+                                                            [ width <| px 26
+                                                            , height <| px 26
+                                                            ]
+                                                }
+
+                                        _ ->
+                                            none
                                     ]
                             )
                 )

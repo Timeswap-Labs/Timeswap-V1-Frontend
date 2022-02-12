@@ -1,4 +1,4 @@
-module Blockchain.User.Natives exposing (Answer, Natives, decoder, encode, toUrlString)
+module Blockchain.User.Natives exposing (Answer, Natives, decoder, decoderNatives, encode, toUrlString)
 
 import Data.Address as Address exposing (Address)
 import Data.Chain as Chain exposing (Chain)

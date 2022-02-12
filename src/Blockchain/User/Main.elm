@@ -9,6 +9,7 @@ port module Blockchain.User.Main exposing
     , getClaims
     , getDues
     , getLiqs
+    , getPoolNatives
     , hasEnoughAllowance
     , hasEnoughBalance
     , init
@@ -42,9 +43,9 @@ import Blockchain.User.Allowances as Allowances exposing (Allowances)
 import Blockchain.User.Balances as Balances exposing (Balances)
 import Blockchain.User.Cache as Cache
 import Blockchain.User.Claims exposing (Claims)
-import Blockchain.User.Dues as Dues exposing (Dues)
+import Blockchain.User.Dues exposing (Dues)
 import Blockchain.User.Liqs exposing (Liqs)
-import Blockchain.User.Natives as Natives
+import Blockchain.User.Natives as Natives exposing (Natives)
 import Blockchain.User.Positions as Positions exposing (Positions)
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
 import Blockchain.User.Txns.Receipt as Receipt
@@ -66,6 +67,7 @@ import Data.Deadline exposing (Deadline)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.ERC20s exposing (ERC20s)
 import Data.Hash exposing (Hash)
+import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Token as Token exposing (Token)
 import Data.Uint exposing (Uint)
@@ -76,7 +78,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode exposing (Value)
 import Process
-import Sort.Dict as Dict
+import Sort.Dict as Dict exposing (Dict)
 import Sort.Set as Set
 import Task
 import Time exposing (Posix)
@@ -91,6 +93,7 @@ type User
         , allowances : Allowances
         , positions : Web Positions
         , txns : Txns
+        , natives : Web (Dict Pool Natives)
         }
 
 
@@ -143,6 +146,7 @@ init chains chain flag =
               , allowances = Allowances.init chains chain
               , positions = Remote.loading
               , txns = flag.txns |> Txns.init
+              , natives = Remote.loading
               }
                 |> User
             , getNatives chain
@@ -369,7 +373,7 @@ update { chains } chain msg (User user) =
                 |> noCmdAndEffect
 
         ReceiveNatives decodedChain (Ok natives) ->
-            ( user |> User
+            ( { user | natives = Remote.Success natives } |> User
             , if decodedChain == chain then
                 [ natives
                     |> Natives.encode chain user.address
@@ -386,7 +390,7 @@ update { chains } chain msg (User user) =
 
         ReceiveNatives decodedChain (Err error) ->
             if decodedChain == chain then
-                ( { user | positions = Failure error }
+                ( { user | natives = Failure error }
                     |> User
                 , Process.sleep 5000
                     |> Task.perform QueryNatives
@@ -806,6 +810,7 @@ noCmdAndEffect :
     , allowances : Allowances
     , positions : Web Positions
     , txns : Txns
+    , natives : Web (Dict Pool Natives)
     }
     -> ( User, Cmd Msg, Maybe Effect )
 noCmdAndEffect user =
@@ -829,6 +834,7 @@ decoder { chains } chain =
             , allowances = Allowances.init chains chain
             , positions = Remote.loading
             , txns = txns
+            , natives = Remote.loading
             }
                 |> User
         )
@@ -1028,3 +1034,9 @@ getLiqs : User -> Web Liqs
 getLiqs (User { positions }) =
     positions
         |> Remote.map .liqs
+
+
+getPoolNatives : Pool -> User -> Web (Maybe Natives)
+getPoolNatives pool (User { natives }) =
+    natives
+        |> Remote.map (Dict.get pool)

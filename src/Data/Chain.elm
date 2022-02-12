@@ -5,6 +5,7 @@ module Data.Chain exposing
     , sorter
     , toBlockExplorerUrl
     , toChainId
+    , toNftExplorerUrl
     , toQueryParameter
     , toString
     )
@@ -75,6 +76,11 @@ toString (Chain { name }) =
 toBlockExplorerUrl : Chain -> String
 toBlockExplorerUrl (Chain { blockExplorerUrl }) =
     blockExplorerUrl
+
+
+toNftExplorerUrl : Chain -> String
+toNftExplorerUrl (Chain { nftExplorerUrl }) =
+    nftExplorerUrl
 
 
 toQueryParameter : Chain -> QueryParameter
