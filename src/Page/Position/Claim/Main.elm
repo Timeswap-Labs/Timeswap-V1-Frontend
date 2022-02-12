@@ -1100,13 +1100,13 @@ viewCollateralReturn { images, theme } { pool, tooltip } remote =
                         , height <| px 24
                         , centerY
                         ]
-                        (pool.pair |> Pair.toAsset)
+                        (pool.pair |> Pair.toCollateral)
                 , Truncate.viewSymbol
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
                     , tooltip = Tooltip.Symbol TokenParam.Asset
                     , opened = tooltip
-                    , token = pool.pair |> Pair.toAsset
+                    , token = pool.pair |> Pair.toCollateral
                     , theme = theme
                     , customStyles = []
                     }

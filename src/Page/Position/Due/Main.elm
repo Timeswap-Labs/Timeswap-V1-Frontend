@@ -105,7 +105,7 @@ update user msg (Position position) =
             )
 
         ClickProceed ->
-            ( position
+            ( { position | checks = Set.empty TokenId.sorter }
                 |> Position
                 |> Just
             , position
