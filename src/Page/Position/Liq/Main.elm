@@ -761,7 +761,7 @@ viewLiq { images, theme } user { pool, return, tooltip } =
                                     , height shrink
                                     , centerY
                                     ]
-                                    (Loading.view timeline)
+                                    (Loading.view timeline theme)
                                 )
                             ]
                         ]
@@ -799,6 +799,6 @@ viewLiq { images, theme } user { pool, return, tooltip } =
                     , height shrink
                     , centerY
                     ]
-                    (Loading.view timeline)
+                    (Loading.view timeline theme)
                     |> List.singleton
         )

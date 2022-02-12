@@ -1333,7 +1333,7 @@ assetInSection model blockchain asset { state, tooltip } =
                                 , height shrink
                                 , centerY
                                 ]
-                                (Loading.view timeline)
+                                (Loading.view timeline model.theme)
                         )
                     |> Maybe.withDefault none
                 ]
@@ -1515,7 +1515,7 @@ debtInSection model asset { tooltip } or =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline model.theme)
 
                 _ ->
                     none
@@ -1582,7 +1582,7 @@ collateralInSection model blockchain collateral { tooltip } or =
                             , height shrink
                             , centerY
                             ]
-                            (Loading.view timeline)
+                            (Loading.view timeline model.theme)
 
                     _ ->
                         none
@@ -1688,7 +1688,7 @@ liqOutSection model pool { state } =
                             , height shrink
                             , centerY
                             ]
-                            (Loading.view timeline)
+                            (Loading.view timeline model.theme)
                     )
                 |> Maybe.withDefault none
             ]

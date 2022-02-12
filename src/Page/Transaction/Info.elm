@@ -63,7 +63,7 @@ lendAPR remote theme =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline theme)
                     )
 
             Failure _ ->
@@ -117,7 +117,7 @@ borrowAPR remote theme =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline theme)
                     )
 
             Failure _ ->
@@ -222,7 +222,7 @@ lendCDP { priceFeed, theme } param =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline theme)
                     )
 
             Failure _ ->
@@ -366,7 +366,7 @@ borrowCDP { priceFeed, theme } param =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline theme)
                     )
 
             Failure _ ->

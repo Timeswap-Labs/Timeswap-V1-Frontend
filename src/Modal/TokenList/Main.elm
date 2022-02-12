@@ -608,7 +608,7 @@ tokenList ({ chains } as model) blockchain ((Modal { state }) as modal) =
                         [ customToken model blockchain modal (Token.ERC20 erc20Value) ]
 
                     Just (Loading timeline) ->
-                        [ el [ width fill, centerX, padding 10 ] (Loading.view timeline) ]
+                        [ el [ width fill, centerX, padding 10 ] (Loading.view timeline model.theme) ]
 
                     _ ->
                         input
@@ -894,7 +894,7 @@ tokenBalance user token (Modal { tooltip }) theme =
                 , alignRight
                 , centerY
                 ]
-                (Loading.view timeline)
+                (Loading.view timeline theme)
 
         Just (Failure error) ->
             el

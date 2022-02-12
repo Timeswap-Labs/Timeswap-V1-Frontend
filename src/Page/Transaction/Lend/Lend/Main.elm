@@ -1876,7 +1876,7 @@ bondOutSection model asset { tooltip } output =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline model.theme)
 
                 _ ->
                     none
@@ -1925,7 +1925,7 @@ insuranceOutSection model collateral { tooltip } output =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline model.theme)
 
                 _ ->
                     none
@@ -1974,7 +1974,7 @@ advancedBondOutSection model asset { tooltip } or =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline model.theme)
 
                 _ ->
                     none
@@ -2034,7 +2034,7 @@ advancedInsuranceOutSection model collateral { tooltip } or =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline model.theme)
 
                 _ ->
                     none

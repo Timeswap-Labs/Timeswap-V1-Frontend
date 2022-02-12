@@ -160,17 +160,17 @@ containsString token input =
 
 toApiTokenId : Token -> String
 toApiTokenId token =
-    if (token |> toSymbol) == "MATIC" then
-        "matic-network"
+    if (token |> toSymbol) == "TS-MATIC" then
+        "ts-matic"
 
-    else if (token |> toSymbol) == "AVAX" then
-        "avalanche"
+    else if (token |> toSymbol) == "TS-AVAX" then
+        "ts-avax"
 
-    else if (token |> toSymbol) == "DAI" then
-        "dai"
+    else if (token |> toSymbol) == "TS-USDC" then
+        "ts-usdc"
 
-    else if (token |> toSymbol) == "ETH" then
-        "ethereum"
+    else if (token |> toSymbol) == "TS-ETH" then
+        "ts-eth"
 
     else
         ""

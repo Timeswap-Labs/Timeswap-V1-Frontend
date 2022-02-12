@@ -2394,7 +2394,7 @@ assetOutSection model asset poolInfo { state, tooltip } =
                             , height shrink
                             , centerY
                             ]
-                            (Loading.view timeline)
+                            (Loading.view timeline model.theme)
                     )
                 |> Maybe.withDefault none
             ]
@@ -2750,7 +2750,7 @@ debtInSection model asset { tooltip } output =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline model.theme)
 
                 _ ->
                     none
@@ -2806,7 +2806,7 @@ collateralInSection model blockchain collateral { tooltip } or =
                             , height shrink
                             , centerY
                             ]
-                            (Loading.view timeline)
+                            (Loading.view timeline model.theme)
 
                     _ ->
                         none
@@ -2886,7 +2886,7 @@ advancedDebtInSection model asset { tooltip } or =
                         , height shrink
                         , centerY
                         ]
-                        (Loading.view timeline)
+                        (Loading.view timeline model.theme)
 
                 _ ->
                     none
@@ -2953,7 +2953,7 @@ advancedCollateralInSection model blockchain collateral { tooltip } or =
                             , height shrink
                             , centerY
                             ]
-                            (Loading.view timeline)
+                            (Loading.view timeline model.theme)
 
                     _ ->
                         none
