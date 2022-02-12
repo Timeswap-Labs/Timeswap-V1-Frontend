@@ -115,8 +115,7 @@ export function borrowPositionsUpdate(
     }));
 
     app.ports.receivePositions.send({
-      chain: positionsOf.chain,
-      owner: positionsOf.owner,
+      ...positionsOf,
       positions: {
         claims: [],
         dues: [

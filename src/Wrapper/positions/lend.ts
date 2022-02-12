@@ -125,8 +125,7 @@ export function lendPositionsUpdate(
     };
 
     app.ports.receivePositions.send({
-      chain: positionsOf.chain,
-      owner: positionsOf.owner,
+      ...positionsOf,
       positions: {
         claims: [{ pool, claim }],
         dues: [],

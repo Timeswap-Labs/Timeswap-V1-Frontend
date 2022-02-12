@@ -130,6 +130,17 @@ interface PositionsOf {
 interface ReceivePositions {
   chain: number;
   owner: string;
+  natives: {
+    pool: Pool;
+    natives: {
+      bondPrincipal: string;
+      bondInterest: string;
+      insurancePrincipal: string;
+      insuranceInterest: string;
+      liquidity: string;
+      collateralizedDebt: string;
+    };
+  }[];
   positions: {
     claims: Claims;
     dues: Dues;
