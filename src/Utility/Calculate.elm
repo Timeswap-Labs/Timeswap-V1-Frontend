@@ -3,6 +3,7 @@ module Utility.Calculate exposing (apr, cdp)
 import Data.CDP exposing (CDP)
 import Data.Pair exposing (Pair)
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Color
@@ -42,6 +43,7 @@ cdp :
     , opened : Maybe tooltip
     , pair : Pair
     , cdp : CDP
+    , theme : Theme
     }
     -> PriceFeed
     -> Color
@@ -94,6 +96,7 @@ cdp params spot color fontSize =
                     , opened = params.opened
                     , pair = params.pair
                     , cdp = params.cdp.ratio
+                    , theme = params.theme
                     , styles =
                         [ Font.size 14
                         , centerX

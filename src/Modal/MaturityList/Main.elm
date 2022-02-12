@@ -747,6 +747,7 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
                                                     , opened = tooltip
                                                     , pair = pair
                                                     , cdp = summary.cdp
+                                                    , theme = theme
                                                     }
                                                     priceFeed
                                                     (theme |> ThemeColor.text)

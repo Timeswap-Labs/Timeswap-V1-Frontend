@@ -37,7 +37,7 @@ export function getCustomTokens(chainId: string): ERC20Token[] {
   if (storeData) {
     try {
       const parsedData: { [key: string]: ERC20Token[] } = JSON.parse(storeData);
-      customTokens = parsedData[chainId];
+      customTokens = parsedData[chainId] || [];
     } catch (error) {
       return [];
     }

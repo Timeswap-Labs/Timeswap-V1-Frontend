@@ -49,6 +49,7 @@ module Utility.Image exposing
     , settingsSecondary
     , sun
     , swap
+    , swapDark
     , telegram
     , tripleDots
     , twitter
@@ -397,6 +398,11 @@ tripleDots =
 swap : List (Attribute msg) -> Images -> Element msg
 swap =
     view "Swap"
+
+
+swapDark : List (Attribute msg) -> Images -> Element msg
+swapDark =
+    view "SwapDark"
 
 
 gitbook : List (Attribute msg) -> Images -> Element msg

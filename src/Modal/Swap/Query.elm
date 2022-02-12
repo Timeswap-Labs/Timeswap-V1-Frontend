@@ -24,8 +24,8 @@ type alias Return =
 encode : PriceQuery -> Value
 encode { token1, token2 } =
     Encode.object
-        [ ( "incomingTokenId", token1 |> Token.encode )
-        , ( "outgoingTokenId", token2 |> Token.encode )
+        [ ( "incomingTokenId", token1 |> Token.toApiTokenId |> Encode.string )
+        , ( "outgoingTokenId", token2 |> Token.toApiTokenId |> Encode.string )
         ]
 
 

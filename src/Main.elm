@@ -1744,7 +1744,13 @@ swapButton { device, images, theme, blockchain } =
                                     ]
                                     (if Device.isPhoneOrTablet device then
                                         [ images
-                                            |> Image.swap
+                                            |> (case theme of
+                                                    Theme.Dark ->
+                                                        Image.swap
+
+                                                    Theme.Light ->
+                                                        Image.swapDark
+                                               )
                                                 [ width <| px 19
                                                 , centerX
                                                 , centerY
@@ -1753,7 +1759,13 @@ swapButton { device, images, theme, blockchain } =
 
                                      else
                                         [ images
-                                            |> Image.swap
+                                            |> (case theme of
+                                                    Theme.Dark ->
+                                                        Image.swap
+
+                                                    Theme.Light ->
+                                                        Image.swapDark
+                                               )
                                                 [ width <| px 19
                                                 , centerX
                                                 , centerY

@@ -175,7 +175,6 @@ update { time, user } msg (Modal modal) =
                             , notification = Nothing
                             , dropdown = Nothing
                         }
-                            |> Debug.log "select token"
                             |> (\updatedService ->
                                     ( updatedService |> Modal |> Just
                                     , fetchPrice updatedService
@@ -222,7 +221,6 @@ update { time, user } msg (Modal modal) =
 
         CloseDropdown ->
             ( { modal | dropdown = Nothing }
-                |> Debug.log "close dropdown"
                 |> Modal
                 |> Just
             , Cmd.none

@@ -1,5 +1,6 @@
 module Utility.Tooltip exposing (belowAlignLeft, belowAlignRight)
 
+import Data.Theme exposing (Theme)
 import Element
     exposing
         ( Attribute
@@ -24,12 +25,14 @@ import Html.Attributes
 import Svg
 import Svg.Attributes
 import Utility.Color as Color
+import Utility.ThemeColor as ThemeColor
 
 
 belowAlignLeft :
-    Element msg
+    Theme
     -> Element msg
-belowAlignLeft element =
+    -> Element msg
+belowAlignLeft theme element =
     column
         [ width fill
         , height shrink

@@ -82,7 +82,7 @@ viewMaturity param =
                        )
                     |> text
                 )
-                |> Tooltip.belowAlignLeft
+                |> Tooltip.belowAlignLeft param.theme
 
            else
             none

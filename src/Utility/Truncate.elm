@@ -71,7 +71,7 @@ viewPairSymbol param =
                     , left = 0
                     }
                 , Border.dashed
-                , Border.color Color.transparent200
+                , param.theme |> ThemeColor.placeholder |> Border.color
                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
@@ -81,7 +81,7 @@ viewPairSymbol param =
                         , Font.color Color.transparent300
                         ]
                         (text full)
-                        |> Tooltip.belowAlignLeft
+                        |> Tooltip.belowAlignLeft param.theme
 
                    else
                     none
@@ -109,7 +109,7 @@ viewPairSymbol param =
                     , left = 0
                     }
                 , Border.dashed
-                , Border.color Color.transparent200
+                , param.theme |> ThemeColor.placeholder |> Border.color
                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
@@ -162,17 +162,17 @@ viewSymbol param =
                     , left = 0
                     }
                  , Border.dashed
-                 , Border.color Color.transparent200
+                 , param.theme |> ThemeColor.placeholder |> Border.color
                  , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                  , Events.onMouseLeave param.onMouseLeave
                  , (if opened == param.tooltip then
                         el
                             [ Font.size 14
-                            , param.theme |> ThemeColor.textLight |> Font.color
+                            , Font.color Color.transparent300
                             ]
                             (text full)
-                            |> Tooltip.belowAlignLeft
+                            |> Tooltip.belowAlignLeft param.theme
 
                     else
                         none
@@ -202,7 +202,7 @@ viewSymbol param =
                     , left = 0
                     }
                  , Border.dashed
-                 , Border.color Color.transparent200
+                 , param.theme |> ThemeColor.placeholder |> Border.color
                  , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                  , Events.onMouseLeave param.onMouseLeave
@@ -258,17 +258,17 @@ viewName param =
                     , left = 0
                     }
                 , Border.dashed
-                , Border.color Color.transparent200
+                , param.theme |> ThemeColor.placeholder |> Border.color
                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 12
-                        , param.theme |> ThemeColor.textLight |> Font.color
+                        , Font.color Color.transparent300
                         ]
                         (text full)
-                        |> Tooltip.belowAlignLeft
+                        |> Tooltip.belowAlignLeft param.theme
 
                    else
                     none
@@ -296,7 +296,7 @@ viewName param =
                     , left = 0
                     }
                 , Border.dashed
-                , Border.color Color.transparent200
+                , param.theme |> ThemeColor.placeholder |> Border.color
                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
@@ -349,17 +349,17 @@ viewCDPSymbol param =
                     , left = 0
                     }
                 , Border.dashed
-                , Border.color Color.transparent200
+                , param.theme |> ThemeColor.placeholder |> Border.color
                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 14
-                        , param.theme |> ThemeColor.textLight |> Font.color
+                        , Font.color Color.transparent300
                         ]
                         (text full)
-                        |> Tooltip.belowAlignLeft
+                        |> Tooltip.belowAlignLeft param.theme
 
                    else
                     none
@@ -388,7 +388,7 @@ viewCDPSymbol param =
                     , left = 0
                     }
                 , Border.dashed
-                , Border.color Color.transparent200
+                , param.theme |> ThemeColor.placeholder |> Border.color
                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
@@ -416,6 +416,7 @@ viewCDP :
     , opened : Maybe tooltip
     , pair : Pair
     , cdp : Uint
+    , theme : Theme
     , styles : List (Attribute msg)
     }
     -> Element msg
@@ -444,7 +445,7 @@ viewCDP param =
                     , left = 0
                     }
                  , Border.dashed
-                 , Border.color Color.transparent200
+                 , param.theme |> ThemeColor.placeholder |> Border.color
                  , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                  , Events.onMouseLeave param.onMouseLeave
@@ -490,7 +491,7 @@ viewCDP param =
                     , left = 0
                     }
                  , Border.dashed
-                 , Border.color Color.transparent200
+                 , param.theme |> ThemeColor.placeholder |> Border.color
                  , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                  , Events.onMouseLeave param.onMouseLeave
@@ -548,7 +549,7 @@ viewAmount param =
                     , left = 0
                     }
                  , Border.dashed
-                 , Border.color Color.transparent200
+                 , param.theme |> ThemeColor.placeholder |> Border.color
                  , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                  , Events.onMouseLeave param.onMouseLeave
@@ -588,7 +589,7 @@ viewAmount param =
                     , left = 0
                     }
                  , Border.dashed
-                 , Border.color Color.transparent200
+                 , param.theme |> ThemeColor.placeholder |> Border.color
                  , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                  , Events.onMouseLeave param.onMouseLeave
@@ -645,7 +646,7 @@ viewBalance param =
                     , left = 0
                     }
                 , Border.dashed
-                , Border.color Color.transparent200
+                , param.theme |> ThemeColor.placeholder |> Border.color
                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
@@ -683,7 +684,7 @@ viewBalance param =
                     , left = 0
                     }
                 , Border.dashed
-                , Border.color Color.transparent200
+                , param.theme |> ThemeColor.placeholder |> Border.color
                 , Events.onMouseEnter
                     (param.onMouseEnter param.tooltip)
                 , Events.onMouseLeave param.onMouseLeave
@@ -723,7 +724,7 @@ disabledSymbol token theme =
                     , left = 0
                     }
                 , Border.dashed
-                , Border.color Color.transparent200
+                , theme |> ThemeColor.placeholder |> Border.color
                 , Font.size 16
                 , theme |> ThemeColor.text |> Font.color
                 ]
@@ -765,7 +766,7 @@ disabledBalance param =
                     , left = 0
                     }
                 , Border.dashed
-                , Border.color Color.transparent200
+                , param.theme |> ThemeColor.placeholder |> Border.color
                 , Font.size 12
                 , param.theme |> ThemeColor.textLight |> Font.color
                 ]
