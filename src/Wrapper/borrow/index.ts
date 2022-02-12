@@ -23,11 +23,6 @@ export function borrowSigner(
     const { percent, debtIn, collateralIn, maxDebt, maxCollateral } = params.send;
     let txnConfirmation;
 
-    console.log("assetOut", params.send.assetOut)
-    console.log("percent", percent)
-    console.log("maxDebt", maxDebt)
-    console.log("maxCollateral", maxCollateral)
-
     try {
       if (
         percent !== undefined &&

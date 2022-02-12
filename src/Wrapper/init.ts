@@ -16,6 +16,7 @@ import { wallet } from "./wallet";
 import { getChainData, getTokenList } from "./chains";
 import { approveSigner } from "./approve";
 import { listenForPendingTxns } from "./helper";
+import { swapSigner } from "./swap";
 
 export declare let window: any;
 
@@ -96,6 +97,8 @@ export async function init(
   // faucetSigner(app, gp);
 
   portsInit(app, gp);
+
+  swapSigner(app, gp);
 
   if (gp.metamaskProvider) {
     metamaskConnected(app, gp);
@@ -214,7 +217,6 @@ function receiveUser(app: ElmApp<Ports>, gp: GlobalParams, walletName: string) {
   gp.metamaskProvider
     .send("eth_requestAccounts", [])
     .then((accounts: string[]) => {
-      console.log("Wrapper", accounts);
       app.ports.receiveUser.send({
         chainId: Number(ethereum.chainId),
         wallet: walletName,
@@ -229,7 +231,6 @@ function receiveUser(app: ElmApp<Ports>, gp: GlobalParams, walletName: string) {
       userInit(app, gp, accounts[0]);
     })
     .catch(() => {
-      console.log("Wrapper", "Failed");
       app.ports.receiveNoConnect.send(walletName);
     });
 }

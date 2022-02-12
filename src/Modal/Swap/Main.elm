@@ -113,7 +113,10 @@ init :
 init { chains, blockchain } =
     let
         tokenList =
-            chains |> Chains.toTokenList (blockchain |> Blockchain.toChain)
+            chains
+                |> Chains.toTokenList (blockchain |> Blockchain.toChain)
+                |> List.filterMap Token.toERC20
+                |> List.map Token.ERC20
 
         inToken =
             tokenList |> List.head
@@ -1006,7 +1009,10 @@ swapButton maybeUser theme (Modal modal) =
         case ( maybeUser, modal.inToken ) of
             ( Just user, Just inToken ) ->
                 case ( modal.input |> Uint.fromAmount inToken, modal.notification ) of
-                    ( Just uintAmount, Just (Success _) ) ->
+                    ( Just _, Just (Loading timeline) ) ->
+                        loadingSwapBtn timeline theme
+
+                    ( Just uintAmount, _ ) ->
                         if user |> User.hasEnoughBalance inToken uintAmount then
                             Input.button
                                 [ width fill
@@ -1041,9 +1047,6 @@ swapButton maybeUser theme (Modal modal) =
 
                         else
                             Button.notEnoughBalance
-
-                    ( Just _, Just (Loading timeline) ) ->
-                        loadingSwapBtn timeline theme
 
                     ( _, _ ) ->
                         disabledSwapBtn

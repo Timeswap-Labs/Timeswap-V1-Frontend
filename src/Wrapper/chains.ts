@@ -39,40 +39,7 @@ export const whitelistChains = {
     ],
     custom: getCustomTokens(String(80001)),
   },
-  others: [
-    {
-      chainId: 0x4,
-      name: "Rinkeby",
-      rpcUrl: "https://rinkeby.infura.io/v3/",
-      blockExplorerUrl: "https://rinkeby.etherscan.io",
-      native: {
-        name: "Ether",
-        symbol: "ETH",
-        decimals: 18,
-      },
-      whitelist: [
-        {
-          address: "0x559a70084eb180d649080048a7e966602eacea9e",
-          name: "TS Dai Stablecoin",
-          symbol: "TS-DAI",
-          decimals: 18,
-        },
-        {
-          address: "0x521c1c37fdd245c313457fcbc6d5ed156647c2f3",
-          name: "TS Matic Token",
-          symbol: "TS-MATIC",
-          decimals: 18,
-        },
-        {
-          address: "0x339a7cce9e5a20833da4f195ad15174c8ba554ad",
-          name: "TS Ethereum",
-          symbol: "TS-ETH",
-          decimals: 18,
-        },
-      ],
-      custom: getCustomTokens(String(0x4)),
-    },
-  ],
+  others: [],
 };
 
 export function getChainData(chainId: number) {

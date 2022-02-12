@@ -69,7 +69,6 @@ export async function borrowPositionsInit(
         },
       })),
     }))
-    .filter((dueObj) => dueObj.dues.length);
 }
 
 export function borrowPositionsUpdate(
