@@ -37,6 +37,7 @@ import Utility.Color as Color
 import Utility.Fade as Fade
 import Utility.Image as Image
 import Utility.PairImage as PairImage
+import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
@@ -148,7 +149,7 @@ viewCollateral { images, theme } param =
             [ width shrink
             , height shrink
             , centerY
-            , Font.color Color.light100
+            , theme |> ThemeColor.text |> Font.color
             , Font.size 16
             ]
             (text param.input)

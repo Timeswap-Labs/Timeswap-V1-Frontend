@@ -898,6 +898,7 @@ viewTxns model blockchain user =
                             , spacing 16
                             ]
                             (list
+                                |> List.take 5
                                 |> List.map
                                     (\tuple ->
                                         ( tuple

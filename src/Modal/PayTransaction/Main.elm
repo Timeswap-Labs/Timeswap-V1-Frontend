@@ -43,6 +43,7 @@ import Element
         , paddingXY
         , px
         , row
+        , scrollbarY
         , shrink
         , spacing
         , text
@@ -598,6 +599,8 @@ body model user modal =
         [ width fill
         , padding 20
         , spacing 16
+        , height <| minimum 435 fill
+        , scrollbarY
         ]
         [ row
             [ width fill

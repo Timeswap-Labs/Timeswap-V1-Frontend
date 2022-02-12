@@ -556,7 +556,7 @@ viewAmount param =
                  , (if opened == param.tooltip then
                         el
                             [ Font.size 12
-                            , param.theme |> ThemeColor.textLight |> Font.color
+                            , Font.color Color.transparent300
                             ]
                             (text full)
                             |> Tooltip.belowAlignRight
@@ -653,7 +653,7 @@ viewBalance param =
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 12
-                        , param.theme |> ThemeColor.textLight |> Font.color
+                        , Font.color Color.transparent300
                         ]
                         (text full)
                         |> Tooltip.belowAlignRight

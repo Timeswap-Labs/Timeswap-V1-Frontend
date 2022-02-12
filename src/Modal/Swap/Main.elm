@@ -1003,7 +1003,7 @@ swapButton :
     -> Element Msg
 swapButton maybeUser theme (Modal modal) =
     if (modal.input == "") || (modal.input |> InputUtil.isZero) then
-        disabledSwapBtn
+        disabledSwapBtn theme
 
     else
         case ( maybeUser, modal.inToken ) of
@@ -1049,14 +1049,14 @@ swapButton maybeUser theme (Modal modal) =
                             Button.notEnoughBalance
 
                     ( _, _ ) ->
-                        disabledSwapBtn
+                        disabledSwapBtn theme
 
             ( _, _ ) ->
-                disabledSwapBtn
+                disabledSwapBtn theme
 
 
-disabledSwapBtn : Element msg
-disabledSwapBtn =
+disabledSwapBtn : Theme -> Element msg
+disabledSwapBtn theme =
     el
         [ width fill
         , height <| px 44
@@ -1068,7 +1068,7 @@ disabledSwapBtn =
             }
         , centerX
         , centerY
-        , Background.color Color.primary100
+        , theme |> ThemeColor.btnBackground |> Background.color
         , Border.rounded 4
         , Font.size 16
         , Font.color Color.light100
@@ -1080,7 +1080,7 @@ disabledSwapBtn =
             , centerY
             , Font.bold
             , Font.size 16
-            , Font.color Color.transparent100
+            , theme |> ThemeColor.textDisabled |> Font.color
             ]
             (text "Swap tokens")
         )
