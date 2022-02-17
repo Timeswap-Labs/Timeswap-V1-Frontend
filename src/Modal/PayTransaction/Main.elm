@@ -56,8 +56,7 @@ import Element.Input as Input
 import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Modal.Outside as Outside
-import Modal.PayTransaction.Error exposing (Error)
-import Modal.PayTransaction.Query as Query
+import Modal.PayTransaction.Error as Error exposing (Error)
 import Modal.PayTransaction.Tooltip as Tooltip exposing (Tooltip)
 import Modal.PayTransaction.Total exposing (Total)
 import Page.Transaction.Button as Button
@@ -72,6 +71,7 @@ import Utility.IconButton as IconButton
 import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.Maybe as Maybe
+import Utility.Result as Result
 import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
@@ -222,7 +222,7 @@ update user msg (Modal modal) =
                     |> Token.toERC20
                 )
              of
-                ( Just total, Just erc20 ) ->
+                ( Ok total, Just erc20 ) ->
                     if
                         (user
                             |> User.hasEnoughBalance
@@ -262,7 +262,7 @@ update user msg (Modal modal) =
                     |> Token.toERC20
                 )
              of
-                ( Just total, Just erc20 ) ->
+                ( Ok total, Just erc20 ) ->
                     if
                         (user
                             |> User.hasEnoughBalance
@@ -296,7 +296,7 @@ update user msg (Modal modal) =
 
         ( ClickPay, Full set ) ->
             (case getTotalFromFull user modal.pool set of
-                Just total ->
+                Ok total ->
                     if
                         (user
                             |> User.hasEnoughBalance
@@ -347,7 +347,7 @@ update user msg (Modal modal) =
 
         ( ClickPay, Custom dict ) ->
             (case getTotalFromCustom user modal.pool dict of
-                Just total ->
+                Ok total ->
                     if
                         (user
                             |> User.hasEnoughBalance
@@ -428,26 +428,28 @@ update user msg (Modal modal) =
             modal |> noCmdAndEffect
 
 
-getTotalFromFull : User -> Pool -> Set TokenId -> Maybe Uint
+getTotalFromFull : User -> Pool -> Set TokenId -> Result Error Uint
 getTotalFromFull user pool set =
     user
         |> User.getDues
         |> Remote.map (Dues.getMultiple pool set)
-        |> (Remote.map << Maybe.andThen)
+        |> (Remote.map << Maybe.map)
             (\dict ->
                 dict
                     |> Dict.foldl
                         (\_ { debt } accumulator ->
                             accumulator
-                                |> Maybe.andThen
+                                |> Result.map
                                     (Uint.add debt)
+                                |> Result.andThen (Result.fromMaybe Error.SumOverflow)
                         )
-                        (Just Uint.zero)
+                        (Ok Uint.zero)
             )
-        |> Remote.withDefault Nothing
+        |> (Remote.map << Maybe.withDefault) (Err Error.Invalid)
+        |> Remote.withDefault (Err Error.Invalid)
 
 
-getTotalFromCustom : User -> Pool -> Dict TokenId String -> Maybe Uint
+getTotalFromCustom : User -> Pool -> Dict TokenId String -> Result Error Uint
 getTotalFromCustom user pool dict =
     user
         |> User.getDues
@@ -457,33 +459,36 @@ getTotalFromCustom user pool dict =
                 |> Set.fromList TokenId.sorter
                 |> Dues.getMultiple pool
             )
-        |> (Remote.map << Maybe.andThen)
+        |> (Remote.map << Maybe.map)
             (\dues ->
                 Dict.merge TokenId.sorter
                     (\_ _ accumulator -> accumulator)
                     (\_ assetIn { debt, collateral } accumulator ->
-                        Just Uint.add
-                            |> Maybe.apply accumulator
-                            |> Maybe.apply
+                        Ok (\a b -> Uint.add a b |> Result.fromMaybe Error.SumOverflow)
+                            |> Result.apply accumulator
+                            |> Result.apply
                                 (assetIn
                                     |> Uint.fromAmount (pool.pair |> Pair.toAsset)
-                                    |> Maybe.andThen
+                                    |> Result.fromMaybe Error.Invalid
+                                    |> Result.andThen
                                         (\assetInUint ->
                                             Uint.proportion assetInUint collateral debt
                                                 |> Maybe.map (\_ -> assetInUint)
+                                                |> Result.fromMaybe Error.RepayOverflow
                                         )
                                 )
-                            |> Maybe.andThen identity
+                            |> Result.andThen identity
                     )
                     (\_ _ accumulator -> accumulator)
                     dict
                     dues
-                    (Just Uint.zero)
+                    (Ok Uint.zero)
             )
-        |> Remote.withDefault Nothing
+        |> (Remote.map << Maybe.withDefault) (Err Error.Invalid)
+        |> Remote.withDefault (Err Error.Invalid)
 
 
-getTotal : User -> Pool -> State -> Maybe Uint
+getTotal : User -> Pool -> State -> Result Error Uint
 getTotal user pool state =
     case state of
         Full set ->
@@ -1311,7 +1316,7 @@ buttons ({ theme } as model) user { pool, state } =
         , pool.pair |> Pair.toAsset |> Token.toERC20
         )
     of
-        ( Just assetIn, Just erc20 ) ->
+        ( Ok assetIn, Just erc20 ) ->
             case
                 ( user
                     |> User.getBalance (pool.pair |> Pair.toAsset)
@@ -1344,7 +1349,7 @@ buttons ({ theme } as model) user { pool, state } =
                 _ ->
                     disabledRepay theme
 
-        ( Just assetIn, Nothing ) ->
+        ( Ok assetIn, Nothing ) ->
             case
                 user
                     |> User.getBalance (pool.pair |> Pair.toAsset)
@@ -1366,8 +1371,27 @@ buttons ({ theme } as model) user { pool, state } =
                 _ ->
                     disabledRepay theme
 
-        _ ->
-            disabledRepay theme
+        ( Err error, _ ) ->
+            error |> errorBtn |> map never
+
+
+errorBtn : Error -> Element Never
+errorBtn error =
+    el
+        [ width fill
+        , height <| px 44
+        , Background.color Color.negative500
+        , Border.rounded 4
+        ]
+        (el
+            [ centerX
+            , centerY
+            , paddingXY 0 4
+            , Font.size 16
+            , Font.color Color.light100
+            ]
+            (error |> Error.toString |> text)
+        )
 
 
 approveButton : ERC20 -> Theme -> Element Msg

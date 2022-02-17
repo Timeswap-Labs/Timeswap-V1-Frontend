@@ -235,7 +235,14 @@ view ({ device, backdrop, theme } as model) chain user (Position position) =
                 ++ Glass.background backdrop theme
             )
             [ header model position
-            , viewDue model chain user position
+            , column [ width fill, spacing 12 ]
+                [ el
+                    [ Font.size 12
+                    , theme |> ThemeColor.textLight |> Font.color
+                    ]
+                    (text "Select the position you want to repay. You can select multiple positions.")
+                , viewDue model chain user position
+                ]
             ]
         ]
 
@@ -344,12 +351,16 @@ header { time, offset, chosenZone, theme, images } { pool, checks, tooltip } =
             borrowMoreButton theme
 
           else
-            borrowMoreDisabled
-        , if (pool.maturity |> Maturity.isActive time) && (checks |> Set.isEmpty |> not) then
-            repayButton theme
+            none
+        , if pool.maturity |> Maturity.isActive time then
+            if checks |> Set.isEmpty |> not then
+                repayButton theme
+
+            else
+                repayDisabled theme
 
           else
-            repayDisabled theme
+            none
         ]
 
 
@@ -376,29 +387,6 @@ borrowMoreButton theme =
                 ]
                 (text "Borrow More")
         }
-
-
-borrowMoreDisabled : Element msg
-borrowMoreDisabled =
-    el
-        [ width shrink
-        , height <| px 44
-        , paddingXY 12 5
-        , Border.rounded 4
-        , Border.width 1
-        , Border.color Color.transparent200
-        ]
-        (el
-            [ width shrink
-            , height shrink
-            , centerX
-            , centerY
-            , Font.size 16
-            , Font.color Color.transparent200
-            , Font.bold
-            ]
-            (text "Borrow More")
-        )
 
 
 repayButton : Theme -> Element Msg
@@ -485,7 +473,23 @@ viewDue { images, theme, time } chain user { pool, checks, tooltip } =
                                             , Border.rounded 4
                                             ]
                                             { onChange = Check tokenId
-                                            , icon = Input.defaultCheckbox
+                                            , icon =
+                                                \checked ->
+                                                    if checked then
+                                                        images
+                                                            |> Image.checkboxSelected
+                                                                [ width <| px 24, height <| px 24 ]
+
+                                                    else
+                                                        el
+                                                            [ width <| px 24
+                                                            , height <| px 24
+                                                            , theme |> ThemeColor.placeholder |> Border.color
+                                                            , Border.rounded 4
+                                                            , Border.width 1
+                                                            , Background.color Color.completelyTransparent
+                                                            ]
+                                                            none
                                             , checked = tokenId |> Set.memberOf checks
                                             , label =
                                                 Input.labelHidden "Due checkbox"

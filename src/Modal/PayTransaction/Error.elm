@@ -1,21 +1,20 @@
-module Modal.PayTransaction.Error exposing (Error, decoder)
-
-import Json.Decode as Decode exposing (Decoder)
+module Modal.PayTransaction.Error exposing (Error(..), toString)
 
 
 type Error
     = Invalid
+    | RepayOverflow
+    | SumOverflow
 
 
-decoder : Decoder Error
-decoder =
-    Decode.string
-        |> Decode.andThen
-            (\string ->
-                case string of
-                    "invalid" ->
-                        Invalid |> Decode.succeed
+toString : Error -> String
+toString error =
+    case error of
+        Invalid ->
+            "Invalid"
 
-                    _ ->
-                        Decode.fail "Not an error"
-            )
+        RepayOverflow ->
+            "Repay amount higher than Debt"
+
+        SumOverflow ->
+            "Sum overflow"

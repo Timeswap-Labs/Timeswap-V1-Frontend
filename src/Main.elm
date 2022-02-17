@@ -61,6 +61,7 @@ import Element
         , moveDown
         , moveLeft
         , moveUp
+        , newTabLink
         , noStaticStyleSheet
         , none
         , padding
@@ -1552,48 +1553,52 @@ scrollButton ({ backdrop, images, theme } as model) =
 
 logo : { model | device : Device, images : Images, theme : Theme } -> Element Never
 logo { device, images, theme } =
-    row
-        [ Region.description "logo"
-        , spacing 12
-        , centerY
-        ]
-        [ case device of
-            Desktop ->
-                images
-                    |> (case theme of
-                            Theme.Dark ->
-                                Image.logoText
-
-                            Theme.Light ->
-                                Image.logoTextDark
-                       )
-                        [ height <| px 32 ]
-
-            _ ->
-                images
-                    |> Image.logoPure
-                        [ height <| px 32 ]
-        , el
-            [ width shrink
-            , height <| px 22
-            , padding 5
-            , alignLeft
-            , centerY
-            , theme |> ThemeColor.primaryBtn |> Background.color
-            , Border.rounded 4
-            ]
-            (el
-                [ width shrink
-                , height shrink
+    newTabLink [ width shrink ]
+        { url = "https://timeswap.io/"
+        , label =
+            row
+                [ Region.description "logo"
+                , spacing 12
                 , centerY
-                , Font.bold
-                , Font.size 12
-                , Font.color Color.light100
-                , Font.letterSpacing 1.28
                 ]
-                (text "ALPHA")
-            )
-        ]
+                [ case device of
+                    Desktop ->
+                        images
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.logoText
+
+                                    Theme.Light ->
+                                        Image.logoTextDark
+                               )
+                                [ height <| px 32 ]
+
+                    _ ->
+                        images
+                            |> Image.logoPure
+                                [ height <| px 32 ]
+                , el
+                    [ width shrink
+                    , height <| px 22
+                    , padding 5
+                    , alignLeft
+                    , centerY
+                    , theme |> ThemeColor.primaryBtn |> Background.color
+                    , Border.rounded 4
+                    ]
+                    (el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        , Font.bold
+                        , Font.size 12
+                        , Font.color Color.light100
+                        , Font.letterSpacing 1.28
+                        ]
+                        (text "ALPHA")
+                    )
+                ]
+        }
 
 
 tabs :
