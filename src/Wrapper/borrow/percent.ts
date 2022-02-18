@@ -10,8 +10,7 @@ import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
 import { calculateApr, calculateCdp, calculateMaxValue } from "./common";
 
-export async function percentCalculate(
-  gp: GlobalParams,
+export function percentCalculate(
   app: ElmApp<Ports>,
   pool: Pool,
   query: BorrowQuery
@@ -25,13 +24,6 @@ export async function percentCalculate(
       z: new Uint112(query.poolInfo.z),
     };
 
-    // const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
-    // const { due } = await sdkPool.calculateBorrowGivenPercent(
-    //   new Uint112(query.assetOut),
-    //   new Uint40(query.percent!),
-    //   currentTime
-    // );
-
     const { due } = pool.borrowGivenPercent(
       state,
       new Uint112(query.assetOut),
@@ -42,7 +34,7 @@ export async function percentCalculate(
     const collateralIn = due.collateral.toString();
 
     const timeSlippage = currentTime.sub(60);
-    const { due: dueSlippage } = await pool.borrowGivenPercent(
+    const { due: dueSlippage } = pool.borrowGivenPercent(
       state,
       new Uint112(query.assetOut),
       new Uint40(query.percent!),

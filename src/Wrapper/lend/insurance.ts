@@ -11,7 +11,6 @@ import {
 } from "./common";
 
 export async function insuranceCalculate(
-  gp: GlobalParams,
   app: ElmApp<Ports>,
   pool: Pool,
   query: LendQuery
@@ -22,13 +21,6 @@ export async function insuranceCalculate(
     const assetIn = new Uint112(query.assetIn);
     const insuranceOut = new Uint128(query.insuranceOut!);
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
-
-    // const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
-    // const { claims, yDecrease } = await sdkPool.calculateLendGivenInsurance(
-    //   assetIn,
-    //   insuranceOut,
-    //   currentTime
-    // );
 
     const { claims, yDecrease } = pool.lendGivenInsurance(
       state,
@@ -51,13 +43,6 @@ export async function insuranceCalculate(
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
 
-
-    // const { claims: claimsSlippage } = await sdkPool.calculateLendGivenInsurance(
-    //   assetIn,
-    //   insuranceOut,
-    //   timeSlippage
-    // );
-
     const { claims: claimsSlippage } = pool.lendGivenInsurance(
       state,
       assetIn,
@@ -77,12 +62,11 @@ export async function insuranceCalculate(
     const apr = calculateApr(bondOut, query.assetIn, maturity, currentTime);
     const cdp = calculateCdp(
       query.assetIn,
-      query.pool.collateral.decimals,
+      query.pool.asset.decimals,
       query.poolInfo.assetSpot,
       query.insuranceOut!,
       query.pool.collateral.decimals,
       query.poolInfo.collateralSpot
-
     );
 
     query.pool.maturity = query.pool.maturity.toString();

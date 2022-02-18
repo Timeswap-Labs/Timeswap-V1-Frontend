@@ -1,7 +1,7 @@
 import { Pool, Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { GlobalParams } from "../global";
-import { getCurrentTime, getPoolSDK } from "../helper";
+import { getCurrentTime } from "../helper";
 import {
   calculateApr,
   calculateCdp,
@@ -9,8 +9,7 @@ import {
   calculatePercent,
 } from "./common";
 
-export async function debtCalculate(
-  gp: GlobalParams,
+export function debtCalculate(
   app: ElmApp<Ports>,
   pool: Pool,
   query: BorrowQuery
@@ -26,31 +25,17 @@ export async function debtCalculate(
       z: new Uint112(query.poolInfo.z),
     };
 
-    // const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
-    // const { due, yIncrease } = await sdkPool.calculateBorrowGivenDebt(
-    //   assetOut,
-    //   debtIn,
-    //   currentTime
-    // );
-
-    const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
-    const { due, yIncrease } = await sdkPool.calculateBorrowGivenDebt(
+    const { due, yIncrease } = pool.borrowGivenDebt(
+      state,
       assetOut,
       debtIn,
       currentTime
     );
 
-    // const { due, yIncrease } = await pool.borrowGivenDebt(
-    //   state,
-    //   assetOut,
-    //   debtIn,
-    //   currentTime
-    // );
-
     const collateralIn = due.collateral.toString();
 
-    const percent = await calculatePercent(
-      sdkPool,
+    const percent = calculatePercent(
+      pool,
       state,
       assetOut,
       yIncrease,
@@ -58,7 +43,7 @@ export async function debtCalculate(
     );
 
     const timeSlippage = currentTime.sub(60);
-    const { due: dueSlippage } = await pool.borrowGivenDebt(
+    const { due: dueSlippage } = pool.borrowGivenDebt(
       state,
       assetOut,
       debtIn,
@@ -77,7 +62,7 @@ export async function debtCalculate(
       query.poolInfo.assetSpot,
       collateralIn,
       query.pool.collateral.decimals,
-      query.poolInfo.assetSpot
+      query.poolInfo.collateralSpot
     );
 
     query.pool.maturity = query.pool.maturity.toString();

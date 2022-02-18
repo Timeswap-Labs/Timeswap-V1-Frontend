@@ -1,5 +1,4 @@
 import { CP, Pool, Uint112, Uint256, Uint40 } from "@timeswap-labs/timeswap-v1-sdk-core";
-import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 
 export function calculateApr(
   debt: Uint112,
@@ -64,47 +63,25 @@ export function calculateMaxValue(value: Uint112, slippage: number): Uint256 {
   return new Uint256(value).mul(Math.round(100000 * (1 + slippage))).div(100000);
 }
 
-export async function calculatePercent(
-  pool: SDKPool,
+export function calculatePercent(
+  pool: Pool,
   state : CP,
   assetOut: Uint112,
   yIncrease: Uint112,
   currentTime: Uint256
-): Promise<Uint256> {
-  // const { yIncrease: yMin } = await pool.borrowGivenPercent(
-  //   state,
-  //   assetOut,
-  //   new Uint40(0),
-  //   currentTime
-  // );
-  // const { yIncrease: yMax } = await pool.borrowGivenPercent(
-  //   state,
-  //   assetOut,
-  //   new Uint40(1n << 32n),
-  //   currentTime
-  // );
-
-  const { yIncrease: yMin } = await pool.calculateBorrowGivenPercent(
+): Uint256 {
+  const { yIncrease: yMin } = pool.borrowGivenPercent(
+    state,
     assetOut,
     new Uint40(0),
     currentTime
   );
-  const { yIncrease: yMax } = await pool.calculateBorrowGivenPercent(
+  const { yIncrease: yMax } = pool.borrowGivenPercent(
+    state,
     assetOut,
     new Uint40(1n << 32n),
     currentTime
   );
-
-  // const { yIncrease: yMin } = await pool.calculateBorrowGivenPercent(
-  //   assetOut,
-  //   new Uint40(0),
-  //   currentTime
-  // );
-  // const { yIncrease: yMax } = await pool.calculateBorrowGivenPercent(
-  //   assetOut,
-  //   new Uint40(1n << 32n),
-  //   currentTime
-  // );
 
   return new Uint256(yIncrease)
     .sub(yMin)

@@ -1,13 +1,12 @@
 import {
   Pool,
   Uint112,
-  Uint128,
   Uint256,
 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 
 import { GlobalParams } from "../global";
-import { getCurrentTime, getPoolSDK } from "../helper";
+import { getCurrentTime } from "../helper";
 import {
   calculateApr,
   calculateCdp,
@@ -15,16 +14,13 @@ import {
   calculatePercent,
 } from "./common";
 
-export async function collateralCalculate(
-  gp: GlobalParams,
+export function collateralCalculate(
   app: ElmApp<Ports>,
   pool: Pool,
   query: BorrowQuery
 ) {
   try {
     const maturity = new Uint256(query.pool.maturity);
-    // const now = (await gp.metamaskProvider.getBlock("latest")).timestamp;
-    // const currentTime = new Uint256(now);
     const currentTime = getCurrentTime();
     const assetOut = new Uint112(query.assetOut);
     const collateralIn = new Uint112(query.collateralIn!);
@@ -34,38 +30,16 @@ export async function collateralCalculate(
       z: new Uint112(query.poolInfo.z),
     };
 
-    // const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
-    // const { due, yIncrease } = await sdkPool.calculateBorrowGivenCollateral(
-    //   assetOut,
-    //   collateralIn,
-    //   currentTime
-    // );
-
-    const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
-    const { due, yIncrease } = await sdkPool.calculateBorrowGivenCollateral(
+    const { due, yIncrease } = pool.borrowGivenCollateral(
+      state,
       assetOut,
       collateralIn,
       currentTime
     );
-
-    // const { due, yIncrease } = await pool.borrowGivenCollateral(
-    //   state,
-    //   assetOut,
-    //   collateralIn,
-    //   currentTime
-    // );
     const debtIn = due.debt.toString();
 
-    // const percent = await calculatePercent(
-    //   pool,
-    //   state,
-    //   assetOut,
-    //   yIncrease,
-    //   currentTime
-    // );
-
-    const percent = await calculatePercent(
-      sdkPool,
+    const percent = calculatePercent(
+      pool,
       state,
       assetOut,
       yIncrease,
@@ -73,20 +47,12 @@ export async function collateralCalculate(
     );
 
     const timeSlippage = currentTime.sub(60);
-    const { due: dueSlippage } = await pool.borrowGivenCollateral(
+    const { due: dueSlippage } = pool.borrowGivenCollateral(
       state,
       assetOut,
       collateralIn,
       timeSlippage
     );
-
-    // const percent = await calculatePercent(
-    //   sdkPool,
-    //   state,
-    //   assetOut,
-    //   yIncrease,
-    //   currentTime
-    // );
 
     const maxDebt = calculateMaxValue(
       dueSlippage.debt.sub(query.assetOut),
@@ -95,8 +61,6 @@ export async function collateralCalculate(
       .add(query.assetOut)
       .toString();
 
-    console.log("borrow calc", debtIn, maxDebt);
-
     const apr = calculateApr(due.debt, query.assetOut, maturity, currentTime);
     const cdp = calculateCdp(
       query.assetOut,
@@ -104,7 +68,7 @@ export async function collateralCalculate(
       query.poolInfo.assetSpot,
       collateralIn,
       query.pool.collateral.decimals,
-      query.poolInfo.assetSpot
+      query.poolInfo.collateralSpot
     );
 
     query.pool.maturity = query.pool.maturity.toString();
@@ -133,9 +97,6 @@ export async function collateralTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-
-  console.log("borrow txn", borrow.maxDebt);
-
   return await pool.upgrade(gp.metamaskSigner!).borrowGivenCollateral({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,
