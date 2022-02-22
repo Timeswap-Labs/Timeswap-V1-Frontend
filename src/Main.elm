@@ -1403,8 +1403,7 @@ header ({ device, backdrop, theme } as model) =
                 , alignRight
                 , centerY
                 ]
-                [ swapButton model
-                , chainListButton model
+                [ chainListButton model
                 , connectButton model
                 , zoneButton model
                 , themeButton model
