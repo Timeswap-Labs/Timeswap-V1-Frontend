@@ -57,6 +57,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
@@ -82,6 +83,7 @@ import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
+import Utility.Tooltip as Tooltip
 
 
 type Modal
@@ -387,9 +389,11 @@ view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as moda
                         [ width fill
                         , height shrink
                         , centerY
+                        , spacing 8
                         ]
                         [ pairWithPoolCount model modal
                         , sortBy model modal
+                        , sortInfo model modal
                         ]
                     ]
                 , row
@@ -585,6 +589,35 @@ sortBy { images, theme } (Modal { sorting, dropdown }) =
                     ]
             }
         ]
+
+
+sortInfo : { model | images : Images, theme : Theme } -> Modal -> Element Msg
+sortInfo { images, theme } (Modal { tooltip }) =
+    images
+        |> (case theme of
+                Theme.Dark ->
+                    Image.info
+
+                Theme.Light ->
+                    Image.infoDark
+           )
+            [ width <| px 20
+            , height <| px 20
+            , Events.onMouseEnter (OnMouseEnter Tooltip.SortInfo)
+            , Events.onMouseLeave OnMouseLeave
+            , (if tooltip == Just Tooltip.SortInfo then
+                el
+                    [ Font.size 14
+                    , Font.color Color.transparent300
+                    ]
+                    ("Liquidity is calculated as the product of x, y, z" |> text)
+                    |> Tooltip.belowAlignRight
+
+               else
+                none
+              )
+                |> below
+            ]
 
 
 sortOptionsEl : List Sorting -> Element Msg

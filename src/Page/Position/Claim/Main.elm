@@ -635,7 +635,7 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
     row
         [ width fill
         , height shrink
-        , spacing 12
+        , spacing 16
         ]
         [ el
             [ width shrink
@@ -670,7 +670,7 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
             , alignRight
             , centerY
             ]
-            (Duration.viewMaturity
+            (Duration.viewExpiredMaturity
                 { onMouseEnter = OnMouseEnter
                 , onMouseLeave = OnMouseLeave
                 , tooltip = Tooltip.Maturity
@@ -680,6 +680,7 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
                 , chosenZone = chosenZone
                 , maturity = pool.maturity
                 , theme = theme
+                , images = images
                 }
             )
         , if pool.maturity |> Maturity.isActive time then
