@@ -95,5 +95,11 @@ encode poolInfo =
     , ( "protocolFee"
       , poolInfo.protocolFee |> Encode.int
       )
+    , ( "apr"
+      , poolInfo.apr |> Encode.float
+      )
+    , ( "cdp"
+      , poolInfo.cdp |> CDP.encode
+      )
     ]
         |> Encode.object

@@ -22,13 +22,13 @@ export async function insuranceCalculate(
     const insuranceOut = new Uint128(query.insuranceOut!);
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const { claims, yDecrease } = pool.lendGivenInsurance(
+    const { claimsOut, yDecrease } = pool.lendGivenInsurance(
       state,
       assetIn,
       insuranceOut,
       currentTime
     );
-    const bondOut = new Uint128(claims.bondInterest).add(new Uint128(claims.bondPrincipal));
+    const bondOut = new Uint128(claimsOut.bondInterest).add(new Uint128(claimsOut.bondPrincipal));
 
     const percent = calculatePercent(
       pool,
@@ -43,7 +43,7 @@ export async function insuranceCalculate(
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
 
-    const { claims: claimsSlippage } = pool.lendGivenInsurance(
+    const { claimsOut: claimsSlippage } = pool.lendGivenInsurance(
       state,
       assetIn,
       insuranceOut,

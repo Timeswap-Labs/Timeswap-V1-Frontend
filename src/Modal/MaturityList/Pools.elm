@@ -1,8 +1,6 @@
 module Modal.MaturityList.Pools exposing (Pools, compareMaturity, compareRank, decoder)
 
-import Data.CDP exposing (CDP)
 import Data.Maturity as Maturity exposing (Maturity)
-import Data.Uint as Uint
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Modal.MaturityList.Summary as Summary exposing (Summary)

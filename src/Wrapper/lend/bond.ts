@@ -22,13 +22,13 @@ export function bondCalculate(
     const bondOut = new Uint128(query.bondOut!);
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
-    const { claims, yDecrease } = pool.lendGivenBond(
+    const { claimsOut, yDecrease } = pool.lendGivenBond(
       state,
       assetIn,
       bondOut,
       currentTime
     );
-    const insuranceOut = new Uint128(claims.insuranceInterest).add(new Uint128(claims.insurancePrincipal));
+    const insuranceOut = new Uint128(claimsOut.insuranceInterest).add(new Uint128(claimsOut.insurancePrincipal));
 
     const percent = calculatePercent(
       pool,
@@ -42,7 +42,7 @@ export function bondCalculate(
       currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
-    const { claims: claimsSlippage } = pool.lendGivenBond(
+    const { claimsOut: claimsSlippage } = pool.lendGivenBond(
       state,
       assetIn,
       bondOut,
