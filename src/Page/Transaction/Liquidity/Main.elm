@@ -1243,9 +1243,9 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                         }
                    )
 
-        Add (Pool pool (Active (Success (Exist _ add)))) ->
+        Add (Pool pool (Active (Success (Exist poolInfo add)))) ->
             add
-                |> Add.view model blockchain pool
+                |> Add.view model blockchain pool poolInfo
                 |> (\{ first, second, third, buttons } ->
                         { first = first |> map AddMsg
                         , second = second |> map AddMsg

@@ -20,22 +20,22 @@ export async function percentCalculate(
     const currentTime = getCurrentTime();
 
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
-    const { claims } = pool.lendGivenPercent(
+    const { claimsOut } = pool.lendGivenPercent(
       state,
       new Uint112(query.assetIn),
       new Uint40(query.percent!),
       currentTime
     );
 
-    const bondOut = new Uint128(claims.bondInterest).add(new Uint128(claims.bondPrincipal));
-    const insuranceOut = new Uint128(claims.insuranceInterest).add(new Uint128(claims.insurancePrincipal));
+    const bondOut = new Uint128(claimsOut.bondInterest).add(new Uint128(claimsOut.bondPrincipal));
+    const insuranceOut = new Uint128(claimsOut.insuranceInterest).add(new Uint128(claimsOut.insurancePrincipal));
 
     const timeSlippage =
       currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
 
-    const { claims: claimsSlippage } = pool.lendGivenPercent(
+    const { claimsOut: claimsSlippage } = pool.lendGivenPercent(
       state,
       new Uint112(query.assetIn),
       new Uint40(query.percent!),
@@ -80,7 +80,9 @@ export async function percentCalculate(
         cdp,
       },
     });
-  } catch {
+  } catch (err) {
+    console.log("err", err);
+
     app.ports.receiveLendAnswer.send({
       ...query,
       result: 0,

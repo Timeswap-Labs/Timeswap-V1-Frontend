@@ -82,6 +82,8 @@ async function lendQueryCalculation(
   app: ElmApp<Ports>,
   query: LendQuery,
 ) {
+  console.log("lend queryy", query);
+
   const pool = getPool(query);
   const { percent, bondOut, insuranceOut } = query;
 

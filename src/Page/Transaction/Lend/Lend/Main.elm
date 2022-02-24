@@ -1578,13 +1578,14 @@ view :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
+    -> PoolInfo
     -> Transaction
     ->
         { first : Element Msg
         , second : Element Msg
         , buttons : Element Msg
         }
-view model blockchain pool (Transaction transaction) =
+view model blockchain pool poolInfo (Transaction transaction) =
     { first =
         transaction
             |> assetInSection model
@@ -1592,7 +1593,7 @@ view model blockchain pool (Transaction transaction) =
                 (pool.pair |> Pair.toAsset)
     , second =
         transaction
-            |> claimsOutSection model pool
+            |> claimsOutSection model pool poolInfo
     , buttons =
         transaction
             |> buttons model
@@ -1666,9 +1667,10 @@ assetInSection model blockchain asset { assetIn, tooltip } =
 claimsOutSection :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Pool
+    -> PoolInfo
     -> { transaction | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element Msg
-claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
+claimsOutSection model pool poolInfo ({ claimsOut, tooltip } as transaction) =
     column
         [ Region.description "claims"
         , width fill
@@ -1752,7 +1754,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                     )
              )
                 |> (\( apr, cdp ) ->
-                        [ Info.lendAPR apr model.theme
+                        [ Info.lendAPR apr (poolInfo |> Just) model.theme
                         , Info.lendCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave
@@ -1761,6 +1763,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                             , opened = tooltip
                             , pair = pool.pair
                             , cdp = cdp
+                            , poolInfo = poolInfo |> Just
                             }
                         ]
                    )

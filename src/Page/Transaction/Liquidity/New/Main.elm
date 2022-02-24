@@ -32,11 +32,9 @@ import Element
         , el
         , fill
         , height
-        , map
         , none
         , padding
         , paddingXY
-        , px
         , row
         , shrink
         , spacing
@@ -61,7 +59,6 @@ import Page.Transaction.Output as Output
 import Page.Transaction.Price exposing (Price)
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
-import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
@@ -791,6 +788,7 @@ duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tool
                     (liquidityOut
                         |> Remote.map .apr
                     )
+                    Nothing
             , liquidityOut
                 |> Remote.map .cdp
                 |> (\cdp ->
@@ -802,6 +800,7 @@ duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tool
                             , opened = tooltip
                             , pair = pool.pair
                             , cdp = cdp
+                            , poolInfo = Nothing
                             }
                    )
             ]

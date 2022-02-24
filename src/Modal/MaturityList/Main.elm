@@ -610,7 +610,7 @@ sortInfo { images, theme } (Modal { tooltip }) =
                     [ Font.size 14
                     , Font.color Color.transparent300
                     ]
-                    ("Liquidity is calculated as the product of x, y, z" |> text)
+                    ("Liquidity-sorting is based on the size of the product of X, Y, Z pools" |> text)
                     |> Tooltip.belowAlignRight
 
                else

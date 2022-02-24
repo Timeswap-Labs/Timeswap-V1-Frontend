@@ -707,9 +707,9 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                         }
                    )
 
-        Pool pool (Active (Success (Exist _ lend))) ->
+        Pool pool (Active (Success (Exist poolInfo lend))) ->
             lend
-                |> Lend.view model blockchain pool
+                |> Lend.view model blockchain pool poolInfo
                 |> (\{ first, second, buttons } ->
                         { first = first |> map LendMsg
                         , second = second |> map LendMsg
