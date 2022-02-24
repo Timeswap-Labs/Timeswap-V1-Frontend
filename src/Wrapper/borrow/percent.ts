@@ -24,17 +24,17 @@ export function percentCalculate(
       z: new Uint112(query.poolInfo.z),
     };
 
-    const { due } = pool.borrowGivenPercent(
+    const { dueOut } = pool.borrowGivenPercent(
       state,
       new Uint112(query.assetOut),
       new Uint40(query.percent!),
       currentTime
     );
-    const debtIn = due.debt.toString();
-    const collateralIn = due.collateral.toString();
+    const debtIn = dueOut.debt.toString();
+    const collateralIn = dueOut.collateral.toString();
 
     const timeSlippage = currentTime.sub(60);
-    const { due: dueSlippage } = pool.borrowGivenPercent(
+    const { dueOut: dueSlippage } = pool.borrowGivenPercent(
       state,
       new Uint112(query.assetOut),
       new Uint40(query.percent!),
@@ -53,12 +53,12 @@ export function percentCalculate(
       query.slippage
     ).toString();
 
-    const apr = calculateApr(due.debt, query.assetOut, maturity, currentTime);
+    const apr = calculateApr(dueOut.debt, query.assetOut, maturity, currentTime);
     const cdp = calculateCdp(
       query.assetOut,
       query.pool.asset.decimals,
       query.poolInfo.assetSpot,
-      due.collateral,
+      dueOut.collateral,
       query.pool.collateral.decimals,
       query.poolInfo.collateralSpot
     );
