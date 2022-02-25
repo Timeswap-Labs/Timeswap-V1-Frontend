@@ -2331,7 +2331,7 @@ view model blockchain pool poolInfo (Transaction transaction) =
                 poolInfo
     , second =
         transaction
-            |> duesInSection model blockchain pool
+            |> duesInSection model blockchain pool poolInfo
     , buttons =
         transaction
             |> buttons model blockchain (pool.pair |> Pair.toCollateral)
@@ -2477,9 +2477,10 @@ duesInSection :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
+    -> PoolInfo
     -> { transaction | state : State, tooltip : Maybe Tooltip }
     -> Element Msg
-duesInSection model blockchain pool ({ state, tooltip } as transaction) =
+duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction) =
     column
         [ Region.description "claims"
         , width fill
@@ -2582,7 +2583,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
                     )
              )
                 |> (\( apr, cdp ) ->
-                        [ Info.borrowAPR apr model.theme
+                        [ Info.borrowAPR apr (poolInfo |> Just) model.theme
                         , Info.borrowCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave
@@ -2591,6 +2592,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
                             , opened = tooltip
                             , pair = pool.pair
                             , cdp = cdp
+                            , poolInfo = poolInfo |> Just
                             }
                         ]
                    )

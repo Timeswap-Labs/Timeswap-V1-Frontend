@@ -117,8 +117,8 @@ lendAPR remote maybePoolInfo theme =
         ]
 
 
-borrowAPR : Remote failure Float -> Theme -> Element msg
-borrowAPR remote theme =
+borrowAPR : Remote failure Float -> Maybe PoolInfo -> Theme -> Element msg
+borrowAPR remote maybePoolInfo theme =
     column
         [ width fill
         , height shrink
@@ -131,7 +131,19 @@ borrowAPR remote theme =
             , paddingXY 0 3
             , theme |> ThemeColor.textLight |> Font.color
             ]
-            (text "APR")
+            ((case ( remote, maybePoolInfo ) of
+                ( Success apr, Just _ ) ->
+                    if apr == 0 then
+                        "Pool Max APR"
+
+                    else
+                        "APR"
+
+                ( _, _ ) ->
+                    "APR"
+             )
+                |> text
+            )
         , case remote of
             Loading timeline ->
                 el
@@ -167,7 +179,19 @@ borrowAPR remote theme =
                       )
                         |> Font.color
                     ]
-                    (Calculate.apr float)
+                    ((case maybePoolInfo of
+                        Just poolInfo ->
+                            if float == 0 then
+                                poolInfo.apr
+
+                            else
+                                float
+
+                        _ ->
+                            float
+                     )
+                        |> Calculate.apr
+                    )
         ]
 
 
@@ -356,6 +380,7 @@ borrowCDP :
         , opened : Maybe tooltip
         , pair : Pair
         , cdp : Remote failure CDP
+        , poolInfo : Maybe PoolInfo
         }
     -> Element msg
 borrowCDP { priceFeed, theme } param =
@@ -376,7 +401,19 @@ borrowCDP { priceFeed, theme } param =
                 , paddingXY 0 3
                 , theme |> ThemeColor.textLight |> Font.color
                 ]
-                (text "CDP")
+                ((case ( param.cdp, param.poolInfo ) of
+                    ( Success cdp, Just _ ) ->
+                        if Uint.isZero cdp.ratio then
+                            "Pool Min CDP"
+
+                        else
+                            "CDP"
+
+                    ( _, _ ) ->
+                        "CDP"
+                 )
+                    |> text
+                )
             , case param.cdp of
                 Success cdp ->
                     if
@@ -441,7 +478,16 @@ borrowCDP { priceFeed, theme } param =
                             Nothing
 
                         PriceFeed.Utilize ->
-                            cdp.percent
+                            case ( cdp.percent, param.poolInfo ) of
+                                ( Just perc, Just poolInfo ) ->
+                                    if perc == 0 then
+                                        poolInfo.cdp.percent
+
+                                    else
+                                        cdp.percent
+
+                                ( _, _ ) ->
+                                    cdp.percent
                      )
                         |> Maybe.map
                             (\percent ->
@@ -480,7 +526,13 @@ borrowCDP { priceFeed, theme } param =
                                 , tooltip = param.cdpTooltip
                                 , opened = param.opened
                                 , pair = param.pair
-                                , cdp = cdp.ratio
+                                , cdp =
+                                    case ( Uint.isZero cdp.ratio, param.poolInfo ) of
+                                        ( True, Just poolInfo ) ->
+                                            poolInfo.cdp.ratio
+
+                                        ( _, _ ) ->
+                                            cdp.ratio
                                 , theme = theme
                                 , styles =
                                     [ Font.size 18
