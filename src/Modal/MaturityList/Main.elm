@@ -550,7 +550,7 @@ sortBy { images, theme } (Modal { sorting, dropdown }) =
                 [ Sorting.Liquidity
                 , Sorting.Maturity
                 ]
-                    |> sortOptionsEl
+                    |> sortOptionsEl theme
 
                else
                 none
@@ -608,10 +608,10 @@ sortInfo { images, theme } (Modal { tooltip }) =
             , (if tooltip == Just Tooltip.SortInfo then
                 el
                     [ Font.size 14
-                    , Font.color Color.transparent300
+                    , theme |> ThemeColor.textLight |> Font.color
                     ]
                     ("Liquidity-sorting is based on the size of the product of X, Y, Z pools" |> text)
-                    |> Tooltip.belowAlignRight
+                    |> Tooltip.belowAlignRight theme
 
                else
                 none
@@ -620,16 +620,16 @@ sortInfo { images, theme } (Modal { tooltip }) =
             ]
 
 
-sortOptionsEl : List Sorting -> Element Msg
-sortOptionsEl sortList =
+sortOptionsEl : Theme -> List Sorting -> Element Msg
+sortOptionsEl theme sortList =
     column
         [ width <| px 130
         , height shrink
         , moveDown 10
-        , Background.color Color.dark300
+        , theme |> ThemeColor.dropdownBG |> Background.color
         , Border.rounded 4
         , Border.width 1
-        , Border.color Color.transparent100
+        , theme |> ThemeColor.border |> Border.color
         ]
         (sortList
             |> List.map
@@ -638,9 +638,9 @@ sortOptionsEl sortList =
                         [ width fill
                         , height shrink
                         , paddingXY 12 10
-                        , Font.color Color.light100
+                        , theme |> ThemeColor.text |> Font.color
                         , Font.size 14
-                        , mouseOver [ Background.color Color.primary100 ]
+                        , mouseOver [ theme |> ThemeColor.btnBackground |> Background.color ]
                         , el
                             [ width fill
                             , height fill

@@ -1,6 +1,6 @@
 module Utility.Tooltip exposing (belowAlignLeft, belowAlignRight)
 
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Element
     exposing
         ( Attribute
@@ -24,7 +24,6 @@ import Element.Border as Border
 import Html.Attributes
 import Svg
 import Svg.Attributes
-import Utility.Color as Color
 import Utility.ThemeColor as ThemeColor
 
 
@@ -40,13 +39,13 @@ belowAlignLeft theme element =
         ]
         [ el
             [ centerX ]
-            triangleUp
+            (triangleUp theme)
         , el
             [ width shrink
             , height shrink
             , alignLeft
             , padding 12
-            , Background.color Color.dark500
+            , theme |> ThemeColor.tooltipBG |> Background.color
             , Border.rounded 4
             , shadow
             ]
@@ -55,9 +54,10 @@ belowAlignLeft theme element =
 
 
 belowAlignRight :
-    Element msg
+    Theme
     -> Element msg
-belowAlignRight element =
+    -> Element msg
+belowAlignRight theme element =
     column
         [ width fill
         , height shrink
@@ -65,13 +65,13 @@ belowAlignRight element =
         ]
         [ el
             [ centerX ]
-            triangleUp
+            (triangleUp theme)
         , el
             [ width shrink
             , height shrink
             , alignRight
             , padding 12
-            , Background.color Color.dark500
+            , theme |> ThemeColor.tooltipBG |> Background.color
             , Border.rounded 4
             , shadow
             ]
@@ -79,8 +79,8 @@ belowAlignRight element =
         ]
 
 
-triangleUp : Element msg
-triangleUp =
+triangleUp : Theme -> Element msg
+triangleUp theme =
     Svg.svg
         [ Svg.Attributes.width "15"
         , Svg.Attributes.height "7"
@@ -89,7 +89,14 @@ triangleUp =
         ]
         [ Svg.path
             [ Svg.Attributes.d "M14.5 7L0.5 7L7.5 6.11959e-07L14.5 7Z"
-            , Svg.Attributes.fill "#0F1426"
+            , Svg.Attributes.fill
+                (case theme of
+                    Theme.Dark ->
+                        "#0F1426"
+
+                    Theme.Light ->
+                        "#E6E8EF"
+                )
             ]
             []
         ]

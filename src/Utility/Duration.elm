@@ -70,7 +70,7 @@ viewMaturity param =
         , (if param.opened == Just param.tooltip then
             el
                 [ Font.size 14
-                , Font.color Color.transparent300
+                , param.theme |> ThemeColor.textLight |> Font.color
                 ]
                 (param.maturity
                     |> Maturity.toDuration param.time
@@ -196,7 +196,7 @@ viewExpiredMaturity param =
                 , (if param.opened == Just param.tooltip then
                     el
                         [ Font.size 14
-                        , Font.color Color.transparent300
+                        , param.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (param.maturity
                             |> Maturity.toDuration param.time
