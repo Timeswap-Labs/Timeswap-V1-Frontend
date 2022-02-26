@@ -3,7 +3,12 @@ import { GlobalParams } from "../global";
 import cdTokenAbi from "../abi/cdToken";
 import pairAbi from "../abi/pair";
 import { updateTransferEventBalance } from "../helper";
-import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-sdk";
+// import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-sdk";
+
+const CONVENIENCE = {
+  4: '0x6bb008dc06B0Db1b3efCe0F7cB5901816224Da5d',
+  80001: '0xdb6433fd6b05991bc1ec2bdb8c9b1add577f37da'
+}
 
 export async function borrowPositionsInit(
   gp: GlobalParams,
