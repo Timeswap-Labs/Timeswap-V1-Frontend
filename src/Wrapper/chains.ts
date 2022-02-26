@@ -14,13 +14,13 @@ export const whitelistChains: Whitelist = {
     },
     whitelist: [
       {
-        address: "0x1a82c228450c2c8694a208de6ed2767f7aff7acc",
+        address: "0xa4abf1b77d9171eb910dd6f7ae863cf77c4225a4",
         name: "Dai Stablecoin",
         symbol: "DAI",
         decimals: 18,
       },
       {
-        address: "0x008e7c4fb5fe4a897e7903564f085318e3e76987",
+        address: "0x2193fbf6f024ad9dca5c7d615259ce4ddb8a9f89",
         name: "Ethereum",
         symbol: "ETH",
         decimals: 18,
