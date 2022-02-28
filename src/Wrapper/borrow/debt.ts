@@ -92,6 +92,8 @@ export async function debtTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
+  console.log("BGD", borrow);
+
   return await pool.upgrade(gp.metamaskSigner!).borrowGivenDebt({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,

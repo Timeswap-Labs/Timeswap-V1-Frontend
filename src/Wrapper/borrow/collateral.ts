@@ -97,6 +97,8 @@ export async function collateralTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
+  console.log("BGC", borrow);
+
   return await pool.upgrade(gp.metamaskSigner!).borrowGivenCollateral({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,
