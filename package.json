@@ -11,8 +11,8 @@
     "@ethersproject/providers": "^5.5.0",
     "@sentry/browser": "^6.17.6",
     "@sentry/tracing": "^6.17.6",
-    "@timeswap-labs/timeswap-v1-sdk": "^0.1.69",
-    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.36"
+    "@timeswap-labs/timeswap-v1-sdk": "^0.1.71",
+    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.38"
   },
   "devDependencies": {
     "@parcel/resolver-glob": "2.3.0",
