@@ -1,12 +1,7 @@
 import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
-import { ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
+import { CONVENIENCE, ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
 
 import { GlobalParams } from './global';
-
-const CONVENIENCE = {
-  4: '0x6bb008dc06B0Db1b3efCe0F7cB5901816224Da5d',
-  80001: '0xdb6433fd6b05991bc1ec2bdb8c9b1add577f37da'
-}
 
 export function approveSigner(
   app: ElmApp<Ports>,
