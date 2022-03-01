@@ -1066,10 +1066,10 @@
     "@ethersproject/address" "^5.5.0"
     tiny-invariant "^1.1.0"
 
-"@timeswap-labs/timeswap-v1-sdk@^0.1.71":
-  version "0.1.71"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.71/698e65c3ec16f2bc3bbada79c6bb040cc99372ca621e5eb0cb7732806729be70#13e3d6f1e7cae002a20951a76920dccaeab4b44e"
-  integrity sha512-zDFQAwVFgTkS4yQQIwsRZyY0WPnutjqQ6QXSqgow9J84iHJTnn14dDx4I/6t7coOdwuxQ40PdzEUBHyGrCt0JA==
+"@timeswap-labs/timeswap-v1-sdk@^0.1.73":
+  version "0.1.73"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.73/3b80d373525474a0368f646e724d04c1d13802691a3aa1fd9d5238b002758343#32974cb1c1ce1534de10c1dc29969f953fe86964"
+  integrity sha512-k7CV/SDBQwGVSYpuuDWuH44KaqTHIDaRN5N1hjT835Vf7RwS5hzNfRfJfgqV7voVNWRsTZPw+AfDZr5Z6NbKHw==
   dependencies:
     "@ethersproject/abstract-provider" "^5.5.1"
     "@ethersproject/abstract-signer" "^5.5.0"

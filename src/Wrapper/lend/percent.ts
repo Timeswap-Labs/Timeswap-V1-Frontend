@@ -81,8 +81,6 @@ export async function percentCalculate(
       },
     });
   } catch (err) {
-    console.log("err", err);
-
     app.ports.receiveLendAnswer.send({
       ...query,
       result: 0,

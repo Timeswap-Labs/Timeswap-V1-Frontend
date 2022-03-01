@@ -83,7 +83,8 @@ export function collateralCalculate(
         cdp,
       },
     });
-  } catch {
+  } catch(err) {
+
     query.pool.maturity = query.pool.maturity.toString();
     app.ports.receiveBorrowAnswer.send({
       ...query,

@@ -78,8 +78,6 @@ export function debtCalculate(
       },
     });
   } catch (err) {
-    console.log("borr err", err);
-
     app.ports.receiveBorrowAnswer.send({
       ...query,
       result: 0,
@@ -92,8 +90,6 @@ export async function debtTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  console.log("BGD", borrow);
-
   return await pool.upgrade(gp.metamaskSigner!).borrowGivenDebt({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,
