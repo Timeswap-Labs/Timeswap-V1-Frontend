@@ -7,6 +7,7 @@ import {
   calculateCdp,
   calculateMaxValue,
   calculatePercent,
+  percentMinMaxValues,
 } from "./common";
 
 export function debtCalculate(
@@ -25,6 +26,33 @@ export function debtCalculate(
       z: new Uint112(query.poolInfo.z),
     };
 
+    const { yMin, yMax, dueMin, dueMax } = percentMinMaxValues(
+      pool,
+      state,
+      assetOut,
+      currentTime
+    )
+
+    // Debt too low check
+    if (debtIn.lt(dueMin.debt)) {
+      app.ports.receiveBorrowAnswer.send({
+        ...query,
+        result: 1,
+      });
+
+      return;
+    }
+
+    // Debt too high check
+    if (debtIn.gt(dueMax.debt)) {
+      app.ports.receiveBorrowAnswer.send({
+        ...query,
+        result: 2,
+      });
+
+      return;
+    }
+
     const { dueOut, yIncrease } = pool.borrowGivenDebt(
       state,
       assetOut,
@@ -35,11 +63,9 @@ export function debtCalculate(
     const collateralIn = dueOut.collateral.toString();
 
     const percent = calculatePercent(
-      pool,
-      state,
-      assetOut,
-      yIncrease,
-      currentTime
+      yMin,
+      yMax,
+      yIncrease
     );
 
     const timeSlippage = currentTime.sub(60);

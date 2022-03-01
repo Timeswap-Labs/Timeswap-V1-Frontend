@@ -8,6 +8,7 @@ import {
   calculateCdp,
   calculateMinValue,
   calculatePercent,
+  percentMinMaxValues,
 } from "./common";
 
 export async function insuranceCalculate(
@@ -22,6 +23,33 @@ export async function insuranceCalculate(
     const insuranceOut = new Uint128(query.insuranceOut!);
     const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
 
+    const { yMin, yMax, claimsMin, claimsMax } = percentMinMaxValues(
+      pool,
+      state,
+      assetIn,
+      currentTime
+    )
+
+    // Insurance too high check
+    if (insuranceOut.gt(claimsMin.insuranceInterest.add(claimsMin.insurancePrincipal))  ) {
+      app.ports.receiveLendAnswer.send({
+        ...query,
+        result: 4,
+      });
+
+      return;
+    }
+
+    // Insurance too low check
+    if (insuranceOut.lt(claimsMax.insuranceInterest.add(claimsMax.insurancePrincipal))  ) {
+      app.ports.receiveLendAnswer.send({
+        ...query,
+        result: 3,
+      });
+
+      return;
+    }
+
     const { claimsOut, yDecrease } = pool.lendGivenInsurance(
       state,
       assetIn,
@@ -31,11 +59,9 @@ export async function insuranceCalculate(
     const bondOut = new Uint128(claimsOut.bondInterest).add(new Uint128(claimsOut.bondPrincipal));
 
     const percent = calculatePercent(
-      pool,
-      state,
-      assetIn,
+      yMin,
+      yMax,
       yDecrease,
-      currentTime
     );
 
     const timeSlippage =
@@ -53,10 +79,10 @@ export async function insuranceCalculate(
     const bondSlippage = new Uint128(claimsSlippage.bondInterest).add(new Uint128(claimsSlippage.bondPrincipal));
 
     const minBond = calculateMinValue(
-      bondSlippage.sub(query.assetIn),
+      bondSlippage.sub(claimsOut.bondPrincipal),
       query.slippage
     )
-      .add(query.assetIn)
+      .add(claimsOut.bondPrincipal)
       .toString();
 
     const apr = calculateApr(bondOut, query.assetIn, maturity, currentTime);

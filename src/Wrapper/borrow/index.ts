@@ -1,3 +1,4 @@
+import { Uint112 } from '@timeswap-labs/timeswap-v1-sdk-core';
 import { GlobalParams } from "../global";
 import { getPool, getPoolSDK, updateCachedTxns } from "../helper";
 import { collateralCalculate, collateralTransaction } from "./collateral";
@@ -82,6 +83,19 @@ function borrowQueryCalculation(
   app: ElmApp<Ports>,
   query: BorrowQuery
 ) {
+  // Insufficient Asset in pool check
+  const assetOut = new Uint112(query.assetOut);
+  const stateX = new Uint112(query.poolInfo.x);
+
+  if (assetOut.gt(stateX)) {
+    app.ports.receiveBorrowAnswer.send({
+      ...query,
+      result: 5,
+    });
+
+    return;
+  }
+
   const pool = getPool(query);
   const { percent, debtIn, collateralIn } = query;
 

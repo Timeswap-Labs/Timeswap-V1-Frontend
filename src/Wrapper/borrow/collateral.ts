@@ -12,6 +12,7 @@ import {
   calculateCdp,
   calculateMaxValue,
   calculatePercent,
+  percentMinMaxValues,
 } from "./common";
 
 export function collateralCalculate(
@@ -30,6 +31,33 @@ export function collateralCalculate(
       z: new Uint112(query.poolInfo.z),
     };
 
+    const { yMin, yMax, dueMin, dueMax } = percentMinMaxValues(
+      pool,
+      state,
+      assetOut,
+      currentTime
+    )
+
+    // Collateral too high check
+    if (collateralIn.gt(dueMin.collateral)) {
+      app.ports.receiveBorrowAnswer.send({
+        ...query,
+        result: 4,
+      });
+
+      return;
+    }
+
+    // Collateral too low check
+    if (collateralIn.lt(dueMax.collateral)) {
+      app.ports.receiveBorrowAnswer.send({
+        ...query,
+        result: 3,
+      });
+
+      return;
+    }
+
     const { dueOut, yIncrease } = pool.borrowGivenCollateral(
       state,
       assetOut,
@@ -39,11 +67,9 @@ export function collateralCalculate(
     const debtIn = dueOut.debt.toString();
 
     const percent = calculatePercent(
-      pool,
-      state,
-      assetOut,
+      yMin,
+      yMax,
       yIncrease,
-      currentTime
     );
 
     const timeSlippage = currentTime.sub(60);
@@ -98,8 +124,6 @@ export async function collateralTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  console.log("BGC", borrow);
-
   return await pool.upgrade(gp.metamaskSigner!).borrowGivenCollateral({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,

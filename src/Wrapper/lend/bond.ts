@@ -8,6 +8,7 @@ import {
   calculateCdp,
   calculateMinValue,
   calculatePercent,
+  percentMinMaxValues,
 } from "./common";
 
 export function bondCalculate(
@@ -20,7 +21,38 @@ export function bondCalculate(
     const currentTime = getCurrentTime();
     const assetIn = new Uint112(query.assetIn);
     const bondOut = new Uint128(query.bondOut!);
-    const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
+    const state = {
+      x: new Uint112(query.poolInfo.x),
+      y: new Uint112(query.poolInfo.y),
+      z: new Uint112(query.poolInfo.z)
+    };
+
+    const { yMin, yMax, claimsMin, claimsMax } = percentMinMaxValues(
+      pool,
+      state,
+      assetIn,
+      currentTime
+    )
+
+    // Bond too low check
+    if (bondOut.lt(claimsMin.bondInterest.add(claimsMin.bondPrincipal))) {
+      app.ports.receiveLendAnswer.send({
+        ...query,
+        result: 1,
+      });
+
+      return;
+    }
+
+    // Bond too high check
+    if (bondOut.gt(claimsMax.bondInterest.add(claimsMax.bondPrincipal))) {
+      app.ports.receiveLendAnswer.send({
+        ...query,
+        result: 2,
+      });
+
+      return;
+    }
 
     const { claimsOut, yDecrease } = pool.lendGivenBond(
       state,
@@ -28,14 +60,13 @@ export function bondCalculate(
       bondOut,
       currentTime
     );
+
     const insuranceOut = new Uint128(claimsOut.insuranceInterest).add(new Uint128(claimsOut.insurancePrincipal));
 
     const percent = calculatePercent(
-      pool,
-      state,
-      assetIn,
+      yMin,
+      yMax,
       yDecrease,
-      currentTime
     );
 
     const timeSlippage =

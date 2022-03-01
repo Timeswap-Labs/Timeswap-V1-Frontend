@@ -63,27 +63,34 @@ export function calculateMaxValue(value: Uint112, slippage: number): Uint256 {
   return new Uint256(value).mul(Math.round(100000 * (1 + slippage))).div(100000);
 }
 
-export function calculatePercent(
+export function percentMinMaxValues(
   pool: Pool,
   state : CP,
   assetOut: Uint112,
-  yIncrease: Uint112,
   currentTime: Uint256
-): Uint256 {
-  const { yIncrease: yMin } = pool.borrowGivenPercent(
+) {
+  const { yIncrease: yMin, dueOut: dueMin } = pool.borrowGivenPercent(
     state,
     assetOut,
     new Uint40(0),
     currentTime
   );
-  const { yIncrease: yMax } = pool.borrowGivenPercent(
+  const { yIncrease: yMax, dueOut: dueMax } = pool.borrowGivenPercent(
     state,
     assetOut,
     new Uint40(1n << 32n),
     currentTime
   );
 
-  return new Uint256(yIncrease)
+  return { yMin, yMax, dueMin, dueMax };
+}
+
+export function calculatePercent(
+  yMin: Uint112,
+  yMax: Uint112,
+  yDecrease: Uint112
+): Uint256 {
+  return new Uint256(yDecrease)
     .sub(yMin)
     .mul(1n << 32n)
     .div(yMax.sub(yMin));

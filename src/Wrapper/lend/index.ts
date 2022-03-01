@@ -1,3 +1,4 @@
+import { Uint112 } from '@timeswap-labs/timeswap-v1-sdk-core';
 import { GlobalParams } from './../global';
 import { getPool, getPoolSDK, updateCachedTxns } from "../helper";
 import { bondCalculate, bondTransaction } from "./bond";
@@ -82,6 +83,18 @@ async function lendQueryCalculation(
   app: ElmApp<Ports>,
   query: LendQuery,
 ) {
+  // Asset Overflow check
+  try {
+    const assetIn = new Uint112(query.assetIn);
+    const stateX = new Uint112(query.poolInfo.x);
+    stateX.add(assetIn);
+  } catch (error) {
+    app.ports.receiveLendAnswer.send({
+      ...query,
+      result: 5,
+    });
+  }
+
   const pool = getPool(query);
   const { percent, bondOut, insuranceOut } = query;
 

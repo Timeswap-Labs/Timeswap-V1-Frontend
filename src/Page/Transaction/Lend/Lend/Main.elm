@@ -56,7 +56,7 @@ import Page.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.Lend.Lend.Disabled as Disabled
-import Page.Transaction.Lend.Lend.Error exposing (Error)
+import Page.Transaction.Lend.Lend.Error as Error exposing (Error)
 import Page.Transaction.Lend.Lend.Query as Query
 import Page.Transaction.Lend.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.MaxButton as MaxButton
@@ -1297,45 +1297,64 @@ toClaimsGivenInsurance result =
             Failure error
 
 
-hasTransaction :
+type Txn
+    = HasTxn
+    | NoTxn
+
+
+fromTxnToResult :
     { transaction | assetIn : String, claimsOut : ClaimsOut }
-    -> Bool
-hasTransaction transaction =
-    (transaction.assetIn
-        |> Input.isZero
-        |> not
-    )
-        && (case transaction.claimsOut of
-                Default (Success _) ->
-                    True
+    -> Result Error Txn
+fromTxnToResult { assetIn, claimsOut } =
+    if
+        assetIn
+            |> Input.isZero
+    then
+        Ok NoTxn
 
-                Slider { claims } ->
-                    case claims of
-                        Success _ ->
-                            True
+    else
+        case claimsOut of
+            Default (Success _) ->
+                Ok HasTxn
 
-                        _ ->
-                            False
+            Default (Loading _) ->
+                Ok NoTxn
 
-                Bond { claims } ->
-                    case claims of
-                        Success _ ->
-                            True
+            Default (Failure error) ->
+                Err error
 
-                        _ ->
-                            False
+            Slider { claims } ->
+                case claims of
+                    Success _ ->
+                        Ok HasTxn
 
-                Insurance { claims } ->
-                    case claims of
-                        Success _ ->
-                            True
+                    Loading _ ->
+                        Ok NoTxn
 
-                        _ ->
-                            False
+                    Failure error ->
+                        Err error
 
-                _ ->
-                    False
-           )
+            Bond { claims } ->
+                case claims of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
+
+            Insurance { claims } ->
+                case claims of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
 
 
 noCmd :
@@ -2085,10 +2104,10 @@ buttons { theme } blockchain asset transaction =
                         ( transaction.assetIn
                             |> Uint.fromAmount asset
                         , asset |> Token.toERC20
-                        , transaction |> hasTransaction
+                        , transaction |> fromTxnToResult
                         )
                     of
-                        ( Just assetIn, Just erc20, True ) ->
+                        ( Just assetIn, Just erc20, Ok HasTxn ) ->
                             case
                                 ( user
                                     |> User.getBalance asset
@@ -2148,46 +2167,42 @@ buttons { theme } blockchain asset transaction =
                                 _ ->
                                     []
 
-                        ( Just assetIn, Just erc20, False ) ->
-                            case
-                                ( user
-                                    |> User.getBalance asset
-                                    |> (Maybe.map << Remote.map)
-                                        (Uint.hasEnough assetIn)
-                                , user
-                                    |> User.getAllowance erc20
-                                    |> (Maybe.map << Remote.map)
-                                        (Uint.hasEnough assetIn)
-                                )
-                            of
-                                ( Just (Failure error), _ ) ->
-                                    [ Button.error error |> map never ]
+                        ( Just _, Just _, Err err ) ->
+                            [ Button.customError (err |> Error.toString) |> map never ]
 
-                                ( _, Just (Failure error) ) ->
-                                    [ Button.error error |> map never ]
-
-                                ( _, Just (Success True) ) ->
-                                    [ theme |> disabledLend ]
-
-                                ( _, Just (Success False) ) ->
-                                    [ disabledApprove theme erc20
-                                    , theme |> disabledLend
-                                    ]
-
-                                ( Just (Loading _), Just (Loading _) ) ->
-                                    [ theme |> Button.checkingAllowance |> map never
-                                    , theme |> Button.checkingBalance |> map never
-                                    ]
-
-                                ( _, Just (Loading _) ) ->
-                                    [ theme |> Button.checkingAllowance |> map never
-                                    , theme |> disabledLend
-                                    ]
-
-                                _ ->
-                                    []
-
-                        ( Just assetIn, Nothing, True ) ->
+                        -- ( Just assetIn, Just erc20, Err err ) ->
+                        --     case
+                        --         ( user
+                        --             |> User.getBalance asset
+                        --             |> (Maybe.map << Remote.map)
+                        --                 (Uint.hasEnough assetIn)
+                        --         , user
+                        --             |> User.getAllowance erc20
+                        --             |> (Maybe.map << Remote.map)
+                        --                 (Uint.hasEnough assetIn)
+                        --         )
+                        --     of
+                        --         ( Just (Failure error), _ ) ->
+                        --             [ Button.error error |> map never ]
+                        --         ( _, Just (Failure error) ) ->
+                        --             [ Button.error error |> map never ]
+                        --         ( _, Just (Success True) ) ->
+                        --             [ theme |> disabledLend ]
+                        --         ( _, Just (Success False) ) ->
+                        --             [ disabledApprove theme erc20
+                        --             , theme |> disabledLend
+                        --             ]
+                        --         ( Just (Loading _), Just (Loading _) ) ->
+                        --             [ theme |> Button.checkingAllowance |> map never
+                        --             , theme |> Button.checkingBalance |> map never
+                        --             ]
+                        --         ( _, Just (Loading _) ) ->
+                        --             [ theme |> Button.checkingAllowance |> map never
+                        --             , theme |> disabledLend
+                        --             ]
+                        --         _ ->
+                        --             []
+                        ( Just assetIn, Nothing, Ok HasTxn ) ->
                             case
                                 user
                                     |> User.getBalance asset
@@ -2209,7 +2224,7 @@ buttons { theme } blockchain asset transaction =
                                 Nothing ->
                                     []
 
-                        ( Just assetIn, Nothing, False ) ->
+                        ( Just assetIn, Nothing, Err _ ) ->
                             case
                                 user
                                     |> User.getBalance asset
