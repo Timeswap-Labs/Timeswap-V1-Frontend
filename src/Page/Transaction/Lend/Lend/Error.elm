@@ -45,16 +45,16 @@ toString : Error -> String
 toString error =
     case error of
         BondUnderflow ->
-            "Bond receive too low"
+            "Bond to receive too low"
 
         BondOverflow ->
-            "Bond receive too high"
+            "Bond to receive too high"
 
         InsuranceUnderflow ->
-            "Insurance receive too low"
+            "Insurance to receive too low"
 
         InsuranceOverflow ->
-            "Insurance receive too high"
+            "Insurance to receive too high"
 
         PrincipalOverflow ->
             "Lend amount too high"

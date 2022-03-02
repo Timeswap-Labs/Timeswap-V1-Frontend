@@ -55,7 +55,7 @@ import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Page.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Borrow.Borrow.Disabled as Disabled
-import Page.Transaction.Borrow.Borrow.Error exposing (Error)
+import Page.Transaction.Borrow.Borrow.Error as Error exposing (Error)
 import Page.Transaction.Borrow.Borrow.Query as Query
 import Page.Transaction.Borrow.Borrow.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.Button as Button
@@ -1898,70 +1898,105 @@ toStateGivenCollateral result =
             Failure error
 
 
-hasTransaction :
+type Txn
+    = HasTxn
+    | NoTxn
+
+
+fromTxnToResult :
     { transaction | state : State }
-    -> Bool
-hasTransaction transaction =
-    case transaction.state of
+    -> Result Error Txn
+fromTxnToResult { state } =
+    case state of
         Default { assetOut, dues } ->
-            (assetOut
-                |> Input.isZero
-                |> not
-            )
-                && (dues
-                        |> Remote.map (\_ -> True)
-                        |> Remote.withDefault False
-                   )
+            if assetOut |> Input.isZero then
+                Ok NoTxn
+
+            else
+                case dues of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
 
         DefaultMax { collateralIn, out } ->
-            (collateralIn
-                |> Input.isZero
-                |> not
-            )
-                && (out
-                        |> Remote.map (\_ -> True)
-                        |> Remote.withDefault False
-                   )
+            if collateralIn |> Input.isZero then
+                Ok NoTxn
+
+            else
+                case out of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
 
         Slider { assetOut, dues } ->
-            (assetOut
-                |> Input.isZero
-                |> not
-            )
-                && (dues
-                        |> Remote.map (\_ -> True)
-                        |> Remote.withDefault False
-                   )
+            if assetOut |> Input.isZero then
+                Ok NoTxn
+
+            else
+                case dues of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
 
         Debt { assetOut, dues } ->
-            (assetOut
-                |> Input.isZero
-                |> not
-            )
-                && (dues
-                        |> Remote.map (\_ -> True)
-                        |> Remote.withDefault False
-                   )
+            if assetOut |> Input.isZero then
+                Ok NoTxn
+
+            else
+                case dues of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
 
         Collateral { assetOut, dues } ->
-            (assetOut
-                |> Input.isZero
-                |> not
-            )
-                && (dues
-                        |> Remote.map (\_ -> True)
-                        |> Remote.withDefault False
-                   )
+            if assetOut |> Input.isZero then
+                Ok NoTxn
+
+            else
+                case dues of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
 
         AdvancedMax { collateralIn, out } ->
-            (collateralIn
-                |> Input.isZero
-                |> not
-            )
-                && (out
-                        |> Remote.map (\_ -> True)
-                        |> Remote.withDefault False
-                   )
+            if collateralIn |> Input.isZero then
+                Ok NoTxn
+
+            else
+                case out of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
 
 
 toCollateral : Token -> { transaction | state : State } -> Maybe Uint
@@ -3018,13 +3053,12 @@ buttons { theme } blockchain collateral transaction =
             |> Maybe.map
                 (\user ->
                     case
-                        ( transaction
-                            |> toCollateral collateral
+                        ( transaction |> toCollateral collateral
                         , collateral |> Token.toERC20
-                        , transaction |> hasTransaction
+                        , transaction |> fromTxnToResult
                         )
                     of
-                        ( Just collateralIn, Just erc20, True ) ->
+                        ( Just collateralIn, Just erc20, Ok HasTxn ) ->
                             case
                                 ( user
                                     |> User.getBalance collateral
@@ -3084,7 +3118,10 @@ buttons { theme } blockchain collateral transaction =
                                 _ ->
                                     []
 
-                        ( Just collateralIn, Just erc20, False ) ->
+                        ( _, _, Err err ) ->
+                            [ Button.customError (err |> Error.toString) |> map never ]
+
+                        ( Just collateralIn, Just erc20, Ok NoTxn ) ->
                             case
                                 ( user
                                     |> User.getBalance collateral
@@ -3123,7 +3160,7 @@ buttons { theme } blockchain collateral transaction =
                                 _ ->
                                     []
 
-                        ( Just collateralIn, Nothing, True ) ->
+                        ( Just collateralIn, Nothing, Ok HasTxn ) ->
                             case
                                 user
                                     |> User.getBalance collateral
@@ -3145,7 +3182,7 @@ buttons { theme } blockchain collateral transaction =
                                 Nothing ->
                                     []
 
-                        ( Just collateralIn, Nothing, False ) ->
+                        ( Just collateralIn, Nothing, Ok NoTxn ) ->
                             case
                                 user
                                     |> User.getBalance collateral

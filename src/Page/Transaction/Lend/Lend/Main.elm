@@ -2167,41 +2167,48 @@ buttons { theme } blockchain asset transaction =
                                 _ ->
                                     []
 
-                        ( Just _, Just _, Err err ) ->
+                        ( Just _, _, Err err ) ->
                             [ Button.customError (err |> Error.toString) |> map never ]
 
-                        -- ( Just assetIn, Just erc20, Err err ) ->
-                        --     case
-                        --         ( user
-                        --             |> User.getBalance asset
-                        --             |> (Maybe.map << Remote.map)
-                        --                 (Uint.hasEnough assetIn)
-                        --         , user
-                        --             |> User.getAllowance erc20
-                        --             |> (Maybe.map << Remote.map)
-                        --                 (Uint.hasEnough assetIn)
-                        --         )
-                        --     of
-                        --         ( Just (Failure error), _ ) ->
-                        --             [ Button.error error |> map never ]
-                        --         ( _, Just (Failure error) ) ->
-                        --             [ Button.error error |> map never ]
-                        --         ( _, Just (Success True) ) ->
-                        --             [ theme |> disabledLend ]
-                        --         ( _, Just (Success False) ) ->
-                        --             [ disabledApprove theme erc20
-                        --             , theme |> disabledLend
-                        --             ]
-                        --         ( Just (Loading _), Just (Loading _) ) ->
-                        --             [ theme |> Button.checkingAllowance |> map never
-                        --             , theme |> Button.checkingBalance |> map never
-                        --             ]
-                        --         ( _, Just (Loading _) ) ->
-                        --             [ theme |> Button.checkingAllowance |> map never
-                        --             , theme |> disabledLend
-                        --             ]
-                        --         _ ->
-                        --             []
+                        ( Just assetIn, Just erc20, Ok NoTxn ) ->
+                            case
+                                ( user
+                                    |> User.getBalance asset
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough assetIn)
+                                , user
+                                    |> User.getAllowance erc20
+                                    |> (Maybe.map << Remote.map)
+                                        (Uint.hasEnough assetIn)
+                                )
+                            of
+                                ( Just (Failure error), _ ) ->
+                                    [ Button.error error |> map never ]
+
+                                ( _, Just (Failure error) ) ->
+                                    [ Button.error error |> map never ]
+
+                                ( _, Just (Success True) ) ->
+                                    [ theme |> disabledLend ]
+
+                                ( _, Just (Success False) ) ->
+                                    [ disabledApprove theme erc20
+                                    , theme |> disabledLend
+                                    ]
+
+                                ( Just (Loading _), Just (Loading _) ) ->
+                                    [ theme |> Button.checkingAllowance |> map never
+                                    , theme |> Button.checkingBalance |> map never
+                                    ]
+
+                                ( _, Just (Loading _) ) ->
+                                    [ theme |> Button.checkingAllowance |> map never
+                                    , theme |> disabledLend
+                                    ]
+
+                                _ ->
+                                    []
+
                         ( Just assetIn, Nothing, Ok HasTxn ) ->
                             case
                                 user
@@ -2224,7 +2231,7 @@ buttons { theme } blockchain asset transaction =
                                 Nothing ->
                                     []
 
-                        ( Just assetIn, Nothing, Err _ ) ->
+                        ( Just assetIn, Nothing, Ok NoTxn ) ->
                             case
                                 user
                                     |> User.getBalance asset

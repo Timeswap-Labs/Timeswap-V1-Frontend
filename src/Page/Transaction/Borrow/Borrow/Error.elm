@@ -45,19 +45,19 @@ toString : Error -> String
 toString error =
     case error of
         DebtUnderflow ->
-            "Debt receive too low"
+            "Debt to receive too low"
 
         DebtOverflow ->
-            "Debt receive too high"
+            "Debt to receive too high"
 
         CollateralUnderflow ->
-            "Collateral lock too low"
+            "Collateral to lock too low"
 
         CollateralOverflow ->
-            "Collateral lock too high"
+            "Collateral to lock too high"
 
         PrincipalOverflow ->
-            "Lend amount too much"
+            "Borrow amount too high"
 
         Invalid ->
             "Invalid Transaction"
