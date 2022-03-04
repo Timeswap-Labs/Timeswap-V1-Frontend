@@ -507,7 +507,7 @@ view model modal =
                         |> Maybe.map
                             (\user ->
                                 payTransaction
-                                    |> PayTransaction.view model user
+                                    |> PayTransaction.view model blockchain user
                                     |> map PayTransactionMsg
                             )
                         |> Maybe.withDefault none

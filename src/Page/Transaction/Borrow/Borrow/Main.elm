@@ -2848,23 +2848,24 @@ collateralInSection model blockchain collateral { tooltip } or =
                     _ ->
                         none
                 ]
-            , blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen (User.getBalance collateral)
-                |> Maybe.map
-                    (\balance ->
-                        MaxButton.view
-                            { onPress = InputMax
-                            , onMouseEnter = OnMouseEnter
-                            , onMouseLeave = OnMouseLeave
-                            , tooltip = Tooltip.Balance
-                            , opened = tooltip
-                            , token = collateral
-                            , balance = balance
-                            , theme = model.theme
-                            }
-                    )
-                |> Maybe.withDefault none
+
+            -- , blockchain
+            --     |> Blockchain.toUser
+            --     |> Maybe.andThen (User.getBalance collateral)
+            --     |> Maybe.map
+            --         (\balance ->
+            --             MaxButton.view
+            --                 { onPress = InputMax
+            --                 , onMouseEnter = OnMouseEnter
+            --                 , onMouseLeave = OnMouseLeave
+            --                 , tooltip = Tooltip.Balance
+            --                 , opened = tooltip
+            --                 , token = collateral
+            --                 , balance = balance
+            --                 , theme = model.theme
+            --                 }
+            --         )
+            --     |> Maybe.withDefault none
             ]
         , case or of
             Left string ->
@@ -2995,23 +2996,24 @@ advancedCollateralInSection model blockchain collateral { tooltip } or =
                     _ ->
                         none
                 ]
-            , blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen (User.getBalance collateral)
-                |> Maybe.map
-                    (\balance ->
-                        MaxButton.view
-                            { onPress = InputMax
-                            , onMouseEnter = OnMouseEnter
-                            , onMouseLeave = OnMouseLeave
-                            , tooltip = Tooltip.Balance
-                            , opened = tooltip
-                            , token = collateral
-                            , balance = balance
-                            , theme = model.theme
-                            }
-                    )
-                |> Maybe.withDefault none
+
+            -- , blockchain
+            --     |> Blockchain.toUser
+            --     |> Maybe.andThen (User.getBalance collateral)
+            --     |> Maybe.map
+            --         (\balance ->
+            --             MaxButton.view
+            --                 { onPress = InputMax
+            --                 , onMouseEnter = OnMouseEnter
+            --                 , onMouseLeave = OnMouseLeave
+            --                 , tooltip = Tooltip.Balance
+            --                 , opened = tooltip
+            --                 , token = collateral
+            --                 , balance = balance
+            --                 , theme = model.theme
+            --                 }
+            --         )
+            --     |> Maybe.withDefault none
             ]
         , Textbox.view model
             { onMouseEnter = OnMouseEnter

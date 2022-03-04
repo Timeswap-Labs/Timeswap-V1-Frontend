@@ -13,17 +13,17 @@ import Blockchain.User.Dues as Dues
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.TokenId as TokenId exposing (TokenId)
 import Blockchain.User.WritePay exposing (WritePay)
+import Data.Address as Address
 import Data.Backdrop exposing (Backdrop)
-import Data.Chain exposing (Chain)
+import Data.Chain as Chain
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
-import Data.Support exposing (Support)
 import Data.Theme as Theme exposing (Theme)
-import Data.Token as Token exposing (Token)
+import Data.Token as Token
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
@@ -37,6 +37,7 @@ import Element
         , height
         , map
         , minimum
+        , newTabLink
         , none
         , padding
         , paddingEach
@@ -53,23 +54,19 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Json.Decode as Decode
-import Json.Encode exposing (Value)
 import Modal.Outside as Outside
 import Modal.PayTransaction.Error as Error exposing (Error)
 import Modal.PayTransaction.Tooltip as Tooltip exposing (Tooltip)
-import Modal.PayTransaction.Total exposing (Total)
 import Page.Transaction.Button as Button
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Textbox as Textbox
 import Sort.Dict as Dict exposing (Dict)
 import Sort.Set as Set exposing (Set)
-import Time exposing (Posix)
+import Url.Builder as Builder
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
-import Utility.Loading as Loading
 import Utility.Maybe as Maybe
 import Utility.Result as Result
 import Utility.ThemeColor as ThemeColor
@@ -519,10 +516,11 @@ view :
         , images : Images
         , theme : Theme
     }
+    -> Blockchain
     -> User
     -> Modal
     -> Element Msg
-view ({ backdrop, theme } as model) user (Modal modal) =
+view ({ backdrop, theme } as model) blockchain user (Modal modal) =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -542,7 +540,7 @@ view ({ backdrop, theme } as model) user (Modal modal) =
                     [ width fill
                     ]
                     [ header model
-                    , body model user modal
+                    , body model blockchain user modal
                     ]
                 ]
         }
@@ -591,6 +589,7 @@ body :
         | theme : Theme
         , images : Images
     }
+    -> Blockchain
     -> User
     ->
         { modal
@@ -599,7 +598,7 @@ body :
             , tooltip : Maybe Tooltip
         }
     -> Element Msg
-body model user modal =
+body model blockchain user modal =
     column
         [ width fill
         , padding 20
@@ -618,7 +617,7 @@ body model user modal =
             [ switchRepayFull model modal
             , switchRepayCustom model modal
             ]
-        , repayList model user modal
+        , repayList model blockchain user modal
         , buttons model user modal
         ]
 
@@ -722,6 +721,7 @@ repayList :
         | theme : Theme
         , images : Images
     }
+    -> Blockchain
     -> User
     ->
         { modal
@@ -730,7 +730,7 @@ repayList :
             , tooltip : Maybe Tooltip
         }
     -> Element Msg
-repayList model user ({ state, pool } as modal) =
+repayList model blockchain user ({ state, pool } as modal) =
     column
         [ width fill
         , spacing 12
@@ -747,7 +747,7 @@ repayList model user ({ state, pool } as modal) =
                             )
                                 (dict
                                     |> Dict.toList
-                                    |> List.map (fullPosition model modal)
+                                    |> List.map (fullPosition model blockchain user modal)
                                 )
                                 (dict
                                     |> Dict.foldl
@@ -829,6 +829,8 @@ fullPosition :
         | theme : Theme
         , images : Images
     }
+    -> Blockchain
+    -> User
     ->
         { modal
             | pool : Pool
@@ -836,7 +838,7 @@ fullPosition :
         }
     -> ( TokenId, Due )
     -> Element Msg
-fullPosition { theme, images } { pool, tooltip } ( tokenId, due ) =
+fullPosition { theme, images } blockchain user { pool, tooltip } ( tokenId, due ) =
     column
         [ width fill
         , paddingXY 16 12
@@ -861,17 +863,32 @@ fullPosition { theme, images } { pool, tooltip } ( tokenId, due ) =
                 , Font.bold
                 ]
                 (text (tokenId |> TokenId.toString))
-            , images
-                |> (case theme of
-                        Theme.Dark ->
-                            Image.link
+            , case user |> User.getPoolNatives pool of
+                Success (Just natives) ->
+                    newTabLink
+                        [ alignRight ]
+                        { url =
+                            Builder.crossOrigin (blockchain |> Blockchain.toChain |> Chain.toNftExplorerUrl)
+                                [ natives.collateralizedDebt |> Address.toString
+                                , tokenId |> Uint.toString
+                                ]
+                                []
+                        , label =
+                            images
+                                |> (case theme of
+                                        Theme.Dark ->
+                                            Image.link
 
-                        Theme.Light ->
-                            Image.linkSecondary
-                   )
-                    [ width <| px 14
-                    , height <| px 14
-                    ]
+                                        Theme.Light ->
+                                            Image.linkSecondary
+                                   )
+                                    [ width <| px 14
+                                    , height <| px 14
+                                    ]
+                        }
+
+                _ ->
+                    none
             ]
         , row
             [ width fill
