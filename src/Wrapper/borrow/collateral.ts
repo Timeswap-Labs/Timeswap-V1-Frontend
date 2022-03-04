@@ -1,8 +1,4 @@
-import {
-  Pool,
-  Uint112,
-  Uint256,
-} from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Pool, Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 
 import { GlobalParams } from "../global";
@@ -10,6 +6,7 @@ import { getCurrentTime } from "../helper";
 import {
   calculateApr,
   calculateCdp,
+  calculateHelper,
   calculateMaxValue,
   calculatePercent,
   percentMinMaxValues,
@@ -36,7 +33,7 @@ export function collateralCalculate(
       state,
       assetOut,
       currentTime
-    )
+    );
 
     // Collateral too high check
     if (collateralIn.gt(dueMin.collateral)) {
@@ -66,28 +63,45 @@ export function collateralCalculate(
     );
     const debtIn = dueOut.debt.toString();
 
-    const percent = calculatePercent(
-      yMin,
-      yMax,
-      yIncrease,
-    );
+    const percent = calculatePercent(yMin, yMax, yIncrease);
 
-    const timeSlippage = currentTime.sub(60);
-    const { dueOut: dueSlippage } = pool.borrowGivenCollateral(
+    const timeSlippageBefore = currentTime.sub(60);
+    const timeSlippageAfter =
+      currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
+        ? maturity.sub(1)
+        : currentTime.add(3 * 60);
+
+    const { yIncrease: yIncreaseBefore } = pool.borrowGivenCollateral(
       state,
       assetOut,
       collateralIn,
-      timeSlippage
+      timeSlippageBefore
+    );
+    const { xDecrease: xDecreaseAfter } = pool.borrowGivenCollateral(
+      state,
+      assetOut,
+      collateralIn,
+      timeSlippageAfter
     );
 
-    const maxDebt = calculateMaxValue(
-      dueSlippage.debt.sub(query.assetOut),
-      query.slippage
-    )
-      .add(query.assetOut)
+    const interestBefore = calculateHelper(
+      maturity,
+      timeSlippageBefore,
+      yIncreaseBefore
+    );
+
+    const principalAfter = xDecreaseAfter;
+
+    const maxDebt = calculateMaxValue(interestBefore, query.slippage)
+      .add(principalAfter)
       .toString();
 
-    const apr = calculateApr(dueOut.debt, query.assetOut, maturity, currentTime);
+    const apr = calculateApr(
+      dueOut.debt,
+      query.assetOut,
+      maturity,
+      currentTime
+    );
     const cdp = calculateCdp(
       query.assetOut,
       query.pool.asset.decimals,
@@ -109,8 +123,7 @@ export function collateralCalculate(
         cdp,
       },
     });
-  } catch(err) {
-
+  } catch (err) {
     query.pool.maturity = query.pool.maturity.toString();
     app.ports.receiveBorrowAnswer.send({
       ...query,

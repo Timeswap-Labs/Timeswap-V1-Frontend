@@ -1,4 +1,29 @@
-import { CP, Pool, Uint112, Uint256, Uint40 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import {
+  CP,
+  Pool,
+  Uint112,
+  Uint256,
+  Uint40,
+} from "@timeswap-labs/timeswap-v1-sdk-core";
+
+export function calculateHelper(
+  maturity: Uint256,
+  now: Uint256,
+  yIncreaseBefore: Uint112
+) {
+  const interestBefore = new Uint256(maturity);
+  interestBefore.subAssign(now);
+  interestBefore.mulAssign(yIncreaseBefore);
+  interestBefore.set(shiftRightUp(interestBefore, new Uint256(32)));
+
+  return new Uint112(interestBefore);
+}
+
+function shiftRightUp(x: Uint256, y: Uint256): Uint256 {
+  const z = x.shr(y);
+  if (x.ne(z.shl(y))) z.addAssign(1);
+  return z;
+}
 
 export function calculateApr(
   debt: Uint112,
@@ -47,25 +72,27 @@ export function calculateCdp(
 
     percent =
       Number(
-        new Uint256(collateralIn).toBigInt()
-        * BigInt(Math.floor(collateralSpot * 10000000000))
-        * (pow(10n, BigInt(assetDecimals)))
-        / BigInt(assetOut)
-        / BigInt(Math.floor(assetSpot * 1000000))
-        / (pow(10n, BigInt(collateralDecimals)))
-      ) / 10000
+        (new Uint256(collateralIn).toBigInt() *
+          BigInt(Math.floor(collateralSpot * 10000000000)) *
+          pow(10n, BigInt(assetDecimals))) /
+          BigInt(assetOut) /
+          BigInt(Math.floor(assetSpot * 1000000)) /
+          pow(10n, BigInt(collateralDecimals))
+      ) / 10000;
   }
 
   return { ratio, percent };
 }
 
 export function calculateMaxValue(value: Uint112, slippage: number): Uint256 {
-  return new Uint256(value).mul(Math.round(100000 * (1 + slippage))).div(100000);
+  return new Uint256(value)
+    .mul(Math.round(100000 * (1 + slippage)))
+    .div(100000);
 }
 
 export function percentMinMaxValues(
   pool: Pool,
-  state : CP,
+  state: CP,
   assetOut: Uint112,
   currentTime: Uint256
 ) {
