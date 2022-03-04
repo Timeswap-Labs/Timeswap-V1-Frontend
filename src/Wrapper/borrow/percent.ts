@@ -8,7 +8,12 @@ import {
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
-import { calculateApr, calculateCdp, calculateMaxValue } from "./common";
+import {
+  calculateApr,
+  calculateCdp,
+  calculateHelper,
+  calculateMaxValue,
+} from "./common";
 
 export function percentCalculate(
   app: ElmApp<Ports>,
@@ -33,27 +38,49 @@ export function percentCalculate(
     const debtIn = dueOut.debt.toString();
     const collateralIn = dueOut.collateral.toString();
 
-    const timeSlippage = currentTime.sub(60);
-    const { dueOut: dueSlippage } = pool.borrowGivenPercent(
+    const timeSlippageBefore = currentTime.sub(60);
+    const timeSlippageAfter =
+      currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
+        ? maturity.sub(1)
+        : currentTime.add(3 * 60);
+
+    const { dueOut: dueSlippageBefore, yIncrease: yIncreaseBefore } =
+      pool.borrowGivenPercent(
+        state,
+        new Uint112(query.assetOut),
+        new Uint40(query.percent!),
+        timeSlippageBefore
+      );
+    const { xDecrease: xDecreaseAfter } = pool.borrowGivenPercent(
       state,
       new Uint112(query.assetOut),
       new Uint40(query.percent!),
-      timeSlippage
+      timeSlippageAfter
     );
 
-    const maxDebt = calculateMaxValue(
-      dueSlippage.debt.sub(query.assetOut),
-      query.slippage
-    )
-      .add(query.assetOut)
+    const interestBefore = calculateHelper(
+      maturity,
+      timeSlippageBefore,
+      yIncreaseBefore
+    );
+
+    const principalAfter = xDecreaseAfter;
+
+    const maxDebt = calculateMaxValue(interestBefore, query.slippage)
+      .add(principalAfter)
       .toString();
 
     const maxCollateral = calculateMaxValue(
-      dueSlippage.collateral,
+      dueSlippageBefore.collateral,
       query.slippage
     ).toString();
 
-    const apr = calculateApr(dueOut.debt, query.assetOut, maturity, currentTime);
+    const apr = calculateApr(
+      dueOut.debt,
+      query.assetOut,
+      maturity,
+      currentTime
+    );
     const cdp = calculateCdp(
       query.assetOut,
       query.pool.asset.decimals,

@@ -24,7 +24,7 @@ export function bondCalculate(
     const state = {
       x: new Uint112(query.poolInfo.x),
       y: new Uint112(query.poolInfo.y),
-      z: new Uint112(query.poolInfo.z)
+      z: new Uint112(query.poolInfo.z),
     };
 
     const { yMin, yMax, claimsMin, claimsMax } = percentMinMaxValues(
@@ -32,7 +32,7 @@ export function bondCalculate(
       state,
       assetIn,
       currentTime
-    )
+    );
 
     // Bond too low check
     if (bondOut.lt(claimsMin.bondInterest.add(claimsMin.bondPrincipal))) {
@@ -61,26 +61,26 @@ export function bondCalculate(
       currentTime
     );
 
-    const insuranceOut = new Uint128(claimsOut.insuranceInterest).add(new Uint128(claimsOut.insurancePrincipal));
-
-    const percent = calculatePercent(
-      yMin,
-      yMax,
-      yDecrease,
+    const insuranceOut = new Uint128(claimsOut.insuranceInterest).add(
+      new Uint128(claimsOut.insurancePrincipal)
     );
 
-    const timeSlippage =
+    const percent = calculatePercent(yMin, yMax, yDecrease);
+
+    const timeSlippageAfter =
       currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
-    const { claimsOut: claimsSlippage } = pool.lendGivenBond(
+    const { claimsOut: claimsSlippageAfter } = pool.lendGivenBond(
       state,
       assetIn,
       bondOut,
-      timeSlippage
+      timeSlippageAfter
     );
 
-    const insuranceSlippage = new Uint128(claimsSlippage.insuranceInterest).add(new Uint128(claimsSlippage.insurancePrincipal));
+    const insuranceSlippage = new Uint128(
+      claimsSlippageAfter.insuranceInterest
+    ).add(new Uint128(claimsSlippageAfter.insurancePrincipal));
     const minInsurance = calculateMinValue(
       insuranceSlippage,
       query.slippage
@@ -94,7 +94,7 @@ export function bondCalculate(
       insuranceOut,
       query.pool.collateral.decimals,
       query.poolInfo.collateralSpot
-      );
+    );
 
     query.pool.maturity = query.pool.maturity.toString();
 

@@ -12,15 +12,12 @@ export function calculateApr(
   maturity: Uint256,
   currentTime: Uint256
 ): number {
-  const SECONDS = 31556926;
-  const apr = bond
-    .sub(assetIn)
-    .mul(SECONDS)
-    .mul(10000)
-    .div(assetIn)
-    .div(maturity.sub(currentTime));
+  const SECONDS = 31556926n;
+  const apr =
+    ((bond.toBigInt() - BigInt(assetIn)) * SECONDS * 10_000n) /
+    (BigInt(assetIn) * (maturity.toBigInt() - currentTime.toBigInt()));
 
-  return Number(apr.toBigInt()) / 10_000;
+  return Number(apr) / 10_000;
 }
 
 export function calculateCdp(
@@ -51,17 +48,17 @@ export function calculateCdp(
 
     percent =
       Number(
-        new Uint256(insuranceOut).toBigInt()
-        * BigInt(Math.floor(collateralSpot * 10000000000))
-        * (pow(10n, BigInt(assetDecimals)))
-        / BigInt(assetIn)
-        / BigInt(Math.floor(assetSpot * 1000000))
-        / (pow(10n, BigInt(collateralDecimals)))
-      ) / 10000
-      // .mul(pow(10n, BigInt(assetDecimals)))
-      // .div(assetIn)
-      // .div(pow(10n, BigInt(collateralDecimals)))
-      // .toString();
+        (new Uint256(insuranceOut).toBigInt() *
+          BigInt(Math.floor(collateralSpot * 10000000000)) *
+          pow(10n, BigInt(assetDecimals))) /
+          BigInt(assetIn) /
+          BigInt(Math.floor(assetSpot * 1000000)) /
+          pow(10n, BigInt(collateralDecimals))
+      ) / 10000;
+    // .mul(pow(10n, BigInt(assetDecimals)))
+    // .div(assetIn)
+    // .div(pow(10n, BigInt(collateralDecimals)))
+    // .toString();
 
     // percent = Number(newRatio) ? Number(newRatio) * collateralSpot / assetSpot : null;
   }
@@ -75,7 +72,7 @@ export function calculateMinValue(value: Uint128, slippage: number): Uint256 {
 
 export function percentMinMaxValues(
   pool: Pool,
-  state : CP,
+  state: CP,
   assetIn: Uint112,
   currentTime: Uint256
 ) {

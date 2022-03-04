@@ -31,7 +31,7 @@ export function debtCalculate(
       state,
       assetOut,
       currentTime
-    )
+    );
 
     // Debt too low check
     if (debtIn.lt(dueMin.debt)) {
@@ -62,22 +62,19 @@ export function debtCalculate(
 
     const collateralIn = dueOut.collateral.toString();
 
-    const percent = calculatePercent(
-      yMin,
-      yMax,
-      yIncrease
-    );
+    const percent = calculatePercent(yMin, yMax, yIncrease);
 
-    const timeSlippage = currentTime.sub(60);
-    const { dueOut: dueSlippage } = pool.borrowGivenDebt(
+    const timeSlippageBefore = currentTime.sub(60);
+
+    const { dueOut: dueSlippageBefore } = pool.borrowGivenDebt(
       state,
       assetOut,
       debtIn,
-      timeSlippage
+      timeSlippageBefore
     );
 
     const maxCollateral = calculateMaxValue(
-      dueSlippage.collateral,
+      dueSlippageBefore.collateral,
       query.slippage
     ).toString();
 
