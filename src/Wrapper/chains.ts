@@ -14,29 +14,29 @@ export const whitelistChains: Whitelist = {
     },
     whitelist: [
       {
-        address: "0xcDA0060b60Ac4204102EA11D0ff8bbFfd690A863",
+        address: "0xc17eb97831a5ccf75aee5fa28c2b38a77dc2cf9c",
         name: "TS USDC",
         symbol: "TS-USDC",
         decimals: 18,
       },
       {
-        address: "0xce8AdB08e99C0AaB0cA5f3A2661e4394FE6cB6Fa",
+        address: "0x9355c1d6b16a1185881ca193abf19d5c193080b9",
         name: "TS Ethereum",
         symbol: "TS-ETH",
         decimals: 18,
       },
       {
-        address: "0x9eB6e17790b19Ee29a3557DB74Ef6c85557F99a9",
+        address: "0xcb4faf1866e4b20d95b51abbf6c8fffdc355f8a2",
         name: "TS Matic",
         symbol: "TS-MATIC",
         decimals: 18,
       },
       {
-        address: "0x9b2898CB884588E3b64bFBED585b65220871F98a",
+        address: "0xea3b4b0582e759d09efc4e21b081e82a15cefed9",
         name: "TS Avalanche",
         symbol: "TS-AVAX",
         decimals: 18,
-      },
+      }
     ],
     custom: getCustomTokens(String(80001)),
   },

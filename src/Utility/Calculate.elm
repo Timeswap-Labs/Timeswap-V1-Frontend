@@ -72,7 +72,7 @@ cdp params spot color fontSize =
                             color
 
                            else
-                            Color.warning400
+                            Color.warning500
                           )
                             |> Font.color
                         ]

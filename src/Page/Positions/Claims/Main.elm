@@ -380,45 +380,29 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                         , theme = theme
                         }
                     ]
-                , if pool.maturity |> Maturity.isActive time then
-                    el
+                , el
+                    [ width shrink
+                    , height <| px 24
+                    , paddingXY 10 2
+                    , Background.color Color.positive100
+                    , Border.rounded 999
+                    ]
+                    (el
                         [ width shrink
-                        , height <| px 24
-                        , paddingXY 10 2
-                        , Background.color Color.positive100
-                        , Border.rounded 999
+                        , height shrink
+                        , centerX
+                        , centerY
+                        , Font.size 14
+                        , Font.bold
+                        , Font.color Color.positive400
                         ]
-                        (el
-                            [ width shrink
-                            , height shrink
-                            , centerX
-                            , centerY
-                            , Font.size 14
-                            , Font.bold
-                            , Font.color Color.positive400
-                            ]
-                            (text "Active")
-                        )
+                        (if pool.maturity |> Maturity.isActive time then
+                            text "Active"
 
-                  else
-                    el
-                        [ width shrink
-                        , height <| px 24
-                        , paddingXY 10 2
-                        , Background.color Color.negative100
-                        , Border.rounded 999
-                        ]
-                        (el
-                            [ width shrink
-                            , height shrink
-                            , centerX
-                            , centerY
-                            , Font.size 14
-                            , Font.bold
-                            , Font.color Color.negative400
-                            ]
-                            (text "Matured")
+                         else
+                            text "Matured"
                         )
+                    )
                 , images
                     |> (case theme of
                             Theme.Dark ->

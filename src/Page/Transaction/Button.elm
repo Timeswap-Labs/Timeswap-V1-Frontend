@@ -5,6 +5,7 @@ module Page.Transaction.Button exposing
     , checkingAllowance
     , checkingBalance
     , connect
+    , customError
     , disabled
     , disabledApprove
     , doesNotExist
@@ -444,6 +445,25 @@ error httpError =
             , Font.color Color.light100
             ]
             (text "error")
+        )
+
+
+customError : String -> Element Never
+customError errString =
+    el
+        [ width fill
+        , height <| px 44
+        , Background.color Color.negative500
+        , Border.rounded 4
+        ]
+        (el
+            [ centerX
+            , centerY
+            , paddingXY 0 4
+            , Font.size 16
+            , Font.color Color.light100
+            ]
+            (text errString)
         )
 
 

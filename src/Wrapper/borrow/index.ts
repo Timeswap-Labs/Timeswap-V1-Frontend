@@ -1,16 +1,17 @@
+import { Uint112 } from '@timeswap-labs/timeswap-v1-sdk-core';
 import { GlobalParams } from "../global";
 import { getPool, getPoolSDK, updateCachedTxns } from "../helper";
 import { collateralCalculate, collateralTransaction } from "./collateral";
 import { debtCalculate, debtTransaction } from "./debt";
 import { percentCalculate, percentTransaction } from "./percent";
 
-export function borrow(gp: GlobalParams, app: ElmApp<Ports>) {
+export function borrow(app: ElmApp<Ports>) {
   app.ports.queryBorrow.subscribe((query) =>
-    borrowQueryCalculation(gp, app, query)
+    borrowQueryCalculation(app, query)
   );
 
   app.ports.queryBorrowPerSecond.subscribe((query) =>
-    borrowQueryCalculation(gp, app, query)
+    borrowQueryCalculation(app, query)
   );
 }
 
@@ -78,19 +79,31 @@ export function borrowSigner(
   });
 }
 
-async function borrowQueryCalculation(
-  gp: GlobalParams,
+function borrowQueryCalculation(
   app: ElmApp<Ports>,
   query: BorrowQuery
 ) {
+  // Insufficient Asset in pool check
+  const assetOut = new Uint112(query.assetOut);
+  const stateX = new Uint112(query.poolInfo.x);
+
+  if (assetOut.gt(stateX)) {
+    app.ports.receiveBorrowAnswer.send({
+      ...query,
+      result: 5,
+    });
+
+    return;
+  }
+
   const pool = getPool(query);
   const { percent, debtIn, collateralIn } = query;
 
   if (percent !== undefined) {
-    await percentCalculate(gp, app, pool, { ...query, percent });
+    percentCalculate(app, pool, { ...query, percent });
   } else if (debtIn !== undefined) {
-    await debtCalculate(gp, app, pool, { ...query, debtIn });
+    debtCalculate(app, pool, { ...query, debtIn });
   } else if (collateralIn !== undefined) {
-    await collateralCalculate(gp, app, pool, { ...query, collateralIn });
+    collateralCalculate(app, pool, { ...query, collateralIn });
   }
 }

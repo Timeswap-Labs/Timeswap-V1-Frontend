@@ -3,7 +3,6 @@ import { updateTransferEventBalance } from "./helper";
 import erc20Abi from "./abi/erc20";
 import { Contract } from "@ethersproject/contracts";
 import { GlobalParams } from "./global";
-// import { BalancesOf, ERC20Token, NativeToken, Ports } from "./declaration";
 
 export async function balancesAllowancesInit(
   app: ElmApp<Ports>,

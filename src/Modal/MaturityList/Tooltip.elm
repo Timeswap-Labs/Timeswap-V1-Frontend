@@ -6,3 +6,4 @@ import Data.Maturity exposing (Maturity)
 type Tooltip
     = Maturity Maturity
     | CDP Maturity
+    | SortInfo

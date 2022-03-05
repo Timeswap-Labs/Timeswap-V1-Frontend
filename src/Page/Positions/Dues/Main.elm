@@ -250,7 +250,7 @@ noDues { device, images, theme } =
             , paddingXY 0 3
             , theme |> ThemeColor.textLight |> Font.color
             ]
-            [ text "Your Borrow positions, including from Liqudity transactions, will appear here..." ]
+            [ text "Your Borrow positions, including from Liquidity transactions, will appear here..." ]
         ]
 
 

@@ -8,10 +8,10 @@ import {
   calculateCdp,
   calculateMinValue,
   calculatePercent,
+  percentMinMaxValues,
 } from "./common";
 
 export function bondCalculate(
-  gp: GlobalParams,
   app: ElmApp<Ports>,
   pool: Pool,
   query: LendQuery
@@ -21,36 +21,66 @@ export function bondCalculate(
     const currentTime = getCurrentTime();
     const assetIn = new Uint112(query.assetIn);
     const bondOut = new Uint128(query.bondOut!);
-    const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
+    const state = {
+      x: new Uint112(query.poolInfo.x),
+      y: new Uint112(query.poolInfo.y),
+      z: new Uint112(query.poolInfo.z),
+    };
 
-    const { claims, yDecrease } = pool.lendGivenBond(
-      state,
-      assetIn,
-      bondOut,
-      currentTime
-    );
-    const insuranceOut = new Uint128(claims.insuranceInterest).add(new Uint128(claims.insurancePrincipal));
-
-    const percent = calculatePercent(
+    const { yMin, yMax, claimsMin, claimsMax } = percentMinMaxValues(
       pool,
       state,
       assetIn,
-      yDecrease,
       currentTime
     );
 
-    const timeSlippage =
-      currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
-        ? maturity.sub(1)
-        : currentTime.add(3 * 60);
-    const { claims: claimsSlippage } = pool.lendGivenBond(
+    // Bond too low check
+    if (bondOut.lt(claimsMin.bondInterest.add(claimsMin.bondPrincipal))) {
+      app.ports.receiveLendAnswer.send({
+        ...query,
+        result: 1,
+      });
+
+      return;
+    }
+
+    // Bond too high check
+    if (bondOut.gt(claimsMax.bondInterest.add(claimsMax.bondPrincipal))) {
+      app.ports.receiveLendAnswer.send({
+        ...query,
+        result: 2,
+      });
+
+      return;
+    }
+
+    const { claimsOut, yDecrease } = pool.lendGivenBond(
       state,
       assetIn,
       bondOut,
-      timeSlippage
+      currentTime
     );
 
-    const insuranceSlippage = new Uint128(claimsSlippage.insuranceInterest).add(new Uint128(claimsSlippage.insurancePrincipal));
+    const insuranceOut = new Uint128(claimsOut.insuranceInterest).add(
+      new Uint128(claimsOut.insurancePrincipal)
+    );
+
+    const percent = calculatePercent(yMin, yMax, yDecrease);
+
+    const timeSlippageAfter =
+      currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
+        ? maturity.sub(1)
+        : currentTime.add(3 * 60);
+    const { claimsOut: claimsSlippageAfter } = pool.lendGivenBond(
+      state,
+      assetIn,
+      bondOut,
+      timeSlippageAfter
+    );
+
+    const insuranceSlippage = new Uint128(
+      claimsSlippageAfter.insuranceInterest
+    ).add(new Uint128(claimsSlippageAfter.insurancePrincipal));
     const minInsurance = calculateMinValue(
       insuranceSlippage,
       query.slippage
@@ -64,7 +94,7 @@ export function bondCalculate(
       insuranceOut,
       query.pool.collateral.decimals,
       query.poolInfo.collateralSpot
-      );
+    );
 
     query.pool.maturity = query.pool.maturity.toString();
 

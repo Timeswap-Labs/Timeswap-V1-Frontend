@@ -5,7 +5,6 @@ module Utility.ThemeColor exposing
     , btnBackground
     , btnHoverBG
     , btnPressBG
-    , completelyTransparent
     , dropdownBG
     , modalBackground
     , modalOutside
@@ -23,12 +22,7 @@ module Utility.ThemeColor exposing
     , textError
     , textLight
     , textboxBorder
-    , transparentVery
-    , warning100
-    , warning200
-    , warning300
-    , warning400
-    , warning500
+    , tooltipBG
     )
 
 import Data.Theme as Theme exposing (Theme)
@@ -250,42 +244,17 @@ dropdownBG : Theme -> Color
 dropdownBG theme =
     case theme of
         Theme.Dark ->
+            Color.dark300
+
+        Theme.Light ->
+            rgba255 222 224 245 1
+
+
+tooltipBG : Theme -> Color
+tooltipBG theme =
+    case theme of
+        Theme.Dark ->
             Color.dark500
 
         Theme.Light ->
-            rgba255 225 236 244 1
-
-
-warning100 : Color
-warning100 =
-    rgba255 242 189 84 0.12
-
-
-warning200 : Color
-warning200 =
-    rgba255 242 189 84 0.42
-
-
-warning300 : Color
-warning300 =
-    rgba255 242 189 84 0.64
-
-
-warning400 : Color
-warning400 =
-    rgba255 242 189 84 1
-
-
-warning500 : Color
-warning500 =
-    rgba255 217 163 54 1
-
-
-completelyTransparent : Color
-completelyTransparent =
-    rgba255 0 0 0 0
-
-
-transparentVery : Color
-transparentVery =
-    rgba255 255 255 255 0.02
+            Color.light300

@@ -56,7 +56,7 @@ import Page.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.Lend.Lend.Disabled as Disabled
-import Page.Transaction.Lend.Lend.Error exposing (Error)
+import Page.Transaction.Lend.Lend.Error as Error exposing (Error)
 import Page.Transaction.Lend.Lend.Query as Query
 import Page.Transaction.Lend.Lend.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.MaxButton as MaxButton
@@ -1297,45 +1297,64 @@ toClaimsGivenInsurance result =
             Failure error
 
 
-hasTransaction :
+type Txn
+    = HasTxn
+    | NoTxn
+
+
+fromTxnToResult :
     { transaction | assetIn : String, claimsOut : ClaimsOut }
-    -> Bool
-hasTransaction transaction =
-    (transaction.assetIn
-        |> Input.isZero
-        |> not
-    )
-        && (case transaction.claimsOut of
-                Default (Success _) ->
-                    True
+    -> Result Error Txn
+fromTxnToResult { assetIn, claimsOut } =
+    if
+        assetIn
+            |> Input.isZero
+    then
+        Ok NoTxn
 
-                Slider { claims } ->
-                    case claims of
-                        Success _ ->
-                            True
+    else
+        case claimsOut of
+            Default (Success _) ->
+                Ok HasTxn
 
-                        _ ->
-                            False
+            Default (Loading _) ->
+                Ok NoTxn
 
-                Bond { claims } ->
-                    case claims of
-                        Success _ ->
-                            True
+            Default (Failure error) ->
+                Err error
 
-                        _ ->
-                            False
+            Slider { claims } ->
+                case claims of
+                    Success _ ->
+                        Ok HasTxn
 
-                Insurance { claims } ->
-                    case claims of
-                        Success _ ->
-                            True
+                    Loading _ ->
+                        Ok NoTxn
 
-                        _ ->
-                            False
+                    Failure error ->
+                        Err error
 
-                _ ->
-                    False
-           )
+            Bond { claims } ->
+                case claims of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
+
+            Insurance { claims } ->
+                case claims of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
 
 
 noCmd :
@@ -1578,13 +1597,14 @@ view :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
+    -> PoolInfo
     -> Transaction
     ->
         { first : Element Msg
         , second : Element Msg
         , buttons : Element Msg
         }
-view model blockchain pool (Transaction transaction) =
+view model blockchain pool poolInfo (Transaction transaction) =
     { first =
         transaction
             |> assetInSection model
@@ -1592,7 +1612,7 @@ view model blockchain pool (Transaction transaction) =
                 (pool.pair |> Pair.toAsset)
     , second =
         transaction
-            |> claimsOutSection model pool
+            |> claimsOutSection model pool poolInfo
     , buttons =
         transaction
             |> buttons model
@@ -1666,9 +1686,10 @@ assetInSection model blockchain asset { assetIn, tooltip } =
 claimsOutSection :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Pool
+    -> PoolInfo
     -> { transaction | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element Msg
-claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
+claimsOutSection model pool poolInfo ({ claimsOut, tooltip } as transaction) =
     column
         [ Region.description "claims"
         , width fill
@@ -1752,7 +1773,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                     )
              )
                 |> (\( apr, cdp ) ->
-                        [ Info.lendAPR apr model.theme
+                        [ Info.lendAPR apr (poolInfo |> Just) model.theme
                         , Info.lendCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave
@@ -1761,6 +1782,7 @@ claimsOutSection model pool ({ claimsOut, tooltip } as transaction) =
                             , opened = tooltip
                             , pair = pool.pair
                             , cdp = cdp
+                            , poolInfo = poolInfo |> Just
                             }
                         ]
                    )
@@ -2082,10 +2104,10 @@ buttons { theme } blockchain asset transaction =
                         ( transaction.assetIn
                             |> Uint.fromAmount asset
                         , asset |> Token.toERC20
-                        , transaction |> hasTransaction
+                        , transaction |> fromTxnToResult
                         )
                     of
-                        ( Just assetIn, Just erc20, True ) ->
+                        ( Just assetIn, Just erc20, Ok HasTxn ) ->
                             case
                                 ( user
                                     |> User.getBalance asset
@@ -2145,7 +2167,10 @@ buttons { theme } blockchain asset transaction =
                                 _ ->
                                     []
 
-                        ( Just assetIn, Just erc20, False ) ->
+                        ( Just _, _, Err err ) ->
+                            [ Button.customError (err |> Error.toString) |> map never ]
+
+                        ( Just assetIn, Just erc20, Ok NoTxn ) ->
                             case
                                 ( user
                                     |> User.getBalance asset
@@ -2184,7 +2209,7 @@ buttons { theme } blockchain asset transaction =
                                 _ ->
                                     []
 
-                        ( Just assetIn, Nothing, True ) ->
+                        ( Just assetIn, Nothing, Ok HasTxn ) ->
                             case
                                 user
                                     |> User.getBalance asset
@@ -2206,7 +2231,7 @@ buttons { theme } blockchain asset transaction =
                                 Nothing ->
                                     []
 
-                        ( Just assetIn, Nothing, False ) ->
+                        ( Just assetIn, Nothing, Ok NoTxn ) ->
                             case
                                 user
                                     |> User.getBalance asset

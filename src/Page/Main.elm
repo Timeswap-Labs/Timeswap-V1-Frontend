@@ -51,6 +51,7 @@ import Element
         , spacing
         , width
         )
+import Page.Info.Main as Info exposing (PoolsData)
 import Page.PoolInfo exposing (PoolInfo)
 import Page.Position.Claim.Main as Claim
 import Page.Position.Due.Main as Due
@@ -85,6 +86,7 @@ type Page
         , positions : Liqs.Positions
         , position : Maybe Liq.Position
         }
+    | InfoPage PoolsData
 
 
 type Msg
@@ -97,6 +99,7 @@ type Msg
     | LiquidityMsg Liquidity.Msg
     | LiqsMsg Liqs.Msg
     | LiqMsg Liq.Msg
+    | InfoMsg Info.Msg
 
 
 type Effect
@@ -275,6 +278,12 @@ construct ({ chains } as model) url maybePage =
                             |> LiquidityPage
                     )
                     (Cmd.map LiquidityMsg)
+
+        ( Just Route.Info, Supported blockchain, _ ) ->
+            Info.init model blockchain
+                |> Tuple.mapBoth
+                    (\poolsData -> poolsData |> InfoPage)
+                    (Cmd.map InfoMsg)
 
         ( _, Supported blockchain, _ ) ->
             Nothing
@@ -514,12 +523,21 @@ update model blockchain msg page =
                     , Nothing
                     )
 
+        ( InfoMsg infoMsg, InfoPage infoPage ) ->
+            infoPage
+                |> Info.update
+                    infoMsg
+                    blockchain
+                |> (\( updated, cmd ) ->
+                        ( updated
+                            |> InfoPage
+                        , cmd |> Cmd.map InfoMsg
+                        , Nothing
+                        )
+                   )
+
         _ ->
             ( page, Cmd.none, Nothing )
-
-
-
--- |> Debug.log "positions msg"
 
 
 lendEffect :
@@ -711,6 +729,9 @@ subscriptions page =
             ]
                 |> Sub.batch
 
+        InfoPage _ ->
+            Sub.none
+
 
 toTab : Page -> Tab
 toTab page =
@@ -723,6 +744,9 @@ toTab page =
 
         LiquidityPage _ ->
             Tab.Liquidity
+
+        InfoPage _ ->
+            Tab.Info
 
 
 toParameter : Page -> Maybe Parameter
@@ -740,6 +764,9 @@ toParameter page =
             transaction
                 |> Liquidity.toParameter
 
+        InfoPage _ ->
+            Nothing
+
 
 toPoolInfo : Page -> Maybe (Or Price PoolInfo)
 toPoolInfo page =
@@ -755,6 +782,9 @@ toPoolInfo page =
         LiquidityPage { transaction } ->
             transaction
                 |> Liquidity.toPoolInfo
+
+        InfoPage _ ->
+            Nothing
 
 
 view :
@@ -843,4 +873,9 @@ view model blockchain page =
                             |> (Maybe.map << map) LiqsMsg
                             |> Maybe.withDefault none
                         ]
+
+            InfoPage poolsData ->
+                Info.view model poolsData
+                    |> map InfoMsg
+                    |> List.singleton
         )

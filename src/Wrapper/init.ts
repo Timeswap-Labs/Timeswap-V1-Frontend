@@ -82,13 +82,13 @@ export async function init(
   approveSigner(app, gp);
   // pool(app, whitelist, gp);
 
-  lend(gp, app);
+  lend(app);
   lendSigner(app, gp);
 
   withdraw(app);
   withdrawSigner(app, gp);
 
-  borrow(gp, app);
+  borrow(app);
   borrowSigner(app, gp);
 
   pay(app);

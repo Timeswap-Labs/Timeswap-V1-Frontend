@@ -938,7 +938,7 @@ recentTransactions theme =
                     , height shrink
                     , Font.size 14
                     , paddingXY 0 3
-                    , Font.color Color.warning400
+                    , Font.color Color.warning500
                     ]
                     (text "Clear all")
             }

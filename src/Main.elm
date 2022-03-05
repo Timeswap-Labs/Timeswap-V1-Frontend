@@ -61,6 +61,7 @@ import Element
         , moveDown
         , moveLeft
         , moveUp
+        , newTabLink
         , noStaticStyleSheet
         , none
         , padding
@@ -1402,7 +1403,8 @@ header ({ device, backdrop, theme } as model) =
                 , alignRight
                 , centerY
                 ]
-                [ chainListButton model
+                [ swapButton model
+                , chainListButton model
                 , connectButton model
                 , zoneButton model
                 , themeButton model
@@ -1551,48 +1553,52 @@ scrollButton ({ backdrop, images, theme } as model) =
 
 logo : { model | device : Device, images : Images, theme : Theme } -> Element Never
 logo { device, images, theme } =
-    row
-        [ Region.description "logo"
-        , spacing 12
-        , centerY
-        ]
-        [ case device of
-            Desktop ->
-                images
-                    |> (case theme of
-                            Theme.Dark ->
-                                Image.logoText
-
-                            Theme.Light ->
-                                Image.logoTextDark
-                       )
-                        [ height <| px 32 ]
-
-            _ ->
-                images
-                    |> Image.logoPure
-                        [ height <| px 32 ]
-        , el
-            [ width shrink
-            , height <| px 22
-            , padding 5
-            , alignLeft
-            , centerY
-            , theme |> ThemeColor.primaryBtn |> Background.color
-            , Border.rounded 4
-            ]
-            (el
-                [ width shrink
-                , height shrink
+    newTabLink [ width shrink ]
+        { url = "https://timeswap.io/"
+        , label =
+            row
+                [ Region.description "logo"
+                , spacing 12
                 , centerY
-                , Font.bold
-                , Font.size 12
-                , Font.color Color.light100
-                , Font.letterSpacing 1.28
                 ]
-                (text "ALPHA")
-            )
-        ]
+                [ case device of
+                    Desktop ->
+                        images
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.logoText
+
+                                    Theme.Light ->
+                                        Image.logoTextDark
+                               )
+                                [ height <| px 32 ]
+
+                    _ ->
+                        images
+                            |> Image.logoPure
+                                [ height <| px 32 ]
+                , el
+                    [ width shrink
+                    , height <| px 22
+                    , padding 5
+                    , alignLeft
+                    , centerY
+                    , theme |> ThemeColor.primaryBtn |> Background.color
+                    , Border.rounded 4
+                    ]
+                    (el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        , Font.bold
+                        , Font.size 12
+                        , Font.color Color.light100
+                        , Font.letterSpacing 1.28
+                        ]
+                        (text "ALPHA")
+                    )
+                ]
+        }
 
 
 tabs :
@@ -1634,6 +1640,7 @@ tabs ({ device, backdrop, theme } as model) =
         )
         [ tab model Tab.Lend
         , tab model Tab.Borrow
+        , tab model Tab.Info
 
         --, tab model Tab.Liquidity -- Remove liquidity
         ]
@@ -2104,18 +2111,19 @@ zoneDropdownOptions :
         , zoneName : Maybe ZoneName
         , chosenZone : ChosenZone
         , backdrop : Backdrop
+        , theme : Theme
     }
     -> Element Msg
-zoneDropdownOptions { offset, zoneName, chosenZone } =
+zoneDropdownOptions { offset, zoneName, chosenZone, theme } =
     column
         [ width shrink
         , height shrink
         , moveDown 10
         , paddingXY 0 5
-        , Background.color Color.dark300
+        , theme |> ThemeColor.dropdownBG |> Background.color
         , Border.rounded 4
         , Border.width 1
-        , Border.color Color.transparent100
+        , theme |> ThemeColor.border |> Border.color
         , alignRight
         ]
         ([ ChosenZone.Here, ChosenZone.UTC, ChosenZone.Unix ]
@@ -2125,9 +2133,9 @@ zoneDropdownOptions { offset, zoneName, chosenZone } =
                         [ width fill
                         , height shrink
                         , paddingXY 16 8
-                        , Font.color Color.light100
+                        , theme |> ThemeColor.text |> Font.color
                         , Font.size 14
-                        , mouseOver [ Background.color Color.primary100 ]
+                        , mouseOver [ theme |> ThemeColor.btnBackground |> Background.color ]
                         ]
                         { onPress =
                             if chosenZone == zoneOption then
@@ -2143,7 +2151,7 @@ zoneDropdownOptions { offset, zoneName, chosenZone } =
                     [ width fill
                     , paddingXY 16 8
                     , Font.size 12
-                    , Font.color Color.transparent300
+                    , theme |> ThemeColor.textLight |> Font.color
                     ]
                     ("Timezone" |> text)
                 ]

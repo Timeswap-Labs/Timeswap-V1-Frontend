@@ -33,11 +33,9 @@ import Element
         , el
         , fill
         , height
-        , map
         , none
         , padding
         , paddingXY
-        , px
         , row
         , shrink
         , spacing
@@ -62,7 +60,6 @@ import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
-import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
@@ -1245,6 +1242,7 @@ view :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
+    -> PoolInfo
     -> Transaction
     ->
         { first : Element Msg
@@ -1252,7 +1250,7 @@ view :
         , third : Element Msg
         , buttons : Element Msg
         }
-view model blockchain pool (Transaction transaction) =
+view model blockchain pool poolInfo (Transaction transaction) =
     { first =
         transaction
             |> assetInSection model
@@ -1263,6 +1261,7 @@ view model blockchain pool (Transaction transaction) =
             |> duesInSection model
                 blockchain
                 pool
+                poolInfo
     , third =
         transaction
             |> liqOutSection model
@@ -1392,9 +1391,10 @@ duesInSection :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
+    -> PoolInfo
     -> { transaction | state : State, tooltip : Maybe Tooltip }
     -> Element Msg
-duesInSection model blockchain pool ({ state, tooltip } as transaction) =
+duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction) =
     column
         [ Region.description "dues"
         , width fill
@@ -1426,7 +1426,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
                     )
              )
                 |> (\( apr, cdp ) ->
-                        [ Info.lendAPR apr model.theme
+                        [ Info.lendAPR apr (poolInfo |> Just) model.theme
                         , Info.lendCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave
@@ -1435,6 +1435,7 @@ duesInSection model blockchain pool ({ state, tooltip } as transaction) =
                             , opened = tooltip
                             , pair = pool.pair
                             , cdp = cdp
+                            , poolInfo = poolInfo |> Just
                             }
                         ]
                    )

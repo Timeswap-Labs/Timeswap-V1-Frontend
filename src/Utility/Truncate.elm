@@ -78,7 +78,7 @@ viewPairSymbol param =
                 , (if opened == param.tooltip then
                     el
                         [ Font.size param.fontSize
-                        , Font.color Color.transparent300
+                        , param.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text full)
                         |> Tooltip.belowAlignLeft param.theme
@@ -169,7 +169,7 @@ viewSymbol param =
                  , (if opened == param.tooltip then
                         el
                             [ Font.size 14
-                            , Font.color Color.transparent300
+                            , param.theme |> ThemeColor.textLight |> Font.color
                             ]
                             (text full)
                             |> Tooltip.belowAlignLeft param.theme
@@ -265,7 +265,7 @@ viewName param =
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 12
-                        , Font.color Color.transparent300
+                        , param.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text full)
                         |> Tooltip.belowAlignLeft param.theme
@@ -356,7 +356,7 @@ viewCDPSymbol param =
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 14
-                        , Font.color Color.transparent300
+                        , param.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text full)
                         |> Tooltip.belowAlignLeft param.theme
@@ -452,10 +452,10 @@ viewCDP param =
                  , (if opened == param.tooltip then
                         el
                             [ Font.size 12
-                            , Font.color Color.transparent300
+                            , param.theme |> ThemeColor.textLight |> Font.color
                             ]
                             (text full)
-                            |> Tooltip.belowAlignRight
+                            |> Tooltip.belowAlignRight param.theme
 
                     else
                         none
@@ -466,7 +466,7 @@ viewCDP param =
                         Color.transparent200
 
                     else
-                        Color.warning400
+                        Color.warning500
                    )
                     |> Font.color
                  ]
@@ -496,7 +496,7 @@ viewCDP param =
                     (param.onMouseEnter param.tooltip)
                  , Events.onMouseLeave param.onMouseLeave
                  , Font.size 18
-                 , Font.color Color.warning400
+                 , Font.color Color.warning500
                  ]
                     ++ param.styles
                 )
@@ -508,7 +508,7 @@ viewCDP param =
                  , height shrink
                  , paddingXY 0 3
                  , Font.size 18
-                 , Font.color Color.warning400
+                 , Font.color Color.warning500
                  ]
                     ++ param.styles
                 )
@@ -556,10 +556,10 @@ viewAmount param =
                  , (if opened == param.tooltip then
                         el
                             [ Font.size 12
-                            , Font.color Color.transparent300
+                            , param.theme |> ThemeColor.textLight |> Font.color
                             ]
                             (text full)
-                            |> Tooltip.belowAlignRight
+                            |> Tooltip.belowAlignRight param.theme
 
                     else
                         none
@@ -653,10 +653,10 @@ viewBalance param =
                 , (if opened == param.tooltip then
                     el
                         [ Font.size 12
-                        , Font.color Color.transparent300
+                        , param.theme |> ThemeColor.textLight |> Font.color
                         ]
                         (text full)
-                        |> Tooltip.belowAlignRight
+                        |> Tooltip.belowAlignRight param.theme
 
                    else
                     none

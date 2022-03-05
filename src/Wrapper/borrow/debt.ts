@@ -1,16 +1,16 @@
 import { Pool, Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { GlobalParams } from "../global";
-import { getCurrentTime, getPoolSDK } from "../helper";
+import { getCurrentTime } from "../helper";
 import {
   calculateApr,
   calculateCdp,
   calculateMaxValue,
   calculatePercent,
+  percentMinMaxValues,
 } from "./common";
 
-export async function debtCalculate(
-  gp: GlobalParams,
+export function debtCalculate(
   app: ElmApp<Ports>,
   pool: Pool,
   query: BorrowQuery
@@ -26,47 +26,55 @@ export async function debtCalculate(
       z: new Uint112(query.poolInfo.z),
     };
 
-    // const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
-    // const { due, yIncrease } = await sdkPool.calculateBorrowGivenDebt(
-    //   assetOut,
-    //   debtIn,
-    //   currentTime
-    // );
+    const { yMin, yMax, dueMin, dueMax } = percentMinMaxValues(
+      pool,
+      state,
+      assetOut,
+      currentTime
+    );
 
-    const sdkPool = getPoolSDK(gp, query.pool.asset, query.pool.collateral, query.pool.maturity, query.chain);
-    const { due, yIncrease } = await sdkPool.calculateBorrowGivenDebt(
+    // Debt too low check
+    if (debtIn.lt(dueMin.debt)) {
+      app.ports.receiveBorrowAnswer.send({
+        ...query,
+        result: 1,
+      });
+
+      return;
+    }
+
+    // Debt too high check
+    if (debtIn.gt(dueMax.debt)) {
+      app.ports.receiveBorrowAnswer.send({
+        ...query,
+        result: 2,
+      });
+
+      return;
+    }
+
+    const { dueOut, yIncrease } = pool.borrowGivenDebt(
+      state,
       assetOut,
       debtIn,
       currentTime
     );
 
-    // const { due, yIncrease } = await pool.borrowGivenDebt(
-    //   state,
-    //   assetOut,
-    //   debtIn,
-    //   currentTime
-    // );
+    const collateralIn = dueOut.collateral.toString();
 
-    const collateralIn = due.collateral.toString();
+    const percent = calculatePercent(yMin, yMax, yIncrease);
 
-    const percent = await calculatePercent(
-      sdkPool,
-      state,
-      assetOut,
-      yIncrease,
-      currentTime
-    );
+    const timeSlippageBefore = currentTime.sub(60);
 
-    const timeSlippage = currentTime.sub(60);
-    const { due: dueSlippage } = await pool.borrowGivenDebt(
+    const { dueOut: dueSlippageBefore } = pool.borrowGivenDebt(
       state,
       assetOut,
       debtIn,
-      timeSlippage
+      timeSlippageBefore
     );
 
     const maxCollateral = calculateMaxValue(
-      dueSlippage.collateral,
+      dueSlippageBefore.collateral,
       query.slippage
     ).toString();
 
@@ -77,7 +85,7 @@ export async function debtCalculate(
       query.poolInfo.assetSpot,
       collateralIn,
       query.pool.collateral.decimals,
-      query.poolInfo.assetSpot
+      query.poolInfo.collateralSpot
     );
 
     query.pool.maturity = query.pool.maturity.toString();
@@ -92,7 +100,7 @@ export async function debtCalculate(
         cdp,
       },
     });
-  } catch {
+  } catch (err) {
     app.ports.receiveBorrowAnswer.send({
       ...query,
       result: 0,

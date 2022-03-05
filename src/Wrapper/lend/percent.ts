@@ -4,14 +4,13 @@ import {
   Uint128,
   Uint256,
   Uint40,
-  Pool
+  Pool,
 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
 import { calculateApr, calculateCdp, calculateMinValue } from "./common";
 
 export async function percentCalculate(
-  gp: GlobalParams,
   app: ElmApp<Ports>,
   pool: Pool,
   query: LendQuery
@@ -20,50 +19,53 @@ export async function percentCalculate(
     const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
 
-    const state = { x: new Uint112(query.poolInfo.x), y: new Uint112(query.poolInfo.y), z: new Uint112(query.poolInfo.z) };
-    const { claims } = pool.lendGivenPercent(
+    const state = {
+      x: new Uint112(query.poolInfo.x),
+      y: new Uint112(query.poolInfo.y),
+      z: new Uint112(query.poolInfo.z),
+    };
+    const { claimsOut } = pool.lendGivenPercent(
       state,
       new Uint112(query.assetIn),
       new Uint40(query.percent!),
       currentTime
     );
 
-    // const sdkPool = new SDKPool(gp.metamaskProvider, query.chain.chainId, pool.asset, pool.collateral, pool.maturity);
-    // const { claims } = await sdkPool.calculateLendGivenPercent(
-    //   new Uint112(query.assetIn),
-    //   new Uint40(query.percent!),
-    //   currentTime
-    // );
+    const bondOut = new Uint128(claimsOut.bondInterest).add(
+      new Uint128(claimsOut.bondPrincipal)
+    );
+    const insuranceOut = new Uint128(claimsOut.insuranceInterest).add(
+      new Uint128(claimsOut.insurancePrincipal)
+    );
 
-    const bondOut = new Uint128(claims.bondInterest).add(new Uint128(claims.bondPrincipal));
-    const insuranceOut = new Uint128(claims.insuranceInterest).add(new Uint128(claims.insurancePrincipal));
-
-    const timeSlippage =
+    const timeSlippageBefore = currentTime.sub(60);
+    const timeSlippageAfter =
       currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
         ? maturity.sub(1)
         : currentTime.add(3 * 60);
 
-    // const { claims: claimsSlippage } = await sdkPool.calculateLendGivenPercent(
-    //   new Uint112(query.assetIn),
-    //   new Uint40(query.percent!),
-    //   timeSlippage
-    // );
-
-    const { claims: claimsSlippage } = pool.lendGivenPercent(
+    const { claimsOut: claimsSlippageBefore } = pool.lendGivenPercent(
       state,
       new Uint112(query.assetIn),
       new Uint40(query.percent!),
-      new Uint256(timeSlippage)
+      new Uint256(timeSlippageBefore)
+    );
+    const { claimsOut: claimsSlippageAfter } = pool.lendGivenPercent(
+      state,
+      new Uint112(query.assetIn),
+      new Uint40(query.percent!),
+      new Uint256(timeSlippageAfter)
     );
 
-    // const bondSlippage = new Uint128(claimsSlippage.bondInterest).add(new Uint128(claimsSlippage.bondPrincipal));
-    const insuranceSlippage = new Uint128(claimsSlippage.insuranceInterest).add(new Uint128(claimsSlippage.insurancePrincipal));
+    const insuranceSlippage = new Uint128(
+      claimsSlippageAfter.insuranceInterest
+    ).add(new Uint128(claimsSlippageAfter.insurancePrincipal));
 
     const minBond = calculateMinValue(
-      new Uint128(claimsSlippage.bondInterest),
+      new Uint128(claimsSlippageAfter.bondInterest),
       query.slippage
     )
-      .add(new Uint128(claimsSlippage.bondPrincipal))
+      .add(new Uint128(claimsSlippageBefore.bondPrincipal))
       .toString();
 
     const minInsurance = calculateMinValue(
@@ -79,7 +81,7 @@ export async function percentCalculate(
       insuranceOut,
       query.pool.collateral.decimals,
       query.poolInfo.collateralSpot
-      );
+    );
 
     query.pool.maturity = query.pool.maturity.toString();
 
@@ -94,7 +96,7 @@ export async function percentCalculate(
         cdp,
       },
     });
-  } catch {
+  } catch (err) {
     app.ports.receiveLendAnswer.send({
       ...query,
       result: 0,

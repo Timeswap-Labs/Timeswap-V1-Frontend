@@ -14,6 +14,7 @@ type Route
     = Lend (Maybe Parameter)
     | Borrow (Maybe Parameter)
     | Liquidity (Maybe Parameter)
+    | Info
 
 
 fromTab : Tab -> Maybe Parameter -> Route
@@ -28,6 +29,9 @@ fromTab tab parameter =
         Tab.Liquidity ->
             Liquidity parameter
 
+        Tab.Info ->
+            Info
+
 
 toUrlString : Route -> String
 toUrlString route =
@@ -40,6 +44,9 @@ toUrlString route =
 
         Liquidity parameter ->
             parameter
+
+        Info ->
+            Nothing
     )
         |> (\parameter ->
                 parameter
@@ -57,6 +64,9 @@ toUrlString route =
 
                     Liquidity _ ->
                         "liquidity" ++ string
+
+                    Info ->
+                        "info"
            )
         |> Just
         |> Builder.custom Builder.Absolute [] []
@@ -123,6 +133,9 @@ fromFragment blockchain chains fragment =
 
         ( Nothing, Just ("liquidity" :: _) ) ->
             Nothing |> Liquidity
+
+        ( Just _, Just ("info" :: _) ) ->
+            Info
 
         _ ->
             Nothing |> Lend

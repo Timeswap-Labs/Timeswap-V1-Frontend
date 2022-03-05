@@ -57,6 +57,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
@@ -82,6 +83,7 @@ import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
+import Utility.Tooltip as Tooltip
 
 
 type Modal
@@ -387,9 +389,11 @@ view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as moda
                         [ width fill
                         , height shrink
                         , centerY
+                        , spacing 8
                         ]
                         [ pairWithPoolCount model modal
                         , sortBy model modal
+                        , sortInfo model modal
                         ]
                     ]
                 , row
@@ -546,7 +550,7 @@ sortBy { images, theme } (Modal { sorting, dropdown }) =
                 [ Sorting.Liquidity
                 , Sorting.Maturity
                 ]
-                    |> sortOptionsEl
+                    |> sortOptionsEl theme
 
                else
                 none
@@ -587,16 +591,45 @@ sortBy { images, theme } (Modal { sorting, dropdown }) =
         ]
 
 
-sortOptionsEl : List Sorting -> Element Msg
-sortOptionsEl sortList =
+sortInfo : { model | images : Images, theme : Theme } -> Modal -> Element Msg
+sortInfo { images, theme } (Modal { tooltip }) =
+    images
+        |> (case theme of
+                Theme.Dark ->
+                    Image.info
+
+                Theme.Light ->
+                    Image.infoDark
+           )
+            [ width <| px 20
+            , height <| px 20
+            , Events.onMouseEnter (OnMouseEnter Tooltip.SortInfo)
+            , Events.onMouseLeave OnMouseLeave
+            , (if tooltip == Just Tooltip.SortInfo then
+                el
+                    [ Font.size 14
+                    , theme |> ThemeColor.textLight |> Font.color
+                    ]
+                    ("Liquidity-sorting is based on the size of the product of X, Y, Z pools" |> text)
+                    |> Tooltip.belowAlignRight theme
+
+               else
+                none
+              )
+                |> below
+            ]
+
+
+sortOptionsEl : Theme -> List Sorting -> Element Msg
+sortOptionsEl theme sortList =
     column
         [ width <| px 130
         , height shrink
         , moveDown 10
-        , Background.color Color.dark300
+        , theme |> ThemeColor.dropdownBG |> Background.color
         , Border.rounded 4
         , Border.width 1
-        , Border.color Color.transparent100
+        , theme |> ThemeColor.border |> Border.color
         ]
         (sortList
             |> List.map
@@ -605,9 +638,9 @@ sortOptionsEl sortList =
                         [ width fill
                         , height shrink
                         , paddingXY 12 10
-                        , Font.color Color.light100
+                        , theme |> ThemeColor.text |> Font.color
                         , Font.size 14
-                        , mouseOver [ Background.color Color.primary100 ]
+                        , mouseOver [ theme |> ThemeColor.btnBackground |> Background.color ]
                         , el
                             [ width fill
                             , height fill

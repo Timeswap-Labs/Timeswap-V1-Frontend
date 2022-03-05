@@ -635,7 +635,7 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
     row
         [ width fill
         , height shrink
-        , spacing 12
+        , spacing 16
         ]
         [ el
             [ width shrink
@@ -670,7 +670,7 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
             , alignRight
             , centerY
             ]
-            (Duration.viewMaturity
+            (Duration.viewExpiredMaturity
                 { onMouseEnter = OnMouseEnter
                 , onMouseLeave = OnMouseLeave
                 , tooltip = Tooltip.Maturity
@@ -680,13 +680,14 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
                 , chosenZone = chosenZone
                 , maturity = pool.maturity
                 , theme = theme
+                , images = images
                 }
             )
         , if pool.maturity |> Maturity.isActive time then
             lendMoreButton theme
 
           else
-            lendMoreDisabled
+            none
         , if pool.maturity |> Maturity.isActive time then
             claimDisabled theme
 
@@ -717,28 +718,6 @@ lendMoreButton theme =
                 ]
                 (text "Lend More")
         }
-
-
-lendMoreDisabled : Element msg
-lendMoreDisabled =
-    el
-        [ width <| px 102
-        , height <| px 44
-        , Border.rounded 4
-        , Border.width 1
-        , Border.color Color.transparent200
-        ]
-        (el
-            [ width shrink
-            , height shrink
-            , centerX
-            , centerY
-            , Font.size 16
-            , Font.color Color.transparent200
-            , Font.bold
-            ]
-            (text "Lend More")
-        )
 
 
 claimButton : Theme -> Element Msg

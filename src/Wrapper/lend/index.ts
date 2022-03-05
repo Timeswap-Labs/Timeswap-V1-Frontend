@@ -1,16 +1,17 @@
+import { Uint112 } from '@timeswap-labs/timeswap-v1-sdk-core';
 import { GlobalParams } from './../global';
 import { getPool, getPoolSDK, updateCachedTxns } from "../helper";
 import { bondCalculate, bondTransaction } from "./bond";
 import { insuranceCalculate, insuranceTransaction } from "./insurance";
 import { percentCalculate, percentTransaction } from "./percent";
 
-export function lend(gp: GlobalParams, app: ElmApp<Ports>) {
+export function lend(app: ElmApp<Ports>) {
   app.ports.queryLend.subscribe((query) => {
-    lendQueryCalculation(gp, app, query)
+    lendQueryCalculation(app, query)
   });
 
   app.ports.queryLendPerSecond.subscribe((query) =>
-    lendQueryCalculation(gp, app, query)
+    lendQueryCalculation(app, query)
   );
 }
 
@@ -79,18 +80,29 @@ export function lendSigner(
 }
 
 async function lendQueryCalculation(
-  gp: GlobalParams,
   app: ElmApp<Ports>,
   query: LendQuery,
 ) {
+  // Asset Overflow check
+  try {
+    const assetIn = new Uint112(query.assetIn);
+    const stateX = new Uint112(query.poolInfo.x);
+    stateX.add(assetIn);
+  } catch (error) {
+    app.ports.receiveLendAnswer.send({
+      ...query,
+      result: 5,
+    });
+  }
+
   const pool = getPool(query);
   const { percent, bondOut, insuranceOut } = query;
 
   if (percent !== undefined) {
-    percentCalculate(gp, app, pool, { ...query, percent });
+    percentCalculate(app, pool, { ...query, percent });
   } else if (bondOut !== undefined) {
-    await bondCalculate(gp, app, pool, { ...query, bondOut });
+    await bondCalculate(app, pool, { ...query, bondOut });
   } else if (insuranceOut !== undefined) {
-    await insuranceCalculate(gp, app, pool, { ...query, insuranceOut });
+    await insuranceCalculate(app, pool, { ...query, insuranceOut });
   }
 }
