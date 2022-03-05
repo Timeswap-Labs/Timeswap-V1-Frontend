@@ -7,7 +7,8 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Images exposing (Images)
 import Data.Offset exposing (Offset)
 import Data.Pair as Pair exposing (Pair)
-import Data.Pool as Pool exposing (Pool)
+import Data.Pool exposing (Pool)
+import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token
@@ -175,9 +176,6 @@ update msg blockchain (PoolsData page) =
 
                             Err error ->
                                 Failure error
-
-                    -- result
-                    --     |> Web.fromResult
                   }
                     |> PoolsData
                 , case result |> Web.fromResult of
@@ -208,6 +206,7 @@ view :
         , backdrop : Backdrop
         , theme : Theme
         , images : Images
+        , priceFeed : PriceFeed
     }
     -> PoolsData
     -> Element Msg
@@ -256,11 +255,12 @@ allPairs :
         , theme : Theme
         , offset : Offset
         , chosenZone : ChosenZone
+        , priceFeed : PriceFeed
     }
     -> Answer
     -> PoolsData
     -> Element Msg
-allPairs ({ time, images } as model) poolsDataDict page =
+allPairs model poolsDataDict page =
     Keyed.column
         [ width fill
         , height shrink
@@ -286,11 +286,12 @@ singlePair :
         , theme : Theme
         , offset : Offset
         , chosenZone : ChosenZone
+        , priceFeed : PriceFeed
     }
     -> PoolsData
     -> ( Pair, List ( Pool, PoolInfo ) )
     -> Element Msg
-singlePair ({ time, images, theme } as model) ((PoolsData { expanded, tooltip }) as page) ( pair, list ) =
+singlePair ({ images, theme } as model) ((PoolsData { expanded, tooltip }) as page) ( pair, list ) =
     column
         [ width fill
         , height shrink
@@ -424,6 +425,7 @@ poolDetails :
         , theme : Theme
         , offset : Offset
         , chosenZone : ChosenZone
+        , priceFeed : PriceFeed
     }
     -> PoolsData
     -> List ( Pool, PoolInfo )
@@ -581,6 +583,7 @@ poolDetails ({ theme } as model) page poolList =
                     \info ->
                         el
                             [ height <| px 72
+                            , centerY
                             , Border.solid
                             , Border.widthEach
                                 { top = 0
@@ -729,48 +732,69 @@ estimatedAPR poolInfo =
 
 
 collateralFactor :
-    { model | theme : Theme }
+    { model | theme : Theme, priceFeed : PriceFeed }
     -> PoolsData
     ->
         { pool : Pool
         , poolInfo : PoolInfo
         }
     -> Element Msg
-collateralFactor ({ theme } as model) (PoolsData { tooltip }) { pool, poolInfo } =
+collateralFactor ({ theme, priceFeed } as model) (PoolsData { tooltip }) { pool, poolInfo } =
     el
         [ px 170
             |> width
         , height shrink
-        , paddingXY 0 3
+        , paddingEach
+            { top = 5
+            , right = 0
+            , bottom = 3
+            , left = 0
+            }
         , centerX
         , centerY
+        , Font.center
         ]
         (el
-            [ centerX ]
+            [ centerX, centerY ]
             (row
                 [ Font.size 14
                 , model.theme |> ThemeColor.text |> Font.color
                 , alignRight
                 , spacing 6
                 ]
-                [ Truncate.viewAmount
+                [ Calculate.cdp
                     { onMouseEnter = OnMouseEnter
                     , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.CDP pool
-                    , opened = tooltip
-                    , token = pool.pair |> Pair.toAsset
-                    , amount = poolInfo.cdp.ratio
-                    , theme = model.theme
-                    , customStyles = [ Font.size 14 ]
-                    }
-                , Truncate.viewCDPSymbol
-                    { onMouseEnter = OnMouseEnter
-                    , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.CDPSymbol pool
+                    , cdpTooltip = Tooltip.CDP pool
                     , opened = tooltip
                     , pair = pool.pair
+                    , cdp = poolInfo.cdp
                     , theme = theme
                     }
+                    priceFeed
+                    (theme |> ThemeColor.text)
+                    14
+                , if
+                    case priceFeed of
+                        PriceFeed.Ignore ->
+                            False
+
+                        PriceFeed.Utilize ->
+                            poolInfo.cdp.percent
+                                |> Maybe.map (\_ -> True)
+                                |> Maybe.withDefault False
+                  then
+                    none
+
+                  else
+                    Truncate.viewCDPSymbol
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.CDPSymbol pool
+                        , opened = tooltip
+                        , pair = pool.pair
+                        , theme = theme
+                        }
                 ]
             )
         )

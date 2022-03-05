@@ -466,7 +466,7 @@ viewCDP param =
                         Color.transparent200
 
                     else
-                        Color.warning400
+                        Color.warning500
                    )
                     |> Font.color
                  ]
@@ -496,7 +496,7 @@ viewCDP param =
                     (param.onMouseEnter param.tooltip)
                  , Events.onMouseLeave param.onMouseLeave
                  , Font.size 18
-                 , Font.color Color.warning400
+                 , Font.color Color.warning500
                  ]
                     ++ param.styles
                 )
@@ -508,7 +508,7 @@ viewCDP param =
                  , height shrink
                  , paddingXY 0 3
                  , Font.size 18
-                 , Font.color Color.warning400
+                 , Font.color Color.warning500
                  ]
                     ++ param.styles
                 )
