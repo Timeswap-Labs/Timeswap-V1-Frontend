@@ -7,6 +7,7 @@ import * as walletImages from "url:../../image/wallets/*.svg";
 
 import { elmUser, init } from "./init";
 import { whitelistChains } from "./chains";
+import { sentry } from "./sentry";
 
 export declare let window: any;
 
@@ -41,4 +42,5 @@ async function elmInit() {
   init(app, gp, user);
 }
 
+sentry();
 elmInit();
