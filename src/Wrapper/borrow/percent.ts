@@ -116,7 +116,7 @@ export async function percentTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  return await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
+  return await pool.upgrade(gp.walletSigner!).borrowGivenPercent({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,
     assetOut: new Uint112(borrow.assetOut),

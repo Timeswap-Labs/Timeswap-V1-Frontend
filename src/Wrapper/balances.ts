@@ -19,13 +19,13 @@ export async function balancesAllowancesInit(
       const contract = new Contract(
         (token as ERC20Token).address,
         erc20Abi,
-        gp.metamaskProviderMulti
+        gp.walletProviderMulti
       );
 
       const subscriptionContract = new Contract(
         (token as ERC20Token).address,
         erc20Abi,
-        gp.metamaskProvider
+        gp.walletProvider
       );
 
       balancesToken.push(token as ERC20Token);
@@ -70,9 +70,9 @@ export async function balancesAllowancesInit(
       });
     } else {
       balancesToken.push(token);
-      balances.push(gp.metamaskProviderMulti.getBalance(balancesOf.address));
-      gp.metamaskProvider.on("block", async () => {
-        const balance = await gp.metamaskProvider.getBalance(
+      balances.push(gp.walletProviderMulti.getBalance(balancesOf.address));
+      gp.walletProvider.on("block", async () => {
+        const balance = await gp.walletProvider.getBalance(
           balancesOf.address
         );
         app.ports.receiveBalances.send({
@@ -120,7 +120,7 @@ export async function fetchBalancesOf(
       const contract = new Contract(
         (token as ERC20Token).address,
         erc20Abi,
-        gp.metamaskProviderMulti
+        gp.walletProviderMulti
       );
 
       balancesToken.push(token as ERC20Token);
@@ -137,10 +137,10 @@ export async function fetchBalancesOf(
       });
     } else {
       balancesToken.push(token);
-      balances.push(gp.metamaskProviderMulti.getBalance(balancesOf.address));
+      balances.push(gp.walletProviderMulti.getBalance(balancesOf.address));
 
-      gp.metamaskProvider.on("block", async () => {
-        const balance = await gp.metamaskProvider.getBalance(
+      gp.walletProvider.on("block", async () => {
+        const balance = await gp.walletProvider.getBalance(
           balancesOf.address
         );
         app.ports.receiveBalances.send({
@@ -178,7 +178,7 @@ export async function fetchAllowancesOf(
       const contract = new Contract(
         token.address,
         erc20Abi,
-        gp.metamaskProviderMulti
+        gp.walletProviderMulti
       );
 
       allowancesToken.push(token);

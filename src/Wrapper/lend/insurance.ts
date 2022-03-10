@@ -135,7 +135,7 @@ export async function insuranceTransaction(
   gp: GlobalParams,
   lend: Lend
 ) {
-  return await pool.upgrade(gp.metamaskSigner!).lendGivenInsurance({
+  return await pool.upgrade(gp.walletSigner!).lendGivenInsurance({
     bondTo: lend.bondTo,
     insuranceTo: lend.insuranceTo,
     assetIn: new Uint112(lend.assetIn),

@@ -118,7 +118,7 @@ export function getPoolSDK(
   }
 
   return new SDKPool(
-    gp.metamaskProvider,
+    gp.walletProvider,
     chain.chainId,
     assetToken,
     collateralToken,
@@ -164,7 +164,7 @@ export function listenForPendingTxns(app: ElmApp<Ports>, gp: GlobalParams) {
     );
 
     pendingTxns.forEach(async (pendingTxn) => {
-      const txnReceipt = await gp.provider.waitForTransaction(pendingTxn.hash);
+      const txnReceipt = await gp.walletProvider.waitForTransaction(pendingTxn.hash);
       const receiveReceipt = {
         chain: parsedTxnData.chain,
         address: parsedTxnData.address,

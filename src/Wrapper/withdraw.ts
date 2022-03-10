@@ -56,7 +56,7 @@ export function withdrawSigner(
     const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
 
     try {
-      const txnConfirmation = await pool.upgrade(gp.metamaskSigner!).collect({
+      const txnConfirmation = await pool.upgrade(gp.walletSigner!).collect({
         assetTo: params.send.assetTo,
         collateralTo: params.send.collateralTo,
         claimsIn: {

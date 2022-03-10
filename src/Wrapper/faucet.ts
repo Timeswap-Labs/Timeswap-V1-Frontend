@@ -7,8 +7,8 @@ export function faucetSigner(app: ElmApp<Ports>, gp: GlobalParams) {
     const token = new Contract(
       params.erc20,
       testTokenAbi,
-      gp.metamaskProvider!
+      gp.walletProvider!
     );
-    token.connect(gp.metamaskSigner!).mint();
+    token.connect(gp.walletSigner!).mint();
   });
 }

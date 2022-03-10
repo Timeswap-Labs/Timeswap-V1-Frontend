@@ -6,7 +6,7 @@ export function swapSigner(
 ) {
   app.ports.signSwapTxn.subscribe(async () => {
     try {
-      const signedMsg = await gp.metamaskSigner.signMessage("I love TimeSwap");
+      const signedMsg = await gp.walletSigner.signMessage("I love TimeSwap");
 
       app.ports.swapSignatureMsg.send(signedMsg);
     } catch (error) {

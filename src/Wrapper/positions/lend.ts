@@ -9,19 +9,19 @@ export async function lendPositionsInit(
 ): Promise<Claims> {
   const bondPrincipalTokens = positionsOf.natives.map(
     ({ natives: { bondPrincipal } }) =>
-      new Contract(bondPrincipal, erc20Abi, gp.metamaskProviderMulti)
+      new Contract(bondPrincipal, erc20Abi, gp.walletProviderMulti)
   );
   const bondInterestTokens = positionsOf.natives.map(
     ({ natives: { bondInterest } }) =>
-      new Contract(bondInterest, erc20Abi, gp.metamaskProviderMulti)
+      new Contract(bondInterest, erc20Abi, gp.walletProviderMulti)
   );
   const insurancePrincipalTokens = positionsOf.natives.map(
     ({ natives: { insurancePrincipal } }) =>
-      new Contract(insurancePrincipal, erc20Abi, gp.metamaskProviderMulti)
+      new Contract(insurancePrincipal, erc20Abi, gp.walletProviderMulti)
   );
   const insuranceInterestTokens = positionsOf.natives.map(
     ({ natives: { insuranceInterest } }) =>
-      new Contract(insuranceInterest, erc20Abi, gp.metamaskProviderMulti)
+      new Contract(insuranceInterest, erc20Abi, gp.walletProviderMulti)
   );
 
   const promiseBondPrincipalBalances = [];
@@ -77,36 +77,36 @@ export function lendPositionsUpdate(
 ) {
   const bondPrincipalMulticallTokens = positionsOf.natives.map(
     ({ natives: { bondPrincipal } }) =>
-      new Contract(bondPrincipal, erc20Abi, gp.metamaskProviderMulti)
+      new Contract(bondPrincipal, erc20Abi, gp.walletProviderMulti)
   );
   const bondInterestMulticallTokens = positionsOf.natives.map(
     ({ natives: { bondInterest } }) =>
-      new Contract(bondInterest, erc20Abi, gp.metamaskProviderMulti)
+      new Contract(bondInterest, erc20Abi, gp.walletProviderMulti)
   );
   const insurancePrincipalMulticallTokens = positionsOf.natives.map(
     ({ natives: { insurancePrincipal } }) =>
-      new Contract(insurancePrincipal, erc20Abi, gp.metamaskProviderMulti)
+      new Contract(insurancePrincipal, erc20Abi, gp.walletProviderMulti)
   );
   const insuranceInterestMulticallTokens = positionsOf.natives.map(
     ({ natives: { insuranceInterest } }) =>
-      new Contract(insuranceInterest, erc20Abi, gp.metamaskProviderMulti)
+      new Contract(insuranceInterest, erc20Abi, gp.walletProviderMulti)
   );
 
   const bondPrincipalTokens = positionsOf.natives.map(
     ({ natives: { bondPrincipal } }) =>
-      new Contract(bondPrincipal, erc20Abi, gp.metamaskProvider)
+      new Contract(bondPrincipal, erc20Abi, gp.walletProvider)
   );
   const bondInterestTokens = positionsOf.natives.map(
     ({ natives: { bondInterest } }) =>
-      new Contract(bondInterest, erc20Abi, gp.metamaskProvider)
+      new Contract(bondInterest, erc20Abi, gp.walletProvider)
   );
   const insurancePrincipalTokens = positionsOf.natives.map(
     ({ natives: { insurancePrincipal } }) =>
-      new Contract(insurancePrincipal, erc20Abi, gp.metamaskProvider)
+      new Contract(insurancePrincipal, erc20Abi, gp.walletProvider)
   );
   const insuranceInterestTokens = positionsOf.natives.map(
     ({ natives: { insuranceInterest } }) =>
-      new Contract(insuranceInterest, erc20Abi, gp.metamaskProvider)
+      new Contract(insuranceInterest, erc20Abi, gp.walletProvider)
   );
 
   const updateFunction = async (pool: Pool, index: number) => {

@@ -33,7 +33,7 @@ async function elmInit() {
       slippage: Number(window.localStorage.getItem("slippage")) || null,
       deadline: Number(window.localStorage.getItem("deadline")) || null,
       priceFeed: window.localStorage.getItem("priceFeed"),
-      wallets: ["metamask"],
+      wallets: window.ethereum ? ["metamask", "walletConnect"] : ["walletConnect"],
       chains: whitelistChains,
       user,
     },

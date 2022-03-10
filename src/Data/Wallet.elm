@@ -17,6 +17,7 @@ import Url.Builder as Builder
 
 type Wallet
     = Metamask
+    | WalletConnect
 
 
 type alias Flag =
@@ -29,6 +30,9 @@ init string =
         "metamask" ->
             Just Metamask
 
+        "walletConnect" ->
+            Just WalletConnect
+
         _ ->
             Nothing
 
@@ -39,12 +43,18 @@ toString wallet =
         Metamask ->
             "Metamask"
 
+        WalletConnect ->
+            "WalletConnect"
+
 
 toUrlString : Wallet -> String
 toUrlString wallet =
     case wallet of
         Metamask ->
             Builder.crossOrigin "https://metamask.io" [] []
+
+        WalletConnect ->
+            Builder.crossOrigin "https://walletconnect.com/" [] []
 
 
 decoder : Decoder Wallet
@@ -56,6 +66,9 @@ decoder =
                     "metamask" ->
                         Decode.succeed Metamask
 
+                    "walletConnect" ->
+                        Decode.succeed WalletConnect
+
                     _ ->
                         Decode.fail "Not a supported wallet"
             )
@@ -66,6 +79,9 @@ encode wallet =
     (case wallet of
         Metamask ->
             "metamask"
+
+        WalletConnect ->
+            "walletConnect"
     )
         |> Encode.string
 
@@ -78,4 +94,7 @@ sorter =
                 case wallet of
                     Metamask ->
                         1
+
+                    WalletConnect ->
+                        2
             )

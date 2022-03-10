@@ -100,7 +100,7 @@ export function paySigner(app: ElmApp<Ports>, gp: GlobalParams) {
     );
 
     try {
-      const txnConfirmation = await pool.upgrade(gp.metamaskSigner!).repay({
+      const txnConfirmation = await pool.upgrade(gp.walletSigner!).repay({
         collateralTo: params.send.collateralTo,
         ids: params.send.ids.map((id) => new Uint256(id)),
         maxAssetsIn: params.send.maxAssetsIn.map(

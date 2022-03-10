@@ -12,19 +12,28 @@
     "@sentry/browser": "^6.18.1",
     "@sentry/tracing": "^6.18.1",
     "@timeswap-labs/timeswap-v1-sdk": "^0.1.73",
-    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.38"
+    "@timeswap-labs/timeswap-v1-sdk-core": "^0.1.38",
+    "@walletconnect/web3-provider": "^1.7.4",
+    "web3": "^1.7.1"
   },
   "devDependencies": {
     "@parcel/resolver-glob": "2.3.0",
     "@parcel/transformer-elm": "2.3.0",
     "@parcel/transformer-typescript-tsc": "2.3.0",
     "@types/elm": "^0.19.1",
+    "assert": "^2.0.0",
     "buffer": "^6.0.3",
     "elm": "^0.19.1-5",
     "elm-hot": "^1.1.6",
+    "https-browserify": "^1.0.0",
     "node-elm-compiler": "^5.0.6",
+    "os-browserify": "^0.3.0",
     "parcel": "2.3.0",
     "process": "^0.11.10",
-    "typescript": "^4.4.4"
+    "querystring-es3": "^0.2.1",
+    "stream-browserify": "^3.0.0",
+    "stream-http": "^3.2.0",
+    "typescript": "^4.4.4",
+    "url": "^0.11.0"
   }
 }

@@ -36,6 +36,18 @@ export const whitelistChains: Whitelist = {
         name: "TS Avalanche",
         symbol: "TS-AVAX",
         decimals: 18,
+      },
+      {
+        address: "0xA4abf1B77d9171Eb910DD6f7ae863cF77c4225A4",
+        name: "Dai Stablecoin",
+        symbol: "DAI",
+        decimals: 18,
+      },
+      {
+        address: "0x2193fBf6F024aD9DCa5c7D615259CE4DDb8a9F89",
+        name: "Ethereum",
+        symbol: "ETH",
+        decimals: 18,
       }
     ],
     custom: getCustomTokens(String(80001)),

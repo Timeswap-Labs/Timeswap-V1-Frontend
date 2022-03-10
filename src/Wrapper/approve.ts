@@ -9,7 +9,7 @@ export function approveSigner(
 ) {
   app.ports.approve.subscribe(async (params) => {
     const erc20 = new ERC20Token(
-      gp.metamaskProvider,
+      gp.walletProvider,
       params.chain.chainId,
       params.erc20.decimals,
       params.erc20.address
@@ -17,7 +17,7 @@ export function approveSigner(
 
     try {
       const txnConfirmation = await erc20
-        .upgrade(gp.metamaskSigner)
+        .upgrade(gp.walletSigner)
         .approve(CONVENIENCE[params.chain.chainId], new Uint256((1n << 256n) - 1n));
 
       app.ports.receiveConfirm.send({

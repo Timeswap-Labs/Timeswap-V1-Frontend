@@ -13,10 +13,10 @@ export class GlobalParams {
   private _provider?: BaseProvider;
   private _providerMulti?: BaseProvider;
 
-  private _metamaskProvider?: Web3Provider;
-  private _metamaskProviderMulti?: BaseProvider;
+  private _walletProvider?: Web3Provider;
+  private _walletProviderMulti?: BaseProvider;
 
-  private _metamaskSigner?: Signer;
+  private _walletSigner?: Signer;
 
   network?: string;
 
@@ -33,30 +33,30 @@ export class GlobalParams {
     return this._providerMulti!;
   }
 
-  public get metamaskProvider(): Web3Provider {
-    return this._metamaskProvider!;
+  public get walletProvider(): Web3Provider {
+    return this._walletProvider!;
   }
 
-  public set metamaskProvider(
+  public set walletProvider(
     value: ExternalProvider | JsonRpcFetchFunc | Web3Provider
   ) {
     if (value instanceof Web3Provider) {
-      this._metamaskProvider = value;
+      this._walletProvider = value;
     } else {
-      this._metamaskProvider = new Web3Provider(value);
+      this._walletProvider = new Web3Provider(value);
     }
-    this._metamaskProviderMulti = new MulticallProvider(this._metamaskProvider);
+    this._walletProviderMulti = new MulticallProvider(this._walletProvider);
   }
 
-  public get metamaskProviderMulti(): BaseProvider {
-    return this._metamaskProviderMulti!;
+  public get walletProviderMulti(): BaseProvider {
+    return this._walletProviderMulti!;
   }
 
-  public get metamaskSigner(): Signer {
-    return this._metamaskSigner!;
+  public get walletSigner(): Signer {
+    return this._walletSigner!;
   }
 
-  public set metamaskSigner(value: Signer) {
-    this._metamaskSigner = value;
+  public set walletSigner(value: Signer) {
+    this._walletSigner = value;
   }
 }

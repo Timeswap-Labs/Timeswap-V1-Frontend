@@ -137,7 +137,7 @@ export async function collateralTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  return await pool.upgrade(gp.metamaskSigner!).borrowGivenCollateral({
+  return await pool.upgrade(gp.walletSigner!).borrowGivenCollateral({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,
     assetOut: new Uint112(borrow.assetOut),

@@ -113,7 +113,7 @@ export async function debtTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  return await pool.upgrade(gp.metamaskSigner!).borrowGivenDebt({
+  return await pool.upgrade(gp.walletSigner!).borrowGivenDebt({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,
     assetOut: new Uint112(borrow.assetOut),

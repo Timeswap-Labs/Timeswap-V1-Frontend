@@ -1,5 +1,6 @@
-import { getProvider } from "./provider";
-import { pool } from "./pool";
+import WalletConnectProvider from '@walletconnect/web3-provider';
+import { Web3Provider } from '@ethersproject/providers';
+import { providers } from "ethers";
 import { lend, lendSigner } from "./lend";
 import { GlobalParams } from "./global";
 import {
@@ -27,17 +28,10 @@ export async function elmUser(): Promise<{
   const gp = new GlobalParams();
 
   if (window.ethereum && ethereum) {
-    gp.metamaskProvider = window.ethereum;
-    gp.network = await gp.metamaskProvider.send("eth_chainId", []);
+    gp.walletProvider = window.ethereum;
+    gp.network = await gp.walletProvider.send("eth_chainId", []);
 
-    // if (gp.network !== "0x4") {
-    //   gp.metamaskProvider.send("wallet_switchEthereumChain", [
-    //     { chainId: "0x4" },
-    //   ]);
-    //   return { gp, user: null };
-    // }
-
-    const accounts: string[] = await gp.metamaskProvider.send(
+    const accounts: string[] = await gp.walletProvider.send(
       "eth_accounts",
       []
     );
@@ -74,8 +68,7 @@ export async function init(
   gp: GlobalParams,
   user: ReceiveUser | null
 ) {
-  const provider = await getProvider(gp);
-  gp.provider = provider;
+  // gp.provider = await getProvider(gp);
 
   listenForPendingTxns(app, gp);
 
@@ -100,7 +93,7 @@ export async function init(
 
   swapSigner(app, gp);
 
-  if (gp.metamaskProvider) {
+  if (gp.walletProvider) {
     metamaskConnected(app, gp);
     metamaskChainChange(app, gp);
     metamaskAccountsChange(app, gp);
@@ -108,20 +101,18 @@ export async function init(
 }
 
 function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
-  app.ports.connect.subscribe((walletName) => {
+  app.ports.connect.subscribe(async (walletName) => {
     if (wallet[walletName]) {
-      gp.metamaskProvider = wallet[walletName]!; //TODO: Fix null val
+      gp.walletProvider = wallet[walletName]!; //TODO: Fix null val
+
+      if (walletName === "walletConnect") {
+        //  Enable session (triggers QR Code modal)
+        await (gp.walletProvider.provider as WalletConnectProvider).enable();
+      }
       receiveUser(app, gp, walletName);
     } else {
       app.ports.receiveNoConnect.send(walletName);
     }
-
-    // if (wallet == "metamask" && window.ethereum && ethereum) {
-    //   gp.metamaskProvider = window.ethereum;
-    //   receiveUser(app, whitelist, gp);
-    // } else {
-    //   app.ports.noMetamask.send();
-    // }
   });
 
   // app.ports.disconnect.subscribe(() => {
@@ -172,18 +163,18 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
 
   app.ports.changeChain.subscribe(async (chain) => {
     if (window.ethereum && ethereum) {
-      gp.metamaskProvider = window.ethereum;
+      gp.walletProvider = window.ethereum;
       const chainId = chain.chainId.toString().startsWith("0x")
         ? chain.chainId
         : "0x" + Number(chain.chainId.toString().trim()).toString(16);
 
       try {
-        await gp.metamaskProvider.send("wallet_switchEthereumChain", [
+        await gp.walletProvider.send("wallet_switchEthereumChain", [
           { chainId },
         ]);
       } catch (error: any) {
         if ((error.code = 4902)) {
-          await gp.metamaskProvider.send("wallet_addEthereumChain", [
+          await gp.walletProvider.send("wallet_addEthereumChain", [
             {
               chainId,
               chainName: chain.name,
@@ -202,29 +193,35 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
 }
 
 function receiveUser(app: ElmApp<Ports>, gp: GlobalParams, walletName: string) {
-  gp.metamaskProvider
-    .send("eth_requestAccounts", [])
-    .then((accounts: string[]) => {
-      app.ports.receiveUser.send({
-        chainId: Number(ethereum.chainId),
-        wallet: walletName,
-        address: accounts[0],
-        txns: {
-          confirmed: [],
-          uncomfirmed: [],
-        },
-      });
-      gp.metamaskSigner = gp.metamaskProvider.getSigner();
+  let userAccountsPromise: Promise<any>;
 
-      userInit(app, gp, accounts[0]);
-    })
-    .catch(() => {
-      app.ports.receiveNoConnect.send(walletName);
+  if (walletName === "walletConnect") {
+    userAccountsPromise = gp.walletProvider.listAccounts();
+
+  } else {
+    userAccountsPromise = gp.walletProvider.send("eth_requestAccounts", []);
+  }
+
+  userAccountsPromise.then((accounts: string[]) => {
+    app.ports.receiveUser.send({
+      chainId: Number(ethereum.chainId),
+      wallet: walletName,
+      address: accounts[0],
+      txns: {
+        confirmed: [],
+        uncomfirmed: [],
+      },
     });
+
+    gp.walletSigner = gp.walletProvider.getSigner();
+    userInit(app, gp, accounts[0]);
+  }).catch(() => {
+    app.ports.receiveNoConnect.send(walletName);
+  });
 }
 
 function metamaskConnected(app: ElmApp<Ports>, gp: GlobalParams) {
-  gp.metamaskProvider.send("eth_accounts", []).then((accounts: string[]) => {
+  gp.walletProvider.send("eth_accounts", []).then((accounts: string[]) => {
     if (accounts[0]) {
       app.ports.receiveUser.send({
         chainId: Number(ethereum.chainId),
@@ -235,7 +232,7 @@ function metamaskConnected(app: ElmApp<Ports>, gp: GlobalParams) {
           uncomfirmed: [],
         },
       });
-      gp.metamaskSigner = gp.metamaskProvider.getSigner();
+      gp.walletSigner = gp.walletProvider.getSigner();
 
       userInit(app, gp, accounts[0]);
     }
@@ -244,7 +241,7 @@ function metamaskConnected(app: ElmApp<Ports>, gp: GlobalParams) {
 
 function metamaskChainChange(app: ElmApp<Ports>, gp: GlobalParams) {
   ethereum.on("chainChanged", (chainId: string) => {
-    gp.metamaskProvider!.send("eth_accounts", []).then((accounts: string[]) => {
+    gp.walletProvider!.send("eth_accounts", []).then((accounts: string[]) => {
       if (accounts[0]) {
         app.ports.receiveUser.send({
           chainId: Number(chainId),
@@ -257,10 +254,10 @@ function metamaskChainChange(app: ElmApp<Ports>, gp: GlobalParams) {
         });
 
         gp.provider.removeAllListeners();
-        gp.metamaskProvider.removeAllListeners();
+        gp.walletProvider.removeAllListeners();
 
-        gp.metamaskProvider = window.ethereum;
-        gp.metamaskSigner = gp.metamaskProvider.getSigner();
+        gp.walletProvider = window.ethereum;
+        gp.walletSigner = gp.walletProvider.getSigner();
 
         chainInit(app, gp, accounts[0]);
       }
@@ -281,10 +278,10 @@ function metamaskAccountsChange(app: ElmApp<Ports>, gp: GlobalParams) {
         },
       });
 
-      gp.metamaskProvider.removeAllListeners();
+      gp.walletProvider.removeAllListeners();
 
-      gp.metamaskProvider = window.ethereum;
-      gp.metamaskSigner = gp.metamaskProvider.getSigner();
+      gp.walletProvider = window.ethereum;
+      gp.walletSigner = gp.walletProvider.getSigner();
 
       userInit(app, gp, accounts[0]);
     } else {
@@ -298,8 +295,8 @@ async function chainInit(
   gp: GlobalParams,
   account: string
 ) {
-  gp.provider = await getProvider(gp);
-  gp.network = await gp.metamaskProvider.send("eth_chainId", []);
+  // gp.provider = await getProvider(gp);
+  gp.network = await gp.walletProvider.send("eth_chainId", []);
   userInit(app, gp, account);
 }
 
