@@ -123,7 +123,7 @@ approve params =
                 ([ "Approve"
                  , params.erc20
                     |> ERC20.toSymbol
-                    |> String.left 5
+                    |> String.left 6
                  ]
                     |> String.join " "
                     |> text
@@ -197,7 +197,7 @@ disabledApprove theme erc20 =
             ([ "Approve"
              , erc20
                 |> ERC20.toSymbol
-                |> String.left 5
+                |> String.left 6
              ]
                 |> String.join " "
                 |> text
@@ -229,7 +229,7 @@ pendingApprove theme erc20 =
             ([ "approving"
              , erc20
                 |> ERC20.toSymbol
-                |> String.left 5
+                |> String.left 6
              ]
                 |> String.join " "
                 |> text
