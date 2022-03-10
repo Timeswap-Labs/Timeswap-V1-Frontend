@@ -1,5 +1,5 @@
 import WalletConnectProvider from '@walletconnect/web3-provider';
-import { Web3Provider } from '@ethersproject/providers';
+import { Provider, Web3Provider } from '@ethersproject/providers';
 import { providers } from "ethers";
 import { lend, lendSigner } from "./lend";
 import { GlobalParams } from "./global";
@@ -240,7 +240,7 @@ function metamaskConnected(app: ElmApp<Ports>, gp: GlobalParams) {
 }
 
 function metamaskChainChange(app: ElmApp<Ports>, gp: GlobalParams) {
-  ethereum.on("chainChanged", (chainId: string) => {
+  (gp.walletProvider.provider as Provider).on("chainChanged", (chainId: string) => {
     gp.walletProvider!.send("eth_accounts", []).then((accounts: string[]) => {
       if (accounts[0]) {
         app.ports.receiveUser.send({
@@ -266,7 +266,7 @@ function metamaskChainChange(app: ElmApp<Ports>, gp: GlobalParams) {
 }
 
 function metamaskAccountsChange(app: ElmApp<Ports>, gp: GlobalParams) {
-  ethereum.on("accountsChanged", (accounts: string[]) => {
+  (gp.walletProvider.provider as Provider).on("accountsChanged", (accounts: string[]) => {
     if (accounts[0]) {
       app.ports.receiveUser.send({
         chainId: Number(ethereum.chainId),
@@ -287,6 +287,11 @@ function metamaskAccountsChange(app: ElmApp<Ports>, gp: GlobalParams) {
     } else {
       app.ports.receiveUser.send(null);
     }
+  });
+
+  (gp.walletProvider.provider as Provider).on("disconnect", (code: number, reason: string) => {
+    console.log(code, reason);
+    app.ports.receiveUser.send(null);
   });
 }
 
