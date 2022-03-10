@@ -7,6 +7,7 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Images exposing (Images)
 import Data.Offset exposing (Offset)
 import Data.Pair as Pair exposing (Pair)
+import Data.Parameter as Parameter
 import Data.Pool exposing (Pool)
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
@@ -25,6 +26,7 @@ import Element
         , el
         , fill
         , height
+        , link
         , minimum
         , none
         , padding
@@ -47,7 +49,8 @@ import Element.Keyed as Keyed
 import Http
 import Page.Info.Answer as Answer exposing (Answer)
 import Page.Info.Tooltip as Tooltip exposing (Tooltip)
-import Page.PoolInfo as PoolInfo exposing (PoolInfo)
+import Page.PoolInfo exposing (PoolInfo)
+import Page.Route as Route
 import Process
 import Sort.Dict as Dict exposing (Dict)
 import Sort.Set as Set exposing (Set)
@@ -214,7 +217,7 @@ view ({ backdrop, theme } as model) ((PoolsData { data }) as page) =
     case data of
         Success poolsDataDict ->
             column
-                ([ width <| minimum 800 fill
+                ([ width <| minimum 975 fill
                  , height shrink
                  , spacing 30
                  , padding 24
@@ -567,7 +570,7 @@ poolDetails ({ theme } as model) page poolList =
                         , Border.solid
                         , Border.widthEach
                             { top = 1
-                            , right = 1
+                            , right = 0
                             , bottom = 1
                             , left = 0
                             }
@@ -587,13 +590,50 @@ poolDetails ({ theme } as model) page poolList =
                             , Border.solid
                             , Border.widthEach
                                 { top = 0
-                                , right = 1
+                                , right = 0
                                 , bottom = 1
                                 , left = 0
                                 }
                             , theme |> ThemeColor.textboxBorder |> Border.color
                             ]
                             (collateralFactor model page info)
+              }
+            , { header =
+                    el
+                        [ width fill
+                        , height fill
+                        , theme |> ThemeColor.tableHeaderBG |> Background.color
+                        , Border.solid
+                        , Border.widthEach
+                            { top = 1
+                            , right = 1
+                            , bottom = 1
+                            , left = 0
+                            }
+                        , theme |> ThemeColor.textboxBorder |> Border.color
+                        ]
+                        none
+              , width = px 211
+              , view =
+                    \{ pool } ->
+                        el
+                            [ height <| px 72
+                            , paddingEach
+                                { top = 0
+                                , right = 24
+                                , bottom = 0
+                                , left = 0
+                                }
+                            , Border.solid
+                            , Border.widthEach
+                                { top = 0
+                                , right = 1
+                                , bottom = 1
+                                , left = 0
+                                }
+                            , theme |> ThemeColor.textboxBorder |> Border.color
+                            ]
+                            (buttons model pool)
               }
             ]
         }
@@ -798,6 +838,64 @@ collateralFactor ({ theme, priceFeed } as model) (PoolsData { tooltip }) { pool,
                 ]
             )
         )
+
+
+buttons :
+    { model | theme : Theme }
+    -> Pool
+    -> Element msg
+buttons { theme } pool =
+    row
+        [ width <| px 177
+        , centerY
+        , alignRight
+        , spacing 7
+        ]
+        [ el
+            [ width fill
+            , height shrink
+            ]
+            (link
+                [ width fill
+                , height <| px 44
+                , theme |> ThemeColor.primaryBtn |> Background.color
+                , Border.rounded 4
+                , Font.bold
+                , Font.size 16
+                , Font.color Color.light100
+                ]
+                { url = Route.toUrlString (Route.Lend (Parameter.Pool pool |> Just))
+                , label =
+                    el
+                        [ centerX
+                        , centerY
+                        ]
+                        (text "Lend")
+                }
+            )
+        , el
+            [ width fill
+            , height shrink
+            ]
+            (link
+                [ width fill
+                , height <| px 44
+                , theme |> ThemeColor.primaryBtn |> Background.color
+                , Border.rounded 4
+                , Font.bold
+                , Font.size 16
+                , Font.color Color.light100
+                ]
+                { url = Route.toUrlString (Route.Borrow (Parameter.Pool pool |> Just))
+                , label =
+                    el
+                        [ centerX
+                        , centerY
+                        ]
+                        (text "Borrow")
+                }
+            )
+        ]
 
 
 getPairSet : Answer -> Set Pair
