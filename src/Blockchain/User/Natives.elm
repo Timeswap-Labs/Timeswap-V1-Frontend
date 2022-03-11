@@ -26,7 +26,7 @@ type alias Answer =
 
 toUrlString : Chain -> String
 toUrlString chain =
-    Builder.crossOrigin "https://backend-new-conv.herokuapp.com/v1"
+    Builder.crossOrigin "https://ts-gamification-api.herokuapp.com/v1"
         [ "natives" ]
         [ chain |> Chain.toQueryParameter ]
 
