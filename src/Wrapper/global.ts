@@ -10,28 +10,11 @@ import { providers } from "@0xsequence/multicall";
 const { MulticallProvider } = providers;
 
 export class GlobalParams {
-  private _provider?: BaseProvider;
-  private _providerMulti?: BaseProvider;
-
   private _walletProvider?: Web3Provider;
   private _walletProviderMulti?: BaseProvider;
-
   private _walletSigner?: Signer;
 
   network?: string;
-
-  public get provider(): BaseProvider {
-    return this._provider!;
-  }
-
-  public set provider(value: BaseProvider) {
-    this._provider = value;
-    this._providerMulti = new MulticallProvider(this._provider);
-  }
-
-  public get providerMulti(): BaseProvider {
-    return this._providerMulti!;
-  }
 
   public get walletProvider(): Web3Provider {
     return this._walletProvider!;

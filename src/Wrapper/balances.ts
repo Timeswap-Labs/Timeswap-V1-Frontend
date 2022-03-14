@@ -71,6 +71,7 @@ export async function balancesAllowancesInit(
     } else {
       balancesToken.push(token);
       balances.push(gp.walletProviderMulti.getBalance(balancesOf.address));
+
       gp.walletProvider.on("block", async () => {
         const balance = await gp.walletProvider.getBalance(
           balancesOf.address
