@@ -153,6 +153,28 @@ export function updateCachedTxns(txnReceipt: ReceiveReceipt) {
   }
 }
 
+export function fetchRecentTxns(gp: GlobalParams, accountAddr: string): Txns {
+  const chainId = Number(gp.network);
+  const storedTxns = window.localStorage.getItem("txns");
+  let txns: Txns = { confirmed: [], uncomfirmed: [] };
+
+  if (storedTxns) {
+    try {
+      const parsedTxns: { chain: Chain; address: string; txns: Txns } =
+        JSON.parse(storedTxns);
+      txns =
+        parsedTxns.address === accountAddr &&
+        parsedTxns.chain.chainId === chainId
+          ? parsedTxns.txns
+          : txns;
+    } catch (err) {
+      txns = { confirmed: [], uncomfirmed: [] };
+    }
+  }
+
+  return txns;
+}
+
 export function listenForPendingTxns(app: ElmApp<Ports>, gp: GlobalParams) {
   const storedTxns = window.localStorage.getItem("txns");
 

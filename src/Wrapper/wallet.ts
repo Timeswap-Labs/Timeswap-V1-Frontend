@@ -6,7 +6,7 @@ type Wallet = { [name: string]: Web3Provider | null };
 export declare let window: any;
 
 export const wallet: Wallet = {
-  metamask: window.ethereum ? new Web3Provider(window.ethereum) : null,
+  metamask: window.ethereum ? new Web3Provider(window.ethereum, "any") : null,
   walletConnect: new Web3Provider(new WalletConnectProvider({
     infuraId: "9aa3d95b3bc440fa88ea12eaa4456161",
     rpc: {

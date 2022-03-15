@@ -14,7 +14,7 @@ import { withdraw, withdrawSigner } from "./withdraw";
 import { wallet } from "./wallet";
 import { getChainData, getTokenList } from "./chains";
 import { approveSigner } from "./approve";
-import { listenForPendingTxns } from "./helper";
+import { listenForPendingTxns, fetchRecentTxns } from "./helper";
 import { swapSigner } from "./swap";
 
 export declare let window: any;
@@ -30,31 +30,21 @@ export async function elmUser(): Promise<{
     gp.walletProvider = wallet[prevUsedWallet]!;
 
     if (prevUsedWallet === "walletConnect") {
-      await (gp.walletProvider.provider as WalletConnectProvider).enable();
+      try {
+        await (gp.walletProvider.provider as WalletConnectProvider).enable();
+      } catch (error) {
+        return { gp, user: null };
+      }
     }
 
     gp.network = await gp.walletProvider.send("eth_chainId", []);
     const accounts: string[] = await gp.walletProvider.send("eth_accounts", []);
 
     if (accounts[0]) {
-      let txns: Txns = { confirmed: [], uncomfirmed: [] };
       const wallet = prevUsedWallet;
       const chainId = Number(gp.network);
-      const storedTxns = window.localStorage.getItem("txns");
+      const txns: Txns = fetchRecentTxns(gp, accounts[0]);
 
-      if (storedTxns) {
-        try {
-          const parsedTxns: { chain: Chain; address: string; txns: Txns } =
-            JSON.parse(storedTxns);
-          txns =
-            parsedTxns.address === accounts[0] &&
-            parsedTxns.chain.chainId === chainId
-              ? parsedTxns.txns
-              : txns;
-        } catch (err) {
-          txns = { confirmed: [], uncomfirmed: [] };
-        }
-      }
       return { gp, user: { wallet, chainId, address: accounts[0], txns } };
     }
   }
@@ -99,10 +89,6 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
     if (wallet[walletName]) {
       gp.walletProvider = wallet[walletName]!; //TODO: Fix null val
 
-      if (walletName === "walletConnect") {
-        //  Enable session (triggers QR Code modal)
-        await (gp.walletProvider.provider as WalletConnectProvider).enable();
-      }
       receiveUser(app, gp, walletName);
       window.localStorage.setItem("wallet", walletName);
     } else {
@@ -153,8 +139,7 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
   });
 
   app.ports.changeChain.subscribe(async (chain) => {
-    if (window.ethereum && ethereum) {
-      gp.walletProvider = window.ethereum;
+    if (gp.walletProvider) {
       const chainId = chain.chainId.toString().startsWith("0x")
         ? chain.chainId
         : "0x" + Number(chain.chainId.toString().trim()).toString(16);
@@ -184,17 +169,20 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
 }
 
 function receiveUser(app: ElmApp<Ports>, gp: GlobalParams, walletName: string) {
-  let userAccountsPromise: Promise<any> = gp.walletProvider.send("eth_requestAccounts", []);;
+  let userAccountsPromise: Promise<any>;
+
+  if (walletName === "walletConnect") {
+    userAccountsPromise = (gp.walletProvider.provider as WalletConnectProvider).enable();
+  } else {
+    userAccountsPromise = gp.walletProvider.send("eth_requestAccounts", []);
+  }
 
   userAccountsPromise.then((accounts: string[]) => {
     app.ports.receiveUser.send({
       chainId: Number(ethereum.chainId),
       wallet: walletName,
       address: accounts[0],
-      txns: {
-        confirmed: [],
-        uncomfirmed: [],
-      },
+      txns: fetchRecentTxns(gp, accounts[0]),
     });
 
     gp.walletSigner = gp.walletProvider.getSigner();
@@ -253,10 +241,7 @@ function walletAccountsChange(app: ElmApp<Ports>, gp: GlobalParams) {
         chainId: Number(gp.network),
         wallet: selectedWallet,
         address: accounts[0],
-        txns: {
-          confirmed: [],
-          uncomfirmed: [],
-        },
+        txns: fetchRecentTxns(gp, accounts[0]),
       });
 
       gp.walletProvider.removeAllListeners();
@@ -268,11 +253,6 @@ function walletAccountsChange(app: ElmApp<Ports>, gp: GlobalParams) {
     } else {
       app.ports.receiveUser.send(null);
     }
-  });
-
-  (gp.walletProvider.provider as Provider).on("disconnect", (code: number, reason: string) => {
-    console.log(code, reason);
-    app.ports.receiveUser.send(null);
   });
 }
 
