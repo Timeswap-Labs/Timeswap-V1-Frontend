@@ -34,35 +34,7 @@ export const whitelistChains: Whitelist = {
     ],
     custom: getCustomTokens(String(137)),
   },
-  others: [
-    {
-      chainId: 80001,
-      name: "Polygon Testnet",
-      rpcUrl: "https://rpc-mumbai.matic.today",
-      blockExplorerUrl: "https://mumbai.polygonscan.com",
-      nftExplorerUrl: "https://testnets.opensea.io/assets/mumbai",
-      native: {
-        name: "MATIC",
-        symbol: "MATIC",
-        decimals: 18,
-      },
-      whitelist: [
-        {
-          address: "0xA4abf1B77d9171Eb910DD6f7ae863cF77c4225A4",
-          name: "Dai Stablecoin",
-          symbol: "DAI",
-          decimals: 18,
-        },
-        {
-          address: "0x2193fBf6F024aD9DCa5c7D615259CE4DDb8a9F89",
-          name: "Ethereum",
-          symbol: "ETH",
-          decimals: 18,
-        }
-      ],
-      custom: getCustomTokens(String(80001)),
-    }
-  ],
+  others: [],
 };
 
 export function getChainData(chainId: number) {
