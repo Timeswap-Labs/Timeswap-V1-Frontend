@@ -12,7 +12,7 @@ import { borrow, borrowSigner } from "./borrow";
 import { pay, paySigner } from "./pay";
 import { withdraw, withdrawSigner } from "./withdraw";
 import { wallet } from "./wallet";
-import { getChainData, getTokenList } from "./chains";
+import { getChainData, getNativeToken, getTokenList } from "./chains";
 import { approveSigner } from "./approve";
 import { listenForPendingTxns, fetchRecentTxns } from "./helper";
 import { swapSigner } from "./swap";
@@ -154,6 +154,7 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
             {
               chainId,
               chainName: chain.name,
+              nativeCurrency: getNativeToken(chain.chainId),
               rpcUrls: [chain.rpcUrl],
               blockExplorerUrls: [chain.blockExplorerUrl],
             },

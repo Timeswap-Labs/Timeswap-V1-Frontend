@@ -31,19 +31,6 @@ export async function balancesAllowancesInit(
       balancesToken.push(token as ERC20Token);
       balances.push(contract.balanceOf(balancesOf.address));
 
-      allowancesToken.push(token as ERC20Token);
-      allowances.push(
-        contract.allowance(
-          balancesOf.address,
-          CONVENIENCE[balancesOf.chain.chainId]
-        )
-      );
-
-      const allowanceFilter = subscriptionContract.filters.Approval(
-        balancesOf.address,
-        CONVENIENCE[balancesOf.chain.chainId]
-      );
-
       updateTransferEventBalance(
         subscriptionContract,
         balancesOf.address,
@@ -60,14 +47,29 @@ export async function balancesAllowancesInit(
         }
       );
 
-      subscriptionContract.on(allowanceFilter, (_owner, _spender, value) => {
-        app.ports.receiveAllowances.send({
-          chain: balancesOf.chain,
-          address: balancesOf.address,
-          erc20s: [token as ERC20Token],
-          allowances: [value.toString()],
+      if (CONVENIENCE[balancesOf.chain.chainId]) {
+        allowancesToken.push(token as ERC20Token);
+        allowances.push(
+          contract.allowance(
+            balancesOf.address,
+            CONVENIENCE[balancesOf.chain.chainId]
+          )
+        );
+
+        const allowanceFilter = subscriptionContract.filters.Approval(
+          balancesOf.address,
+          CONVENIENCE[balancesOf.chain.chainId]
+        );
+
+        subscriptionContract.on(allowanceFilter, (_owner, _spender, value) => {
+          app.ports.receiveAllowances.send({
+            chain: balancesOf.chain,
+            address: balancesOf.address,
+            erc20s: [token as ERC20Token],
+            allowances: [value.toString()],
+          });
         });
-      });
+      }
     } else {
       balancesToken.push(token);
       balances.push(gp.walletProviderMulti.getBalance(balancesOf.address));

@@ -2,49 +2,37 @@ import { getCustomTokens } from "./helper";
 
 export const whitelistChains: Whitelist = {
   default: {
-    chainId: 4,
-    name: "Rinkeby",
-    rpcUrl: "https://rinkeby.infura.io/v3/",
-    blockExplorerUrl: "https://rinkeby.etherscan.io",
-    nftExplorerUrl: "https://testnets.opensea.io/assets/rinkeby",
+    chainId: 137,
+    name: "Polygon Mainnet",
+    rpcUrl: "https://polygon-rpc.com/",
+    blockExplorerUrl: "https://polygonscan.com/",
+    nftExplorerUrl: "https://opensea.io/assets/matic",
     native: {
-      name: "Ether",
-      symbol: "ETH",
+      name: "MATIC",
+      symbol: "MATIC",
       decimals: 18,
-    },
+  },
     whitelist: [
       {
-        address: "0x7d0690ac7112148E6084909b19CcFD125d55d5C9",
-        name: "TS Dai Stablecoin",
-        symbol: "TS-DAI",
+        address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+        name: "Wrapped Matic",
+        symbol: "WMATIC",
         decimals: 18,
       },
       {
-        address: "0xAFB3BE940C1499750d1292D28820c7E479C9Dbd0",
-        name: "TS Ethereum",
-        symbol: "TS-ETH",
+        address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+        name: "Wrapped Ether",
+        symbol: "WETH",
         decimals: 18,
       },
       {
-        address: "0x408A2da72B14cA97e824bAAfD9c0ffBa63d6cdcd",
-        name: "TS Matic",
-        symbol: "TS-MATIC",
-        decimals: 18,
-      },
-      {
-        address: "0x3C067c8f7ecb674c6329EAcb0B155b6c65A8e90C",
-        name: "TS Shiba Inu",
-        symbol: "TS-SHIB",
-        decimals: 18,
-      },
-      {
-        address: "0xDB6433fd6b05991Bc1EC2BDb8c9b1AdD577F37DA",
-        name: "TS Dogecoin",
-        symbol: "TS-DOGE",
+        address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+        name: "USDC",
+        symbol: "USDC",
         decimals: 18,
       }
     ],
-    custom: getCustomTokens(String(0x4)),
+    custom: getCustomTokens(String(137)),
   },
   others: [
     {
@@ -73,7 +61,7 @@ export const whitelistChains: Whitelist = {
         }
       ],
       custom: getCustomTokens(String(80001)),
-    },
+    }
   ],
 };
 
@@ -91,6 +79,16 @@ export function getChainData(chainId: number) {
   }
 
   return chain;
+}
+
+export function getNativeToken(chainId: number): NativeToken | null {
+  let chain = getChainData(chainId);
+
+  if (!chain) {
+    return null;
+  }
+
+  return chain.native;
 }
 
 export function getTokenList(chainId: number): (NativeToken | ERC20Token)[] {
