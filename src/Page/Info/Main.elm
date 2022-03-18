@@ -237,7 +237,11 @@ view ({ backdrop, theme } as model) ((PoolsData { data }) as page) =
             Loading.view timeline theme
 
         Failure _ ->
-            none
+            el
+                [ Font.size 18
+                , Font.color Color.negative500
+                ]
+                (text "Error occurred while fetching pools")
 
 
 title : { model | theme : Theme } -> Element Msg

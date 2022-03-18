@@ -29,7 +29,7 @@ export const whitelistChains: Whitelist = {
         address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
         name: "USDC",
         symbol: "USDC",
-        decimals: 18,
+        decimals: 6,
       }
     ],
     custom: getCustomTokens(String(137)),
