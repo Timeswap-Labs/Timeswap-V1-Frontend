@@ -8,7 +8,7 @@ module Blockchain.User.Dues exposing
     )
 
 import Blockchain.User.Due as Due exposing (Due)
-import Blockchain.User.TokenId as TokenId exposing (TokenId)
+import Blockchain.User.TokenId exposing (TokenId)
 import Data.ERC20 as ERC20
 import Data.ERC20s exposing (ERC20s)
 import Data.Maturity as Maturity

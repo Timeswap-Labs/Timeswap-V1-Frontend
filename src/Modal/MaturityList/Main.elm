@@ -214,7 +214,7 @@ update { time } blockchain msg (Modal modal) =
                     |> Modal
                     |> Just
                 , case result |> Web.fromResult of
-                    Failure f ->
+                    Failure _ ->
                         Process.sleep 5000
                             |> Task.perform (\_ -> QueryAgain)
 
@@ -694,7 +694,7 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
             Loading timeline ->
                 [ el [ centerX, centerY ] (Loading.view timeline theme) ]
 
-            Failure err ->
+            Failure _ ->
                 [ el [ centerX, centerY, Font.color Color.negative400 ] (text "Error") ]
 
             Success poolsDict ->

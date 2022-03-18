@@ -444,7 +444,7 @@ error httpError =
             , Font.size 16
             , Font.color Color.light100
             ]
-            (text "error")
+            (text "Error")
         )
 
 

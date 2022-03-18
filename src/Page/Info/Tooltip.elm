@@ -10,4 +10,3 @@ type Tooltip
     | CDPSymbol Pool
     | PairSymbol Pair
     | AssetLiquidity Pool
-    | CollateralLiquidity Pool

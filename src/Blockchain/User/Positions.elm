@@ -11,10 +11,8 @@ import Data.Address as Address exposing (Address)
 import Data.Chain as Chain exposing (Chain)
 import Data.ERC20 as ERC20
 import Data.ERC20s exposing (ERC20s)
-import Data.Pool as Pool
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
-import Sort.Dict as Dict
 import Sort.Set as Set
 
 

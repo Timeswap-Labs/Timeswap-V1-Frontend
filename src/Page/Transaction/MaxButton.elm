@@ -1,7 +1,5 @@
 module Page.Transaction.MaxButton exposing (disabled, view)
 
-import Animator exposing (Timeline)
-import Animator.Css
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
@@ -10,27 +8,18 @@ import Data.Web exposing (Web)
 import Element
     exposing
         ( Element
-        , Option
         , alignRight
         , centerY
         , el
-        , focusStyle
         , height
-        , html
-        , layoutWith
-        , noStaticStyleSheet
         , none
-        , padding
         , paddingXY
-        , px
         , row
         , shrink
         , spacing
         , text
         , width
         )
-import Element.Background as Background
-import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region

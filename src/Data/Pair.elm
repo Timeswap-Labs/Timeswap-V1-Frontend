@@ -10,7 +10,6 @@ module Data.Pair exposing
     , toString
     )
 
-import Data.ERC20 as ERC20
 import Data.Token as Token exposing (Token)
 import Data.TokenParam as TokenParam
 import Json.Decode as Decode exposing (Decoder)

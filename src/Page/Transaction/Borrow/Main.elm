@@ -60,7 +60,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Http
 import Page.Answer as Answer exposing (Answer)
-import Page.PoolInfo as PoolInfo exposing (PoolInfo)
+import Page.PoolInfo exposing (PoolInfo)
 import Page.Query as Query
 import Page.Transaction.Borrow.Borrow.Disabled as Disabled
 import Page.Transaction.Borrow.Borrow.Main as Borrow
@@ -73,7 +73,6 @@ import Page.Transaction.Tooltip as Tooltip exposing (Tooltip)
 import Process
 import Task
 import Time exposing (Posix)
-import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.ThemeColor as ThemeColor

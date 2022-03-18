@@ -268,22 +268,31 @@ allPairs :
     -> PoolsData
     -> Element Msg
 allPairs model poolsDataDict page =
-    Keyed.column
-        [ width fill
-        , height shrink
-        , spacing 16
-        ]
-        (poolsDataDict
-            |> getPairSet
-            |> constructPoolData poolsDataDict
-            |> Dict.toList
-            |> List.map
-                (\( pair, poolList ) ->
-                    ( pair |> Pair.toString
-                    , singlePair model page ( pair, poolList )
+    if (poolsDataDict |> Dict.size) == 0 then
+        el
+            [ Font.size 16
+            , model.theme |> ThemeColor.text |> Font.color
+            , alignLeft
+            ]
+            (text "No pools are available at the moment")
+
+    else
+        Keyed.column
+            [ width fill
+            , height shrink
+            , spacing 16
+            ]
+            (poolsDataDict
+                |> getPairSet
+                |> constructPoolData poolsDataDict
+                |> Dict.toList
+                |> List.map
+                    (\( pair, poolList ) ->
+                        ( pair |> Pair.toString
+                        , singlePair model page ( pair, poolList )
+                        )
                     )
-                )
-        )
+            )
 
 
 singlePair :
@@ -699,7 +708,7 @@ liquidities :
         , poolInfo : PoolInfo
         }
     -> Element Msg
-liquidities ({ theme } as model) (PoolsData { tooltip }) { pool, poolInfo } =
+liquidities model (PoolsData { tooltip }) { pool, poolInfo } =
     column
         [ width shrink
         , centerX
@@ -726,25 +735,6 @@ liquidities ({ theme } as model) (PoolsData { tooltip }) { pool, poolInfo } =
                 }
             , text (pool.pair |> Pair.toAsset |> Token.toSymbol)
             ]
-
-        -- , row
-        --     [ Font.size 14
-        --     , model.theme |> ThemeColor.text |> Font.color
-        --     , alignRight
-        --     , spacing 6
-        --     ]
-        --     [ Truncate.viewAmount
-        --         { onMouseEnter = OnMouseEnter
-        --         , onMouseLeave = OnMouseLeave
-        --         , tooltip = Tooltip.CollateralLiquidity pool
-        --         , opened = tooltip
-        --         , token = pool.pair |> Pair.toCollateral
-        --         , amount = poolInfo.collateralReserve
-        --         , theme = model.theme
-        --         , customStyles = [ Font.size 14 ]
-        --         }
-        --     , text (pool.pair |> Pair.toCollateral |> Token.toSymbol)
-        --     ]
         ]
 
 

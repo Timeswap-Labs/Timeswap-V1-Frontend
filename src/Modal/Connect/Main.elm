@@ -83,7 +83,6 @@ type Msg
     | GoToConnected
     | Connect Wallet
     | TryAgain
-    | InstallMetamask
     | CopyAddress Address
     | ClearAll
     | ReceiveNoConnect Value
@@ -148,12 +147,6 @@ update msg modal =
             , waiting.wallet
                 |> Wallet.encode
                 |> connect
-            , Nothing
-            )
-
-        ( InstallMetamask, Wallets ) ->
-            ( modal |> Just
-            , installMetamask ()
             , Nothing
             )
 
@@ -226,9 +219,6 @@ receiveUser modal =
 
 
 port connect : Value -> Cmd msg
-
-
-port installMetamask : () -> Cmd msg
 
 
 port copyToClipboard : String -> Cmd msg
@@ -788,7 +778,7 @@ viewConnected :
     -> Blockchain
     -> User
     -> Element Msg
-viewConnected ({ images, theme } as model) blockchain user =
+viewConnected ({ theme } as model) blockchain user =
     column
         [ width fill
         , height shrink

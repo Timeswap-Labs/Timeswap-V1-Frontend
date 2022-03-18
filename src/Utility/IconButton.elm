@@ -10,7 +10,6 @@ import Element
         , centerY
         , height
         , px
-        , rotate
         , shrink
         , width
         )

@@ -16,7 +16,6 @@ import Element
         )
 import Element.Font as Font
 import Url.Builder as Builder
-import Utility.Color as Color
 import Utility.ThemeColor as ThemeColor
 
 

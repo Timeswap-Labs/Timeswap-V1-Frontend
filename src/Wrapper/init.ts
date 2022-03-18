@@ -15,7 +15,6 @@ import { wallet } from "./wallet";
 import { getChainData, getNativeToken, getTokenList } from "./chains";
 import { approveSigner } from "./approve";
 import { listenForPendingTxns, fetchRecentTxns } from "./helper";
-import { swapSigner } from "./swap";
 
 export declare let window: any;
 
@@ -74,8 +73,6 @@ export async function init(
 
   pay(app);
   paySigner(app, gp);
-
-  swapSigner(app, gp);
 
   if (gp.walletProvider) {
     walletConnected(app, gp, user);
