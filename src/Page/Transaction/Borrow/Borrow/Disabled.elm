@@ -42,7 +42,6 @@ import Page.Transaction.Output as Output
 import Page.Transaction.Slider as Slider
 import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
-import Utility.Color as Color
 import Utility.ThemeColor as ThemeColor
 
 

@@ -112,7 +112,7 @@ view { images, theme } param =
                     , height fill
                     ]
                     (row
-                        [ width <| px 80
+                        [ width <| px 95
                         , height shrink
                         , spacing 6
                         , centerY

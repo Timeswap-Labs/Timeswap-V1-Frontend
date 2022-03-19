@@ -1424,7 +1424,7 @@ warning { images, theme } =
             , paddingXY 0 3
             , theme |> ThemeColor.textError |> Font.color
             ]
-            (text "We are in alpha. Use tokens you are willing to lose.")
+            (text "We are in alpha, please exercise caution while using the app.")
         ]
 
 
