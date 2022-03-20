@@ -8,10 +8,12 @@ module Page.Positions.Claims.Main exposing
     )
 
 import Animator exposing (Timeline)
+import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Claim as Claim exposing (Claim)
 import Blockchain.User.Claims as Claims exposing (Claims)
 import Blockchain.User.Main as User exposing (User)
 import Data.Backdrop exposing (Backdrop)
+import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.Images exposing (Images)
@@ -112,11 +114,13 @@ view :
         , device : Device
         , backdrop : Backdrop
         , images : Images
+        , chains : Chains
     }
+    -> Blockchain
     -> User
     -> Positions
     -> Element Msg
-view ({ theme, device, backdrop } as model) user (Positions tooltip) =
+view ({ theme, device, backdrop } as model) blockchain user (Positions tooltip) =
     el
         ([ Region.description "lend positions"
          , (case device of
@@ -160,7 +164,7 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
                                 noClaims model
 
                             else
-                                viewClaims model tooltip filteredClaims
+                                viewClaims model blockchain tooltip filteredClaims
                        )
         )
 
@@ -245,11 +249,13 @@ viewClaims :
         , chosenZone : ChosenZone
         , theme : Theme
         , images : Images
+        , chains : Chains
     }
+    -> Blockchain
     -> Maybe Tooltip
     -> Claims
     -> Element Msg
-viewClaims ({ time, theme } as model) tooltip claims =
+viewClaims ({ time, theme } as model) blockchain tooltip claims =
     column
         [ width fill
         , height shrink
@@ -266,7 +272,7 @@ viewClaims ({ time, theme } as model) tooltip claims =
                 |> List.map
                     (\(( pool, _ ) as tuple) ->
                         ( pool |> Pool.toString
-                        , tuple |> viewClaim model tooltip
+                        , tuple |> viewClaim model blockchain tooltip
                         )
                     )
             )
@@ -302,16 +308,26 @@ viewClaim :
         , chosenZone : ChosenZone
         , theme : Theme
         , images : Images
+        , chains : Chains
     }
+    -> Blockchain
     -> Maybe Tooltip
     -> ( Pool, Claim )
     -> Element Msg
-viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
+viewClaim { time, offset, chosenZone, theme, images, chains } blockchain tooltip ( pool, claim ) =
+    let
+        transformedPool : Pool
+        transformedPool =
+            pool
+                |> Pool.toNative
+                    (blockchain |> Blockchain.toChain)
+                    chains
+    in
     Input.button
         [ width fill
         , height <| px 56
         ]
-        { onPress = ClickClaim pool |> Just
+        { onPress = ClickClaim transformedPool |> Just
         , label =
             row
                 [ width fill
@@ -330,7 +346,7 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                     ]
                     (images
                         |> PairImage.view
-                            { pair = pool.pair
+                            { pair = transformedPool.pair
                             , length = 24
                             }
                     )
@@ -342,9 +358,9 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                     (Truncate.viewPairSymbol
                         { onMouseEnter = OnMouseEnter
                         , onMouseLeave = OnMouseLeave
-                        , tooltip = Tooltip.Symbol pool
+                        , tooltip = Tooltip.Symbol transformedPool
                         , opened = tooltip
-                        , pair = pool.pair
+                        , pair = transformedPool.pair
                         , fontSize = 14
                         , fontPadding = 3
                         , theme = theme
@@ -371,12 +387,12 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                     , Duration.viewMaturity
                         { onMouseEnter = OnMouseEnter
                         , onMouseLeave = OnMouseLeave
-                        , tooltip = Tooltip.Maturity pool
+                        , tooltip = Tooltip.Maturity transformedPool
                         , opened = tooltip
                         , time = time
                         , offset = offset
                         , chosenZone = chosenZone
-                        , maturity = pool.maturity
+                        , maturity = transformedPool.maturity
                         , theme = theme
                         }
                     ]
@@ -396,7 +412,7 @@ viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                         , Font.bold
                         , Font.color Color.positive400
                         ]
-                        (if pool.maturity |> Maturity.isActive time then
+                        (if transformedPool.maturity |> Maturity.isActive time then
                             text "Active"
 
                          else

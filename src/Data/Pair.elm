@@ -6,11 +6,13 @@ module Data.Pair exposing
     , sorter
     , toAsset
     , toCollateral
+    , toNative
     , toQueryParameters
     , toString
     )
 
-import Data.ERC20 as ERC20
+import Data.Chain exposing (Chain)
+import Data.Chains as Chains exposing (Chains)
 import Data.Token as Token exposing (Token)
 import Data.TokenParam as TokenParam
 import Json.Decode as Decode exposing (Decoder)
@@ -103,3 +105,35 @@ sorter =
             (Token.sorter
                 |> Sort.by toCollateral
             )
+
+
+toNative : Chain -> Chains -> Pair -> Pair
+toNative chain chains (Pair { asset, collateral }) =
+    let
+        native : Token
+        native =
+            chains
+                |> Chains.toNative chain
+
+        wrapper : Token
+        wrapper =
+            chains
+                |> Chains.toWrapper chain
+    in
+    if asset == wrapper then
+        { asset = native
+        , collateral = collateral
+        }
+            |> Pair
+
+    else if collateral == wrapper then
+        { asset = asset
+        , collateral = native
+        }
+            |> Pair
+
+    else
+        { asset = asset
+        , collateral = collateral
+        }
+            |> Pair

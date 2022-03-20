@@ -17,7 +17,9 @@ module Data.Chains exposing
     , toCustomTokenList
     , toERC20List
     , toList
+    , toNative
     , toTokenList
+    , toWrapper
     )
 
 import Data.Address exposing (Address)
@@ -25,7 +27,7 @@ import Data.Chain as Chain exposing (Chain(..))
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.ERC20s as ERC20s exposing (ERC20s)
 import Data.Native as Native
-import Data.Token exposing (Token)
+import Data.Token as Token exposing (Token)
 import Data.TokenParam exposing (TokenParam)
 import Data.Tokens as Tokens exposing (Tokens)
 import Json.Decode as Decode exposing (Decoder)
@@ -43,27 +45,21 @@ type Chains
 
 
 type alias Flags =
-    { default :
-        { chainId : Int
-        , name : String
-        , rpcUrl : String
-        , blockExplorerUrl : String
-        , nftExplorerUrl : String
-        , native : Native.Flag
-        , whitelist : ERC20s.Flags
-        , custom : ERC20s.Flags
-        }
-    , others :
-        List
-            { chainId : Int
-            , name : String
-            , rpcUrl : String
-            , blockExplorerUrl : String
-            , nftExplorerUrl : String
-            , native : Native.Flag
-            , whitelist : ERC20s.Flags
-            , custom : ERC20s.Flags
-            }
+    { default : FlagInfo
+    , others : List FlagInfo
+    }
+
+
+type alias FlagInfo =
+    { chainId : Int
+    , name : String
+    , rpcUrl : String
+    , blockExplorerUrl : String
+    , nftExplorerUrl : String
+    , native : Native.Flag
+    , wrapper : ERC20.Flag
+    , whitelist : ERC20s.Flags
+    , custom : ERC20s.Flags
     }
 
 
@@ -80,12 +76,13 @@ init { default, others } =
     , defaultTokens =
         Tokens.init
             (default.native |> Native.init)
+            (default.wrapper |> ERC20.initWrapper)
             (default.whitelist |> ERC20s.init)
             (default.custom |> ERC20s.init)
     , others =
         others
             |> List.map
-                (\{ chainId, name, rpcUrl, blockExplorerUrl, nftExplorerUrl, native, whitelist, custom } ->
+                (\{ chainId, name, rpcUrl, blockExplorerUrl, nftExplorerUrl, native, wrapper, whitelist, custom } ->
                     ( { chainId = chainId
                       , name = name
                       , rpcUrl = rpcUrl
@@ -95,6 +92,7 @@ init { default, others } =
                         |> Chain
                     , Tokens.init
                         (native |> Native.init)
+                        (wrapper |> ERC20.initWrapper)
                         (whitelist |> ERC20s.init)
                         (custom |> ERC20s.init)
                     )
@@ -285,6 +283,26 @@ toERC20List chain chains =
         |> Dict.get chain
         |> Maybe.map Tokens.toERC20List
         |> Maybe.withDefault []
+
+
+toNative : Chain -> Chains -> Token
+toNative chain chains =
+    chains
+        |> toDict
+        |> Dict.get chain
+        |> Maybe.map Tokens.toNative
+        |> Maybe.map Token.Native
+        |> Maybe.withDefault (ERC20.zero |> Token.ERC20)
+
+
+toWrapper : Chain -> Chains -> Token
+toWrapper chain chains =
+    chains
+        |> toDict
+        |> Dict.get chain
+        |> Maybe.map Tokens.toWrapper
+        |> Maybe.withDefault ERC20.zero
+        |> Token.ERC20
 
 
 head : Chains -> Chain

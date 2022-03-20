@@ -8,12 +8,15 @@ module Data.ERC20 exposing
     , encodeAddress
     , fromString
     , init
+    , initWrapper
     , sorter
+    , sorterWrapperFirst
     , toAddress
     , toDecimals
     , toName
     , toString
     , toSymbol
+    , zero
     )
 
 import Data.Address as Address exposing (Address)
@@ -54,6 +57,19 @@ init ({ name, symbol, decimals } as flag) =
                 }
                     |> ERC20
             )
+
+
+initWrapper : Flag -> ERC20
+initWrapper { address, name, symbol, decimals } =
+    { address =
+        address
+            |> Address.fromString
+            |> Maybe.withDefault Address.zero
+    , name = name
+    , symbol = symbol
+    , decimals = decimals
+    }
+        |> ERC20
 
 
 fromString : Set ERC20 -> String -> Maybe ERC20
@@ -146,7 +162,34 @@ compare (ERC20 erc20a) (ERC20 erc20b) =
     Basics.compare erc20a.symbol erc20b.symbol
 
 
+compareWrapperFirst : ERC20 -> ERC20 -> ERC20 -> Order
+compareWrapperFirst wrapper erc20A erc20B =
+    if erc20A == wrapper then
+        GT
+
+    else if erc20B == wrapper then
+        LT
+
+    else
+        compare erc20A erc20B
+
+
 sorter : Sorter ERC20
 sorter =
     Sort.alphabetical
         |> Sort.by (\(ERC20 { symbol }) -> symbol)
+
+
+sorterWrapperFirst : ERC20 -> Sorter ERC20
+sorterWrapperFirst =
+    compareWrapperFirst >> Sort.custom
+
+
+zero : ERC20
+zero =
+    ERC20
+        { address = Address.zero
+        , name = ""
+        , symbol = ""
+        , decimals = 0
+        }

@@ -12,6 +12,12 @@ export const whitelistChains: Whitelist = {
       symbol: "MATIC",
       decimals: 18,
     },
+    wrapper: {
+      address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+      name: "Wrapped Matic",
+      symbol: "WMATIC",
+      decimals: 18,
+    },
     whitelist: [
       {
         address: "0xA4abf1B77d9171Eb910DD6f7ae863cF77c4225A4",
@@ -88,6 +94,7 @@ interface WhitelistChain {
   blockExplorerUrl: string;
   nftExplorerUrl: string;
   native: NativeToken;
+  wrapper: ERC20Token;
   whitelist: ERC20Token[];
   custom: ERC20Token[];
 }
