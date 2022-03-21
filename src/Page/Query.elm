@@ -11,7 +11,7 @@ import Url.Builder as Builder
 
 toUrlString : Chain -> Pool -> String
 toUrlString chain { pair, maturity } =
-    Builder.crossOrigin "https://backend-new-conv.herokuapp.com/v1"
+    Builder.crossOrigin "https://api.timeswap.io/v1"
         [ "pool" ]
         [ chain |> Chain.toQueryParameter
         , pair
