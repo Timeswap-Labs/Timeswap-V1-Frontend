@@ -62,7 +62,7 @@ export async function insuranceCalculate(
       return;
     }
 
-    const { claimsOut, yDecrease } = pool.lendGivenInsurance(
+    const { claimsOut, assetIn: assetInReturn, xIncrease, yDecrease } = pool.lendGivenInsurance(
       state,
       assetIn,
       insuranceOut,
@@ -73,6 +73,7 @@ export async function insuranceCalculate(
     );
 
     const percent = calculatePercent(yMin, yMax, yDecrease);
+    const txnFee = assetInReturn.sub(xIncrease).toString();
 
     const timeSlippageBefore = currentTime.sub(60);
     const timeSlippageAfter =
@@ -100,7 +101,7 @@ export async function insuranceCalculate(
       .add(new Uint128(claimsSlippageBefore.bondPrincipal))
       .toString();
 
-    const apr = calculateApr(bondOut, query.assetIn, maturity, currentTime);
+    const apr = calculateApr(bondOut, xIncrease.toString(), maturity, currentTime);
     const cdp = calculateCdp(
       query.assetIn,
       query.pool.asset.decimals,
@@ -120,6 +121,7 @@ export async function insuranceCalculate(
         minBond,
         apr,
         cdp,
+        txnFee
       },
     });
   } catch {

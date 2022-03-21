@@ -13,6 +13,7 @@ import Element
         , el
         , fill
         , height
+        , mouseOver
         , moveRight
         , newTabLink
         , none
@@ -64,7 +65,8 @@ view param =
             , newTabLink
                 [ alignRight
                 , Font.regular
-                , param.theme |> ThemeColor.primaryBtn |> Font.color
+                , param.theme |> ThemeColor.textLight |> Font.color
+                , mouseOver [ param.theme |> ThemeColor.actionElemLabel |> Font.color ]
                 ]
                 { url = param.learnMore
                 , label = text "Learn more"
@@ -162,7 +164,7 @@ disabled theme percent =
             , el
                 [ alignRight
                 , Font.regular
-                , theme |> ThemeColor.primaryBtn |> Font.color
+                , theme |> ThemeColor.textLight |> Font.color
                 ]
                 (text "Learn more")
             ]

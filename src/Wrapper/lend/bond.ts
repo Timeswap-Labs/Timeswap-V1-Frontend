@@ -54,7 +54,7 @@ export function bondCalculate(
       return;
     }
 
-    const { claimsOut, yDecrease } = pool.lendGivenBond(
+    const { claimsOut, assetIn: assetInReturn, xIncrease, yDecrease } = pool.lendGivenBond(
       state,
       assetIn,
       bondOut,
@@ -66,6 +66,7 @@ export function bondCalculate(
     );
 
     const percent = calculatePercent(yMin, yMax, yDecrease);
+    const txnFee = assetInReturn.sub(xIncrease).toString();
 
     const timeSlippageAfter =
       currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
@@ -86,7 +87,7 @@ export function bondCalculate(
       query.slippage
     ).toString();
 
-    const apr = calculateApr(bondOut, query.assetIn, maturity, currentTime);
+    const apr = calculateApr(bondOut, xIncrease.toString(), maturity, currentTime);
     const cdp = calculateCdp(
       query.assetIn,
       query.pool.asset.decimals,
@@ -106,6 +107,7 @@ export function bondCalculate(
         minInsurance,
         apr,
         cdp,
+        txnFee
       },
     });
   } catch (err) {
