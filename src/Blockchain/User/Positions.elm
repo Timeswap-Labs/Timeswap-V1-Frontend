@@ -9,6 +9,7 @@ import Blockchain.User.Dues as Dues exposing (Dues)
 import Blockchain.User.Liqs as Liqs exposing (Liqs)
 import Data.Address as Address exposing (Address)
 import Data.Chain as Chain exposing (Chain)
+import Data.Chains exposing (Chains)
 import Data.ERC20 as ERC20
 import Data.ERC20s exposing (ERC20s)
 import Json.Decode as Decode exposing (Decoder)
@@ -30,20 +31,23 @@ type alias Answer =
     }
 
 
-decoder : Decoder Answer
-decoder =
-    Decode.succeed Answer
-        |> Pipeline.required "chain" Chain.decoder
-        |> Pipeline.required "owner" Address.decoder
-        |> Pipeline.required "positions" decoderPositions
+decoder : Chains -> Decoder Answer
+decoder chains =
+    Decode.field "chain" Chain.decoder
+        |> Decode.andThen
+            (\chain ->
+                Decode.succeed (Answer chain)
+                    |> Pipeline.required "owner" Address.decoder
+                    |> Pipeline.required "positions" (decoderPositions chain chains)
+            )
 
 
-decoderPositions : Decoder Positions
-decoderPositions =
+decoderPositions : Chain -> Chains -> Decoder Positions
+decoderPositions chain chains =
     Decode.succeed Positions
-        |> Pipeline.required "claims" Claims.decoder
-        |> Pipeline.required "dues" Dues.decoder
-        |> Pipeline.required "liqs" Liqs.decoder
+        |> Pipeline.required "claims" (Claims.decoder chain chains)
+        |> Pipeline.required "dues" (Dues.decoder chain chains)
+        |> Pipeline.required "liqs" (Liqs.decoder chain chains)
 
 
 toERC20s : Positions -> ERC20s

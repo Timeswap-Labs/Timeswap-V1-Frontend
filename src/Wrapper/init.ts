@@ -9,7 +9,7 @@ import {
 } from "./balances";
 import { positionsInit } from "./positions";
 import { borrow, borrowSigner } from "./borrow";
-import { pay, paySigner } from "./pay";
+import { paySigner } from "./pay";
 import { withdraw, withdrawSigner } from "./withdraw";
 import { wallet } from "./wallet";
 import { getChainData, getNativeToken, getTokenList } from "./chains";
@@ -71,7 +71,6 @@ export async function init(
   borrow(app);
   borrowSigner(app, gp);
 
-  pay(app);
   paySigner(app, gp);
 
   if (gp.walletProvider) {
@@ -93,12 +92,10 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
     }
   });
 
-  // FIXME: This causes an issue during chain change
   app.ports.balancesOf.subscribe((balancesOf) => {
     fetchBalancesOf(app, gp, balancesOf);
   });
 
-  // FIXME: This causes an issue during chain change
   app.ports.allowancesOf.subscribe((allowancesOf) => {
     fetchAllowancesOf(app, gp, allowancesOf);
   });

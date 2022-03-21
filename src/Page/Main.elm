@@ -826,7 +826,7 @@ view model blockchain page =
                         , blockchain
                             |> Blockchain.toUser
                             |> Maybe.map
-                                (\user -> Claims.view model blockchain user lendPage.positions)
+                                (\user -> Claims.view model user lendPage.positions)
                             |> (Maybe.map << map) ClaimsMsg
                             |> Maybe.withDefault none
                         ]
@@ -847,7 +847,7 @@ view model blockchain page =
                         , blockchain
                             |> Blockchain.toUser
                             |> Maybe.map
-                                (\user -> Dues.view model blockchain user borrowPage.positions)
+                                (\user -> Dues.view model user borrowPage.positions)
                             |> (Maybe.map << map) DuesMsg
                             |> Maybe.withDefault none
                         ]

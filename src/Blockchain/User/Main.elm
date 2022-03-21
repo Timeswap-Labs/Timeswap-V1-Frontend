@@ -401,7 +401,7 @@ update { chains } chain msg (User user) =
                 user |> noCmdAndEffect
 
         ReceivePositions value ->
-            case value |> Decode.decodeValue Positions.decoder of
+            case value |> Decode.decodeValue (Positions.decoder chains) of
                 Ok decoded ->
                     if
                         (decoded.chain == chain)
