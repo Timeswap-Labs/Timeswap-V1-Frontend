@@ -10,7 +10,7 @@ module Page.Transaction.Lend.Lend.Disabled exposing
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
 import Data.Images exposing (Images)
-import Data.Mode as Mode exposing (Mode)
+import Data.Mode as Mode
 import Data.Pair as Pair
 import Data.Percent exposing (Percent)
 import Data.Pool exposing (Pool)
@@ -19,8 +19,6 @@ import Data.Token exposing (Token)
 import Element
     exposing
         ( Element
-        , alignLeft
-        , alignRight
         , alpha
         , centerY
         , column
@@ -47,7 +45,6 @@ import Page.Transaction.Output as Output
 import Page.Transaction.Slider as Slider
 import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
-import Utility.Color as Color
 import Utility.ThemeColor as ThemeColor
 
 

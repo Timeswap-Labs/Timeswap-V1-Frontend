@@ -8,8 +8,6 @@ import Element
         ( Element
         , el
         , height
-        , none
-        , paddingXY
         , row
         , shrink
         , text

@@ -29,7 +29,6 @@ import Element.Region as Region
 import Page.Transaction.Info as Info
 import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
-import Utility.Color as Color
 import Utility.Maybe as Maybe
 import Utility.ThemeColor as ThemeColor
 

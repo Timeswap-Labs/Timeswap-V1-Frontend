@@ -114,13 +114,11 @@ view :
         , device : Device
         , backdrop : Backdrop
         , images : Images
-        , chains : Chains
     }
-    -> Blockchain
     -> User
     -> Positions
     -> Element Msg
-view ({ theme, device, backdrop } as model) blockchain user (Positions tooltip) =
+view ({ theme, device, backdrop } as model) user (Positions tooltip) =
     el
         ([ Region.description "lend positions"
          , (case device of
@@ -164,7 +162,7 @@ view ({ theme, device, backdrop } as model) blockchain user (Positions tooltip) 
                                 noClaims model
 
                             else
-                                viewClaims model blockchain tooltip filteredClaims
+                                viewClaims model tooltip filteredClaims
                        )
         )
 
@@ -249,13 +247,11 @@ viewClaims :
         , chosenZone : ChosenZone
         , theme : Theme
         , images : Images
-        , chains : Chains
     }
-    -> Blockchain
     -> Maybe Tooltip
     -> Claims
     -> Element Msg
-viewClaims ({ time, theme } as model) blockchain tooltip claims =
+viewClaims ({ time, theme } as model) tooltip claims =
     column
         [ width fill
         , height shrink
@@ -272,7 +268,7 @@ viewClaims ({ time, theme } as model) blockchain tooltip claims =
                 |> List.map
                     (\(( pool, _ ) as tuple) ->
                         ( pool |> Pool.toString
-                        , tuple |> viewClaim model blockchain tooltip
+                        , tuple |> viewClaim model tooltip
                         )
                     )
             )
@@ -308,26 +304,16 @@ viewClaim :
         , chosenZone : ChosenZone
         , theme : Theme
         , images : Images
-        , chains : Chains
     }
-    -> Blockchain
     -> Maybe Tooltip
     -> ( Pool, Claim )
     -> Element Msg
-viewClaim { time, offset, chosenZone, theme, images, chains } blockchain tooltip ( pool, claim ) =
-    let
-        transformedPool : Pool
-        transformedPool =
-            pool
-                |> Pool.toNative
-                    (blockchain |> Blockchain.toChain)
-                    chains
-    in
+viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
     Input.button
         [ width fill
         , height <| px 56
         ]
-        { onPress = ClickClaim transformedPool |> Just
+        { onPress = ClickClaim pool |> Just
         , label =
             row
                 [ width fill
@@ -346,7 +332,7 @@ viewClaim { time, offset, chosenZone, theme, images, chains } blockchain tooltip
                     ]
                     (images
                         |> PairImage.view
-                            { pair = transformedPool.pair
+                            { pair = pool.pair
                             , length = 24
                             }
                     )
@@ -358,9 +344,9 @@ viewClaim { time, offset, chosenZone, theme, images, chains } blockchain tooltip
                     (Truncate.viewPairSymbol
                         { onMouseEnter = OnMouseEnter
                         , onMouseLeave = OnMouseLeave
-                        , tooltip = Tooltip.Symbol transformedPool
+                        , tooltip = Tooltip.Symbol pool
                         , opened = tooltip
-                        , pair = transformedPool.pair
+                        , pair = pool.pair
                         , fontSize = 14
                         , fontPadding = 3
                         , theme = theme
@@ -387,12 +373,12 @@ viewClaim { time, offset, chosenZone, theme, images, chains } blockchain tooltip
                     , Duration.viewMaturity
                         { onMouseEnter = OnMouseEnter
                         , onMouseLeave = OnMouseLeave
-                        , tooltip = Tooltip.Maturity transformedPool
+                        , tooltip = Tooltip.Maturity pool
                         , opened = tooltip
                         , time = time
                         , offset = offset
                         , chosenZone = chosenZone
-                        , maturity = transformedPool.maturity
+                        , maturity = pool.maturity
                         , theme = theme
                         }
                     ]
@@ -412,7 +398,7 @@ viewClaim { time, offset, chosenZone, theme, images, chains } blockchain tooltip
                         , Font.bold
                         , Font.color Color.positive400
                         ]
-                        (if transformedPool.maturity |> Maturity.isActive time then
+                        (if pool.maturity |> Maturity.isActive time then
                             text "Active"
 
                          else

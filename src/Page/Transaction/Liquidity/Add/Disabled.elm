@@ -38,7 +38,6 @@ import Page.Transaction.Info as Info
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
-import Utility.Color as Color
 import Utility.ThemeColor as ThemeColor
 
 

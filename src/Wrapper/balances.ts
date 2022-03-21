@@ -19,30 +19,17 @@ export async function balancesAllowancesInit(
       const contract = new Contract(
         (token as ERC20Token).address,
         erc20Abi,
-        gp.metamaskProviderMulti
+        gp.walletProviderMulti
       );
 
       const subscriptionContract = new Contract(
         (token as ERC20Token).address,
         erc20Abi,
-        gp.metamaskProvider
+        gp.walletProvider
       );
 
       balancesToken.push(token as ERC20Token);
       balances.push(contract.balanceOf(balancesOf.address));
-
-      allowancesToken.push(token as ERC20Token);
-      allowances.push(
-        contract.allowance(
-          balancesOf.address,
-          CONVENIENCE[balancesOf.chain.chainId]
-        )
-      );
-
-      const allowanceFilter = subscriptionContract.filters.Approval(
-        balancesOf.address,
-        CONVENIENCE[balancesOf.chain.chainId]
-      );
 
       updateTransferEventBalance(
         subscriptionContract,
@@ -60,19 +47,35 @@ export async function balancesAllowancesInit(
         }
       );
 
-      subscriptionContract.on(allowanceFilter, (_owner, _spender, value) => {
-        app.ports.receiveAllowances.send({
-          chain: balancesOf.chain,
-          address: balancesOf.address,
-          erc20s: [token as ERC20Token],
-          allowances: [value.toString()],
+      if (CONVENIENCE[balancesOf.chain.chainId]) {
+        allowancesToken.push(token as ERC20Token);
+        allowances.push(
+          contract.allowance(
+            balancesOf.address,
+            CONVENIENCE[balancesOf.chain.chainId]
+          )
+        );
+
+        const allowanceFilter = subscriptionContract.filters.Approval(
+          balancesOf.address,
+          CONVENIENCE[balancesOf.chain.chainId]
+        );
+
+        subscriptionContract.on(allowanceFilter, (_owner, _spender, value) => {
+          app.ports.receiveAllowances.send({
+            chain: balancesOf.chain,
+            address: balancesOf.address,
+            erc20s: [token as ERC20Token],
+            allowances: [value.toString()],
+          });
         });
-      });
+      }
     } else {
       balancesToken.push(token);
-      balances.push(gp.metamaskProviderMulti.getBalance(balancesOf.address));
-      gp.metamaskProvider.on("block", async () => {
-        const balance = await gp.metamaskProvider.getBalance(
+      balances.push(gp.walletProviderMulti.getBalance(balancesOf.address));
+
+      gp.walletProvider.on("block", async () => {
+        const balance = await gp.walletProvider.getBalance(
           balancesOf.address
         );
         app.ports.receiveBalances.send({
@@ -120,7 +123,7 @@ export async function fetchBalancesOf(
       const contract = new Contract(
         (token as ERC20Token).address,
         erc20Abi,
-        gp.metamaskProviderMulti
+        gp.walletProviderMulti
       );
 
       balancesToken.push(token as ERC20Token);
@@ -137,10 +140,10 @@ export async function fetchBalancesOf(
       });
     } else {
       balancesToken.push(token);
-      balances.push(gp.metamaskProviderMulti.getBalance(balancesOf.address));
+      balances.push(gp.walletProviderMulti.getBalance(balancesOf.address));
 
-      gp.metamaskProvider.on("block", async () => {
-        const balance = await gp.metamaskProvider.getBalance(
+      gp.walletProvider.on("block", async () => {
+        const balance = await gp.walletProvider.getBalance(
           balancesOf.address
         );
         app.ports.receiveBalances.send({
@@ -178,7 +181,7 @@ export async function fetchAllowancesOf(
       const contract = new Contract(
         token.address,
         erc20Abi,
-        gp.metamaskProviderMulti
+        gp.walletProviderMulti
       );
 
       allowancesToken.push(token);

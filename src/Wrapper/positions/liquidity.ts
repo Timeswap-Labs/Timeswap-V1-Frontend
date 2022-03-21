@@ -9,7 +9,7 @@ export async function liquidityPositionsInit(
 ): Promise<Liqs> {
   const liquidityTokens = positionsOf.natives.map(
     ({ natives: { liquidity } }) =>
-      new Contract(liquidity, erc20Abi, gp.metamaskProviderMulti)
+      new Contract(liquidity, erc20Abi, gp.walletProviderMulti)
   );
 
   const promiseLiquidityBalances = [];
@@ -33,7 +33,7 @@ export function liquidityPositionsUpdate(
 ) {
   const liquidityTokens = positionsOf.natives.map(
     ({ natives: { liquidity } }) =>
-      new Contract(liquidity, erc20Abi, gp.metamaskProvider)
+      new Contract(liquidity, erc20Abi, gp.walletProvider)
   );
 
   liquidityTokens.map((liquidityToken, index) => {

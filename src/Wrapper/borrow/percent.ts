@@ -1,4 +1,3 @@
-// import { Pool } from "@timeswap-labs/timeswap-v1-sdk";
 import {
   Pool,
   Uint112,
@@ -29,7 +28,7 @@ export function percentCalculate(
       z: new Uint112(query.poolInfo.z),
     };
 
-    const { dueOut } = pool.borrowGivenPercent(
+    const { dueOut, assetOut: assetOutReturn, xDecrease } = pool.borrowGivenPercent(
       state,
       new Uint112(query.assetOut),
       new Uint40(query.percent!),
@@ -37,6 +36,7 @@ export function percentCalculate(
     );
     const debtIn = dueOut.debt.toString();
     const collateralIn = dueOut.collateral.toString();
+    const txnFee = xDecrease.sub(assetOutReturn).toString();
 
     const timeSlippageBefore = currentTime.sub(60);
     const timeSlippageAfter =
@@ -77,7 +77,7 @@ export function percentCalculate(
 
     const apr = calculateApr(
       dueOut.debt,
-      query.assetOut,
+      xDecrease.toString(),
       maturity,
       currentTime
     );
@@ -101,6 +101,7 @@ export function percentCalculate(
         maxCollateral,
         apr,
         cdp,
+        txnFee
       },
     });
   } catch (err) {
@@ -116,7 +117,7 @@ export async function percentTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  return await pool.upgrade(gp.metamaskSigner!).borrowGivenPercent({
+  return await pool.upgrade(gp.walletSigner!).borrowGivenPercent({
     assetTo: borrow.assetTo,
     dueTo: borrow.dueTo,
     assetOut: new Uint112(borrow.assetOut),

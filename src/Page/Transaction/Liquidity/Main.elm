@@ -62,7 +62,7 @@ import Element.Input as Input
 import Element.Region as Region
 import Http
 import Page.Answer as Answer exposing (Answer)
-import Page.PoolInfo as PoolInfo exposing (PoolInfo)
+import Page.PoolInfo exposing (PoolInfo)
 import Page.Query as Query
 import Page.Transaction.Button as Button
 import Page.Transaction.Liquidity.Add.Disabled as AddDisabled

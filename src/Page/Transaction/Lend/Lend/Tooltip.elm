@@ -8,3 +8,4 @@ type Tooltip
     | InsuranceOutSymbol
     | CDPSymbol
     | CDP
+    | TxnFee

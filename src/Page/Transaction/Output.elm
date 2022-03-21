@@ -62,7 +62,7 @@ view { images, theme } param =
         , clip
         ]
         [ row
-            [ width <| px 80
+            [ width <| px 95
             , height shrink
             , spacing 6
             , centerY
@@ -124,7 +124,7 @@ viewCollateral { images, theme } param =
         , clip
         ]
         [ row
-            [ width <| px 80
+            [ width <| px 95
             , height shrink
             , spacing 6
             , centerY
@@ -173,7 +173,7 @@ disabledCollateral { images, theme } param =
         , clip
         ]
         [ row
-            [ width <| px 80
+            [ width <| px 95
             , height shrink
             , spacing 6
             , centerY
@@ -210,7 +210,7 @@ empty { images, theme } param =
         , clip
         ]
         (row
-            [ width <| px 80
+            [ width <| px 95
             , height shrink
             , spacing 6
             , centerY

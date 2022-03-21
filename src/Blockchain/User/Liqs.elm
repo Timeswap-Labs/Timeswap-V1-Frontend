@@ -12,6 +12,8 @@ import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
 import Sort.Set as Set
 import Time exposing (Posix)
+import Data.Chains exposing (Chains)
+import Data.Chain exposing (Chain)
 
 
 type alias Liqs =
@@ -38,12 +40,13 @@ toList posix claims =
            )
 
 
-decoder : Decoder Liqs
-decoder =
+decoder : Chain -> Chains -> Decoder Liqs
+decoder chain chains =
     Decode.succeed Tuple.pair
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "liq" Liq.decoder
         |> Decode.list
+        |> (Decode.map << List.map << Tuple.mapFirst) (Pool.toNative chain chains)
         |> Decode.map (Dict.fromList Pool.sorter)
 
 

@@ -6,6 +6,8 @@ module Blockchain.User.Claims exposing
     )
 
 import Blockchain.User.Claim as Claim exposing (Claim)
+import Data.Chain exposing (Chain)
+import Data.Chains exposing (Chains)
 import Data.ERC20 as ERC20
 import Data.ERC20s exposing (ERC20s)
 import Data.Maturity as Maturity
@@ -45,12 +47,13 @@ toList posix claims =
            )
 
 
-decoder : Decoder Claims
-decoder =
+decoder : Chain -> Chains -> Decoder Claims
+decoder chain chains =
     Decode.succeed Tuple.pair
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "claim" Claim.decoder
         |> Decode.list
+        |> (Decode.map << List.map << Tuple.mapFirst) (Pool.toNative chain chains)
         |> Decode.map (Dict.fromList Pool.sorter)
 
 

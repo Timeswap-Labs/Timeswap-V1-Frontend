@@ -118,7 +118,7 @@ export function getPoolSDK(
   }
 
   return new SDKPool(
-    gp.metamaskProvider,
+    gp.walletProvider,
     chain.chainId,
     assetToken,
     collateralToken,
@@ -153,6 +153,28 @@ export function updateCachedTxns(txnReceipt: ReceiveReceipt) {
   }
 }
 
+export function fetchRecentTxns(gp: GlobalParams, accountAddr: string): Txns {
+  const chainId = Number(gp.network);
+  const storedTxns = window.localStorage.getItem("txns");
+  let txns: Txns = { confirmed: [], uncomfirmed: [] };
+
+  if (storedTxns) {
+    try {
+      const parsedTxns: { chain: Chain; address: string; txns: Txns } =
+        JSON.parse(storedTxns);
+      txns =
+        parsedTxns.address === accountAddr &&
+        parsedTxns.chain.chainId === chainId
+          ? parsedTxns.txns
+          : txns;
+    } catch (err) {
+      txns = { confirmed: [], uncomfirmed: [] };
+    }
+  }
+
+  return txns;
+}
+
 export function listenForPendingTxns(app: ElmApp<Ports>, gp: GlobalParams) {
   const storedTxns = window.localStorage.getItem("txns");
 
@@ -164,7 +186,7 @@ export function listenForPendingTxns(app: ElmApp<Ports>, gp: GlobalParams) {
     );
 
     pendingTxns.forEach(async (pendingTxn) => {
-      const txnReceipt = await gp.provider.waitForTransaction(pendingTxn.hash);
+      const txnReceipt = await gp.walletProvider.waitForTransaction(pendingTxn.hash);
       const receiveReceipt = {
         chain: parsedTxnData.chain,
         address: parsedTxnData.address,

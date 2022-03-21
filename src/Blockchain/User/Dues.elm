@@ -8,7 +8,9 @@ module Blockchain.User.Dues exposing
     )
 
 import Blockchain.User.Due as Due exposing (Due)
-import Blockchain.User.TokenId as TokenId exposing (TokenId)
+import Blockchain.User.TokenId exposing (TokenId)
+import Data.Chain exposing (Chain)
+import Data.Chains exposing (Chains)
 import Data.ERC20 as ERC20
 import Data.ERC20s exposing (ERC20s)
 import Data.Maturity as Maturity
@@ -66,12 +68,13 @@ getSingle pool tokenId dues =
         |> Maybe.withDefault Nothing
 
 
-decoder : Decoder Dues
-decoder =
+decoder : Chain -> Chains -> Decoder Dues
+decoder chain chains =
     Decode.succeed Tuple.pair
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "dues" Due.decoderMultiple
         |> Decode.list
+        |> (Decode.map << List.map << Tuple.mapFirst) (Pool.toNative chain chains)
         |> Decode.map (Dict.fromList Pool.sorter)
 
 

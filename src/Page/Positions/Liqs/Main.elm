@@ -147,7 +147,7 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
             Loading timeline ->
                 loading model timeline
 
-            Failure error ->
+            Failure _ ->
                 none
 
             -- |> Debug.log "error view"

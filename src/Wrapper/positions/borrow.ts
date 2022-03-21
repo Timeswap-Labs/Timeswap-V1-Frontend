@@ -11,7 +11,7 @@ export async function borrowPositionsInit(
 ): Promise<Dues> {
   const cdTokens = positionsOf.natives.map(
     ({ natives: { collateralizedDebt } }) =>
-      new Contract(collateralizedDebt, cdTokenAbi, gp.metamaskProviderMulti)
+      new Contract(collateralizedDebt, cdTokenAbi, gp.walletProviderMulti)
   );
 
   const promiseCDTokenBalances = [];
@@ -77,12 +77,12 @@ export function borrowPositionsUpdate(
 ) {
   const cdMulticallTokens = positionsOf.natives.map(
     ({ natives: { collateralizedDebt } }) =>
-      new Contract(collateralizedDebt, cdTokenAbi, gp.metamaskProvider)
+      new Contract(collateralizedDebt, cdTokenAbi, gp.walletProvider)
   );
 
   const cdTokens = positionsOf.natives.map(
     ({ natives: { collateralizedDebt } }) =>
-      new Contract(collateralizedDebt, cdTokenAbi, gp.metamaskProvider)
+      new Contract(collateralizedDebt, cdTokenAbi, gp.walletProvider)
   );
 
   const updateFunction = async (pool: Pool, index: number) => {
@@ -143,7 +143,7 @@ export function borrowPositionsUpdate(
     const pairContract = new Contract(
       await cdTokens[index].pair(),
       pairAbi,
-      gp.metamaskProvider
+      gp.walletProvider
     );
 
     const payFilter = pairContract.filters.Pay(

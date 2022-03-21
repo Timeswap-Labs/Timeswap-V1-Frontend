@@ -51,25 +51,12 @@ export function calculateCdp(
   collateralSpot: number | null
 ): CDP {
   let percent = null;
-  // const ratio = new Uint256(assetOut)
-  //   .mul(pow(10n, BigInt(collateralDecimals)))
-  //   .div(collateralIn)
-  //   .toString();
-
   const ratio = new Uint256(collateralIn)
     .mul(pow(10n, BigInt(assetDecimals)))
     .div(assetOut)
     .toString();
 
   if (assetSpot && collateralSpot) {
-    // const newRatio = new Uint256(assetOut)
-    //   .mul(pow(10n, BigInt(collateralDecimals)))
-    //   .div(collateralIn)
-    //   .div(pow(10n, BigInt(assetDecimals)))
-    //   .toString();
-
-    // percent = Number(newRatio) ? Number(newRatio) * assetSpot / collateralSpot : null;
-
     percent =
       Number(
         (new Uint256(collateralIn).toBigInt() *

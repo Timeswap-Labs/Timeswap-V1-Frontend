@@ -115,13 +115,11 @@ view :
         , device : Device
         , backdrop : Backdrop
         , images : Images
-        , chains : Chains
     }
-    -> Blockchain
     -> User
     -> Positions
     -> Element Msg
-view ({ device, backdrop, theme } as model) blockchain user (Positions tooltip) =
+view ({ device, backdrop, theme } as model) user (Positions tooltip) =
     el
         ([ Region.description "borrow positions"
          , (case device of
@@ -166,7 +164,7 @@ view ({ device, backdrop, theme } as model) blockchain user (Positions tooltip) 
                                 noDues model
 
                             else
-                                viewDues model blockchain tooltip filteredDues
+                                viewDues model tooltip filteredDues
                        )
         )
 
@@ -265,13 +263,11 @@ viewDues :
         , chosenZone : ChosenZone
         , theme : Theme
         , images : Images
-        , chains : Chains
     }
-    -> Blockchain
     -> Maybe Tooltip
     -> Dues
     -> Element Msg
-viewDues ({ time, theme } as model) blockchain tooltip dues =
+viewDues ({ time, theme } as model) tooltip dues =
     column
         [ width fill
         , height shrink
@@ -288,7 +284,7 @@ viewDues ({ time, theme } as model) blockchain tooltip dues =
                 |> List.map
                     (\(( pool, _ ) as tuple) ->
                         ( pool |> Pool.toString
-                        , tuple |> viewDue model blockchain tooltip
+                        , tuple |> viewDue model tooltip
                         )
                     )
             )
@@ -324,26 +320,16 @@ viewDue :
         , chosenZone : ChosenZone
         , theme : Theme
         , images : Images
-        , chains : Chains
     }
-    -> Blockchain
     -> Maybe Tooltip
     -> ( Pool, Dict TokenId Due )
     -> Element Msg
-viewDue { time, offset, chosenZone, theme, images, chains } blockchain tooltip ( pool, due ) =
-    let
-        transformedPool : Pool
-        transformedPool =
-            pool
-                |> Pool.toNative
-                    (blockchain |> Blockchain.toChain)
-                    chains
-    in
+viewDue { time, offset, chosenZone, theme, images } tooltip ( pool, due ) =
     Input.button
         [ width fill
         , height <| px 56
         ]
-        { onPress = ClickDue transformedPool |> Just
+        { onPress = ClickDue pool |> Just
         , label =
             row
                 [ width fill
@@ -362,7 +348,7 @@ viewDue { time, offset, chosenZone, theme, images, chains } blockchain tooltip (
                     ]
                     (images
                         |> PairImage.view
-                            { pair = transformedPool.pair
+                            { pair = pool.pair
                             , length = 24
                             }
                     )
@@ -374,9 +360,9 @@ viewDue { time, offset, chosenZone, theme, images, chains } blockchain tooltip (
                     (Truncate.viewPairSymbol
                         { onMouseEnter = OnMouseEnter
                         , onMouseLeave = OnMouseLeave
-                        , tooltip = Tooltip.Symbol transformedPool
+                        , tooltip = Tooltip.Symbol pool
                         , opened = tooltip
-                        , pair = transformedPool.pair
+                        , pair = pool.pair
                         , fontSize = 14
                         , fontPadding = 3
                         , theme = theme
@@ -391,16 +377,16 @@ viewDue { time, offset, chosenZone, theme, images, chains } blockchain tooltip (
                     (Duration.viewMaturity
                         { onMouseEnter = OnMouseEnter
                         , onMouseLeave = OnMouseLeave
-                        , tooltip = Tooltip.Maturity transformedPool
+                        , tooltip = Tooltip.Maturity pool
                         , opened = tooltip
                         , time = time
                         , offset = offset
                         , chosenZone = chosenZone
-                        , maturity = transformedPool.maturity
+                        , maturity = pool.maturity
                         , theme = theme
                         }
                     )
-                , if transformedPool.maturity |> Maturity.isActive time then
+                , if pool.maturity |> Maturity.isActive time then
                     el
                         [ width shrink
                         , height <| px 24

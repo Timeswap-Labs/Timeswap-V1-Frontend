@@ -4,20 +4,16 @@ import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
 import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
-import Data.Uint as Uint exposing (Uint)
+import Data.Uint exposing (Uint)
 import Element
     exposing
         ( Element
         , alignLeft
-        , alignRight
-        , behindContent
         , centerY
         , el
         , fill
         , height
         , none
-        , padding
-        , paddingEach
         , paddingXY
         , px
         , row
@@ -116,7 +112,7 @@ view { images, theme } param =
                     , height fill
                     ]
                     (row
-                        [ width <| px 80
+                        [ width <| px 95
                         , height shrink
                         , spacing 6
                         , centerY

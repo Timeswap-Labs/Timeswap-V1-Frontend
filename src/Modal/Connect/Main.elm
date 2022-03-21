@@ -36,6 +36,7 @@ import Element
         , fill
         , height
         , inFront
+        , link
         , newTabLink
         , none
         , padding
@@ -82,7 +83,6 @@ type Msg
     | GoToConnected
     | Connect Wallet
     | TryAgain
-    | InstallMetamask
     | CopyAddress Address
     | ClearAll
     | ReceiveNoConnect Value
@@ -147,12 +147,6 @@ update msg modal =
             , waiting.wallet
                 |> Wallet.encode
                 |> connect
-            , Nothing
-            )
-
-        ( InstallMetamask, Wallets ) ->
-            ( modal |> Just
-            , installMetamask ()
             , Nothing
             )
 
@@ -225,9 +219,6 @@ receiveUser modal =
 
 
 port connect : Value -> Cmd msg
-
-
-port installMetamask : () -> Cmd msg
 
 
 port copyToClipboard : String -> Cmd msg
@@ -378,12 +369,12 @@ viewWallets model =
                 ++ [ IconButton.exit model Exit
                    ]
             )
-        , metamaskButton model
+        , walletList model
         , Terms.view model.theme
         ]
 
 
-metamaskButton :
+walletList :
     { model
         | images : Images
         , wallets : Wallets
@@ -391,122 +382,29 @@ metamaskButton :
         , theme : Theme
     }
     -> Element Msg
-metamaskButton ({ images, wallets, theme } as model) =
-    (case model.blockchain of
-        Supported blockchain ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.map User.toWallet
+walletList ({ images, wallets, theme } as model) =
+    column [ width fill, spacing 12 ]
+        ((case model.blockchain of
+            Supported blockchain ->
+                blockchain
+                    |> Blockchain.toUser
+                    |> Maybe.map User.toWallet
 
-        NotSupported notSupported ->
-            notSupported
-                |> User.toWalletNotSupported
-                |> Just
-    )
-        |> (\wallet ->
-                case
-                    ( wallet
-                    , Wallet.Metamask |> Set.memberOf wallets
-                    )
-                of
-                    ( Just Wallet.Metamask, True ) ->
-                        row
-                            [ width fill
-                            , height <| px 54
-                            , paddingXY 18 0
-                            , spacing 8
-                            , theme |> ThemeColor.btnBackground |> Background.color
-                            , Border.rounded 8
-                            ]
-                            [ images
-                                |> Image.viewWallet
-                                    [ width <| px 24
-                                    , height <| px 24
-                                    , centerY
-                                    ]
-                                    Wallet.Metamask
-                            , el
-                                [ width shrink
-                                , height shrink
-                                , centerY
-                                , Font.size 16
-                                , paddingXY 0 4
-                                , theme |> ThemeColor.text |> Font.color
-                                ]
-                                (Wallet.Metamask
-                                    |> Wallet.toString
-                                    |> text
-                                )
-                            , el
-                                [ width <| px 8
-                                , height <| px 8
-                                , alignRight
-                                , centerY
-                                , Background.color Color.positive500
-                                , Border.rounded 4
-                                ]
-                                none
-                            ]
-
-                    ( _, True ) ->
-                        Input.button
+            NotSupported notSupported ->
+                notSupported
+                    |> User.toWalletNotSupported
+                    |> Just
+         )
+            |> (\maybeUserWallet ->
+                    (if Wallet.Metamask |> Set.memberOf wallets |> not then
+                        [ link
                             [ width fill
                             , height <| px 54
                             , paddingXY 18 0
                             , Background.color Color.primary100
                             , Border.rounded 8
                             ]
-                            { onPress = Connect Wallet.Metamask |> Just
-                            , label =
-                                row
-                                    [ width fill
-                                    , height fill
-                                    , spacing 8
-                                    ]
-                                    [ images
-                                        |> Image.viewWallet
-                                            [ width <| px 24
-                                            , height <| px 24
-                                            , centerY
-                                            ]
-                                            Wallet.Metamask
-                                    , el
-                                        [ width shrink
-                                        , height shrink
-                                        , centerY
-                                        , Font.size 16
-                                        , paddingXY 0 4
-                                        , theme |> ThemeColor.text |> Font.color
-                                        ]
-                                        (Wallet.Metamask
-                                            |> Wallet.toString
-                                            |> text
-                                        )
-                                    , images
-                                        |> (case theme of
-                                                Theme.Dark ->
-                                                    Image.arrow
-
-                                                Theme.Light ->
-                                                    Image.arrowSecondary
-                                           )
-                                            [ width <| px 24
-                                            , height <| px 24
-                                            , alignRight
-                                            , centerY
-                                            ]
-                                    ]
-                            }
-
-                    ( _, False ) ->
-                        Input.button
-                            [ width fill
-                            , height <| px 54
-                            , paddingXY 18 0
-                            , Background.color Color.primary100
-                            , Border.rounded 8
-                            ]
-                            { onPress = Just InstallMetamask
+                            { url = "https://metamask.io/download/"
                             , label =
                                 row
                                     [ width fill
@@ -550,7 +448,159 @@ metamaskButton ({ images, wallets, theme } as model) =
                                             ]
                                     ]
                             }
-           )
+                        ]
+
+                     else
+                        [ none ]
+                    )
+                        ++ (wallets
+                                |> Set.toList
+                                |> List.map
+                                    (\eachWallet ->
+                                        case maybeUserWallet of
+                                            Just connectedWallet ->
+                                                if eachWallet == connectedWallet then
+                                                    row
+                                                        [ width fill
+                                                        , height <| px 54
+                                                        , paddingXY 18 0
+                                                        , spacing 8
+                                                        , theme |> ThemeColor.btnBackground |> Background.color
+                                                        , Border.rounded 8
+                                                        ]
+                                                        [ images
+                                                            |> Image.viewWallet
+                                                                [ width <| px 24
+                                                                , height <| px 24
+                                                                , centerY
+                                                                ]
+                                                                connectedWallet
+                                                        , el
+                                                            [ width shrink
+                                                            , height shrink
+                                                            , centerY
+                                                            , Font.size 16
+                                                            , paddingXY 0 4
+                                                            , theme |> ThemeColor.text |> Font.color
+                                                            ]
+                                                            (connectedWallet
+                                                                |> Wallet.toString
+                                                                |> text
+                                                            )
+                                                        , el
+                                                            [ width <| px 8
+                                                            , height <| px 8
+                                                            , alignRight
+                                                            , centerY
+                                                            , Background.color Color.positive500
+                                                            , Border.rounded 4
+                                                            ]
+                                                            none
+                                                        ]
+
+                                                else
+                                                    Input.button
+                                                        [ width fill
+                                                        , height <| px 54
+                                                        , paddingXY 18 0
+                                                        , Background.color Color.primary100
+                                                        , Border.rounded 8
+                                                        ]
+                                                        { onPress = Connect eachWallet |> Just
+                                                        , label =
+                                                            row
+                                                                [ width fill
+                                                                , height fill
+                                                                , spacing 8
+                                                                ]
+                                                                [ images
+                                                                    |> Image.viewWallet
+                                                                        [ width <| px 24
+                                                                        , height <| px 24
+                                                                        , centerY
+                                                                        ]
+                                                                        eachWallet
+                                                                , el
+                                                                    [ width shrink
+                                                                    , height shrink
+                                                                    , centerY
+                                                                    , Font.size 16
+                                                                    , paddingXY 0 4
+                                                                    , theme |> ThemeColor.text |> Font.color
+                                                                    ]
+                                                                    (eachWallet
+                                                                        |> Wallet.toString
+                                                                        |> text
+                                                                    )
+                                                                , images
+                                                                    |> (case theme of
+                                                                            Theme.Dark ->
+                                                                                Image.arrow
+
+                                                                            Theme.Light ->
+                                                                                Image.arrowSecondary
+                                                                       )
+                                                                        [ width <| px 24
+                                                                        , height <| px 24
+                                                                        , alignRight
+                                                                        , centerY
+                                                                        ]
+                                                                ]
+                                                        }
+
+                                            Nothing ->
+                                                Input.button
+                                                    [ width fill
+                                                    , height <| px 54
+                                                    , paddingXY 18 0
+                                                    , Background.color Color.primary100
+                                                    , Border.rounded 8
+                                                    ]
+                                                    { onPress = Connect eachWallet |> Just
+                                                    , label =
+                                                        row
+                                                            [ width fill
+                                                            , height fill
+                                                            , spacing 8
+                                                            ]
+                                                            [ images
+                                                                |> Image.viewWallet
+                                                                    [ width <| px 24
+                                                                    , height <| px 24
+                                                                    , centerY
+                                                                    ]
+                                                                    eachWallet
+                                                            , el
+                                                                [ width shrink
+                                                                , height shrink
+                                                                , centerY
+                                                                , Font.size 16
+                                                                , paddingXY 0 4
+                                                                , theme |> ThemeColor.text |> Font.color
+                                                                ]
+                                                                (eachWallet
+                                                                    |> Wallet.toString
+                                                                    |> text
+                                                                )
+                                                            , images
+                                                                |> (case theme of
+                                                                        Theme.Dark ->
+                                                                            Image.arrow
+
+                                                                        Theme.Light ->
+                                                                            Image.arrowSecondary
+                                                                   )
+                                                                    [ width <| px 24
+                                                                    , height <| px 24
+                                                                    , alignRight
+                                                                    , centerY
+                                                                    ]
+                                                            ]
+                                                    }
+                                    )
+                           )
+               )
+        )
 
 
 viewInitializing :
@@ -728,7 +778,7 @@ viewConnected :
     -> Blockchain
     -> User
     -> Element Msg
-viewConnected ({ images, theme } as model) blockchain user =
+viewConnected ({ theme } as model) blockchain user =
     column
         [ width fill
         , height shrink

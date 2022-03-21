@@ -176,7 +176,6 @@ type Msg
     | SwitchTheme
     | OpenConnect
     | OpenChainList
-    | OpenSwap
     | ReceiveMetamaskInstalled ()
     | ReceiveUser Value
     | BlockchainMsg Blockchain.Msg
@@ -408,24 +407,6 @@ update msg model =
               }
             , Cmd.none
             )
-
-        OpenSwap ->
-            case model.blockchain of
-                Supported blockchain ->
-                    Modal.initSwap { chains = model.chains, blockchain = blockchain }
-                        |> Tuple.mapBoth
-                            (\swapModal ->
-                                { model
-                                    | modal =
-                                        model.modal
-                                            |> Animator.go Animator.quickly
-                                                (swapModal |> Just)
-                                }
-                            )
-                            (Cmd.map ModalMsg)
-
-                _ ->
-                    ( model, Cmd.none )
 
         ReceiveMetamaskInstalled () ->
             ( { model | wallets = model.wallets |> Set.insert Wallet.Metamask }
@@ -1443,7 +1424,7 @@ warning { images, theme } =
             , paddingXY 0 3
             , theme |> ThemeColor.textError |> Font.color
             ]
-            (text "We are in alpha. Use tokens you are willing to lose.")
+            (text "We are in alpha, please exercise caution while using the app.")
         ]
 
 
@@ -1690,104 +1671,6 @@ tab { page, theme } givenTab =
                         |> text
                     )
             }
-
-
-swapButton :
-    { model
-        | device : Device
-        , images : Images
-        , theme : Theme
-        , blockchain : Support User.NotSupported Blockchain
-    }
-    -> Element Msg
-swapButton { device, images, theme, blockchain } =
-    case blockchain of
-        Supported b ->
-            case b |> Blockchain.toUser of
-                Just user ->
-                    if
-                        Address.participantAddresses
-                            |> List.member (user |> User.toAddress)
-                    then
-                        Input.button
-                            [ width shrink
-                            , height <| px 44
-                            , paddingEach
-                                { top = 0
-                                , right =
-                                    if Device.isPhoneOrTablet device then
-                                        8
-
-                                    else
-                                        16
-                                , bottom = 0
-                                , left =
-                                    if Device.isPhoneOrTablet device then
-                                        8
-
-                                    else
-                                        16
-                                }
-                            , Border.rounded 4
-                            , Font.size 16
-                            , paddingXY 12 0
-                            , theme |> ThemeColor.btnBackground |> Background.color
-                            , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
-                            , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
-                            ]
-                            { onPress = Just OpenSwap
-                            , label =
-                                row
-                                    [ width shrink
-                                    , spacing 6
-                                    , centerX
-                                    , centerY
-                                    , paddingXY 0 3
-                                    , spacing 6
-                                    , Font.size 16
-                                    , theme |> ThemeColor.primaryBtn |> Font.color
-                                    ]
-                                    (if Device.isPhoneOrTablet device then
-                                        [ images
-                                            |> (case theme of
-                                                    Theme.Dark ->
-                                                        Image.swap
-
-                                                    Theme.Light ->
-                                                        Image.swapDark
-                                               )
-                                                [ width <| px 19
-                                                , centerX
-                                                , centerY
-                                                ]
-                                        ]
-
-                                     else
-                                        [ images
-                                            |> (case theme of
-                                                    Theme.Dark ->
-                                                        Image.swap
-
-                                                    Theme.Light ->
-                                                        Image.swapDark
-                                               )
-                                                [ width <| px 19
-                                                , centerX
-                                                , centerY
-                                                ]
-                                        , text "Swap"
-                                        ]
-                                    )
-                            }
-
-                    else
-                        none
-
-                _ ->
-                    none
-
-        _ ->
-            none
 
 
 chainListButton :

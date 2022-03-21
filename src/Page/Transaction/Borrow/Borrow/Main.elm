@@ -138,6 +138,7 @@ type alias DuesGivenPercent =
     , maxCollateral : Uint
     , apr : Float
     , cdp : CDP
+    , txnFee : Uint
     }
 
 
@@ -155,6 +156,7 @@ type alias DuesGivenDebt =
     , maxCollateral : Uint
     , apr : Float
     , cdp : CDP
+    , txnFee : Uint
     }
 
 
@@ -163,6 +165,7 @@ type alias DuesGivenCollateral =
     , maxDebt : Uint
     , apr : Float
     , cdp : CDP
+    , txnFee : Uint
     }
 
 
@@ -215,6 +218,7 @@ initGivenPercent =
     , maxCollateral = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , txnFee = Uint.zero
     }
 
 
@@ -234,6 +238,7 @@ initGivenDebt =
     , maxCollateral = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , txnFee = Uint.zero
     }
 
 
@@ -243,6 +248,7 @@ initGivenCollateral =
     , maxDebt = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , txnFee = Uint.zero
     }
 
 
@@ -1869,11 +1875,12 @@ toStateGivenDebt :
     -> Remote Error DuesGivenDebt
 toStateGivenDebt result =
     case result of
-        Ok { collateralIn, maxCollateral, apr, cdp } ->
+        Ok { collateralIn, maxCollateral, apr, cdp, txnFee } ->
             { collateralIn = collateralIn
             , maxCollateral = maxCollateral
             , apr = apr
             , cdp = cdp
+            , txnFee = txnFee
             }
                 |> Success
 
@@ -1886,11 +1893,12 @@ toStateGivenCollateral :
     -> Remote Error DuesGivenCollateral
 toStateGivenCollateral result =
     case result of
-        Ok { debtIn, maxDebt, apr, cdp } ->
+        Ok { debtIn, maxDebt, apr, cdp, txnFee } ->
             { debtIn = debtIn
             , maxDebt = maxDebt
             , apr = apr
             , cdp = cdp
+            , txnFee = txnFee
             }
                 |> Success
 
@@ -2475,35 +2483,103 @@ assetOutSection model asset poolInfo { state, tooltip } =
                         , description = "asset out textbox"
                         }
                )
-        , row
-            [ width fill
-            , height shrink
-            , paddingXY 0 4
-            ]
-            [ el
-                [ width shrink
-                , Font.size 14
-                , model.theme |> ThemeColor.textLight |> Font.color
+        , column [ width fill, spacing 4 ]
+            [ row
+                [ width fill
+                , height shrink
+                , paddingXY 0 4
                 ]
-                (text "Pool Liquidity")
-            , row
-                [ Font.size 14
-                , model.theme |> ThemeColor.text |> Font.color
-                , alignRight
-                , spacing 6
+                [ el
+                    [ width shrink
+                    , Font.size 14
+                    , model.theme |> ThemeColor.textLight |> Font.color
+                    ]
+                    (text "Pool Liquidity")
+                , row
+                    [ Font.size 14
+                    , model.theme |> ThemeColor.text |> Font.color
+                    , alignRight
+                    , spacing 6
+                    ]
+                    [ Truncate.viewAmount
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.Liquidity
+                        , opened = tooltip
+                        , token = asset
+                        , amount = poolInfo.x
+                        , theme = model.theme
+                        , customStyles = [ Font.size 14 ]
+                        }
+                    , text (asset |> Token.toSymbol)
+                    ]
                 ]
-                [ Truncate.viewAmount
-                    { onMouseEnter = OnMouseEnter
-                    , onMouseLeave = OnMouseLeave
-                    , tooltip = Tooltip.Liquidity
-                    , opened = tooltip
-                    , token = asset
-                    , amount = poolInfo.x
-                    , theme = model.theme
-                    , customStyles = [ Font.size 14 ]
-                    }
-                , text (asset |> Token.toSymbol)
-                ]
+            , (case state of
+                Default { dues } ->
+                    case dues of
+                        Success duesGivenPercent ->
+                            duesGivenPercent.txnFee |> Just
+
+                        _ ->
+                            Nothing
+
+                Slider { dues } ->
+                    case dues of
+                        Success duesGivenPercent ->
+                            duesGivenPercent.txnFee |> Just
+
+                        _ ->
+                            Nothing
+
+                Debt { dues } ->
+                    case dues of
+                        Success duesGivenDebt ->
+                            duesGivenDebt.txnFee |> Just
+
+                        _ ->
+                            Nothing
+
+                Collateral { dues } ->
+                    case dues of
+                        Success duesGivenCollateral ->
+                            duesGivenCollateral.txnFee |> Just
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+              )
+                |> (\maybeTxnFee ->
+                        case maybeTxnFee of
+                            Just txnFee ->
+                                row
+                                    [ width fill
+                                    , height shrink
+                                    , spacing 8
+                                    ]
+                                    [ el
+                                        [ Font.size 14
+                                        , model.theme |> ThemeColor.textLight |> Font.color
+                                        ]
+                                        (text "Transaction Fee")
+                                    , el [ alignRight ]
+                                        (Truncate.viewAmount
+                                            { onMouseEnter = OnMouseEnter
+                                            , onMouseLeave = OnMouseLeave
+                                            , tooltip = Tooltip.TxnFee
+                                            , opened = tooltip
+                                            , token = asset
+                                            , amount = txnFee
+                                            , theme = model.theme
+                                            , customStyles = [ Font.size 14 ]
+                                            }
+                                        )
+                                    ]
+
+                            _ ->
+                                none
+                   )
             ]
         ]
 

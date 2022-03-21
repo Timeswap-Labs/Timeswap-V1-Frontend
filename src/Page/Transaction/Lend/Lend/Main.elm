@@ -30,6 +30,7 @@ import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , alignRight
         , centerY
         , column
         , el
@@ -69,6 +70,7 @@ import Url.Builder as Builder
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
+import Utility.Truncate as Truncate
 
 
 type Transaction
@@ -113,6 +115,7 @@ type alias ClaimsGivenPercent =
     , minInsurance : Uint
     , apr : Float
     , cdp : CDP
+    , txnFee : Uint
     }
 
 
@@ -121,6 +124,7 @@ type alias ClaimsGivenBond =
     , minInsurance : Uint
     , apr : Float
     , cdp : CDP
+    , txnFee : Uint
     }
 
 
@@ -129,6 +133,7 @@ type alias ClaimsGivenInsurance =
     , minBond : Uint
     , apr : Float
     , cdp : CDP
+    , txnFee : Uint
     }
 
 
@@ -178,6 +183,7 @@ initGivenPercent =
     , minInsurance = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , txnFee = Uint.zero
     }
 
 
@@ -187,6 +193,7 @@ initGivenBond =
     , minInsurance = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , txnFee = Uint.zero
     }
 
 
@@ -196,6 +203,7 @@ initGivenInsurance =
     , minBond = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , txnFee = Uint.zero
     }
 
 
@@ -1268,11 +1276,12 @@ toClaimsGivenBond :
     -> Remote Error ClaimsGivenBond
 toClaimsGivenBond result =
     case result of
-        Ok { insuranceOut, minInsurance, apr, cdp } ->
+        Ok { insuranceOut, minInsurance, apr, cdp, txnFee } ->
             { insuranceOut = insuranceOut
             , minInsurance = minInsurance
             , apr = apr
             , cdp = cdp
+            , txnFee = txnFee
             }
                 |> Success
 
@@ -1285,11 +1294,12 @@ toClaimsGivenInsurance :
     -> Remote Error ClaimsGivenInsurance
 toClaimsGivenInsurance result =
     case result of
-        Ok { bondOut, minBond, apr, cdp } ->
+        Ok { bondOut, minBond, apr, cdp, txnFee } ->
             { bondOut = bondOut
             , minBond = minBond
             , apr = apr
             , cdp = cdp
+            , txnFee = txnFee
             }
                 |> Success
 
@@ -1625,9 +1635,9 @@ assetInSection :
     { model | images : Images, theme : Theme }
     -> Blockchain
     -> Token
-    -> { transaction | assetIn : String, tooltip : Maybe Tooltip }
+    -> { transaction | assetIn : String, tooltip : Maybe Tooltip, claimsOut : ClaimsOut }
     -> Element Msg
-assetInSection model blockchain asset { assetIn, tooltip } =
+assetInSection model blockchain asset { assetIn, tooltip, claimsOut } =
     column
         [ Region.description "lend asset"
         , width fill
@@ -1680,6 +1690,67 @@ assetInSection model blockchain asset { assetIn, tooltip } =
             , text = Left assetIn
             , description = "asset in textbox"
             }
+        , (case claimsOut of
+            Default (Success claimsGivenPercent) ->
+                claimsGivenPercent.txnFee |> Just
+
+            Slider { claims } ->
+                case claims of
+                    Success claimsGivenPercent ->
+                        claimsGivenPercent.txnFee |> Just
+
+                    _ ->
+                        Nothing
+
+            Bond { claims } ->
+                case claims of
+                    Success claimsGivenBond ->
+                        claimsGivenBond.txnFee |> Just
+
+                    _ ->
+                        Nothing
+
+            Insurance { claims } ->
+                case claims of
+                    Success claimsGivenInsurance ->
+                        claimsGivenInsurance.txnFee |> Just
+
+                    _ ->
+                        Nothing
+
+            _ ->
+                Nothing
+          )
+            |> (\maybeTxnFee ->
+                    case maybeTxnFee of
+                        Just txnFee ->
+                            row
+                                [ width fill
+                                , height shrink
+                                , spacing 8
+                                ]
+                                [ el
+                                    [ Font.size 14
+                                    , model.theme |> ThemeColor.textLight |> Font.color
+                                    ]
+                                    (text "Transaction Fee")
+                                , el [ alignRight ]
+                                    (Truncate.viewAmount
+                                        { onMouseEnter = OnMouseEnter
+                                        , onMouseLeave = OnMouseLeave
+                                        , tooltip = Tooltip.TxnFee
+                                        , opened = tooltip
+                                        , token = asset
+                                        , amount = txnFee
+                                        , theme = model.theme
+                                        , customStyles = []
+                                        }
+                                    )
+                                ]
+
+                        _ ->
+                            none
+               )
         ]
 
 

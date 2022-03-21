@@ -2,11 +2,11 @@ import { getCustomTokens } from "./helper";
 
 export const whitelistChains: Whitelist = {
   default: {
-    chainId: 80001,
-    name: "Polygon Testnet",
-    rpcUrl: "https://rpc-mumbai.matic.today",
-    blockExplorerUrl: "https://mumbai.polygonscan.com",
-    nftExplorerUrl: "https://testnets.opensea.io/assets/mumbai",
+    chainId: 137,
+    name: "Polygon Mainnet",
+    rpcUrl: "https://polygon-rpc.com/",
+    blockExplorerUrl: "https://polygonscan.com/",
+    nftExplorerUrl: "https://opensea.io/assets/matic",
     native: {
       name: "MATIC",
       symbol: "MATIC",
@@ -20,21 +20,21 @@ export const whitelistChains: Whitelist = {
     },
     whitelist: [
       {
-        address: "0xA4abf1B77d9171Eb910DD6f7ae863cF77c4225A4",
-        name: "Dai Stablecoin",
-        symbol: "DAI",
+        address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+        name: "Wrapped Ether",
+        symbol: "WETH",
         decimals: 18,
       },
       {
-        address: "0x2193fBf6F024aD9DCa5c7D615259CE4DDb8a9F89",
-        name: "Ethereum",
-        symbol: "ETH",
-        decimals: 18,
+        address: "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+        name: "USDC",
+        symbol: "USDC",
+        decimals: 6,
       }
     ],
-    custom: getCustomTokens(String(80001)),
+    custom: getCustomTokens(String(137)),
   },
-  others: [],
+  others: []
 };
 
 export function getChainData(chainId: number) {
@@ -51,6 +51,16 @@ export function getChainData(chainId: number) {
   }
 
   return chain;
+}
+
+export function getNativeToken(chainId: number): NativeToken | null {
+  let chain = getChainData(chainId);
+
+  if (!chain) {
+    return null;
+  }
+
+  return chain.native;
 }
 
 export function getTokenList(chainId: number): (NativeToken | ERC20Token)[] {

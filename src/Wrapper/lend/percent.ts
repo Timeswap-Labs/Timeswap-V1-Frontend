@@ -24,7 +24,7 @@ export async function percentCalculate(
       y: new Uint112(query.poolInfo.y),
       z: new Uint112(query.poolInfo.z),
     };
-    const { claimsOut } = pool.lendGivenPercent(
+    const { claimsOut, assetIn: assetInReturn, xIncrease } = pool.lendGivenPercent(
       state,
       new Uint112(query.assetIn),
       new Uint40(query.percent!),
@@ -37,6 +37,7 @@ export async function percentCalculate(
     const insuranceOut = new Uint128(claimsOut.insuranceInterest).add(
       new Uint128(claimsOut.insurancePrincipal)
     );
+    const txnFee = assetInReturn.sub(xIncrease).toString();
 
     const timeSlippageBefore = currentTime.sub(60);
     const timeSlippageAfter =
@@ -73,7 +74,12 @@ export async function percentCalculate(
       query.slippage
     ).toString();
 
-    const apr = calculateApr(bondOut, query.assetIn, maturity, currentTime);
+    const apr = calculateApr(
+      bondOut,
+      xIncrease.toString(),
+      maturity,
+      currentTime
+    );
     const cdp = calculateCdp(
       query.assetIn,
       query.pool.asset.decimals,
@@ -94,6 +100,7 @@ export async function percentCalculate(
         minInsurance,
         apr,
         cdp,
+        txnFee
       },
     });
   } catch (err) {
@@ -109,7 +116,7 @@ export async function percentTransaction(
   gp: GlobalParams,
   lend: Lend
 ) {
-  return await pool.upgrade(gp.metamaskSigner!).lendGivenPercent({
+  return await pool.upgrade(gp.walletSigner!).lendGivenPercent({
     bondTo: lend.bondTo,
     insuranceTo: lend.insuranceTo,
     assetIn: new Uint112(lend.assetIn),

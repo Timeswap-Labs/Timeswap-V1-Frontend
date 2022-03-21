@@ -493,7 +493,7 @@ view ({ backdrop } as model) blockchain ((Modal { state, tooltip }) as modal) =
                     _ ->
                         tokenList model blockchain modal
                 , case state of
-                    AllTokens a ->
+                    AllTokens _ ->
                         manageTokensBtn model
 
                     _ ->
@@ -532,15 +532,15 @@ modalHeader model (Modal { state }) =
                 , spacing 12
                 ]
                 (case state of
-                    AllTokens a ->
+                    AllTokens _ ->
                         [ text "Select Token" ]
 
-                    ImportingERC20 a ->
+                    ImportingERC20 _ ->
                         [ IconButton.back model GoToAllTokens
                         , text "Import Token"
                         ]
 
-                    CustomERC20s a ->
+                    CustomERC20s _ ->
                         [ IconButton.back model GoToAllTokens
                         , text "Manage Tokens"
                         ]
@@ -548,7 +548,7 @@ modalHeader model (Modal { state }) =
             , IconButton.exit model Exit
             ]
         , case state of
-            ImportingERC20 a ->
+            ImportingERC20 _ ->
                 none
 
             _ ->
@@ -724,7 +724,7 @@ customToken model blockchain ((Modal { state }) as modal) token =
         ]
         [ tokenSymbolAndName model modal token
         , case state of
-            CustomERC20s input ->
+            CustomERC20s _ ->
                 row
                     [ width shrink
                     , alignRight
@@ -774,7 +774,7 @@ customToken model blockchain ((Modal { state }) as modal) token =
                         }
                     ]
 
-            AllTokens a ->
+            AllTokens _ ->
                 Input.button
                     [ width shrink
                     , height <| px 24
@@ -896,7 +896,7 @@ tokenBalance user token (Modal { tooltip }) theme =
                 ]
                 (Loading.view timeline theme)
 
-        Just (Failure error) ->
+        Just (Failure _) ->
             el
                 [ alignRight
                 , Font.regular
