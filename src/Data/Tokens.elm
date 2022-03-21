@@ -16,6 +16,8 @@ module Data.Tokens exposing
     , toCustomList
     , toERC20List
     , toList
+    , toNative
+    , toWrapper
     )
 
 import Data.Address as Address exposing (Address)
@@ -32,14 +34,16 @@ import Sort.Set as Set exposing (Set)
 type Tokens
     = Tokens
         { native : Native
+        , wrapper : ERC20
         , whitelist : ERC20s
         , custom : ERC20s
         }
 
 
-init : Native -> ERC20s -> ERC20s -> Tokens
-init native whitelist custom =
+init : Native -> ERC20 -> ERC20s -> ERC20s -> Tokens
+init native wrapper whitelist custom =
     { native = native
+    , wrapper = wrapper
     , whitelist = whitelist
     , custom = custom
     }
@@ -92,6 +96,16 @@ encodeCustom : Tokens -> Value
 encodeCustom (Tokens { custom }) =
     custom
         |> ERC20s.encode
+
+
+toNative : Tokens -> Native
+toNative (Tokens { native }) =
+    native
+
+
+toWrapper : Tokens -> ERC20
+toWrapper (Tokens { wrapper }) =
+    wrapper
 
 
 toCustom : Tokens -> ERC20s

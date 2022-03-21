@@ -3,10 +3,13 @@ module Data.Pool exposing
     , decoder
     , encode
     , sorter
+    , toNative
     , toQueryParameters
     , toString
     )
 
+import Data.Chain exposing (Chain)
+import Data.Chains exposing (Chains)
 import Data.Maturity as Maturity exposing (Maturity)
 import Data.Pair as Pair exposing (Pair)
 import Data.Token as Token
@@ -72,3 +75,8 @@ toString pool =
         |> String.fromInt
     ]
         |> String.join "-"
+
+
+toNative : Chain -> Chains -> Pool -> Pool
+toNative chain chains pool =
+    { pool | pair = pool.pair |> Pair.toNative chain chains }

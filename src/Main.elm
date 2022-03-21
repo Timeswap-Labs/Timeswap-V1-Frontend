@@ -2092,6 +2092,7 @@ body :
         , blockchain : Support User.NotSupported Blockchain
         , page : Page
         , theme : Theme
+        , chains : Chains
     }
     -> Element Msg
 body ({ device, page } as model) =

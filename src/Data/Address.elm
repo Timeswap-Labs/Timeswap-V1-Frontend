@@ -9,6 +9,7 @@ module Data.Address exposing
     , toQueryParameter
     , toString
     , toStringShort
+    , zero
     )
 
 import Hex
@@ -173,3 +174,8 @@ toByteLength string =
 
     else
         string
+
+
+zero : Address
+zero =
+    Address "0x0000000000000000000000000000000000000000"
