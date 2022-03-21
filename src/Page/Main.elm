@@ -280,7 +280,7 @@ construct ({ chains } as model) url maybePage =
                     (Cmd.map LiquidityMsg)
 
         ( Just Route.Info, Supported blockchain, _ ) ->
-            Info.init model blockchain
+            Info.init model blockchain chains
                 |> Tuple.mapBoth
                     (\poolsData -> poolsData |> InfoPage)
                     (Cmd.map InfoMsg)
@@ -336,7 +336,7 @@ construct ({ chains } as model) url maybePage =
 
 
 update :
-    { model | time : Posix, slippage : Slippage }
+    { model | time : Posix, slippage : Slippage, chains : Chains }
     -> Blockchain
     -> Msg
     -> Page
@@ -528,6 +528,7 @@ update model blockchain msg page =
                 |> Info.update
                     infoMsg
                     blockchain
+                    model.chains
                 |> (\( updated, cmd ) ->
                         ( updated
                             |> InfoPage

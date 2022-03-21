@@ -3,6 +3,7 @@ module Page.Info.Main exposing (Msg, PoolsData, init, update, view)
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain as Chain exposing (Chain)
+import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Images exposing (Images)
 import Data.Offset exposing (Offset)
@@ -88,21 +89,23 @@ type Msg
 init :
     { model | time : Posix }
     -> Blockchain
+    -> Chains
     -> ( PoolsData, Cmd Msg )
-init { time } blockchain =
+init { time } blockchain chains =
     ( { data = Remote.loading
       , expanded = Set.empty Pair.sorter
       , tooltip = Nothing
       }
         |> PoolsData
-    , get blockchain
+    , get blockchain chains
     )
 
 
 get :
     Blockchain
+    -> Chains
     -> Cmd Msg
-get blockchain =
+get blockchain chains =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
@@ -112,15 +115,15 @@ get blockchain =
                             []
                             [ chain |> Chain.toQueryParameter ]
                     , expect =
-                        Answer.decoder
+                        Answer.decoder chain chains
                             |> Http.expectJson
                                 (ReceiveAnswer chain)
                     }
            )
 
 
-update : Msg -> Blockchain -> PoolsData -> ( PoolsData, Cmd Msg )
-update msg blockchain (PoolsData page) =
+update : Msg -> Blockchain -> Chains -> PoolsData -> ( PoolsData, Cmd Msg )
+update msg blockchain chains (PoolsData page) =
     case msg of
         Expand pair ->
             case page.data of
@@ -197,7 +200,7 @@ update msg blockchain (PoolsData page) =
 
         QueryAgain ->
             ( page |> PoolsData
-            , get blockchain
+            , get blockchain chains
             )
 
 
