@@ -122,6 +122,7 @@ type alias ResultPercent =
     , maxCollateral : Uint
     , apr : Float
     , cdp : CDP
+    , txnFee : Uint
     }
 
 
@@ -140,6 +141,7 @@ type alias ResultDebt =
     , maxCollateral : Uint
     , apr : Float
     , cdp : CDP
+    , txnFee : Uint
     }
 
 
@@ -149,6 +151,7 @@ type alias ResultCollateral =
     , maxDebt : Uint
     , apr : Float
     , cdp : CDP
+    , txnFee : Uint
     }
 
 
@@ -291,6 +294,7 @@ decoderResultPercent =
         |> Pipeline.required "maxCollateral" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "txnFee" Uint.decoder
 
 
 decoderResultMax : Decoder ResultMax
@@ -311,6 +315,7 @@ decoderResultDebt =
         |> Pipeline.required "maxCollateral" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "txnFee" Uint.decoder
 
 
 decoderResultCollateral : Decoder ResultCollateral
@@ -321,3 +326,4 @@ decoderResultCollateral =
         |> Pipeline.required "maxDebt" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "txnFee" Uint.decoder

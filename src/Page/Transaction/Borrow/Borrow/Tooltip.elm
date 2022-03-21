@@ -9,3 +9,4 @@ type Tooltip
     | CDPSymbol
     | CDP
     | Liquidity
+    | TxnFee

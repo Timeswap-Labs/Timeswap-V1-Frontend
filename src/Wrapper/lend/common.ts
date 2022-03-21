@@ -34,18 +34,7 @@ export function calculateCdp(
     .div(assetIn)
     .toString();
 
-  // const ratio = new Uint256(assetIn)
-  //   .mul(pow(10n, BigInt(collateralDecimals)))
-  //   .div(insuranceOut)
-  //   .toString();
-
   if (assetSpot && collateralSpot) {
-    // const newRatio = new Uint256(insuranceOut)
-    //   .mul(pow(10n, BigInt(assetDecimals)))
-    //   .div(assetIn)
-    //   .div(pow(10n, BigInt(collateralDecimals)))
-    //   .toString();
-
     percent =
       Number(
         (new Uint256(insuranceOut).toBigInt() *
@@ -55,12 +44,6 @@ export function calculateCdp(
           BigInt(Math.floor(assetSpot * 1000000)) /
           pow(10n, BigInt(collateralDecimals))
       ) / 10000;
-    // .mul(pow(10n, BigInt(assetDecimals)))
-    // .div(assetIn)
-    // .div(pow(10n, BigInt(collateralDecimals)))
-    // .toString();
-
-    // percent = Number(newRatio) ? Number(newRatio) * collateralSpot / assetSpot : null;
   }
 
   return { ratio, percent };

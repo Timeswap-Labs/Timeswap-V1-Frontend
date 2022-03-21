@@ -55,14 +55,14 @@ export function collateralCalculate(
       return;
     }
 
-    const { dueOut, yIncrease } = pool.borrowGivenCollateral(
+    const { dueOut, assetOut: assetOutReturn, xDecrease, yIncrease } = pool.borrowGivenCollateral(
       state,
       assetOut,
       collateralIn,
       currentTime
     );
     const debtIn = dueOut.debt.toString();
-
+    const txnFee = xDecrease.sub(assetOutReturn).toString();
     const percent = calculatePercent(yMin, yMax, yIncrease);
 
     const timeSlippageBefore = currentTime.sub(60);
@@ -98,7 +98,7 @@ export function collateralCalculate(
 
     const apr = calculateApr(
       dueOut.debt,
-      query.assetOut,
+      xDecrease.toString(),
       maturity,
       currentTime
     );
@@ -121,6 +121,7 @@ export function collateralCalculate(
         maxDebt,
         apr,
         cdp,
+        txnFee
       },
     });
   } catch (err) {

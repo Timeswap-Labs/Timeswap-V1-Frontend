@@ -53,7 +53,7 @@ export function debtCalculate(
       return;
     }
 
-    const { dueOut, yIncrease } = pool.borrowGivenDebt(
+    const { dueOut, assetOut: assetOutReturn, xDecrease, yIncrease } = pool.borrowGivenDebt(
       state,
       assetOut,
       debtIn,
@@ -61,9 +61,8 @@ export function debtCalculate(
     );
 
     const collateralIn = dueOut.collateral.toString();
-
+    const txnFee = xDecrease.sub(assetOutReturn).toString();
     const percent = calculatePercent(yMin, yMax, yIncrease);
-
     const timeSlippageBefore = currentTime.sub(60);
 
     const { dueOut: dueSlippageBefore } = pool.borrowGivenDebt(
@@ -78,7 +77,7 @@ export function debtCalculate(
       query.slippage
     ).toString();
 
-    const apr = calculateApr(debtIn, query.assetOut, maturity, currentTime);
+    const apr = calculateApr(debtIn, xDecrease.toString(), maturity, currentTime);
     const cdp = calculateCdp(
       query.assetOut,
       query.pool.asset.decimals,
@@ -98,7 +97,8 @@ export function debtCalculate(
         maxCollateral,
         apr,
         cdp,
-      },
+        txnFee
+      }
     });
   } catch (err) {
     app.ports.receiveBorrowAnswer.send({
