@@ -424,7 +424,7 @@ view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as moda
                         , theme |> ThemeColor.placeholder |> Font.color
                         , Font.center
                         ]
-                        (text "APR")
+                        (text "MAX APR")
                     , el
                         [ centerX
                         , width <| fillPortion 1
@@ -445,7 +445,7 @@ view ({ backdrop, device, priceFeed, theme } as model) ((Modal { pair }) as moda
                                     |> text
 
                             PriceFeed.Utilize ->
-                                text "CDP"
+                                text "MIN CDP"
                         )
                     ]
                 , maturityList model modal
