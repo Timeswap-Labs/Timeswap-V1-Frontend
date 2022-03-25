@@ -701,7 +701,7 @@ tokenButton model blockchain modal token =
                 [ tokenSymbolAndName model modal token
                 , case blockchain |> Blockchain.toUser of
                     Just user ->
-                        tokenBalance user token modal model.theme
+                        tokenBalance user token modal model
 
                     _ ->
                         none
@@ -862,8 +862,13 @@ tokenSymbolAndName { images, theme } (Modal { tooltip }) token =
         ]
 
 
-tokenBalance : User -> Token -> Modal -> Theme -> Element Msg
-tokenBalance user token (Modal { tooltip }) theme =
+tokenBalance :
+    User
+    -> Token
+    -> Modal
+    -> { model | images : Images, theme : Theme }
+    -> Element Msg
+tokenBalance user token (Modal { tooltip }) { images, theme } =
     let
         balances =
             user |> User.getBalance token
@@ -898,13 +903,14 @@ tokenBalance user token (Modal { tooltip }) theme =
 
         Just (Failure _) ->
             el
-                [ alignRight
-                , Font.regular
-                , Font.size 16
-                ]
-                (text "error")
+                [ alignRight ]
+                (images
+                    |> Image.error
+                        [ width <| px 16
+                        , height <| px 16
+                        ]
+                )
 
-        -- |> Debug.log "implement error view"
         _ ->
             none
 

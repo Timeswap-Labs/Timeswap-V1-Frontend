@@ -2,6 +2,7 @@ module Blockchain.User.Natives exposing (Answer, Natives, decoder, decoderNative
 
 import Data.Address as Address exposing (Address)
 import Data.Chain as Chain exposing (Chain)
+import Data.Chains exposing (Chains)
 import Data.Pool as Pool exposing (Pool)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
@@ -64,12 +65,13 @@ encodeNatives natives =
         |> Encode.object
 
 
-decoder : Decoder Answer
-decoder =
+decoder : Chain -> Chains -> Decoder Answer
+decoder chain chains =
     Decode.succeed Tuple.pair
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "natives" decoderNatives
         |> Decode.list
+        |> (Decode.map << List.map << Tuple.mapFirst) (Pool.toNative chain chains)
         |> Decode.map (Dict.fromList Pool.sorter)
 
 
