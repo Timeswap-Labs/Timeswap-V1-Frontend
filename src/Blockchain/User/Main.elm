@@ -149,7 +149,7 @@ init chains chain flag =
               , natives = Remote.loading
               }
                 |> User
-            , getNatives chain
+            , getNatives chain chains
             )
                 |> Just
 
@@ -190,7 +190,7 @@ receiveUserInit ({ chains } as model) chain value =
               , decodedUser.address
                     |> Allowances.encode chains chain
                     |> allowancesOf
-              , getNatives chain
+              , getNatives chain chains
               ]
                 |> Cmd.batch
             )
@@ -223,7 +223,7 @@ receiveUser ({ chains } as model) chain value user =
                   , decodedUser.address
                         |> Allowances.encode chains chain
                         |> allowancesOf
-                  , getNatives chain
+                  , getNatives chain chains
                   ]
                     |> Cmd.batch
                 )
@@ -259,7 +259,7 @@ update { chains } chain msg (User user) =
     case msg of
         QueryNatives () ->
             ( user |> User
-            , getNatives chain
+            , getNatives chain chains
             , Nothing
             )
 
@@ -865,12 +865,13 @@ isSame (User user1) (User user2) =
 
 getNatives :
     Chain
+    -> Chains
     -> Cmd Msg
-getNatives chain =
+getNatives chain chains =
     Http.get
         { url = Natives.toUrlString chain
         , expect =
-            Natives.decoder
+            Natives.decoder chain chains
                 |> Http.expectJson
                     (ReceiveNatives chain)
         }
