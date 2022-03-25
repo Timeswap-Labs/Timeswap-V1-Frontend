@@ -483,5 +483,5 @@ notEnoughBalance =
             , Font.bold
             , Font.color Color.light100
             ]
-            (text "Not Enough Balance")
+            (text "Insufficient Balance")
         )
