@@ -147,7 +147,7 @@ decoderWithdraw =
     Decode.succeed
         (\txn pool ->
             if txn == "withdraw" then
-                Create pool |> Decode.succeed
+                Withdraw pool |> Decode.succeed
 
             else
                 Decode.fail "Not a txn"
@@ -162,7 +162,7 @@ decoderPay =
     Decode.succeed
         (\txn pool ->
             if txn == "pay" then
-                Create pool |> Decode.succeed
+                Pay pool |> Decode.succeed
 
             else
                 Decode.fail "Not a txn"
@@ -177,7 +177,7 @@ decoderBurn =
     Decode.succeed
         (\txn pool ->
             if txn == "burn" then
-                Create pool |> Decode.succeed
+                Burn pool |> Decode.succeed
 
             else
                 Decode.fail "Not a txn"

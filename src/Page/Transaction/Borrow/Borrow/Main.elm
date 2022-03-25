@@ -3164,7 +3164,7 @@ buttons { theme } blockchain collateral transaction =
 
                                 ( Just (Success False), Just (Success False) ) ->
                                     [ disabledApprove theme erc20
-                                    , theme |> disabledBorrow
+                                    , Button.notEnoughBalance
                                     ]
 
                                 ( Just (Loading _), Just (Success False) ) ->
@@ -3249,7 +3249,7 @@ buttons { theme } blockchain collateral transaction =
                                     [ borrowButton theme ]
 
                                 Just (Success False) ->
-                                    [ theme |> disabledBorrow ]
+                                    [ Button.notEnoughBalance ]
 
                                 Just (Loading _) ->
                                     [ theme |> Button.checkingBalance |> map never ]
@@ -3267,10 +3267,7 @@ buttons { theme } blockchain collateral transaction =
                                     |> (Maybe.map << Remote.map)
                                         (Uint.hasEnough collateralIn)
                             of
-                                Just (Success True) ->
-                                    [ theme |> disabledBorrow ]
-
-                                Just (Success False) ->
+                                Just (Success _) ->
                                     [ theme |> disabledBorrow ]
 
                                 Just (Loading _) ->

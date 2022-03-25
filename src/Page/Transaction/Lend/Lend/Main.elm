@@ -2206,7 +2206,7 @@ buttons { theme } blockchain asset transaction =
 
                                 ( Just (Success False), Just (Success False) ) ->
                                     [ disabledApprove theme erc20
-                                    , theme |> disabledLend
+                                    , Button.notEnoughBalance
                                     ]
 
                                 ( Just (Loading _), Just (Success False) ) ->
@@ -2291,7 +2291,7 @@ buttons { theme } blockchain asset transaction =
                                     [ lendButton theme ]
 
                                 Just (Success False) ->
-                                    [ theme |> disabledLend ]
+                                    [ Button.notEnoughBalance ]
 
                                 Just (Loading _) ->
                                     [ theme |> Button.checkingBalance |> map never ]
@@ -2313,7 +2313,7 @@ buttons { theme } blockchain asset transaction =
                                     [ theme |> disabledLend ]
 
                                 Just (Success False) ->
-                                    [ theme |> disabledLend ]
+                                    [ Button.notEnoughBalance ]
 
                                 Just (Loading _) ->
                                     [ theme |> Button.checkingBalance |> map never ]
