@@ -813,7 +813,7 @@ tutorialLink { images, theme } =
                 , theme |> ThemeColor.textboxBorder |> Border.color
                 , Border.rounded 8
                 ]
-                [ el [ theme |> ThemeColor.textLight |> Font.color, Font.size 16 ] (text "Tutorial")
+                [ el [ theme |> ThemeColor.textLight |> Font.color, Font.size 16 ] (text "Guide")
                 , images
                     |> Image.video
                         [ width <| px 16, height <| px 16 ]
