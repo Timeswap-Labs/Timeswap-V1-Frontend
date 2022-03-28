@@ -44,6 +44,7 @@ import Element
         , fill
         , height
         , map
+        , newTabLink
         , padding
         , paddingXY
         , px
@@ -740,6 +741,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                     [ row
                         [ width fill
                         , height shrink
+                        , spacing 12
                         ]
                         [ el
                             [ width shrink
@@ -750,6 +752,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                             , Font.bold
                             ]
                             (text "Lend")
+                        , tutorialLink model
                         , settingsButton model
                         ]
                     , case device of
@@ -792,6 +795,30 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                                 ]
                     ]
            )
+
+
+tutorialLink :
+    { model | images : Images, theme : Theme }
+    -> Element Msg
+tutorialLink { images, theme } =
+    newTabLink []
+        { url = "https://youtu.be/xbSXmhfRovo"
+        , label =
+            row
+                [ width shrink
+                , height shrink
+                , spacing 8
+                , paddingXY 8 4
+                , Border.width 1
+                , theme |> ThemeColor.textboxBorder |> Border.color
+                , Border.rounded 8
+                ]
+                [ el [ theme |> ThemeColor.textLight |> Font.color, Font.size 16 ] (text "Tutorial")
+                , images
+                    |> Image.video
+                        [ width <| px 16, height <| px 16 ]
+                ]
+        }
 
 
 settingsButton :

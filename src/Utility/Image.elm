@@ -51,6 +51,7 @@ module Utility.Image exposing
     , telegram
     , tripleDots
     , twitter
+    , video
     , viewChain
     , viewToken
     , viewWallet
@@ -391,6 +392,11 @@ warning =
 tripleDots : List (Attribute msg) -> Images -> Element msg
 tripleDots =
     view "TripleDots"
+
+
+video : List (Attribute msg) -> Images -> Element msg
+video =
+    view "Video"
 
 
 gitbook : List (Attribute msg) -> Images -> Element msg
