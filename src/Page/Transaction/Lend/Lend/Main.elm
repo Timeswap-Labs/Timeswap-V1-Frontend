@@ -24,13 +24,14 @@ import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
         , alignRight
+        , below
         , centerY
         , column
         , el
@@ -40,6 +41,7 @@ import Element
         , none
         , padding
         , paddingXY
+        , px
         , row
         , shrink
         , spacing
@@ -48,6 +50,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
@@ -67,9 +70,11 @@ import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Url.Builder as Builder
+import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
+import Utility.Tooltip as Tooltip
 import Utility.Truncate as Truncate
 
 
@@ -1758,9 +1763,9 @@ claimsOutSection :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Pool
     -> PoolInfo
-    -> { transaction | claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
+    -> { transaction | assetIn : String, claimsOut : ClaimsOut, tooltip : Maybe Tooltip }
     -> Element Msg
-claimsOutSection model pool poolInfo ({ claimsOut, tooltip } as transaction) =
+claimsOutSection model pool poolInfo ({ assetIn, claimsOut, tooltip } as transaction) =
     column
         [ Region.description "claims"
         , width fill
@@ -1844,7 +1849,7 @@ claimsOutSection model pool poolInfo ({ claimsOut, tooltip } as transaction) =
                     )
              )
                 |> (\( apr, cdp ) ->
-                        [ Info.lendAPR apr (poolInfo |> Just) model.theme
+                        [ Info.lendAPR apr assetIn (poolInfo |> Just) model.theme
                         , Info.lendCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave
@@ -2041,7 +2046,7 @@ advancedBondOutSection :
     -> { transaction | tooltip : Maybe Tooltip }
     -> Or String (Remote Error Uint)
     -> Element Msg
-advancedBondOutSection model asset { tooltip } or =
+advancedBondOutSection ({ images, theme } as model) asset { tooltip } or =
     column
         [ width fill
         , height shrink
@@ -2060,6 +2065,31 @@ advancedBondOutSection model asset { tooltip } or =
                 , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
                 (text "Amount to Receive")
+            , images
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.info
+
+                        Theme.Light ->
+                            Image.infoDark
+                   )
+                    [ width <| px 16
+                    , height <| px 16
+                    , Events.onMouseEnter (OnMouseEnter Tooltip.AmountToReceive)
+                    , Events.onMouseLeave OnMouseLeave
+                    , (if tooltip == Just Tooltip.AmountToReceive then
+                        el
+                            [ Font.size 14
+                            , theme |> ThemeColor.textLight |> Font.color
+                            ]
+                            ("Txn-fee is already deducted from the Amount to Receive shown here" |> text)
+                            |> Tooltip.belowAlignRight theme
+
+                       else
+                        none
+                      )
+                        |> below
+                    ]
             , case or of
                 Right (Loading timeline) ->
                     el

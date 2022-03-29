@@ -788,6 +788,7 @@ duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tool
                     (liquidityOut
                         |> Remote.map .apr
                     )
+                    ""
                     Nothing
             , liquidityOut
                 |> Remote.map .cdp
