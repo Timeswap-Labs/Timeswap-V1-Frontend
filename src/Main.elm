@@ -721,6 +721,18 @@ pageEffects blockchain effect model =
             , Cmd.none
             )
 
+        Page.OpenCaution txnLend ->
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (Modal.initCaution txnLend
+                                |> Just
+                            )
+              }
+            , Cmd.none
+            )
+
         Page.InputPool pool ->
             ( model
             , Route.fromTab
@@ -774,24 +786,7 @@ pageEffects blockchain effect model =
                    )
 
         Page.Lend writeLend ->
-            blockchain
-                |> Blockchain.updateLend model writeLend
-                |> (\( updated, cmd, maybeEffect ) ->
-                        maybeEffect
-                            |> Maybe.map
-                                (\pageEffect ->
-                                    { model | blockchain = Supported updated }
-                                        |> blockchainEffect pageEffect
-                                        |> Tuple.mapSecond List.singleton
-                                        |> Tuple.mapSecond
-                                            ((::) (cmd |> Cmd.map BlockchainMsg))
-                                        |> Tuple.mapSecond Cmd.batch
-                                )
-                            |> Maybe.withDefault
-                                ( { model | blockchain = Supported updated }
-                                , cmd |> Cmd.map BlockchainMsg
-                                )
-                   )
+            lendTxn writeLend blockchain model
 
         Page.Borrow writeBorrow ->
             blockchain
@@ -1093,6 +1088,38 @@ modalEffects effect model =
                     ( model
                     , Cmd.none
                     )
+
+        Modal.Lend writeLend ->
+            case model.blockchain of
+                Supported blockchain ->
+                    lendTxn writeLend blockchain model
+
+                _ ->
+                    ( model
+                    , Cmd.none
+                    )
+
+
+lendTxn : WriteLend.WriteLend -> Blockchain -> Model -> ( Model, Cmd Msg )
+lendTxn writeLend blockchain model =
+    blockchain
+        |> Blockchain.updateLend model writeLend
+        |> (\( updated, cmd, maybeEffect ) ->
+                maybeEffect
+                    |> Maybe.map
+                        (\pageEffect ->
+                            { model | blockchain = Supported updated }
+                                |> blockchainEffect pageEffect
+                                |> Tuple.mapSecond List.singleton
+                                |> Tuple.mapSecond
+                                    ((::) (cmd |> Cmd.map BlockchainMsg))
+                                |> Tuple.mapSecond Cmd.batch
+                        )
+                    |> Maybe.withDefault
+                        ( { model | blockchain = Supported updated }
+                        , cmd |> Cmd.map BlockchainMsg
+                        )
+           )
 
 
 animator : Animator Model

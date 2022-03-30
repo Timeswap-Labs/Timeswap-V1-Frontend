@@ -127,6 +127,7 @@ type Effect
     | OpenMaturityList Pair
     | OpenConnect
     | OpenSettings
+    | OpenCaution WriteLend
     | Approve ERC20
     | Lend WriteLend
 
@@ -479,6 +480,9 @@ lendEffects effect =
     case effect of
         Lend.OpenConnect ->
             OpenConnect
+
+        Lend.OpenCaution txn ->
+            OpenCaution txn
 
         Lend.Approve erc20 ->
             Approve erc20

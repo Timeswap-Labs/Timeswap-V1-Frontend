@@ -108,6 +108,7 @@ type Effect
     | OpenInputMaturity Pair
     | OpenSettings
     | OpenConnect
+    | OpenCaution WriteLend
     | InputPool Pool
     | OpenPayTransaction Pool (Set TokenId)
     | Approve ERC20
@@ -557,6 +558,9 @@ lendEffect effect =
 
         Lend.OpenSettings ->
             OpenSettings
+
+        Lend.OpenCaution txn ->
+            OpenCaution txn
 
         Lend.Approve erc20 ->
             Approve erc20

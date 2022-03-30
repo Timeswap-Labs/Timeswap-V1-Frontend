@@ -164,6 +164,7 @@ type Msg
 
 type Effect
     = OpenConnect
+    | OpenCaution WriteLend
     | Approve ERC20
     | Lend WriteLend
 
@@ -812,7 +813,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                           , minInsurance = answer.minInsurance
                           }
                             |> WriteLend.GivenPercent
-                            |> Lend
+                            |> (case answer.cdp.percent of
+                                    Just cdpPercent ->
+                                        if (cdpPercent * 100) < 100 then
+                                            OpenCaution
+
+                                        else
+                                            Lend
+
+                                    _ ->
+                                        Lend
+                               )
                             |> Just
                         )
                             |> Just
@@ -863,7 +874,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                           , minInsurance = answer.minInsurance
                           }
                             |> WriteLend.GivenPercent
-                            |> Lend
+                            |> (case answer.cdp.percent of
+                                    Just cdpPercent ->
+                                        if (cdpPercent * 100) < 100 then
+                                            OpenCaution
+
+                                        else
+                                            Lend
+
+                                    _ ->
+                                        Lend
+                               )
                             |> Just
                         )
                             |> Just
@@ -917,7 +938,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                           , minInsurance = answer.minInsurance
                           }
                             |> WriteLend.GivenBond
-                            |> Lend
+                            |> (case answer.cdp.percent of
+                                    Just cdpPercent ->
+                                        if (cdpPercent * 100) < 100 then
+                                            OpenCaution
+
+                                        else
+                                            Lend
+
+                                    _ ->
+                                        Lend
+                               )
                             |> Just
                         )
                             |> Just
@@ -971,7 +1002,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                           , minBond = answer.minBond
                           }
                             |> WriteLend.GivenInsurance
-                            |> Lend
+                            |> (case answer.cdp.percent of
+                                    Just cdpPercent ->
+                                        if (cdpPercent * 100) < 100 then
+                                            OpenCaution
+
+                                        else
+                                            Lend
+
+                                    _ ->
+                                        Lend
+                               )
                             |> Just
                         )
                             |> Just

@@ -3,6 +3,7 @@ module Modal.Main exposing
     , Modal
     , Msg
     , confirm
+    , initCaution
     , initChainList
     , initConfirm
     , initConnect
@@ -22,6 +23,7 @@ import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.TokenId exposing (TokenId)
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
+import Blockchain.User.WriteLend exposing (WriteLend)
 import Blockchain.User.WritePay exposing (WritePay)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
@@ -48,6 +50,7 @@ import Element
         , map
         , none
         )
+import Modal.Caution.Main as Caution
 import Modal.ChainList.Main as ChainList
 import Modal.Confirm.Main as Confirm
 import Modal.Connect.Main as Connect
@@ -69,6 +72,7 @@ type Modal
     | InputMaturity InputMaturity.Modal
     | PayTransaction PayTransaction.Modal
     | Confirm Confirm.Modal
+    | Caution Caution.Modal
 
 
 type Msg
@@ -80,6 +84,7 @@ type Msg
     | InputMaturityMsg InputMaturity.Msg
     | PayTransactionMsg PayTransaction.Msg
     | ConfirmMsg Confirm.Msg
+    | CautionMsg Caution.Msg
 
 
 type Effect
@@ -95,6 +100,7 @@ type Effect
     | ChangeChain Chain
     | Approve ERC20
     | Pay WritePay
+    | Lend WriteLend
 
 
 initConnect : Support User.NotSupported Blockchain -> Modal
@@ -125,6 +131,12 @@ initConfirm : Int -> TxnWrite -> Modal
 initConfirm id txnWrite =
     Confirm.init id txnWrite
         |> Confirm
+
+
+initCaution : WriteLend -> Modal
+initCaution txnWrite =
+    Caution.init txnWrite
+        |> Caution
 
 
 confirm : Int -> Hash -> Modal -> Modal
@@ -285,6 +297,15 @@ update model msg modal =
                         )
                    )
 
+        ( CautionMsg cautionMsg, Caution cautionModal, Supported _ ) ->
+            Caution.update cautionMsg cautionModal
+                |> (\( updated, maybeEffect ) ->
+                        ( updated |> Maybe.map Caution
+                        , Cmd.none
+                        , maybeEffect |> Maybe.map cautionLendEffect
+                        )
+                   )
+
         _ ->
             ( modal |> Just
             , Cmd.none
@@ -350,6 +371,13 @@ payTransactionEffect effect =
 
         PayTransaction.Pay writePay ->
             Pay writePay
+
+
+cautionLendEffect : Caution.Effect -> Effect
+cautionLendEffect effect =
+    case effect of
+        Caution.Lend writeLend ->
+            Lend writeLend
 
 
 receiveUser : Modal -> Maybe Modal
@@ -468,3 +496,8 @@ view model modal =
 
                 _ ->
                     none
+
+        Caution cautionModal ->
+            cautionModal
+                |> Caution.view model
+                |> map CautionMsg
