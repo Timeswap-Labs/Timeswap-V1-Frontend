@@ -2123,7 +2123,7 @@ advancedBondOutSection ({ images, theme } as model) asset { tooltip } or =
                             [ Font.size 14
                             , theme |> ThemeColor.textLight |> Font.color
                             ]
-                            ("Txn-fee is already deducted from the Amount to Receive shown here" |> text)
+                            ("The amount you are expected to receive at maturity based on the APR selected. This also includes tx fees" |> text)
                             |> Tooltip.belowAlignRight theme
 
                        else
