@@ -525,7 +525,7 @@ poolDetails ({ time, theme } as model) page poolList =
                         , Font.center
                         ]
                         (text "LIQUIDITY")
-              , width = px 170
+              , width = fill
               , view =
                     \info ->
                         el
@@ -587,7 +587,7 @@ poolDetails ({ time, theme } as model) page poolList =
                         , Border.solid
                         , Border.widthEach
                             { top = 1
-                            , right = 0
+                            , right = 1
                             , bottom = 1
                             , left = 0
                             }
@@ -598,49 +598,12 @@ poolDetails ({ time, theme } as model) page poolList =
                         , Font.center
                         ]
                         (text "MIN CDP")
-              , width = px 190
+              , width = fill
               , view =
                     \info ->
                         el
                             [ height <| px 72
                             , centerY
-                            , Border.solid
-                            , Border.widthEach
-                                { top = 0
-                                , right = 0
-                                , bottom = 1
-                                , left = 0
-                                }
-                            , theme |> ThemeColor.textboxBorder |> Border.color
-                            ]
-                            (collateralFactor model page info)
-              }
-            , { header =
-                    el
-                        [ width fill
-                        , height fill
-                        , theme |> ThemeColor.tableHeaderBG |> Background.color
-                        , Border.solid
-                        , Border.widthEach
-                            { top = 1
-                            , right = 1
-                            , bottom = 1
-                            , left = 0
-                            }
-                        , theme |> ThemeColor.textboxBorder |> Border.color
-                        ]
-                        none
-              , width = px 211
-              , view =
-                    \{ pool } ->
-                        el
-                            [ height <| px 72
-                            , paddingEach
-                                { top = 0
-                                , right = 24
-                                , bottom = 0
-                                , left = 0
-                                }
                             , Border.solid
                             , Border.widthEach
                                 { top = 0
@@ -650,12 +613,7 @@ poolDetails ({ time, theme } as model) page poolList =
                                 }
                             , theme |> ThemeColor.textboxBorder |> Border.color
                             ]
-                            (if pool.maturity |> Maturity.isActive time then
-                                buttons model pool
-
-                             else
-                                none
-                            )
+                            (collateralFactor model page info)
               }
             ]
         }
