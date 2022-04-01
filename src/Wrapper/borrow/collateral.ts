@@ -6,6 +6,8 @@ import { getCurrentTime } from "../helper";
 import {
   calculateApr,
   calculateCdp,
+  calculateFuturisticApr,
+  calculateFuturisticCdp,
   calculateHelper,
   calculateMaxValue,
   calculatePercent,
@@ -55,12 +57,13 @@ export function collateralCalculate(
       return;
     }
 
-    const { dueOut, assetOut: assetOutReturn, xDecrease, yIncrease } = pool.borrowGivenCollateral(
-      state,
-      assetOut,
-      collateralIn,
-      currentTime
-    );
+    const {
+      dueOut,
+      assetOut: assetOutReturn,
+      xDecrease,
+      yIncrease,
+      zIncrease,
+    } = pool.borrowGivenCollateral(state, assetOut, collateralIn, currentTime);
     const debtIn = dueOut.debt.toString();
     const txnFee = xDecrease.sub(assetOutReturn).toString();
     const percent = calculatePercent(yMin, yMax, yIncrease);
@@ -111,6 +114,14 @@ export function collateralCalculate(
       query.poolInfo.collateralSpot
     );
 
+    const futuristicApr = calculateFuturisticApr(state, xDecrease, yIncrease);
+    const futuristicCdp = calculateFuturisticCdp(
+      state,
+      query.pool.asset.decimals,
+      xDecrease,
+      zIncrease
+    );
+
     query.pool.maturity = query.pool.maturity.toString();
 
     app.ports.receiveBorrowAnswer.send({
@@ -121,7 +132,7 @@ export function collateralCalculate(
         maxDebt,
         apr,
         cdp,
-        txnFee
+        txnFee,
       },
     });
   } catch (err) {

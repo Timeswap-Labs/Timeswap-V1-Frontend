@@ -71,6 +71,33 @@ export function calculateCdp(
   return { ratio, percent };
 }
 
+export function calculateFuturisticApr(
+  state: CP,
+  xDecrease: Uint112,
+  yIncrease: Uint112
+): number {
+  const SECONDS = 31556926n;
+  const temp =
+    (state.y.add(yIncrease).toBigInt() * SECONDS * 10000n) /
+    (state.x.sub(xDecrease).toBigInt() << 32n);
+  const apr = Number(temp) / 10000;
+  return apr;
+}
+
+export function calculateFuturisticCdp(
+  state: CP,
+  assetDecimals: number,
+  xDecrease: Uint112,
+  zIncrease: Uint112
+): bigint {
+  let temp = 1n;
+  for (let i = 0; i < assetDecimals; i++) temp *= 10n;
+  return (
+    (state.z.add(zIncrease).toBigInt() * temp) /
+    state.x.sub(xDecrease).toBigInt()
+  );
+}
+
 export function calculateMaxValue(value: Uint112, slippage: number): Uint256 {
   return new Uint256(value)
     .mul(Math.round(100000 * (1 + slippage)))
