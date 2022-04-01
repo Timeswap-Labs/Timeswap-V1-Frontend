@@ -6,6 +6,7 @@ import Data.Chain as Chain exposing (Chain)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Images exposing (Images)
+import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
 import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter
@@ -111,7 +112,7 @@ get blockchain chains =
         |> (\chain ->
                 Http.get
                     { url =
-                        Builder.crossOrigin "https://api.timeswap.io/v1/activepools"
+                        Builder.crossOrigin "https://ts-mainnet-week1.herokuapp.com/v1/activepools"
                             []
                             [ chain |> Chain.toQueryParameter ]
                     , expect =
@@ -449,7 +450,7 @@ poolDetails :
     -> PoolsData
     -> List ( Pool, PoolInfo )
     -> Element Msg
-poolDetails ({ theme } as model) page poolList =
+poolDetails ({ time, theme } as model) page poolList =
     table
         [ width fill
         , height shrink
@@ -649,7 +650,12 @@ poolDetails ({ theme } as model) page poolList =
                                 }
                             , theme |> ThemeColor.textboxBorder |> Border.color
                             ]
-                            (buttons model pool)
+                            (if pool.maturity |> Maturity.isActive time then
+                                buttons model pool
+
+                             else
+                                none
+                            )
               }
             ]
         }
