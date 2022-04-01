@@ -164,7 +164,7 @@ type Msg
 
 type Effect
     = OpenConnect
-    | OpenCaution WriteLend
+    | OpenCaution WriteLend Float CDP PoolInfo
     | Approve ERC20
     | Lend WriteLend
 
@@ -806,24 +806,18 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     then
                         ( transaction |> Transaction
                         , Cmd.none
-                        , { pool = pool
-                          , assetIn = assetIn
-                          , percent = Percent.init
-                          , minBond = answer.minBond
-                          , minInsurance = answer.minInsurance
-                          }
-                            |> WriteLend.GivenPercent
-                            |> (case answer.cdp.percent of
-                                    Just cdpPercent ->
-                                        if (cdpPercent * 100) < 100 then
-                                            OpenCaution
-
-                                        else
-                                            Lend
-
-                                    _ ->
-                                        Lend
-                               )
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , percent = Percent.init
+                             , minBond = answer.minBond
+                             , minInsurance = answer.minInsurance
+                             }
+                                |> WriteLend.GivenPercent
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
                             |> Just
                         )
                             |> Just
@@ -867,24 +861,18 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     then
                         ( transaction |> Transaction
                         , Cmd.none
-                        , { pool = pool
-                          , assetIn = assetIn
-                          , percent = percent
-                          , minBond = answer.minBond
-                          , minInsurance = answer.minInsurance
-                          }
-                            |> WriteLend.GivenPercent
-                            |> (case answer.cdp.percent of
-                                    Just cdpPercent ->
-                                        if (cdpPercent * 100) < 100 then
-                                            OpenCaution
-
-                                        else
-                                            Lend
-
-                                    _ ->
-                                        Lend
-                               )
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , percent = percent
+                             , minBond = answer.minBond
+                             , minInsurance = answer.minInsurance
+                             }
+                                |> WriteLend.GivenPercent
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
                             |> Just
                         )
                             |> Just
@@ -932,23 +920,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     then
                         ( transaction |> Transaction
                         , Cmd.none
-                        , { pool = pool
-                          , assetIn = assetIn
-                          , bondOut = bondOut
-                          , minInsurance = answer.minInsurance
-                          }
-                            |> WriteLend.GivenBond
-                            |> (case answer.cdp.percent of
-                                    Just cdpPercent ->
-                                        if (cdpPercent * 100) < 100 then
-                                            OpenCaution
-
-                                        else
-                                            Lend
-
-                                    _ ->
-                                        Lend
-                               )
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , bondOut = bondOut
+                             , minInsurance = answer.minInsurance
+                             }
+                                |> WriteLend.GivenBond
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
                             |> Just
                         )
                             |> Just
@@ -996,23 +978,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     then
                         ( transaction |> Transaction
                         , Cmd.none
-                        , { pool = pool
-                          , assetIn = assetIn
-                          , insuranceOut = insuranceOut
-                          , minBond = answer.minBond
-                          }
-                            |> WriteLend.GivenInsurance
-                            |> (case answer.cdp.percent of
-                                    Just cdpPercent ->
-                                        if (cdpPercent * 100) < 100 then
-                                            OpenCaution
-
-                                        else
-                                            Lend
-
-                                    _ ->
-                                        Lend
-                               )
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , insuranceOut = insuranceOut
+                             , minBond = answer.minBond
+                             }
+                                |> WriteLend.GivenInsurance
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
                             |> Just
                         )
                             |> Just

@@ -1,9 +1,13 @@
 module Modal.Caution.Main exposing (Effect(..), Modal, Msg, init, update, view)
 
-import Blockchain.User.WriteLend exposing (WriteLend)
+import BigInt
+import Blockchain.User.WriteLend exposing (WriteLend(..))
 import Data.Backdrop exposing (Backdrop)
+import Data.CDP exposing (CDP)
 import Data.Images exposing (Images)
+import Data.Pair as Pair
 import Data.Theme exposing (Theme)
+import Data.Uint as Uint
 import Element
     exposing
         ( Element
@@ -13,6 +17,7 @@ import Element
         , el
         , fill
         , height
+        , none
         , padding
         , paddingXY
         , paragraph
@@ -28,6 +33,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Modal.Outside as Outside
+import Page.PoolInfo exposing (PoolInfo)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
@@ -38,6 +44,9 @@ import Utility.ThemeColor as ThemeColor
 type Modal
     = Modal
         { txn : WriteLend
+        , apr : Float
+        , cdp : CDP
+        , poolInfo : PoolInfo
         }
 
 
@@ -50,9 +59,12 @@ type Effect
     = Lend WriteLend
 
 
-init : WriteLend -> Modal
-init writeLend =
+init : WriteLend -> Float -> CDP -> PoolInfo -> Modal
+init writeLend apr cdp poolInfo =
     { txn = writeLend
+    , apr = apr
+    , cdp = cdp
+    , poolInfo = poolInfo
     }
         |> Modal
 
@@ -88,7 +100,7 @@ view ({ backdrop, theme } as model) modal =
                  ]
                     ++ Glass.background backdrop theme
                 )
-                [ header model
+                [ header model modal
                 , body model modal
                 ]
         }
@@ -96,8 +108,9 @@ view ({ backdrop, theme } as model) modal =
 
 header :
     { model | images : Images, backdrop : Backdrop, theme : Theme }
+    -> Modal
     -> Element Msg
-header ({ theme } as model) =
+header ({ theme } as model) (Modal { cdp }) =
     row
         [ width fill
         , height shrink
@@ -120,7 +133,19 @@ header ({ theme } as model) =
             , paddingXY 0 3
             , theme |> ThemeColor.text |> Font.color
             ]
-            (text "Caution : Low CDP")
+            ((case cdp.percent of
+                Just cdpPerc ->
+                    if cdpPerc * 100 > 100 then
+                        "Note"
+
+                    else
+                        "Caution : Low CDP"
+
+                _ ->
+                    "Note"
+             )
+                |> text
+            )
         , IconButton.exit model Exit
         ]
 
@@ -129,7 +154,7 @@ body :
     { model | images : Images, backdrop : Backdrop, theme : Theme }
     -> Modal
     -> Element Msg
-body { images, theme } (Modal { txn }) =
+body { images, theme } (Modal { txn, apr, cdp, poolInfo }) =
     column
         [ width fill
         , height shrink
@@ -155,19 +180,109 @@ body { images, theme } (Modal { txn }) =
                     , centerX
                     , centerY
                     ]
-            , paragraph
-                [ width shrink
-                , Font.alignLeft
-                ]
-                [ text "Your lending transaction will be under-collateralized (CDP < 100%) and there is a high probability of principal loss. Please confirm you still want to lend."
-                ]
+            , case cdp.percent of
+                Just percent ->
+                    if (percent * 100) < 100 then
+                        paragraph
+                            [ width shrink
+                            , Font.alignLeft
+                            , Font.color Color.negative500
+                            ]
+                            [ text "You are doing an under-collateralized lending (CDP < 100%). You are under-insured for default risk and can lose on Principal."
+                            ]
+
+                    else
+                        none
+
+                _ ->
+                    none
             , paragraph
                 [ width shrink
                 , Font.size 14
                 , Font.alignLeft
                 , paddingXY 0 8
                 ]
-                [ text "Alternatively, you can try to adjust your CDP or your transaction size to make it over-collateralized. If not, be patient and wait for pool to be over-collateralized."
+                [ text "Expected return is $"
+                , (case txn of
+                    GivenPercent givenPercent ->
+                        ( givenPercent.minBond, givenPercent.pool )
+
+                    GivenBond givenBond ->
+                        ( givenBond.bondOut, givenBond.pool )
+
+                    GivenInsurance givenIns ->
+                        ( givenIns.minBond, givenIns.pool )
+                  )
+                    |> (\( bond, pool ) ->
+                            case poolInfo.assetSpot of
+                                Just assetSpot ->
+                                    let
+                                        maybeAssetSpotBigInt =
+                                            (assetSpot * 10000) |> round |> String.fromInt |> BigInt.fromIntString
+
+                                        maybeBondBigInt =
+                                            bond |> Uint.toString |> BigInt.fromIntString
+                                    in
+                                    case ( maybeBondBigInt, maybeAssetSpotBigInt ) of
+                                        ( Just bondBigInt, Just assetSpotBigInt ) ->
+                                            BigInt.mul bondBigInt assetSpotBigInt
+                                                |> (\bondInDollars -> BigInt.div bondInDollars (10000 |> BigInt.fromInt))
+                                                |> BigInt.toString
+                                                |> Uint.fromString
+                                                |> Maybe.map (\uint -> Uint.toAmountTruncated (pool.pair |> Pair.toAsset) uint)
+                                                |> Maybe.withDefault "(err)"
+
+                                        _ ->
+                                            "(err)"
+
+                                _ ->
+                                    "(err)"
+                       )
+                    |> text
+                , text " but with the expectation of collateral price "
+                , (case cdp.percent of
+                    Just cdpPerc ->
+                        (if (cdpPerc * 100) > 100 then
+                            [ "not falling below "
+                            , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
+                            , "% "
+                            ]
+
+                         else
+                            [ "going up by more than "
+                            , (100 - cdpPerc * 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
+                            , "% "
+                            ]
+                        )
+                            |> String.concat
+
+                    _ ->
+                        ""
+                  )
+                    |> text
+                , text "from the current price at maturity. "
+                , (case cdp.percent of
+                    Just cdpPerc ->
+                        if (cdpPerc * 100) > 100 then
+                            [ "If the collateral price falls below "
+                            , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
+                            , "%"
+                            ]
+                                |> String.concat
+
+                        else
+                            [ "If the collateral price does not go up more than "
+                            , (100 - cdpPerc * 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
+                            , "%"
+                            ]
+                                |> String.concat
+
+                    _ ->
+                        ""
+                  )
+                    |> text
+                , text ", there is a high probability of default risk and not realizing an APR of "
+                , text ([ String.fromFloat (apr * 100), "%" ] |> String.join "")
                 ]
             ]
         , Input.button
@@ -182,6 +297,6 @@ body { images, theme } (Modal { txn }) =
             , Border.rounded 4
             ]
             { onPress = Just (LendClick txn)
-            , label = text "Confirm Lend"
+            , label = text "Confirm"
             }
         ]

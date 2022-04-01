@@ -22,6 +22,7 @@ import Blockchain.User.WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
 import Data.Backdrop exposing (Backdrop)
+import Data.CDP exposing (CDP)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
@@ -108,7 +109,7 @@ type Effect
     | OpenInputMaturity Pair
     | OpenSettings
     | OpenConnect
-    | OpenCaution WriteLend
+    | OpenCaution WriteLend Float CDP PoolInfo
     | InputPool Pool
     | OpenPayTransaction Pool (Set TokenId)
     | Approve ERC20
@@ -559,8 +560,8 @@ lendEffect effect =
         Lend.OpenSettings ->
             OpenSettings
 
-        Lend.OpenCaution txn ->
-            OpenCaution txn
+        Lend.OpenCaution txn apr cdp poolInfo ->
+            OpenCaution txn apr cdp poolInfo
 
         Lend.Approve erc20 ->
             Approve erc20

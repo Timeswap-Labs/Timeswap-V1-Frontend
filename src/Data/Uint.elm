@@ -11,6 +11,7 @@ module Data.Uint exposing
     , proportion
     , sorter
     , toAmount
+    , toAmountTruncated
     , toLP
     , toString
     , zero
@@ -124,6 +125,40 @@ toAmount token (Uint string) =
                     |> (\paddedString ->
                             [ paddedString |> String.dropRight decimals
                             , paddedString |> String.right decimals
+                            ]
+                                |> String.join "."
+                       )
+                    |> String.foldr
+                        (\char accumulator ->
+                            if char == '0' && accumulator == "" then
+                                accumulator
+
+                            else
+                                accumulator
+                                    |> String.cons char
+                        )
+                        ""
+                    |> (\formattedString ->
+                            if formattedString |> String.endsWith "." then
+                                formattedString
+                                    |> String.dropRight 1
+
+                            else
+                                formattedString
+                       )
+           )
+
+
+toAmountTruncated : Token -> Uint -> String
+toAmountTruncated token (Uint string) =
+    token
+        |> Token.toDecimals
+        |> (\decimals ->
+                string
+                    |> String.padLeft (decimals + 1) '0'
+                    |> (\paddedString ->
+                            [ paddedString |> String.dropRight decimals
+                            , paddedString |> String.right decimals |> String.left 2
                             ]
                                 |> String.join "."
                        )

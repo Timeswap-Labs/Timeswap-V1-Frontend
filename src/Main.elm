@@ -721,12 +721,12 @@ pageEffects blockchain effect model =
             , Cmd.none
             )
 
-        Page.OpenCaution txnLend ->
+        Page.OpenCaution txnLend apr cdp poolInfo ->
             ( { model
                 | modal =
                     model.modal
                         |> Animator.go Animator.quickly
-                            (Modal.initCaution txnLend
+                            (Modal.initCaution txnLend apr cdp poolInfo
                                 |> Just
                             )
               }

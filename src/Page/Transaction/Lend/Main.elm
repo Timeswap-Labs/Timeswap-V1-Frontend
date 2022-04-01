@@ -16,6 +16,7 @@ module Page.Transaction.Lend.Main exposing
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.WriteLend exposing (WriteLend)
 import Data.Backdrop exposing (Backdrop)
+import Data.CDP exposing (CDP)
 import Data.Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
@@ -127,7 +128,7 @@ type Effect
     | OpenMaturityList Pair
     | OpenConnect
     | OpenSettings
-    | OpenCaution WriteLend
+    | OpenCaution WriteLend Float CDP PoolInfo
     | Approve ERC20
     | Lend WriteLend
 
@@ -481,8 +482,8 @@ lendEffects effect =
         Lend.OpenConnect ->
             OpenConnect
 
-        Lend.OpenCaution txn ->
-            OpenCaution txn
+        Lend.OpenCaution txn apr cdp poolInfo ->
+            OpenCaution txn apr cdp poolInfo
 
         Lend.Approve erc20 ->
             Approve erc20
