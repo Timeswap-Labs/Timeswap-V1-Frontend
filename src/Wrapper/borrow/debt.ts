@@ -5,6 +5,8 @@ import { getCurrentTime } from "../helper";
 import {
   calculateApr,
   calculateCdp,
+  calculateFuturisticApr,
+  calculateFuturisticCdp,
   calculateMaxValue,
   calculatePercent,
   percentMinMaxValues,
@@ -53,12 +55,13 @@ export function debtCalculate(
       return;
     }
 
-    const { dueOut, assetOut: assetOutReturn, xDecrease, yIncrease } = pool.borrowGivenDebt(
-      state,
-      assetOut,
-      debtIn,
-      currentTime
-    );
+    const {
+      dueOut,
+      assetOut: assetOutReturn,
+      xDecrease,
+      yIncrease,
+      zIncrease,
+    } = pool.borrowGivenDebt(state, assetOut, debtIn, currentTime);
 
     const collateralIn = dueOut.collateral.toString();
     const txnFee = xDecrease.sub(assetOutReturn).toString();
@@ -77,7 +80,12 @@ export function debtCalculate(
       query.slippage
     ).toString();
 
-    const apr = calculateApr(debtIn, xDecrease.toString(), maturity, currentTime);
+    const apr = calculateApr(
+      debtIn,
+      xDecrease.toString(),
+      maturity,
+      currentTime
+    );
     const cdp = calculateCdp(
       query.assetOut,
       query.pool.asset.decimals,
@@ -85,6 +93,14 @@ export function debtCalculate(
       collateralIn,
       query.pool.collateral.decimals,
       query.poolInfo.collateralSpot
+    );
+
+    const futuristicApr = calculateFuturisticApr(state, xDecrease, yIncrease);
+    const futuristicCdp = calculateFuturisticCdp(
+      state,
+      query.pool.asset.decimals,
+      xDecrease,
+      zIncrease
     );
 
     query.pool.maturity = query.pool.maturity.toString();
@@ -97,8 +113,8 @@ export function debtCalculate(
         maxCollateral,
         apr,
         cdp,
-        txnFee
-      }
+        txnFee,
+      },
     });
   } catch (err) {
     app.ports.receiveBorrowAnswer.send({

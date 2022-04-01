@@ -8,7 +8,13 @@ import {
 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
 import { getCurrentTime } from "../helper";
-import { calculateApr, calculateCdp, calculateMinValue } from "./common";
+import {
+  calculateApr,
+  calculateCdp,
+  calculateFuturisticApr,
+  calculateFuturisticCdp,
+  calculateMinValue,
+} from "./common";
 
 export async function percentCalculate(
   app: ElmApp<Ports>,
@@ -24,7 +30,13 @@ export async function percentCalculate(
       y: new Uint112(query.poolInfo.y),
       z: new Uint112(query.poolInfo.z),
     };
-    const { claimsOut, assetIn: assetInReturn, xIncrease } = pool.lendGivenPercent(
+    const {
+      claimsOut,
+      assetIn: assetInReturn,
+      xIncrease,
+      yDecrease,
+      zDecrease,
+    } = pool.lendGivenPercent(
       state,
       new Uint112(query.assetIn),
       new Uint40(query.percent!),
@@ -89,6 +101,14 @@ export async function percentCalculate(
       query.poolInfo.collateralSpot
     );
 
+    const futuristicApr = calculateFuturisticApr(state, xIncrease, yDecrease);
+    const futuristicCdp = calculateFuturisticCdp(
+      state,
+      query.pool.asset.decimals,
+      xIncrease,
+      zDecrease
+    );
+
     query.pool.maturity = query.pool.maturity.toString();
 
     app.ports.receiveLendAnswer.send({
@@ -100,7 +120,7 @@ export async function percentCalculate(
         minInsurance,
         apr,
         cdp,
-        txnFee
+        txnFee,
       },
     });
   } catch (err) {

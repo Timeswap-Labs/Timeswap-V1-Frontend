@@ -6,6 +6,8 @@ import { getCurrentTime } from "../helper";
 import {
   calculateApr,
   calculateCdp,
+  calculateFuturisticApr,
+  calculateFuturisticCdp,
   calculateMinValue,
   calculatePercent,
   percentMinMaxValues,
@@ -54,12 +56,13 @@ export function bondCalculate(
       return;
     }
 
-    const { claimsOut, assetIn: assetInReturn, xIncrease, yDecrease } = pool.lendGivenBond(
-      state,
-      assetIn,
-      bondOut,
-      currentTime
-    );
+    const {
+      claimsOut,
+      assetIn: assetInReturn,
+      xIncrease,
+      yDecrease,
+      zDecrease,
+    } = pool.lendGivenBond(state, assetIn, bondOut, currentTime);
 
     const insuranceOut = new Uint128(claimsOut.insuranceInterest).add(
       new Uint128(claimsOut.insurancePrincipal)
@@ -87,7 +90,12 @@ export function bondCalculate(
       query.slippage
     ).toString();
 
-    const apr = calculateApr(bondOut, xIncrease.toString(), maturity, currentTime);
+    const apr = calculateApr(
+      bondOut,
+      xIncrease.toString(),
+      maturity,
+      currentTime
+    );
     const cdp = calculateCdp(
       query.assetIn,
       query.pool.asset.decimals,
@@ -95,6 +103,14 @@ export function bondCalculate(
       insuranceOut,
       query.pool.collateral.decimals,
       query.poolInfo.collateralSpot
+    );
+
+    const futuristicApr = calculateFuturisticApr(state, xIncrease, yDecrease);
+    const futuristicCdp = calculateFuturisticCdp(
+      state,
+      query.pool.asset.decimals,
+      xIncrease,
+      zDecrease
     );
 
     query.pool.maturity = query.pool.maturity.toString();
@@ -107,7 +123,7 @@ export function bondCalculate(
         minInsurance,
         apr,
         cdp,
-        txnFee
+        txnFee,
       },
     });
   } catch (err) {

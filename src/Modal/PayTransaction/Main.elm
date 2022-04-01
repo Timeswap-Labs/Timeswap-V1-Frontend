@@ -538,6 +538,7 @@ view ({ backdrop, theme } as model) blockchain user (Modal modal) =
                 )
                 [ column
                     [ width fill
+                    , height shrink
                     ]
                     [ header model
                     , body model blockchain user modal
@@ -749,21 +750,26 @@ repayList model blockchain user ({ state, pool } as modal) =
                                     |> Dict.toList
                                     |> List.map (fullPosition model blockchain user modal)
                                 )
-                                (dict
-                                    |> Dict.foldl
-                                        (\_ { debt, collateral } accumulator ->
-                                            accumulator
-                                                |> Maybe.andThen
-                                                    (\accumulatedDue ->
-                                                        Just Due
-                                                            |> Maybe.apply
-                                                                (Uint.add accumulatedDue.debt debt)
-                                                            |> Maybe.apply
-                                                                (Uint.add accumulatedDue.collateral collateral)
-                                                    )
-                                        )
-                                        (Due Uint.zero Uint.zero |> Just)
-                                    |> totalDebtCollateral model modal
+                                -- Show Total debt-collateral only if multiple positions are being repaid
+                                (if (dict |> Dict.size) < 2 then
+                                    none
+
+                                 else
+                                    dict
+                                        |> Dict.foldl
+                                            (\_ { debt, collateral } accumulator ->
+                                                accumulator
+                                                    |> Maybe.andThen
+                                                        (\accumulatedDue ->
+                                                            Just Due
+                                                                |> Maybe.apply
+                                                                    (Uint.add accumulatedDue.debt debt)
+                                                                |> Maybe.apply
+                                                                    (Uint.add accumulatedDue.collateral collateral)
+                                                        )
+                                            )
+                                            (Due Uint.zero Uint.zero |> Just)
+                                        |> totalDebtCollateral model modal
                                 )
                         )
                     |> (Remote.map << Maybe.withDefault) []
@@ -787,36 +793,41 @@ repayList model blockchain user ({ state, pool } as modal) =
                                     (dues |> Dict.toList)
                                     (dict |> Dict.values)
                                 )
-                                (Dict.merge TokenId.sorter
-                                    (\_ _ accumulator -> accumulator)
-                                    (\_ { debt, collateral } assetIn accumulator ->
-                                        accumulator
-                                            |> Maybe.andThen
-                                                (\accumulatedDue ->
-                                                    Just Due
-                                                        |> Maybe.apply
-                                                            (assetIn
-                                                                |> Uint.fromAmount
-                                                                    (pool.pair |> Pair.toAsset)
-                                                                |> Maybe.andThen (Uint.add accumulatedDue.debt)
-                                                            )
-                                                        |> Maybe.apply
-                                                            (assetIn
-                                                                |> Uint.fromAmount
-                                                                    (pool.pair |> Pair.toAsset)
-                                                                |> Maybe.andThen
-                                                                    (\assetInUint ->
-                                                                        Uint.proportion assetInUint collateral debt
-                                                                    )
-                                                                |> Maybe.andThen (Uint.add accumulatedDue.collateral)
-                                                            )
-                                                )
-                                    )
-                                    (\_ _ accumulator -> accumulator)
-                                    dues
-                                    dict
-                                    (Due Uint.zero Uint.zero |> Just)
-                                    |> totalDebtCollateral model modal
+                                -- Show Total debt-collateral only if multiple positions are being repaid
+                                (if (dict |> Dict.size) < 2 then
+                                    none
+
+                                 else
+                                    Dict.merge TokenId.sorter
+                                        (\_ _ accumulator -> accumulator)
+                                        (\_ { debt, collateral } assetIn accumulator ->
+                                            accumulator
+                                                |> Maybe.andThen
+                                                    (\accumulatedDue ->
+                                                        Just Due
+                                                            |> Maybe.apply
+                                                                (assetIn
+                                                                    |> Uint.fromAmount
+                                                                        (pool.pair |> Pair.toAsset)
+                                                                    |> Maybe.andThen (Uint.add accumulatedDue.debt)
+                                                                )
+                                                            |> Maybe.apply
+                                                                (assetIn
+                                                                    |> Uint.fromAmount
+                                                                        (pool.pair |> Pair.toAsset)
+                                                                    |> Maybe.andThen
+                                                                        (\assetInUint ->
+                                                                            Uint.proportion assetInUint collateral debt
+                                                                        )
+                                                                    |> Maybe.andThen (Uint.add accumulatedDue.collateral)
+                                                                )
+                                                    )
+                                        )
+                                        (\_ _ accumulator -> accumulator)
+                                        dues
+                                        dict
+                                        (Due Uint.zero Uint.zero |> Just)
+                                        |> totalDebtCollateral model modal
                                 )
                         )
                     |> (Remote.map << Maybe.withDefault) []

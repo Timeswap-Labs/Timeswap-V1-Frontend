@@ -2663,38 +2663,44 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
             , spacing 16
             ]
             ((case state of
-                Default { dues } ->
+                Default { assetOut, dues } ->
                     ( dues |> Remote.map .apr
                     , dues |> Remote.map .cdp
+                    , assetOut
                     )
 
                 DefaultMax { out } ->
                     ( out |> Remote.map .apr
                     , out |> Remote.map .cdp
+                    , "1"
                     )
 
-                Slider { dues } ->
+                Slider { assetOut, dues } ->
                     ( dues |> Remote.map .apr
                     , dues |> Remote.map .cdp
+                    , assetOut
                     )
 
-                Debt { dues } ->
+                Debt { assetOut, dues } ->
                     ( dues |> Remote.map .apr
                     , dues |> Remote.map .cdp
+                    , assetOut
                     )
 
-                Collateral { dues } ->
+                Collateral { assetOut, dues } ->
                     ( dues |> Remote.map .apr
                     , dues |> Remote.map .cdp
+                    , assetOut
                     )
 
                 AdvancedMax { out } ->
                     ( out |> Remote.map .apr
                     , out |> Remote.map .cdp
+                    , "1"
                     )
              )
-                |> (\( apr, cdp ) ->
-                        [ Info.borrowAPR apr (poolInfo |> Just) model.theme
+                |> (\( apr, cdp, assetOut ) ->
+                        [ Info.borrowAPR apr assetOut (poolInfo |> Just) model.theme
                         , Info.borrowCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave

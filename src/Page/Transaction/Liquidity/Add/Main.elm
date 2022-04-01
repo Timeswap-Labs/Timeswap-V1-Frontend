@@ -1410,23 +1410,26 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
             , spacing 16
             ]
             ((case state of
-                Asset { out } ->
+                Asset { out, assetIn } ->
                     ( out |> Remote.map .apr
                     , out |> Remote.map .cdp
+                    , assetIn
                     )
 
                 Debt { out } ->
                     ( out |> Remote.map .apr
                     , out |> Remote.map .cdp
+                    , "1"
                     )
 
                 Collateral { out } ->
                     ( out |> Remote.map .apr
                     , out |> Remote.map .cdp
+                    , "1"
                     )
              )
-                |> (\( apr, cdp ) ->
-                        [ Info.lendAPR apr (poolInfo |> Just) model.theme
+                |> (\( apr, cdp, assetIn ) ->
+                        [ Info.lendAPR apr assetIn (poolInfo |> Just) model.theme
                         , Info.lendCDP model
                             { onMouseEnter = OnMouseEnter
                             , onMouseLeave = OnMouseLeave

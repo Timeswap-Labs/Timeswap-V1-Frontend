@@ -200,7 +200,7 @@ view :
     -> User
     -> Position
     -> Element Msg
-view ({ device, backdrop, theme } as model) chain user (Position position) =
+view ({ time, device, backdrop, theme } as model) chain user (Position position) =
     column
         [ width shrink
         , height shrink
@@ -236,11 +236,15 @@ view ({ device, backdrop, theme } as model) chain user (Position position) =
             )
             [ header model position
             , column [ width fill, spacing 12 ]
-                [ el
-                    [ Font.size 12
-                    , theme |> ThemeColor.textLight |> Font.color
-                    ]
-                    (text "Select the position you want to repay. You can select multiple positions.")
+                [ if position.pool.maturity |> Maturity.isActive time then
+                    el
+                        [ Font.size 12
+                        , theme |> ThemeColor.textLight |> Font.color
+                        ]
+                        (text "Select the position you want to repay. You can select multiple positions.")
+
+                  else
+                    none
                 , viewDue model chain user position
                 ]
             ]
@@ -511,7 +515,14 @@ viewDue { images, theme, time } chain user { pool, checks, tooltip } =
                                             , paddingXY 0 3
                                             , theme |> ThemeColor.textLight |> Font.color
                                             ]
-                                            (text "Asset to Repay")
+                                            ((if pool.maturity |> Maturity.isActive time then
+                                                "Asset to Repay"
+
+                                              else
+                                                "Amount Defaulted"
+                                             )
+                                                |> text
+                                            )
                                         , row
                                             [ width shrink
                                             , height <| px 24
@@ -569,7 +580,14 @@ viewDue { images, theme, time } chain user { pool, checks, tooltip } =
                                             , paddingXY 0 3
                                             , theme |> ThemeColor.textLight |> Font.color
                                             ]
-                                            (text "Collateral to unlock")
+                                            ((if pool.maturity |> Maturity.isActive time then
+                                                "Collateral to unlock"
+
+                                              else
+                                                "Collateral Forfeited"
+                                             )
+                                                |> text
+                                            )
                                         , row
                                             [ width shrink
                                             , height <| px 24

@@ -8,6 +8,7 @@ module Page.Transaction.Info exposing
     )
 
 import Data.CDP exposing (CDP)
+import Data.MaturityParam exposing (MaturityParam(..))
 import Data.Pair exposing (Pair)
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Remote exposing (Remote(..))
@@ -34,13 +35,19 @@ import Element.Font as Font
 import Page.PoolInfo exposing (PoolInfo)
 import Utility.Calculate as Calculate
 import Utility.Color as Color
+import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
 
 
-lendAPR : Remote failure Float -> Maybe PoolInfo -> Theme -> Element msg
-lendAPR remote maybePoolInfo theme =
+lendAPR :
+    Remote failure Float
+    -> String
+    -> Maybe PoolInfo
+    -> Theme
+    -> Element msg
+lendAPR remote assetIn maybePoolInfo theme =
     column
         [ width fill
         , height shrink
@@ -53,15 +60,15 @@ lendAPR remote maybePoolInfo theme =
             , paddingXY 0 3
             , theme |> ThemeColor.textLight |> Font.color
             ]
-            ((case ( remote, maybePoolInfo ) of
-                ( Success apr, Just _ ) ->
-                    if apr == 0 then
+            ((case maybePoolInfo of
+                Just _ ->
+                    if assetIn |> Input.isZero then
                         "Pool Max APR"
 
                     else
                         "APR"
 
-                ( _, _ ) ->
+                _ ->
                     "APR"
              )
                 |> text
@@ -103,7 +110,7 @@ lendAPR remote maybePoolInfo theme =
                     ]
                     ((case maybePoolInfo of
                         Just poolInfo ->
-                            if float == 0 then
+                            if assetIn |> Input.isZero then
                                 poolInfo.apr
 
                             else
@@ -117,8 +124,8 @@ lendAPR remote maybePoolInfo theme =
         ]
 
 
-borrowAPR : Remote failure Float -> Maybe PoolInfo -> Theme -> Element msg
-borrowAPR remote maybePoolInfo theme =
+borrowAPR : Remote failure Float -> String -> Maybe PoolInfo -> Theme -> Element msg
+borrowAPR remote assetOut maybePoolInfo theme =
     column
         [ width fill
         , height shrink
@@ -131,15 +138,15 @@ borrowAPR remote maybePoolInfo theme =
             , paddingXY 0 3
             , theme |> ThemeColor.textLight |> Font.color
             ]
-            ((case ( remote, maybePoolInfo ) of
-                ( Success apr, Just _ ) ->
-                    if apr == 0 then
+            ((case maybePoolInfo of
+                Just _ ->
+                    if assetOut |> Input.isZero then
                         "Pool Max APR"
 
                     else
                         "APR"
 
-                ( _, _ ) ->
+                _ ->
                     "APR"
              )
                 |> text
@@ -181,7 +188,7 @@ borrowAPR remote maybePoolInfo theme =
                     ]
                     ((case maybePoolInfo of
                         Just poolInfo ->
-                            if float == 0 then
+                            if assetOut |> Input.isZero then
                                 poolInfo.apr
 
                             else
