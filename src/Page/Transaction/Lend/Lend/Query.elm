@@ -99,6 +99,8 @@ type alias ResultPercent =
     , minInsurance : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -109,6 +111,8 @@ type alias ResultBond =
     , minInsurance : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -119,6 +123,8 @@ type alias ResultInsurance =
     , minBond : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -231,6 +237,8 @@ decoderResultPercent =
         |> Pipeline.required "minInsurance" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "futureApr" Decode.float
+        |> Pipeline.required "futureCdp" CDP.decoder
         |> Pipeline.required "txnFee" Uint.decoder
 
 
@@ -242,6 +250,8 @@ decoderResultBond =
         |> Pipeline.required "minInsurance" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "futureApr" Decode.float
+        |> Pipeline.required "futureCdp" CDP.decoder
         |> Pipeline.required "txnFee" Uint.decoder
 
 
@@ -253,4 +263,6 @@ decoderResultInsurance =
         |> Pipeline.required "minBond" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "futureApr" Decode.float
+        |> Pipeline.required "futureCdp" CDP.decoder
         |> Pipeline.required "txnFee" Uint.decoder

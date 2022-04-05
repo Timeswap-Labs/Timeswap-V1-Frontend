@@ -87,15 +87,28 @@ export function calculateFuturisticApr(
 export function calculateFuturisticCdp(
   state: CP,
   assetDecimals: number,
+  collateralDecimals: number,
   xDecrease: Uint112,
-  zIncrease: Uint112
-): bigint {
-  let temp = 1n;
-  for (let i = 0; i < assetDecimals; i++) temp *= 10n;
-  return (
-    (state.z.add(zIncrease).toBigInt() * temp) /
+  zIncrease: Uint112,
+  assetSpot: number | null,
+  collateralSpot: number | null
+): CDP {
+
+  let percent = null;
+  const ratio = (
+    (state.z.add(zIncrease).toBigInt() * (10n ** BigInt(assetDecimals))) /
     state.x.sub(xDecrease).toBigInt()
-  );
+  ).toString();
+
+  if (assetSpot && collateralSpot) {
+    percent = Number(
+          (BigInt(ratio) * BigInt(Math.floor(collateralSpot * 10000000000))) /
+          BigInt(Math.floor(assetSpot * 1000000)) /
+          10n ** BigInt(collateralDecimals)
+    ) / 10000
+  }
+
+  return { ratio, percent };
 }
 
 export function calculateMaxValue(value: Uint112, slippage: number): Uint256 {

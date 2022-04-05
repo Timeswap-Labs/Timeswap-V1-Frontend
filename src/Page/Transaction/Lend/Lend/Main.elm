@@ -70,6 +70,7 @@ import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Url.Builder as Builder
+import Utility.Calculate as Calculate
 import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Loading as Loading
@@ -120,6 +121,8 @@ type alias ClaimsGivenPercent =
     , minInsurance : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -129,6 +132,8 @@ type alias ClaimsGivenBond =
     , minInsurance : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -138,6 +143,8 @@ type alias ClaimsGivenInsurance =
     , minBond : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -189,6 +196,8 @@ initGivenPercent =
     , minInsurance = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , futureApr = 0
+    , futureCdp = CDP.init
     , txnFee = Uint.zero
     }
 
@@ -199,6 +208,8 @@ initGivenBond =
     , minInsurance = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , futureApr = 0
+    , futureCdp = CDP.init
     , txnFee = Uint.zero
     }
 
@@ -209,6 +220,8 @@ initGivenInsurance =
     , minBond = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , futureApr = 0
+    , futureCdp = CDP.init
     , txnFee = Uint.zero
     }
 
@@ -1298,11 +1311,13 @@ toClaimsGivenBond :
     -> Remote Error ClaimsGivenBond
 toClaimsGivenBond result =
     case result of
-        Ok { insuranceOut, minInsurance, apr, cdp, txnFee } ->
+        Ok { insuranceOut, minInsurance, apr, cdp, txnFee, futureApr, futureCdp } ->
             { insuranceOut = insuranceOut
             , minInsurance = minInsurance
             , apr = apr
             , cdp = cdp
+            , futureApr = futureApr
+            , futureCdp = futureCdp
             , txnFee = txnFee
             }
                 |> Success
@@ -1316,11 +1331,13 @@ toClaimsGivenInsurance :
     -> Remote Error ClaimsGivenInsurance
 toClaimsGivenInsurance result =
     case result of
-        Ok { bondOut, minBond, apr, cdp, txnFee } ->
+        Ok { bondOut, minBond, apr, cdp, txnFee, futureApr, futureCdp } ->
             { bondOut = bondOut
             , minBond = minBond
             , apr = apr
             , cdp = cdp
+            , futureApr = futureApr
+            , futureCdp = futureCdp
             , txnFee = txnFee
             }
                 |> Success
@@ -1641,7 +1658,7 @@ view model blockchain pool poolInfo (Transaction transaction) =
         transaction
             |> assetInSection model
                 blockchain
-                (pool.pair |> Pair.toAsset)
+                pool
     , second =
         transaction
             |> claimsOutSection model pool poolInfo
@@ -1654,12 +1671,12 @@ view model blockchain pool poolInfo (Transaction transaction) =
 
 
 assetInSection :
-    { model | images : Images, theme : Theme }
+    { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
-    -> Token
+    -> Pool
     -> { transaction | assetIn : String, tooltip : Maybe Tooltip, claimsOut : ClaimsOut }
     -> Element Msg
-assetInSection model blockchain asset { assetIn, tooltip, claimsOut } =
+assetInSection model blockchain pool { assetIn, tooltip, claimsOut } =
     column
         [ Region.description "lend asset"
         , width fill
@@ -1685,7 +1702,7 @@ assetInSection model blockchain asset { assetIn, tooltip, claimsOut } =
                 (text "Amount to Lend")
             , blockchain
                 |> Blockchain.toUser
-                |> Maybe.andThen (User.getBalance asset)
+                |> Maybe.andThen (User.getBalance (pool.pair |> Pair.toAsset))
                 |> Maybe.map
                     (\balance ->
                         MaxButton.view
@@ -1694,7 +1711,7 @@ assetInSection model blockchain asset { assetIn, tooltip, claimsOut } =
                             , onMouseLeave = OnMouseLeave
                             , tooltip = Tooltip.Balance
                             , opened = tooltip
-                            , token = asset
+                            , token = pool.pair |> Pair.toAsset
                             , balance = balance
                             , theme = model.theme
                             }
@@ -1706,7 +1723,7 @@ assetInSection model blockchain asset { assetIn, tooltip, claimsOut } =
             , onMouseLeave = OnMouseLeave
             , tooltip = Tooltip.AssetInSymbol
             , opened = tooltip
-            , token = asset
+            , token = pool.pair |> Pair.toAsset
             , onClick = Nothing
             , onChange = InputAssetIn
             , text = Left assetIn
@@ -1762,11 +1779,133 @@ assetInSection model blockchain asset { assetIn, tooltip, claimsOut } =
                                         , onMouseLeave = OnMouseLeave
                                         , tooltip = Tooltip.TxnFee
                                         , opened = tooltip
-                                        , token = asset
+                                        , token = pool.pair |> Pair.toAsset
                                         , amount = txnFee
                                         , theme = model.theme
                                         , customStyles = []
                                         }
+                                    )
+                                ]
+
+                        _ ->
+                            none
+               )
+        , (case claimsOut of
+            Default (Success claimsGivenPercent) ->
+                claimsGivenPercent.futureApr |> Just
+
+            Slider { claims } ->
+                case claims of
+                    Success claimsGivenPercent ->
+                        claimsGivenPercent.futureApr |> Just
+
+                    _ ->
+                        Nothing
+
+            Bond { claims } ->
+                case claims of
+                    Success claimsGivenBond ->
+                        claimsGivenBond.futureApr |> Just
+
+                    _ ->
+                        Nothing
+
+            Insurance { claims } ->
+                case claims of
+                    Success claimsGivenInsurance ->
+                        claimsGivenInsurance.futureApr |> Just
+
+                    _ ->
+                        Nothing
+
+            _ ->
+                Nothing
+          )
+            |> (\maybeFutureApr ->
+                    case maybeFutureApr of
+                        Just futureApr ->
+                            row
+                                [ width fill
+                                , height shrink
+                                , spacing 8
+                                ]
+                                [ el
+                                    [ Font.size 14
+                                    , model.theme |> ThemeColor.textLight |> Font.color
+                                    ]
+                                    (text "Pool Max APR after txn")
+                                , el
+                                    [ alignRight
+                                    , Font.size 16
+                                    , model.theme |> ThemeColor.text |> Font.color
+                                    ]
+                                    (futureApr |> Calculate.apr)
+                                ]
+
+                        _ ->
+                            none
+               )
+        , (case claimsOut of
+            Default (Success claimsGivenPercent) ->
+                claimsGivenPercent.futureCdp |> Just
+
+            Slider { claims } ->
+                case claims of
+                    Success claimsGivenPercent ->
+                        claimsGivenPercent.futureCdp |> Just
+
+                    _ ->
+                        Nothing
+
+            Bond { claims } ->
+                case claims of
+                    Success claimsGivenBond ->
+                        claimsGivenBond.futureCdp |> Just
+
+                    _ ->
+                        Nothing
+
+            Insurance { claims } ->
+                case claims of
+                    Success claimsGivenInsurance ->
+                        claimsGivenInsurance.futureCdp |> Just
+
+                    _ ->
+                        Nothing
+
+            _ ->
+                Nothing
+          )
+            |> (\maybeFutureCdp ->
+                    case maybeFutureCdp of
+                        Just futureCdp ->
+                            row
+                                [ width fill
+                                , height shrink
+                                , spacing 8
+                                ]
+                                [ el
+                                    [ Font.size 14
+                                    , model.theme |> ThemeColor.textLight |> Font.color
+                                    ]
+                                    (text "Pool Min CDP after txn")
+                                , el
+                                    [ alignRight
+                                    , Font.size 16
+                                    , model.theme |> ThemeColor.text |> Font.color
+                                    ]
+                                    (Calculate.cdp
+                                        { onMouseEnter = OnMouseEnter
+                                        , onMouseLeave = OnMouseLeave
+                                        , cdpTooltip = Tooltip.TxnFee
+                                        , opened = tooltip
+                                        , pair = pool.pair
+                                        , theme = model.theme
+                                        , cdp = futureCdp
+                                        }
+                                        model.priceFeed
+                                        (model.theme |> ThemeColor.text)
+                                        16
                                     )
                                 ]
 
@@ -1825,7 +1964,7 @@ claimsOutSection model pool poolInfo ({ assetIn, claimsOut, tooltip } as transac
                         { onChange = Slide
                         , click = ClickSlider
                         , percent = percent
-                        , min = 0
+                        , min = 8
                         , max = 128
                         , theme = model.theme
                         , learnMore =

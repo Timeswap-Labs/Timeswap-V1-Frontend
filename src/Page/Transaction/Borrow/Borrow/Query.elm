@@ -122,6 +122,8 @@ type alias ResultPercent =
     , maxCollateral : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -132,6 +134,8 @@ type alias ResultMax =
     , maxDebt : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     }
 
 
@@ -141,6 +145,8 @@ type alias ResultDebt =
     , maxCollateral : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -151,6 +157,8 @@ type alias ResultCollateral =
     , maxDebt : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -294,6 +302,8 @@ decoderResultPercent =
         |> Pipeline.required "maxCollateral" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "futureApr" Decode.float
+        |> Pipeline.required "futureCdp" CDP.decoder
         |> Pipeline.required "txnFee" Uint.decoder
 
 
@@ -305,6 +315,8 @@ decoderResultMax =
         |> Pipeline.required "maxDebt" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "futureApr" Decode.float
+        |> Pipeline.required "futureCdp" CDP.decoder
 
 
 decoderResultDebt : Decoder ResultDebt
@@ -315,6 +327,8 @@ decoderResultDebt =
         |> Pipeline.required "maxCollateral" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "futureApr" Decode.float
+        |> Pipeline.required "futureCdp" CDP.decoder
         |> Pipeline.required "txnFee" Uint.decoder
 
 
@@ -326,4 +340,6 @@ decoderResultCollateral =
         |> Pipeline.required "maxDebt" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "futureApr" Decode.float
+        |> Pipeline.required "futureCdp" CDP.decoder
         |> Pipeline.required "txnFee" Uint.decoder

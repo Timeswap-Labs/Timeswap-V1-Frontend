@@ -67,6 +67,7 @@ import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Url.Builder as Builder
+import Utility.Calculate as Calculate
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
@@ -138,6 +139,8 @@ type alias DuesGivenPercent =
     , maxCollateral : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -148,6 +151,8 @@ type alias OutGivenMax =
     , maxDebt : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     }
 
 
@@ -156,6 +161,8 @@ type alias DuesGivenDebt =
     , maxCollateral : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -165,6 +172,8 @@ type alias DuesGivenCollateral =
     , maxDebt : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -218,6 +227,8 @@ initGivenPercent =
     , maxCollateral = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , futureApr = 0
+    , futureCdp = CDP.init
     , txnFee = Uint.zero
     }
 
@@ -229,6 +240,8 @@ initGivenMax =
     , maxDebt = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , futureApr = 0
+    , futureCdp = CDP.init
     }
 
 
@@ -238,6 +251,8 @@ initGivenDebt =
     , maxCollateral = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , futureApr = 0
+    , futureCdp = CDP.init
     , txnFee = Uint.zero
     }
 
@@ -248,6 +263,8 @@ initGivenCollateral =
     , maxDebt = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , futureApr = 0
+    , futureCdp = CDP.init
     , txnFee = Uint.zero
     }
 
@@ -1875,11 +1892,13 @@ toStateGivenDebt :
     -> Remote Error DuesGivenDebt
 toStateGivenDebt result =
     case result of
-        Ok { collateralIn, maxCollateral, apr, cdp, txnFee } ->
+        Ok { collateralIn, maxCollateral, apr, cdp, futureApr, futureCdp, txnFee } ->
             { collateralIn = collateralIn
             , maxCollateral = maxCollateral
             , apr = apr
             , cdp = cdp
+            , futureApr = futureApr
+            , futureCdp = futureCdp
             , txnFee = txnFee
             }
                 |> Success
@@ -1893,11 +1912,13 @@ toStateGivenCollateral :
     -> Remote Error DuesGivenCollateral
 toStateGivenCollateral result =
     case result of
-        Ok { debtIn, maxDebt, apr, cdp, txnFee } ->
+        Ok { debtIn, maxDebt, apr, cdp, futureApr, futureCdp, txnFee } ->
             { debtIn = debtIn
             , maxDebt = maxDebt
             , apr = apr
             , cdp = cdp
+            , futureApr = futureApr
+            , futureCdp = futureCdp
             , txnFee = txnFee
             }
                 |> Success
@@ -2370,7 +2391,7 @@ view model blockchain pool poolInfo (Transaction transaction) =
     { first =
         transaction
             |> assetOutSection model
-                (pool.pair |> Pair.toAsset)
+                pool
                 poolInfo
     , second =
         transaction
@@ -2382,12 +2403,12 @@ view model blockchain pool poolInfo (Transaction transaction) =
 
 
 assetOutSection :
-    { model | images : Images, theme : Theme }
-    -> Token
+    { model | images : Images, priceFeed : PriceFeed, theme : Theme }
+    -> Pool
     -> PoolInfo
     -> { transaction | state : State, tooltip : Maybe Tooltip }
     -> Element Msg
-assetOutSection model asset poolInfo { state, tooltip } =
+assetOutSection model pool poolInfo { state, tooltip } =
     column
         [ Region.description "borrow asset"
         , width fill
@@ -2476,7 +2497,7 @@ assetOutSection model asset poolInfo { state, tooltip } =
                         , onMouseLeave = OnMouseLeave
                         , tooltip = Tooltip.AssetOutSymbol
                         , opened = tooltip
-                        , token = asset
+                        , token = pool.pair |> Pair.toAsset
                         , onClick = Just ClickAssetOut
                         , onChange = InputAssetOut
                         , text = assetOut
@@ -2506,12 +2527,12 @@ assetOutSection model asset poolInfo { state, tooltip } =
                         , onMouseLeave = OnMouseLeave
                         , tooltip = Tooltip.Liquidity
                         , opened = tooltip
-                        , token = asset
+                        , token = pool.pair |> Pair.toAsset
                         , amount = poolInfo.x
                         , theme = model.theme
                         , customStyles = [ Font.size 14 ]
                         }
-                    , text (asset |> Token.toSymbol)
+                    , text ((pool.pair |> Pair.toAsset) |> Token.toSymbol)
                     ]
                 ]
             , (case state of
@@ -2569,11 +2590,143 @@ assetOutSection model asset poolInfo { state, tooltip } =
                                             , onMouseLeave = OnMouseLeave
                                             , tooltip = Tooltip.TxnFee
                                             , opened = tooltip
-                                            , token = asset
+                                            , token = pool.pair |> Pair.toAsset
                                             , amount = txnFee
                                             , theme = model.theme
                                             , customStyles = [ Font.size 14 ]
                                             }
+                                        )
+                                    ]
+
+                            _ ->
+                                none
+                   )
+            , (case state of
+                Default { dues } ->
+                    case dues of
+                        Success duesGivenPercent ->
+                            duesGivenPercent.futureApr |> Just
+
+                        _ ->
+                            Nothing
+
+                Slider { dues } ->
+                    case dues of
+                        Success duesGivenPercent ->
+                            duesGivenPercent.futureApr |> Just
+
+                        _ ->
+                            Nothing
+
+                Debt { dues } ->
+                    case dues of
+                        Success duesGivenDebt ->
+                            duesGivenDebt.futureApr |> Just
+
+                        _ ->
+                            Nothing
+
+                Collateral { dues } ->
+                    case dues of
+                        Success duesGivenCollateral ->
+                            duesGivenCollateral.futureApr |> Just
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+              )
+                |> (\maybeFutureApr ->
+                        case maybeFutureApr of
+                            Just futureApr ->
+                                row
+                                    [ width fill
+                                    , height shrink
+                                    , spacing 8
+                                    ]
+                                    [ el
+                                        [ Font.size 14
+                                        , model.theme |> ThemeColor.textLight |> Font.color
+                                        ]
+                                        (text "Pool Max APR after txn")
+                                    , el
+                                        [ alignRight
+                                        , Font.size 16
+                                        , model.theme |> ThemeColor.text |> Font.color
+                                        ]
+                                        (futureApr |> Calculate.apr)
+                                    ]
+
+                            _ ->
+                                none
+                   )
+            , (case state of
+                Default { dues } ->
+                    case dues of
+                        Success duesGivenPercent ->
+                            duesGivenPercent.futureCdp |> Just
+
+                        _ ->
+                            Nothing
+
+                Slider { dues } ->
+                    case dues of
+                        Success duesGivenPercent ->
+                            duesGivenPercent.futureCdp |> Just
+
+                        _ ->
+                            Nothing
+
+                Debt { dues } ->
+                    case dues of
+                        Success duesGivenDebt ->
+                            duesGivenDebt.futureCdp |> Just
+
+                        _ ->
+                            Nothing
+
+                Collateral { dues } ->
+                    case dues of
+                        Success duesGivenCollateral ->
+                            duesGivenCollateral.futureCdp |> Just
+
+                        _ ->
+                            Nothing
+
+                _ ->
+                    Nothing
+              )
+                |> (\maybeFutureCdp ->
+                        case maybeFutureCdp of
+                            Just futureCdp ->
+                                row
+                                    [ width fill
+                                    , height shrink
+                                    , spacing 8
+                                    ]
+                                    [ el
+                                        [ Font.size 14
+                                        , model.theme |> ThemeColor.textLight |> Font.color
+                                        ]
+                                        (text "Pool Min CDP after txn")
+                                    , el
+                                        [ alignRight
+                                        , Font.size 16
+                                        , model.theme |> ThemeColor.text |> Font.color
+                                        ]
+                                        (Calculate.cdp
+                                            { onMouseEnter = OnMouseEnter
+                                            , onMouseLeave = OnMouseLeave
+                                            , cdpTooltip = Tooltip.TxnFee
+                                            , opened = tooltip
+                                            , pair = pool.pair
+                                            , theme = model.theme
+                                            , cdp = futureCdp
+                                            }
+                                            model.priceFeed
+                                            (model.theme |> ThemeColor.text)
+                                            16
                                         )
                                     ]
 

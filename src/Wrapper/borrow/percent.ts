@@ -98,12 +98,15 @@ export function percentCalculate(
       query.poolInfo.collateralSpot
     );
 
-    const futuristicApr = calculateFuturisticApr(state, xDecrease, yIncrease);
-    const futuristicCdp = calculateFuturisticCdp(
+    const futureApr = calculateFuturisticApr(state, xDecrease, yIncrease);
+    const futureCdp = calculateFuturisticCdp(
       state,
       query.pool.asset.decimals,
+      query.pool.collateral.decimals,
       xDecrease,
-      zIncrease
+      zIncrease,
+      query.poolInfo.assetSpot,
+      query.poolInfo.collateralSpot
     );
 
     query.pool.maturity = query.pool.maturity.toString();
@@ -117,6 +120,8 @@ export function percentCalculate(
         maxCollateral,
         apr,
         cdp,
+        futureApr,
+        futureCdp,
         txnFee,
       },
     });
