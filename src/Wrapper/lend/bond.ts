@@ -105,12 +105,15 @@ export function bondCalculate(
       query.poolInfo.collateralSpot
     );
 
-    const futuristicApr = calculateFuturisticApr(state, xIncrease, yDecrease);
-    const futuristicCdp = calculateFuturisticCdp(
+    const futureApr = calculateFuturisticApr(state, xIncrease, yDecrease);
+    const futureCdp = calculateFuturisticCdp(
       state,
       query.pool.asset.decimals,
+      query.pool.collateral.decimals,
       xIncrease,
-      zDecrease
+      zDecrease,
+      query.poolInfo.assetSpot,
+      query.poolInfo.collateralSpot
     );
 
     query.pool.maturity = query.pool.maturity.toString();
@@ -123,6 +126,8 @@ export function bondCalculate(
         minInsurance,
         apr,
         cdp,
+        futureApr,
+        futureCdp,
         txnFee,
       },
     });
