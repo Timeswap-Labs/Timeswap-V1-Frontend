@@ -1964,7 +1964,7 @@ claimsOutSection model pool poolInfo ({ assetIn, claimsOut, tooltip } as transac
                         { onChange = Slide
                         , click = ClickSlider
                         , percent = percent
-                        , min = 8
+                        , min = 0
                         , max = 128
                         , theme = model.theme
                         , learnMore =
