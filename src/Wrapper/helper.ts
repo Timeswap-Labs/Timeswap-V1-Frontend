@@ -3,6 +3,7 @@ import {
   ERC20Token as SDKCoreERC20Token,
   NativeToken as SDKCoreNativeToken,
   Pool,
+  Uint,
   Uint256,
 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
@@ -24,6 +25,18 @@ export function getCurrentTime(): Uint256 {
   return new Uint256(Date.now()).div(1000);
 }
 
+export function calculateMinValue(value: Uint, slippage: number): Uint256 {
+  return new Uint256(value)
+    .mul(Math.round(100000 * (1 - slippage)))
+    .div(100000);
+}
+
+export function calculateMaxValue(value: Uint, slippage: number): Uint256 {
+  return new Uint256(value)
+    .mul(Math.round(100000 * (1 + slippage)))
+    .div(100000);
+}
+
 export function getCustomTokens(chainId: string): ERC20Token[] {
   const storeData = window.localStorage.getItem("custom-tokens");
   let customTokens: ERC20Token[] = [];
@@ -40,7 +53,7 @@ export function getCustomTokens(chainId: string): ERC20Token[] {
   return customTokens;
 }
 
-export function getPool(query: LendQuery | BorrowQuery): Pool {
+export function getPool(query: LendQuery | BorrowQuery | LiquidityQuery): Pool {
   let asset, collateral;
 
   if ((query.pool.asset as ERC20Token).address) {

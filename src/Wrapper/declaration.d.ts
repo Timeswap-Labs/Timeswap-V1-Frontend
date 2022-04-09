@@ -49,7 +49,9 @@ declare interface Ports {
 
   withdraw: PortFromElm<Withdraw>;
 
-  faucetMint: PortFromElm<Faucet>;
+  queryLiquidity: PortFromElm<LiquidityQuery>;
+  queryLiquidityPerSecond: PortFromElm<LiquidityQuery>;
+  receiveAddLiqAnswer: PortToElm<LiquidityCalculate>;
 
   scroll: PortsToElm;
 
@@ -346,6 +348,7 @@ interface PoolInfo {
   assetSpot: number | null;
   collateralSpot: number | null;
   fee: number;
+  feeStored: Uint;
   protocolFee: number;
 }
 
@@ -445,6 +448,16 @@ interface Pay {
     maxAssetsIn: string[];
     deadline: number;
   };
+}
+
+interface LiquidityQuery {
+  chain: Chain;
+  pool: Pool;
+  poolInfo: PoolInfo;
+  slippage: number;
+  assetIn?: string;
+  debtIn?: string;
+  collateralIn?: string;
 }
 
 interface ReceiveConfirm {

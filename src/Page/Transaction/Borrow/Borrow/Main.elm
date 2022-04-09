@@ -2796,7 +2796,7 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
                         { onChange = Slide
                         , click = ClickSlider
                         , percent = percent
-                        , min = 8
+                        , min = 0
                         , max = 120
                         , theme = model.theme
                         , learnMore =

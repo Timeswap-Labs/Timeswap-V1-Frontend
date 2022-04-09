@@ -1199,7 +1199,7 @@ port approveLiquidity : Value -> Cmd msg
 port liquidity : Value -> Cmd msg
 
 
-port receiveAddAnswer : (Value -> msg) -> Sub msg
+port receiveAddLiqAnswer : (Value -> msg) -> Sub msg
 
 
 subscriptions : Transaction -> Sub Msg
@@ -1209,7 +1209,7 @@ subscriptions (Transaction { state }) =
 
       else
         [ Time.every 1000 QueryAgain
-        , receiveAddAnswer ReceiveAnswer
+        , receiveAddLiqAnswer ReceiveAnswer
         ]
             |> Sub.batch
     , case state of

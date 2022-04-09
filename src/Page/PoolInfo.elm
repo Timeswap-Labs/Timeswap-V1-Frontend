@@ -22,6 +22,7 @@ type alias PoolInfo =
     , assetSpot : Maybe Float
     , collateralSpot : Maybe Float
     , fee : Int
+    , feeStored : Uint
     , protocolFee : Int
     , apr : Float
     , cdp : CDP
@@ -45,6 +46,7 @@ decoder =
         |> Pipeline.required "assetSpot" (Decode.float |> Decode.nullable)
         |> Pipeline.required "collateralSpot" (Decode.float |> Decode.nullable)
         |> Pipeline.required "fee" Decode.int
+        |> Pipeline.required "feeStored" Uint.decoder
         |> Pipeline.required "protocolFee" Decode.int
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
@@ -91,6 +93,9 @@ encode poolInfo =
       )
     , ( "fee"
       , poolInfo.fee |> Encode.int
+      )
+    , ( "feeStored"
+      , poolInfo.feeStored |> Uint.encode
       )
     , ( "protocolFee"
       , poolInfo.protocolFee |> Encode.int

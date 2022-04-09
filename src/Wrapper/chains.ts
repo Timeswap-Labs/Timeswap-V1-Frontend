@@ -1,4 +1,5 @@
 import { getCustomTokens } from "./helper";
+import { WNATIVE_ADDRESS } from "@timeswap-labs/timeswap-v1-sdk";
 
 export const whitelistChains: Whitelist = {
   default: {
@@ -13,7 +14,7 @@ export const whitelistChains: Whitelist = {
       decimals: 18,
     },
     wrapper: {
-      address: "0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270",
+      address: WNATIVE_ADDRESS[137],
       name: "Wrapped Matic",
       symbol: "WMATIC",
       decimals: 18,
@@ -40,7 +41,7 @@ export const whitelistChains: Whitelist = {
       decimals: 18,
     },
     wrapper: {
-      address: "0x66CAE6D61F266Aa2d1dd6054217B77bd34cDF732",
+      address: WNATIVE_ADDRESS[80001],
       name: "Wrapped Ether",
       symbol: "WETH",
       decimals: 18,
