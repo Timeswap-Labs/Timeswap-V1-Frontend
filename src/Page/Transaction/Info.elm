@@ -213,6 +213,7 @@ lendCDP :
         , pair : Pair
         , cdp : Remote failure CDP
         , poolInfo : Maybe PoolInfo
+        , assetIn : String
         }
     -> Element msg
 lendCDP { priceFeed, theme } param =
@@ -235,15 +236,15 @@ lendCDP { priceFeed, theme } param =
                 , paddingXY 0 3
                 , theme |> ThemeColor.textLight |> Font.color
                 ]
-                ((case ( param.cdp, param.poolInfo ) of
-                    ( Success cdp, Just _ ) ->
-                        if Uint.isZero cdp.ratio then
+                ((case param.poolInfo of
+                    Just _ ->
+                        if param.assetIn |> Input.isZero then
                             "Pool Min CDP"
 
                         else
                             "CDP"
 
-                    ( _, _ ) ->
+                    _ ->
                         "CDP"
                  )
                     |> text
@@ -312,15 +313,15 @@ lendCDP { priceFeed, theme } param =
                             Nothing
 
                         PriceFeed.Utilize ->
-                            case ( cdp.percent, param.poolInfo ) of
-                                ( Just perc, Just poolInfo ) ->
-                                    if perc == 0 then
+                            case param.poolInfo of
+                                Just poolInfo ->
+                                    if param.assetIn |> Input.isZero then
                                         poolInfo.cdp.percent
 
                                     else
                                         cdp.percent
 
-                                ( _, _ ) ->
+                                _ ->
                                     cdp.percent
                      )
                         |> Maybe.map
@@ -388,6 +389,7 @@ borrowCDP :
         , pair : Pair
         , cdp : Remote failure CDP
         , poolInfo : Maybe PoolInfo
+        , assetOut : String
         }
     -> Element msg
 borrowCDP { priceFeed, theme } param =
@@ -408,15 +410,15 @@ borrowCDP { priceFeed, theme } param =
                 , paddingXY 0 3
                 , theme |> ThemeColor.textLight |> Font.color
                 ]
-                ((case ( param.cdp, param.poolInfo ) of
-                    ( Success cdp, Just _ ) ->
-                        if Uint.isZero cdp.ratio then
+                ((case param.poolInfo of
+                    Just _ ->
+                        if param.assetOut |> Input.isZero then
                             "Pool Min CDP"
 
                         else
                             "CDP"
 
-                    ( _, _ ) ->
+                    _ ->
                         "CDP"
                  )
                     |> text
@@ -485,15 +487,15 @@ borrowCDP { priceFeed, theme } param =
                             Nothing
 
                         PriceFeed.Utilize ->
-                            case ( cdp.percent, param.poolInfo ) of
-                                ( Just perc, Just poolInfo ) ->
-                                    if perc == 0 then
+                            case param.poolInfo of
+                                Just poolInfo ->
+                                    if param.assetOut |> Input.isZero then
                                         poolInfo.cdp.percent
 
                                     else
                                         cdp.percent
 
-                                ( _, _ ) ->
+                                _ ->
                                     cdp.percent
                      )
                         |> Maybe.map

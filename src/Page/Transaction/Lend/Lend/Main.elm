@@ -2015,6 +2015,7 @@ claimsOutSection model pool poolInfo ({ assetIn, claimsOut, tooltip } as transac
                             , pair = pool.pair
                             , cdp = cdp
                             , poolInfo = poolInfo |> Just
+                            , assetIn = assetIn
                             }
                         ]
                    )

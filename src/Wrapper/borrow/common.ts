@@ -111,12 +111,6 @@ export function calculateFuturisticCdp(
   return { ratio, percent };
 }
 
-export function calculateMaxValue(value: Uint112, slippage: number): Uint256 {
-  return new Uint256(value)
-    .mul(Math.round(100000 * (1 + slippage)))
-    .div(100000);
-}
-
 export function percentMinMaxValues(
   pool: Pool,
   state: CP,

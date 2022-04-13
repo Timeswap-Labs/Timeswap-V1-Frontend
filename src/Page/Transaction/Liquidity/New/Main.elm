@@ -762,13 +762,14 @@ duesOutSection :
     -> Pool
     ->
         { transaction
-            | debtIn : String
+            | assetIn : String
+            , debtIn : String
             , collateralIn : String
             , liquidityOut : Remote Error LiquidityGivenNew
             , tooltip : Maybe Tooltip
         }
     -> Element Msg
-duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tooltip } as transaction) =
+duesOutSection model blockchain pool ({ assetIn, debtIn, collateralIn, liquidityOut, tooltip } as transaction) =
     column
         [ Region.description "dues"
         , width fill
@@ -788,7 +789,7 @@ duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tool
                     (liquidityOut
                         |> Remote.map .apr
                     )
-                    ""
+                    assetIn
                     Nothing
             , liquidityOut
                 |> Remote.map .cdp
@@ -802,6 +803,7 @@ duesOutSection model blockchain pool ({ debtIn, collateralIn, liquidityOut, tool
                             , pair = pool.pair
                             , cdp = cdp
                             , poolInfo = Nothing
+                            , assetIn = assetIn
                             }
                    )
             ]

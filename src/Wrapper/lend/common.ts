@@ -88,10 +88,6 @@ export function calculateFuturisticCdp(
   return { ratio, percent };
 }
 
-export function calculateMinValue(value: Uint128, slippage: number): Uint256 {
-  return new Uint256(value).mul(100000 * (1 - slippage)).div(100000);
-}
-
 export function percentMinMaxValues(
   pool: Pool,
   state: CP,

@@ -2,14 +2,13 @@ import { Pool, Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 
 import { GlobalParams } from "../global";
-import { getCurrentTime } from "../helper";
+import { calculateMaxValue, getCurrentTime } from "../helper";
 import {
   calculateApr,
   calculateCdp,
   calculateFuturisticApr,
   calculateFuturisticCdp,
   calculateHelper,
-  calculateMaxValue,
   calculatePercent,
   percentMinMaxValues,
 } from "./common";

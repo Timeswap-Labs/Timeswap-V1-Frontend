@@ -1439,6 +1439,7 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
                             , pair = pool.pair
                             , cdp = cdp
                             , poolInfo = poolInfo |> Just
+                            , assetIn = assetIn
                             }
                         ]
                    )

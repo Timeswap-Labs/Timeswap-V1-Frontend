@@ -7,13 +7,12 @@ import {
   Pool,
 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
-import { getCurrentTime } from "../helper";
+import { calculateMinValue, getCurrentTime } from "../helper";
 import {
   calculateApr,
   calculateCdp,
   calculateFuturisticApr,
   calculateFuturisticCdp,
-  calculateMinValue,
 } from "./common";
 
 export async function percentCalculate(
