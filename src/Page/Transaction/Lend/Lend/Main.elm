@@ -71,6 +71,7 @@ import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Url.Builder as Builder
 import Utility.Calculate as Calculate
+import Utility.Color as Color
 import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Loading as Loading
@@ -1659,6 +1660,7 @@ view model blockchain pool poolInfo (Transaction transaction) =
             |> assetInSection model
                 blockchain
                 pool
+                poolInfo
     , second =
         transaction
             |> claimsOutSection model pool poolInfo
@@ -1674,9 +1676,10 @@ assetInSection :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
     -> Pool
+    -> PoolInfo
     -> { transaction | assetIn : String, tooltip : Maybe Tooltip, claimsOut : ClaimsOut }
     -> Element Msg
-assetInSection model blockchain pool { assetIn, tooltip, claimsOut } =
+assetInSection model blockchain pool poolInfo { assetIn, tooltip, claimsOut } =
     column
         [ Region.description "lend asset"
         , width fill
@@ -1729,189 +1732,219 @@ assetInSection model blockchain pool { assetIn, tooltip, claimsOut } =
             , text = Left assetIn
             , description = "asset in textbox"
             }
-        , (case claimsOut of
-            Default (Success claimsGivenPercent) ->
-                claimsGivenPercent.txnFee |> Just
+        , if assetIn |> Input.isZero then
+            none
 
-            Slider { claims } ->
-                case claims of
-                    Success claimsGivenPercent ->
+          else
+            column
+                [ width fill
+                , height fill
+                , spacing 10
+                ]
+                [ (case claimsOut of
+                    Default (Success claimsGivenPercent) ->
                         claimsGivenPercent.txnFee |> Just
 
+                    Slider { claims } ->
+                        case claims of
+                            Success claimsGivenPercent ->
+                                claimsGivenPercent.txnFee |> Just
+
+                            _ ->
+                                Nothing
+
+                    Bond { claims } ->
+                        case claims of
+                            Success claimsGivenBond ->
+                                claimsGivenBond.txnFee |> Just
+
+                            _ ->
+                                Nothing
+
+                    Insurance { claims } ->
+                        case claims of
+                            Success claimsGivenInsurance ->
+                                claimsGivenInsurance.txnFee |> Just
+
+                            _ ->
+                                Nothing
+
                     _ ->
                         Nothing
+                  )
+                    |> (\maybeTxnFee ->
+                            case maybeTxnFee of
+                                Just txnFee ->
+                                    row
+                                        [ width fill
+                                        , height shrink
+                                        , spacing 8
+                                        ]
+                                        [ el
+                                            [ Font.size 14
+                                            , model.theme |> ThemeColor.textLight |> Font.color
+                                            ]
+                                            (text "Transaction Fee")
+                                        , el [ alignRight ]
+                                            (Truncate.viewAmount
+                                                { onMouseEnter = OnMouseEnter
+                                                , onMouseLeave = OnMouseLeave
+                                                , tooltip = Tooltip.TxnFee
+                                                , opened = tooltip
+                                                , token = pool.pair |> Pair.toAsset
+                                                , amount = txnFee
+                                                , theme = model.theme
+                                                , customStyles = [ Font.size 14 ]
+                                                }
+                                            )
+                                        ]
 
-            Bond { claims } ->
-                case claims of
-                    Success claimsGivenBond ->
-                        claimsGivenBond.txnFee |> Just
-
-                    _ ->
-                        Nothing
-
-            Insurance { claims } ->
-                case claims of
-                    Success claimsGivenInsurance ->
-                        claimsGivenInsurance.txnFee |> Just
-
-                    _ ->
-                        Nothing
-
-            _ ->
-                Nothing
-          )
-            |> (\maybeTxnFee ->
-                    case maybeTxnFee of
-                        Just txnFee ->
-                            row
-                                [ width fill
-                                , height shrink
-                                , spacing 8
-                                ]
-                                [ el
-                                    [ Font.size 14
-                                    , model.theme |> ThemeColor.textLight |> Font.color
-                                    ]
-                                    (text "Transaction Fee")
-                                , el [ alignRight ]
-                                    (Truncate.viewAmount
-                                        { onMouseEnter = OnMouseEnter
-                                        , onMouseLeave = OnMouseLeave
-                                        , tooltip = Tooltip.TxnFee
-                                        , opened = tooltip
-                                        , token = pool.pair |> Pair.toAsset
-                                        , amount = txnFee
-                                        , theme = model.theme
-                                        , customStyles = []
-                                        }
-                                    )
-                                ]
-
-                        _ ->
-                            none
-               )
-        , (case claimsOut of
-            Default (Success claimsGivenPercent) ->
-                claimsGivenPercent.futureApr |> Just
-
-            Slider { claims } ->
-                case claims of
-                    Success claimsGivenPercent ->
+                                _ ->
+                                    none
+                       )
+                , (case claimsOut of
+                    Default (Success claimsGivenPercent) ->
                         claimsGivenPercent.futureApr |> Just
 
+                    Slider { claims } ->
+                        case claims of
+                            Success claimsGivenPercent ->
+                                claimsGivenPercent.futureApr |> Just
+
+                            _ ->
+                                Nothing
+
+                    Bond { claims } ->
+                        case claims of
+                            Success claimsGivenBond ->
+                                claimsGivenBond.futureApr |> Just
+
+                            _ ->
+                                Nothing
+
+                    Insurance { claims } ->
+                        case claims of
+                            Success claimsGivenInsurance ->
+                                claimsGivenInsurance.futureApr |> Just
+
+                            _ ->
+                                Nothing
+
                     _ ->
                         Nothing
+                  )
+                    |> (\maybeFutureApr ->
+                            case maybeFutureApr of
+                                Just futureApr ->
+                                    row
+                                        [ width fill
+                                        , height shrink
+                                        , spacing 8
+                                        ]
+                                        [ el
+                                            [ Font.size 14
+                                            , model.theme |> ThemeColor.textLight |> Font.color
+                                            ]
+                                            (text "Change in Pool Max APR")
+                                        , row
+                                            [ alignRight
+                                            , Font.size 14
+                                            , model.theme |> ThemeColor.text |> Font.color
+                                            ]
+                                            [ if futureApr > poolInfo.apr then
+                                                text "+"
 
-            Bond { claims } ->
-                case claims of
-                    Success claimsGivenBond ->
-                        claimsGivenBond.futureApr |> Just
+                                              else
+                                                none
+                                            , (futureApr - poolInfo.apr) |> Calculate.apr
+                                            ]
+                                        ]
 
-                    _ ->
-                        Nothing
-
-            Insurance { claims } ->
-                case claims of
-                    Success claimsGivenInsurance ->
-                        claimsGivenInsurance.futureApr |> Just
-
-                    _ ->
-                        Nothing
-
-            _ ->
-                Nothing
-          )
-            |> (\maybeFutureApr ->
-                    case maybeFutureApr of
-                        Just futureApr ->
-                            row
-                                [ width fill
-                                , height shrink
-                                , spacing 8
-                                ]
-                                [ el
-                                    [ Font.size 14
-                                    , model.theme |> ThemeColor.textLight |> Font.color
-                                    ]
-                                    (text "Pool Max APR after txn")
-                                , el
-                                    [ alignRight
-                                    , Font.size 16
-                                    , model.theme |> ThemeColor.text |> Font.color
-                                    ]
-                                    (futureApr |> Calculate.apr)
-                                ]
-
-                        _ ->
-                            none
-               )
-        , (case claimsOut of
-            Default (Success claimsGivenPercent) ->
-                claimsGivenPercent.futureCdp |> Just
-
-            Slider { claims } ->
-                case claims of
-                    Success claimsGivenPercent ->
+                                _ ->
+                                    none
+                       )
+                , (case claimsOut of
+                    Default (Success claimsGivenPercent) ->
                         claimsGivenPercent.futureCdp |> Just
 
+                    Slider { claims } ->
+                        case claims of
+                            Success claimsGivenPercent ->
+                                claimsGivenPercent.futureCdp |> Just
+
+                            _ ->
+                                Nothing
+
+                    Bond { claims } ->
+                        case claims of
+                            Success claimsGivenBond ->
+                                claimsGivenBond.futureCdp |> Just
+
+                            _ ->
+                                Nothing
+
+                    Insurance { claims } ->
+                        case claims of
+                            Success claimsGivenInsurance ->
+                                claimsGivenInsurance.futureCdp |> Just
+
+                            _ ->
+                                Nothing
+
                     _ ->
                         Nothing
+                  )
+                    |> (\maybeFutureCdp ->
+                            case maybeFutureCdp of
+                                Just futureCdp ->
+                                    case ( futureCdp.percent, poolInfo.cdp.percent ) of
+                                        ( Just futureCdpPerc, Just poolCdpPerc ) ->
+                                            row
+                                                [ width fill
+                                                , height shrink
+                                                , spacing 8
+                                                ]
+                                                [ el
+                                                    [ Font.size 14
+                                                    , model.theme |> ThemeColor.textLight |> Font.color
+                                                    ]
+                                                    (text "Change in Pool Min CDP")
+                                                , row
+                                                    [ alignRight
+                                                    , Font.size 14
+                                                    , (if futureCdpPerc < 1 then
+                                                        Color.negative500
 
-            Bond { claims } ->
-                case claims of
-                    Success claimsGivenBond ->
-                        claimsGivenBond.futureCdp |> Just
+                                                       else
+                                                        model.theme |> ThemeColor.text
+                                                      )
+                                                        |> Font.color
+                                                    ]
+                                                    [ if futureCdpPerc > poolCdpPerc then
+                                                        text "+"
 
-                    _ ->
-                        Nothing
+                                                      else
+                                                        none
+                                                    , [ (futureCdpPerc - poolCdpPerc)
+                                                            |> (*) 10000
+                                                            |> truncate
+                                                            |> toFloat
+                                                            |> (\number -> number / 100)
+                                                            |> String.fromFloat
+                                                      , "%"
+                                                      ]
+                                                        |> String.concat
+                                                        |> text
+                                                    ]
+                                                ]
 
-            Insurance { claims } ->
-                case claims of
-                    Success claimsGivenInsurance ->
-                        claimsGivenInsurance.futureCdp |> Just
+                                        _ ->
+                                            none
 
-                    _ ->
-                        Nothing
-
-            _ ->
-                Nothing
-          )
-            |> (\maybeFutureCdp ->
-                    case maybeFutureCdp of
-                        Just futureCdp ->
-                            row
-                                [ width fill
-                                , height shrink
-                                , spacing 8
-                                ]
-                                [ el
-                                    [ Font.size 14
-                                    , model.theme |> ThemeColor.textLight |> Font.color
-                                    ]
-                                    (text "Pool Min CDP after txn")
-                                , el
-                                    [ alignRight
-                                    , Font.size 16
-                                    , model.theme |> ThemeColor.text |> Font.color
-                                    ]
-                                    (Calculate.cdp
-                                        { onMouseEnter = OnMouseEnter
-                                        , onMouseLeave = OnMouseLeave
-                                        , cdpTooltip = Tooltip.TxnFee
-                                        , opened = tooltip
-                                        , pair = pool.pair
-                                        , theme = model.theme
-                                        , cdp = futureCdp
-                                        }
-                                        model.priceFeed
-                                        (model.theme |> ThemeColor.text)
-                                        16
-                                    )
-                                ]
-
-                        _ ->
-                            none
-               )
+                                _ ->
+                                    none
+                       )
+                ]
         ]
 
 
