@@ -1,13 +1,12 @@
 module Modal.Caution.Main exposing (Effect(..), Modal, Msg, init, update, view)
 
-import BigInt
 import Blockchain.User.WriteLend exposing (WriteLend(..))
 import Data.Backdrop exposing (Backdrop)
 import Data.CDP exposing (CDP)
 import Data.Images exposing (Images)
 import Data.Pair as Pair
 import Data.Theme exposing (Theme)
-import Data.Uint as Uint
+import Data.Token as Token
 import Element
     exposing
         ( Element
@@ -32,6 +31,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Modal.Caution.Tooltip as Tooltip exposing (Tooltip)
 import Modal.Outside as Outside
 import Page.PoolInfo exposing (PoolInfo)
 import Utility.Color as Color
@@ -39,6 +39,7 @@ import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
 import Utility.ThemeColor as ThemeColor
+import Utility.Truncate as Truncate
 
 
 type Modal
@@ -47,11 +48,14 @@ type Modal
         , apr : Float
         , cdp : CDP
         , poolInfo : PoolInfo
+        , tooltip : Maybe Tooltip
         }
 
 
 type Msg
     = LendClick WriteLend
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
     | Exit
 
 
@@ -65,16 +69,31 @@ init writeLend apr cdp poolInfo =
     , apr = apr
     , cdp = cdp
     , poolInfo = poolInfo
+    , tooltip = Nothing
     }
         |> Modal
 
 
 update : Msg -> Modal -> ( Maybe Modal, Maybe Effect )
-update msg modal =
+update msg (Modal modal) =
     case msg of
         LendClick writeLend ->
-            ( modal |> Just
+            ( modal |> Modal |> Just
             , Lend writeLend |> Just
+            )
+
+        OnMouseEnter tooltip ->
+            ( { modal | tooltip = Just tooltip }
+                |> Modal
+                |> Just
+            , Nothing
+            )
+
+        OnMouseLeave ->
+            ( { modal | tooltip = Nothing }
+                |> Modal
+                |> Just
+            , Nothing
             )
 
         Exit ->
@@ -154,7 +173,7 @@ body :
     { model | images : Images, backdrop : Backdrop, theme : Theme }
     -> Modal
     -> Element Msg
-body { images, theme } (Modal { txn, apr, cdp, poolInfo }) =
+body { images, theme } (Modal { txn, cdp, tooltip }) =
     column
         [ width fill
         , height shrink
@@ -188,7 +207,7 @@ body { images, theme } (Modal { txn, apr, cdp, poolInfo }) =
                             , Font.alignLeft
                             , Font.color Color.negative500
                             ]
-                            [ text "You are doing an under-collateralized lending (CDP < 100%). You are under-insured for default risk and can lose on Principal."
+                            [ text "This is an under collateralized lending transaction (CDP < 100%), and there is a high risk of Principal loss."
                             ]
 
                     else
@@ -202,7 +221,7 @@ body { images, theme } (Modal { txn, apr, cdp, poolInfo }) =
                 , Font.alignLeft
                 , paddingXY 0 8
                 ]
-                [ text "Expected return is $"
+                [ text "Your expected principal along with interest is "
                 , (case txn of
                     GivenPercent givenPercent ->
                         ( givenPercent.minBond, givenPercent.pool )
@@ -214,44 +233,31 @@ body { images, theme } (Modal { txn, apr, cdp, poolInfo }) =
                         ( givenIns.minBond, givenIns.pool )
                   )
                     |> (\( bond, pool ) ->
-                            case poolInfo.assetSpot of
-                                Just assetSpot ->
-                                    let
-                                        maybeAssetSpotBigInt =
-                                            (assetSpot * 10000) |> round |> String.fromInt |> BigInt.fromIntString
-
-                                        maybeBondBigInt =
-                                            bond |> Uint.toString |> BigInt.fromIntString
-                                    in
-                                    case ( maybeBondBigInt, maybeAssetSpotBigInt ) of
-                                        ( Just bondBigInt, Just assetSpotBigInt ) ->
-                                            BigInt.mul bondBigInt assetSpotBigInt
-                                                |> (\bondInDollars -> BigInt.div bondInDollars (10000 |> BigInt.fromInt))
-                                                |> BigInt.toString
-                                                |> Uint.fromString
-                                                |> Maybe.map (\uint -> Uint.toAmountTruncated (pool.pair |> Pair.toAsset) uint)
-                                                |> Maybe.withDefault "(err)"
-
-                                        _ ->
-                                            "(err)"
-
-                                _ ->
-                                    "(err)"
+                            row [ spacing 4 ]
+                                [ text (pool.pair |> Pair.toAsset |> Token.toSymbol)
+                                , Truncate.viewAmount
+                                    { onMouseEnter = OnMouseEnter
+                                    , onMouseLeave = OnMouseLeave
+                                    , tooltip = Tooltip.AssetReturn
+                                    , opened = tooltip
+                                    , token = pool.pair |> Pair.toAsset
+                                    , amount = bond
+                                    , theme = theme
+                                    , customStyles = [ Font.size 14 ]
+                                    }
+                                ]
                        )
-                    |> text
-                , text " but with the expectation of collateral price "
+                , text " after maturity"
                 , (case cdp.percent of
                     Just cdpPerc ->
                         (if (cdpPerc * 100) > 100 then
-                            [ "not falling below "
+                            [ ", with the assumption that collateral price will not fall more than "
                             , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
-                            , "% "
+                            , "%. "
                             ]
 
                          else
-                            [ "going up by more than "
-                            , (100 - cdpPerc * 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
-                            , "% "
+                            [ ". However, due to transaction being undercollateralized, your realized APR will depend on amount of defaults & price of collateral at maturity"
                             ]
                         )
                             |> String.concat
@@ -260,29 +266,23 @@ body { images, theme } (Modal { txn, apr, cdp, poolInfo }) =
                         ""
                   )
                     |> text
-                , text "from the current price at maturity. "
                 , (case cdp.percent of
                     Just cdpPerc ->
                         if (cdpPerc * 100) > 100 then
-                            [ "If the collateral price falls below "
+                            [ "If collateral price falls more than "
                             , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
                             , "%"
+                            , ", the realized APR will be lower and depend on amount of default & price of collateral"
                             ]
                                 |> String.concat
 
                         else
-                            [ "If the collateral price does not go up more than "
-                            , (100 - cdpPerc * 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
-                            , "%"
-                            ]
-                                |> String.concat
+                            ""
 
                     _ ->
                         ""
                   )
                     |> text
-                , text ", there is a high probability of default risk and not realizing an APR of "
-                , text ([ String.fromFloat (apr * 100), "%" ] |> String.join "")
                 ]
             ]
         , Input.button
