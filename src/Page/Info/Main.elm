@@ -795,7 +795,7 @@ collateralFactor ({ theme, priceFeed } as model) (PoolsData { tooltip }) { pool,
             [ centerX, centerY ]
             (row
                 [ Font.size 14
-                , model.theme |> ThemeColor.text |> Font.color
+                , theme |> ThemeColor.text |> Font.color
                 , alignRight
                 , spacing 6
                 ]
@@ -809,7 +809,6 @@ collateralFactor ({ theme, priceFeed } as model) (PoolsData { tooltip }) { pool,
                     , theme = theme
                     }
                     priceFeed
-                    (theme |> ThemeColor.text)
                     14
                 , if
                     case priceFeed of

@@ -2662,7 +2662,7 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                             [ Font.size 14
                                                             , model.theme |> ThemeColor.textLight |> Font.color
                                                             ]
-                                                            (text "Change in Pool Max APR")
+                                                            (text "Change in APR")
                                                         , row
                                                             [ alignRight
                                                             , Font.size 14
@@ -2730,7 +2730,7 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                                     [ Font.size 14
                                                                     , model.theme |> ThemeColor.textLight |> Font.color
                                                                     ]
-                                                                    (text "Change in Pool Min CDP")
+                                                                    (text "Change in CDP")
                                                                 , row
                                                                     [ alignRight
                                                                     , Font.size 14

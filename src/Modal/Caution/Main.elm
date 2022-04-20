@@ -18,6 +18,7 @@ import Element
         , height
         , none
         , padding
+        , paddingEach
         , paddingXY
         , paragraph
         , px
@@ -220,6 +221,7 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                 , Font.size 14
                 , Font.alignLeft
                 , paddingXY 0 8
+                , spacing 6
                 ]
                 [ text "Your expected principal along with interest is "
                 , (case txn of
@@ -234,7 +236,7 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                   )
                     |> (\( bond, pool ) ->
                             row [ spacing 4 ]
-                                [ text (pool.pair |> Pair.toAsset |> Token.toSymbol)
+                                [ el [ Font.bold ] (pool.pair |> Pair.toAsset |> Token.toSymbol |> text)
                                 , Truncate.viewAmount
                                     { onMouseEnter = OnMouseEnter
                                     , onMouseLeave = OnMouseLeave
@@ -243,7 +245,16 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                                     , token = pool.pair |> Pair.toAsset
                                     , amount = bond
                                     , theme = theme
-                                    , customStyles = [ Font.size 14 ]
+                                    , customStyles =
+                                        [ Font.size 14
+                                        , Font.bold
+                                        , paddingEach
+                                            { top = 4
+                                            , right = 0
+                                            , bottom = 1
+                                            , left = 0
+                                            }
+                                        ]
                                     }
                                 ]
                        )

@@ -783,7 +783,6 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
                                                     , theme = theme
                                                     }
                                                     priceFeed
-                                                    (theme |> ThemeColor.text)
                                                     14
                                                 )
                                             ]

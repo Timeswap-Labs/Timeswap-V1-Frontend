@@ -334,7 +334,7 @@ lendCDP { priceFeed, theme } param =
                                     , (if percent == 0 then
                                         theme |> ThemeColor.textLight
 
-                                       else if percent <= 1 then
+                                       else if percent < 1 then
                                         Color.negative400
 
                                        else

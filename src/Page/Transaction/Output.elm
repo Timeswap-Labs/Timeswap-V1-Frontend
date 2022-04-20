@@ -16,6 +16,7 @@ import Data.Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , centerX
         , centerY
         , clip
         , el
@@ -36,6 +37,7 @@ import Element.Region as Region
 import Utility.Color as Color
 import Utility.Fade as Fade
 import Utility.Image as Image
+import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
@@ -93,10 +95,15 @@ view { images, theme } param =
                     output
                         |> Fade.view theme param.token
 
-                Loading _ ->
-                    none
+                Loading timeline ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        , centerX
+                        , centerY
+                        ]
+                        (Loading.view timeline theme)
 
-                -- |> Debug.log "loading animation"
                 _ ->
                     none
             )
@@ -227,14 +234,14 @@ empty { images, theme } param =
 
 
 liquidity :
-    { model | images : Images }
+    { model | images : Images, theme : Theme }
     ->
         { pair : Pair
         , output : Remote error Uint
         , description : String
         }
     -> Element msg
-liquidity { images } param =
+liquidity { images, theme } param =
     el
         [ Region.description param.description
         , width fill
@@ -251,7 +258,7 @@ liquidity { images } param =
             [ row
                 [ width <| px 80
                 , height <| px 24
-                , spacing 6
+                , spacing 18
                 ]
                 [ images
                     |> PairImage.view
@@ -279,10 +286,15 @@ liquidity { images } param =
                         output
                             |> Fade.viewLP
 
-                    Loading _ ->
-                        none
+                    Loading timeline ->
+                        el
+                            [ width shrink
+                            , height shrink
+                            , centerX
+                            , centerY
+                            ]
+                            (Loading.view timeline theme)
 
-                    -- |> Debug.log "loading animation"
                     _ ->
                         none
                 )
