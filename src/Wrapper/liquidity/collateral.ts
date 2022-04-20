@@ -75,18 +75,18 @@ export async function collateralCalculate(
   }
 }
 
-export async function debtTransaction(
+export async function collateralTransaction(
   pool: SDKPool,
   gp: GlobalParams,
   liquidity: Liquidity
 ) {
-  return await pool.upgrade(gp.walletSigner!).liquidityGivenDebt({
+  return await pool.upgrade(gp.walletSigner!).liquidityGivenCollateral({
     liquidityTo: liquidity.liquidityTo,
     dueTo: liquidity.dueTo,
-    debtIn: new Uint112(liquidity.assetIn),
+    collateralIn: new Uint112(liquidity.collateralIn),
     minLiquidity: new Uint256(liquidity.minLiquidity),
     maxAsset: new Uint112(liquidity.maxAsset),
-    maxCollateral: new Uint112(liquidity.maxCollateral),
+    maxDebt: new Uint112(liquidity.maxDebt),
     deadline: new Uint256(liquidity.deadline),
   });
 }
@@ -94,9 +94,9 @@ export async function debtTransaction(
 interface Liquidity {
   liquidityTo: string;
   dueTo: string;
-  assetIn: string;
+  collateralIn: string;
   minLiquidity: string;
   maxAsset: string;
-  maxCollateral: string;
+  maxDebt: string;
   deadline: number;
 }

@@ -52,6 +52,7 @@ declare interface Ports {
   queryLiquidity: PortFromElm<LiquidityQuery>;
   queryLiquidityPerSecond: PortFromElm<LiquidityQuery>;
   receiveAddLiqAnswer: PortToElm<LiquidityCalculate>;
+  liquidity: PortFromElm<Liquidity>;
 
   scroll: PortsToElm;
 
@@ -446,6 +447,27 @@ interface Pay {
     collateralTo: string;
     ids: string[];
     maxAssetsIn: string[];
+    deadline: number;
+  };
+}
+
+interface Liquidity {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    liquidityTo: string;
+    dueTo: string;
+    assetIn?: string;
+    debtIn?: string;
+    collateralIn?: string;
+    minLiquidity: string;
+    maxAsset?: string;
+    maxDebt?: string;
+    maxCollateral?: string;
     deadline: number;
   };
 }

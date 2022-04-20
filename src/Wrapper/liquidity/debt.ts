@@ -81,7 +81,7 @@ export async function debtTransaction(
   return await pool.upgrade(gp.walletSigner!).liquidityGivenDebt({
     liquidityTo: liquidity.liquidityTo,
     dueTo: liquidity.dueTo,
-    debtIn: new Uint112(liquidity.assetIn),
+    debtIn: new Uint112(liquidity.debtIn),
     minLiquidity: new Uint256(liquidity.minLiquidity),
     maxAsset: new Uint112(liquidity.maxAsset),
     maxCollateral: new Uint112(liquidity.maxCollateral),
@@ -92,7 +92,7 @@ export async function debtTransaction(
 interface Liquidity {
   liquidityTo: string;
   dueTo: string;
-  assetIn: string;
+  debtIn: string;
   minLiquidity: string;
   maxAsset: string;
   maxCollateral: string;

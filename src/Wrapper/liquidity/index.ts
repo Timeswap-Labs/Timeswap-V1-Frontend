@@ -1,7 +1,8 @@
-import { getPool } from '../helper';
-import { assetCalculate } from './asset';
-import { collateralCalculate } from './collateral';
-import { debtCalculate } from './debt';
+import { GlobalParams } from './../global';
+import { getPool, getPoolSDK, updateCachedTxns } from '../helper';
+import { assetCalculate, assetTransaction } from './asset';
+import { collateralCalculate, collateralTransaction } from './collateral';
+import { debtCalculate, debtTransaction } from './debt';
 
 export function liquidity(app: ElmApp<Ports>) {
   app.ports.queryLiquidity.subscribe((query) => {
@@ -11,6 +12,72 @@ export function liquidity(app: ElmApp<Ports>) {
   app.ports.queryLiquidityPerSecond.subscribe((query) =>
     liquidityQueryCalculation(app, query)
   );
+}
+
+export function liquiditySigner(
+  app: ElmApp<Ports>,
+  gp: GlobalParams
+) {
+  app.ports.liquidity.subscribe(async (params) => {
+    const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
+    const { assetIn, debtIn, collateralIn, maxAsset, maxDebt, maxCollateral } = params.send;
+    let txnConfirmation;
+
+    try {
+      if (
+        assetIn !== undefined &&
+        maxDebt !== undefined &&
+        maxCollateral !== undefined
+      ) {
+        txnConfirmation = await assetTransaction(pool, gp, {
+          ...params.send,
+          assetIn,
+          maxDebt,
+          maxCollateral,
+        });
+      } else if (debtIn !== undefined && maxAsset !== undefined && maxCollateral !== undefined) {
+        txnConfirmation = await debtTransaction(pool, gp, {
+          ...params.send,
+          debtIn,
+          maxAsset,
+          maxCollateral,
+        });
+      } else if (collateralIn !== undefined && maxAsset !== undefined && maxDebt !== undefined) {
+        txnConfirmation = await collateralTransaction(pool, gp, {
+          ...params.send,
+          collateralIn,
+          maxAsset,
+          maxDebt
+        });
+      }
+
+      if (txnConfirmation) {
+        app.ports.receiveConfirm.send({
+          id: params.id,
+          chain: params.chain,
+          address: params.address,
+          hash: txnConfirmation.hash || null
+        });
+
+        const txnReceipt = await txnConfirmation.wait();
+        const receiveReceipt = {
+          chain: params.chain,
+          address: params.address,
+          hash: txnConfirmation.hash,
+          state: txnReceipt.status ? "success" : "failed"
+        }
+        app.ports.receiveReceipt.send(receiveReceipt);
+        updateCachedTxns(receiveReceipt);
+      }
+    } catch (error) {
+      app.ports.receiveConfirm.send({
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: null
+      });
+    }
+  });
 }
 
 async function liquidityQueryCalculation(
