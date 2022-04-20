@@ -1255,23 +1255,23 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@timeswap-labs/timeswap-v1-sdk-core@1.1.0", "@timeswap-labs/timeswap-v1-sdk-core@^1.1.0":
-  version "1.1.0"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk-core/1.1.0/0ec99cf612f22b8d5ced3e67bd67edf08a0d1d0bf9ef383b5b72b505148e0a54#d097ea9cf654b29ed01790e3a0990b494e85de2a"
-  integrity sha512-2OiyQiR505tynHwMkZu8J87SuXGbYmhkDzj6Ru7OKWX8xzwSvuzERmJFFQJoUNhouJkw/HG/FvEp8LiZ4akcfw==
+"@timeswap-labs/timeswap-v1-sdk-core@1.2.2-Beta", "@timeswap-labs/timeswap-v1-sdk-core@^1.2.2-Beta":
+  version "1.2.2-Beta"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk-core/1.2.2-Beta/a889e8b9d406f9204860839c210229faf6ac038df842c426f03704d37d7a8584#9dcf014d10fabcd9214b9de7bc7967a8d7f11a6f"
+  integrity sha512-R/vchqDliOlhyqjebZZGc79AL/NmjAFumS5iYqVb8eZAHE6MCuGleqZ9FFk9DJx3sSSF6SoI3IOuIsRoGJeYFg==
   dependencies:
     "@ethersproject/address" "^5.5.0"
     tiny-invariant "^1.1.0"
 
-"@timeswap-labs/timeswap-v1-sdk@^1.2.0-Beta":
-  version "1.2.0-Beta"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/1.2.0-Beta/f2194a40adc8a5c84d23fa3c6d4227d1ee1827c1b28e8a81c50217f13458181e#63aab7c43fa47e7b3185081685e6c95a5c749468"
-  integrity sha512-n+a/eUHusx0Wx65CbeRjOwqzHmjlPMRlMA1H9mBN2Wv03bmb9priilo6OPZL5buP3Qql+UWzbVd7FpT4wuB5Rg==
+"@timeswap-labs/timeswap-v1-sdk@^1.2.2-Beta":
+  version "1.2.2-Beta"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/1.2.2-Beta/5a85c6b82dedefad802a8b7f0b83a99f9cff21e6027ed9ffc94609c8aaaa56b8#851b1b13d03629d08103d232fbb1c64c82c23f66"
+  integrity sha512-U6jkjmZkABTR7PIy1jhWJwxGtkL4YF4XZxM8w97hNS2aA2DZhKhMSelwLUoNR+darPotVpN4D6CzYNOFK4wSDA==
   dependencies:
     "@ethersproject/abstract-provider" "^5.5.1"
     "@ethersproject/abstract-signer" "^5.5.0"
     "@ethersproject/contracts" "^5.5.0"
-    "@timeswap-labs/timeswap-v1-sdk-core" "1.1.0"
+    "@timeswap-labs/timeswap-v1-sdk-core" "1.2.2-Beta"
     tiny-invariant "^1.1.0"
 
 "@trysound/sax@0.2.0":

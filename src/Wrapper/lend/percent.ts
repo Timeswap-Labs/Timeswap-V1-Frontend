@@ -91,6 +91,7 @@ export async function percentCalculate(
       maturity,
       currentTime
     );
+
     const cdp = calculateCdp(
       query.assetIn,
       query.pool.asset.decimals,

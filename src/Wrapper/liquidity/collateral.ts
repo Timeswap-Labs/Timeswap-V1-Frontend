@@ -1,10 +1,11 @@
-import { GlobalParams } from './../global';
+import { GlobalParams } from '../global';
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Pool, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-sdk-core';
 import { calculateMaxValue, calculateMinValue, getCurrentTime } from "../helper";
-import { calculateApr, calculateCdp, calculateFuturisticApr, calculateFuturisticCdp } from './common';
+import { calculateFuturisticApr, calculateFuturisticCdp } from './common';
 
-export async function assetCalculate(
+
+export async function collateralCalculate(
   app: ElmApp<Ports>,
   pool: Pool,
   query: LiquidityQuery
@@ -26,10 +27,10 @@ export async function assetCalculate(
       xIncrease,
       yIncrease,
       zIncrease,
-    } = pool.liquidityGivenAsset(
+    } = pool.liquidityGivenCollateral(
       state,
       new Uint256(query.poolInfo.totalLiquidity),
-      new Uint112(query.assetIn!),
+      new Uint112(query.collateralIn!),
       new Uint256(currentTime),
       new Uint256(query.poolInfo.feeStored),
     );
@@ -38,7 +39,7 @@ export async function assetCalculate(
     const collateralIn = dueOut.collateral.toString();
     const minLiquidity = calculateMinValue(liquidityOut, query.slippage);
     const maxDebt = calculateMaxValue(dueOut.debt, query.slippage);
-    const maxCollateral = calculateMaxValue(dueOut.collateral, query.slippage);
+    const maxAsset = calculateMaxValue(assetInReturn, query.slippage);
 
     const futureApr = calculateFuturisticApr(state, xIncrease, yIncrease);
     const futureCdp = calculateFuturisticCdp(
@@ -51,23 +52,21 @@ export async function assetCalculate(
       query.poolInfo.collateralSpot
     );
 
-    query.pool.maturity = query.pool.maturity.toString();
-
     app.ports.receiveAddLiqAnswer.send({
       ...query,
       result: {
+        assetIn: assetInReturn.toString(),
         debtIn,
-        collateralIn,
         liquidityOut: liquidityOut.toString(),
         minLiquidity: minLiquidity.toString(),
+        maxAsset: maxAsset.toString(),
         maxDebt: maxDebt.toString(),
-        maxCollateral: maxCollateral.toString(),
         apr: futureApr,
         cdp: futureCdp,
-      }
+      },
     });
-  } catch (err) {
-    console.log("err", err);
+  } catch(err) {
+    console.log(err);
 
     app.ports.receiveLendAnswer.send({
       ...query,
@@ -76,17 +75,17 @@ export async function assetCalculate(
   }
 }
 
-export async function assetTransaction(
+export async function debtTransaction(
   pool: SDKPool,
   gp: GlobalParams,
   liquidity: Liquidity
 ) {
-  return await pool.upgrade(gp.walletSigner!).liquidityGivenAsset({
+  return await pool.upgrade(gp.walletSigner!).liquidityGivenDebt({
     liquidityTo: liquidity.liquidityTo,
     dueTo: liquidity.dueTo,
-    assetIn: new Uint112(liquidity.assetIn),
+    debtIn: new Uint112(liquidity.assetIn),
     minLiquidity: new Uint256(liquidity.minLiquidity),
-    maxDebt: new Uint112(liquidity.maxDebt),
+    maxAsset: new Uint112(liquidity.maxAsset),
     maxCollateral: new Uint112(liquidity.maxCollateral),
     deadline: new Uint256(liquidity.deadline),
   });
@@ -97,7 +96,7 @@ interface Liquidity {
   dueTo: string;
   assetIn: string;
   minLiquidity: string;
-  maxDebt: string;
+  maxAsset: string;
   maxCollateral: string;
   deadline: number;
 }

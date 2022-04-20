@@ -2,6 +2,7 @@ import { GlobalParams } from './../global';
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Pool, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-sdk-core';
 import { calculateMaxValue, calculateMinValue, getCurrentTime } from "../helper";
+import { calculateFuturisticApr, calculateFuturisticCdp } from './common';
 
 
 export async function debtCalculate(
@@ -10,7 +11,6 @@ export async function debtCalculate(
   query: LiquidityQuery
 ) {
   try {
-    const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
 
     const state = {
@@ -26,34 +26,46 @@ export async function debtCalculate(
       xIncrease,
       yIncrease,
       zIncrease,
-    } = pool.liquidityGivenAsset(
+    } = pool.liquidityGivenDebt(
       state,
       new Uint256(query.poolInfo.totalLiquidity),
-      new Uint112(query.assetIn!),
+      new Uint112(query.debtIn!),
       new Uint256(currentTime),
       new Uint256(query.poolInfo.feeStored),
     );
 
-    const debtIn = dueOut.debt.toString();
     const collateralIn = dueOut.collateral.toString();
     const minLiquidity = calculateMinValue(liquidityOut, query.slippage);
-    const maxDebt = calculateMaxValue(dueOut.debt, query.slippage);
+    const maxAsset = calculateMaxValue(assetInReturn, query.slippage);
     const maxCollateral = calculateMaxValue(dueOut.collateral, query.slippage);
+
+    const futureApr = calculateFuturisticApr(state, xIncrease, yIncrease);
+    const futureCdp = calculateFuturisticCdp(
+      state,
+      query.pool.asset.decimals,
+      query.pool.collateral.decimals,
+      xIncrease,
+      zIncrease,
+      query.poolInfo.assetSpot,
+      query.poolInfo.collateralSpot
+    );
 
     app.ports.receiveAddLiqAnswer.send({
       ...query,
       result: {
-        debtIn,
+        assetIn: assetInReturn.toString(),
         collateralIn,
         liquidityOut: liquidityOut.toString(),
-        minLiquidity,
-        maxDebt,
-        maxCollateral,
-        apr: 0,
-        cdp: 0,
+        minLiquidity: minLiquidity.toString(),
+        maxAsset: maxAsset.toString(),
+        maxCollateral: maxCollateral.toString(),
+        apr: futureApr,
+        cdp: futureCdp,
       },
     });
-  } catch {
+  } catch(err) {
+    console.log(err);
+
     app.ports.receiveLendAnswer.send({
       ...query,
       result: 0,

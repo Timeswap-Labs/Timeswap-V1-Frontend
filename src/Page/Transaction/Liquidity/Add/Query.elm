@@ -173,7 +173,7 @@ decoderAnswerAsset =
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "assetIn" Uint.decoder
-        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "slippage" Slippage.decoderGivenPercent
         |> Pipeline.required "result"
             ([ decoderResultAsset |> Decode.map Ok
              , Error.decoder |> Decode.map Err
@@ -189,7 +189,7 @@ decoderAnswerDebt =
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "debtIn" Uint.decoder
-        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "slippage" Slippage.decoderGivenPercent
         |> Pipeline.required "result"
             ([ decoderResultDebt |> Decode.map Ok
              , Error.decoder |> Decode.map Err
@@ -205,7 +205,7 @@ decoderAnswerCollateral =
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "collateralIn" Uint.decoder
-        |> Pipeline.required "slippage" Slippage.decoder
+        |> Pipeline.required "slippage" Slippage.decoderGivenPercent
         |> Pipeline.required "result"
             ([ decoderResultCollateral |> Decode.map Ok
              , Error.decoder |> Decode.map Err

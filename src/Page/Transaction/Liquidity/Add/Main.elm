@@ -17,7 +17,7 @@ import Data.CDP as CDP exposing (CDP)
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
-import Data.Pair as Pair
+import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
@@ -28,14 +28,17 @@ import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , centerX
         , centerY
         , column
         , el
         , fill
         , height
+        , map
         , none
         , padding
         , paddingXY
+        , px
         , row
         , shrink
         , spacing
@@ -53,13 +56,14 @@ import Page.PoolInfo exposing (PoolInfo)
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
 import Page.Transaction.Liquidity.Add.Disabled as Disabled
-import Page.Transaction.Liquidity.Add.Error exposing (Error)
+import Page.Transaction.Liquidity.Add.Error as Error exposing (Error)
 import Page.Transaction.Liquidity.Add.Query as Query
 import Page.Transaction.Liquidity.Add.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
+import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
@@ -1266,7 +1270,9 @@ view model blockchain pool poolInfo (Transaction transaction) =
         transaction
             |> liqOutSection model
                 pool
-    , buttons = buttons model.theme blockchain
+    , buttons =
+        transaction
+            |> buttons model.theme blockchain pool.pair
     }
 
 
@@ -1717,8 +1723,109 @@ liqOutSection model pool { state } =
         ]
 
 
-buttons : Theme -> Blockchain -> Element Msg
-buttons theme blockchain =
+toAsset : Token -> { transaction | state : State } -> Maybe Uint
+toAsset asset transaction =
+    case transaction.state of
+        Asset { assetIn } ->
+            assetIn
+                |> Uint.fromAmount asset
+
+        Collateral { out } ->
+            out
+                |> Remote.map .assetIn
+                |> Remote.map Just
+                |> Remote.withDefault Nothing
+
+        Debt { out } ->
+            out
+                |> Remote.map .assetIn
+                |> Remote.map Just
+                |> Remote.withDefault Nothing
+
+
+toCollateral : Token -> { transaction | state : State } -> Maybe Uint
+toCollateral collateral transaction =
+    case transaction.state of
+        Asset { out } ->
+            out
+                |> Remote.map .collateralIn
+                |> Remote.map Just
+                |> Remote.withDefault Nothing
+
+        Collateral { collateralIn } ->
+            collateralIn
+                |> Uint.fromAmount collateral
+
+        Debt { out } ->
+            out
+                |> Remote.map .collateralIn
+                |> Remote.map Just
+                |> Remote.withDefault Nothing
+
+
+type Txn
+    = HasTxn
+    | NoTxn
+
+
+fromTxnToResult :
+    { transaction | state : State }
+    -> Result Error Txn
+fromTxnToResult { state } =
+    case state of
+        Asset { assetIn, out } ->
+            if assetIn |> Input.isZero then
+                Ok NoTxn
+
+            else
+                case out of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
+
+        Collateral { collateralIn, out } ->
+            if collateralIn |> Input.isZero then
+                Ok NoTxn
+
+            else
+                case out of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
+
+        Debt { debtIn, out } ->
+            if debtIn |> Input.isZero then
+                Ok NoTxn
+
+            else
+                case out of
+                    Success _ ->
+                        Ok HasTxn
+
+                    Loading _ ->
+                        Ok NoTxn
+
+                    Failure error ->
+                        Err error
+
+
+buttons :
+    Theme
+    -> Blockchain
+    -> Pair
+    -> { transaction | state : State }
+    -> Element Msg
+buttons theme blockchain pair transaction =
     column
         [ width fill
         , height shrink
@@ -1727,7 +1834,218 @@ buttons theme blockchain =
         (blockchain
             |> Blockchain.toUser
             |> Maybe.map
-                (\_ -> [])
+                (\user ->
+                    case
+                        ( transaction |> toAsset (pair |> Pair.toAsset)
+                        , transaction |> toCollateral (pair |> Pair.toCollateral)
+                        , transaction |> fromTxnToResult
+                        )
+                    of
+                        ( Just assetIn, Just collateralIn, Ok HasTxn ) ->
+                            case
+                                ( pair |> Pair.toAsset |> Token.toERC20
+                                , pair |> Pair.toCollateral |> Token.toERC20
+                                )
+                            of
+                                ( Just assetErc20, Just collErc20 ) ->
+                                    case
+                                        ( user
+                                            |> User.getAllowance assetErc20
+                                            |> (Maybe.map << Remote.map)
+                                                (Uint.hasEnough assetIn)
+                                        , user
+                                            |> User.getAllowance collErc20
+                                            |> (Maybe.map << Remote.map)
+                                                (Uint.hasEnough collateralIn)
+                                        )
+                                    of
+                                        ( Just (Success True), Just (Success True) ) ->
+                                            case
+                                                ( user
+                                                    |> User.getBalance (pair |> Pair.toAsset)
+                                                    |> (Maybe.map << Remote.map)
+                                                        (Uint.hasEnough assetIn)
+                                                , user
+                                                    |> User.getBalance (pair |> Pair.toCollateral)
+                                                    |> (Maybe.map << Remote.map)
+                                                        (Uint.hasEnough collateralIn)
+                                                )
+                                            of
+                                                ( Just (Success True), Just (Success True) ) ->
+                                                    [ liquidityButton theme ]
+
+                                                ( Just (Success False), Just (Success True) ) ->
+                                                    [ insufficientTokenBalance (pair |> Pair.toAsset) ]
+
+                                                ( Just (Success True), Just (Success False) ) ->
+                                                    [ insufficientTokenBalance (pair |> Pair.toCollateral) ]
+
+                                                ( Just (Success False), Just (Success False) ) ->
+                                                    [ insufficientTokenBalance (pair |> Pair.toAsset)
+                                                    , insufficientTokenBalance (pair |> Pair.toCollateral)
+                                                    ]
+
+                                                _ ->
+                                                    []
+
+                                        ( Just (Success False), Just (Success True) ) ->
+                                            [ Button.approveAsset ClickApproveAsset theme ]
+
+                                        ( Just (Success True), Just (Success False) ) ->
+                                            [ Button.approveCollateral ClickApproveCollateral theme ]
+
+                                        ( Just (Success False), Just (Success False) ) ->
+                                            [ Button.approveAsset ClickApproveAsset theme
+                                            , Button.approveCollateral ClickApproveCollateral theme
+                                            ]
+
+                                        ( Just (Success True), Just (Loading _) ) ->
+                                            [ theme |> Button.checkingAllowance |> map never
+                                            , theme |> disabledLiquidityButton
+                                            ]
+
+                                        ( Just (Loading _), Just (Success True) ) ->
+                                            [ theme |> Button.checkingAllowance |> map never
+                                            , theme |> disabledLiquidityButton
+                                            ]
+
+                                        ( Just (Loading _), Just (Loading _) ) ->
+                                            [ theme |> Button.checkingAllowance |> map never
+                                            , theme |> disabledLiquidityButton
+                                            ]
+
+                                        ( Just (Failure error), _ ) ->
+                                            [ Button.error error |> map never ]
+
+                                        ( _, Just (Failure error) ) ->
+                                            [ Button.error error |> map never ]
+
+                                        _ ->
+                                            []
+
+                                ( Just assetErc20, Nothing ) ->
+                                    case
+                                        user
+                                            |> User.getAllowance assetErc20
+                                            |> (Maybe.map << Remote.map)
+                                                (Uint.hasEnough assetIn)
+                                    of
+                                        Just (Success True) ->
+                                            case
+                                                user
+                                                    |> User.getBalance (pair |> Pair.toAsset)
+                                                    |> (Maybe.map << Remote.map)
+                                                        (Uint.hasEnough assetIn)
+                                            of
+                                                Just (Success True) ->
+                                                    [ liquidityButton theme ]
+
+                                                Just (Success False) ->
+                                                    [ insufficientTokenBalance (pair |> Pair.toAsset) ]
+
+                                                Just (Loading _) ->
+                                                    [ Button.checkingBalance theme |> map never ]
+
+                                                _ ->
+                                                    []
+
+                                        Just (Success False) ->
+                                            [ Button.approveAsset ClickApproveAsset theme ]
+
+                                        Just (Loading _) ->
+                                            [ Button.checkingAllowance theme |> map never ]
+
+                                        _ ->
+                                            []
+
+                                ( Nothing, Just collErc20 ) ->
+                                    case
+                                        user
+                                            |> User.getAllowance collErc20
+                                            |> (Maybe.map << Remote.map)
+                                                (Uint.hasEnough collateralIn)
+                                    of
+                                        Just (Success True) ->
+                                            case
+                                                user
+                                                    |> User.getBalance (pair |> Pair.toCollateral)
+                                                    |> (Maybe.map << Remote.map)
+                                                        (Uint.hasEnough collateralIn)
+                                            of
+                                                Just (Success True) ->
+                                                    [ liquidityButton theme ]
+
+                                                Just (Success False) ->
+                                                    [ insufficientTokenBalance (pair |> Pair.toCollateral) ]
+
+                                                Just (Loading _) ->
+                                                    [ Button.checkingBalance theme |> map never ]
+
+                                                _ ->
+                                                    []
+
+                                        Just (Success False) ->
+                                            [ Button.approveCollateral ClickApproveCollateral theme ]
+
+                                        Just (Loading _) ->
+                                            [ Button.checkingAllowance theme |> map never ]
+
+                                        _ ->
+                                            []
+
+                                _ ->
+                                    []
+
+                        ( _, _, Err err ) ->
+                            [ Button.customError (err |> Error.toString) |> map never ]
+
+                        ( _, _, Ok NoTxn ) ->
+                            []
+
+                        _ ->
+                            []
+                )
             |> Maybe.withDefault
                 [ Button.connect theme ClickConnect ]
+        )
+
+
+liquidityButton : Theme -> Element Msg
+liquidityButton theme =
+    Button.view
+        { onPress = ClickLiquidity
+        , text = "Provide Liquidity"
+        , theme = theme
+        }
+
+
+disabledLiquidityButton : Theme -> Element msg
+disabledLiquidityButton theme =
+    Button.disabled theme "Provide Liquidity"
+        |> map never
+
+
+insufficientTokenBalance : Token -> Element msg
+insufficientTokenBalance token =
+    el
+        [ width fill
+        , height <| px 44
+        , Background.color Color.negative500
+        , Border.rounded 4
+        ]
+        (el
+            [ centerX
+            , centerY
+            , paddingXY 0 4
+            , Font.size 16
+            , Font.bold
+            , Font.color Color.light100
+            ]
+            ([ "Insufficient"
+             , token |> Token.toSymbol
+             , "Balance"
+             ]
+                |> String.join " "
+                |> text
+            )
         )

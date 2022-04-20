@@ -1,5 +1,6 @@
 import { getPool } from '../helper';
 import { assetCalculate } from './asset';
+import { collateralCalculate } from './collateral';
 import { debtCalculate } from './debt';
 
 export function liquidity(app: ElmApp<Ports>) {
@@ -33,8 +34,7 @@ async function liquidityQueryCalculation(
     assetCalculate(app, pool, query);
   } else if (query.debtIn !== undefined) {
     await debtCalculate(app, pool, query);
+  } else if (query.collateralIn !== undefined) {
+    await collateralCalculate(app, pool, query);
   }
-  // else if (query.collateralIn !== undefined) {
-  //   await collateralCalculate(app, pool, query);
-  // }
 }
