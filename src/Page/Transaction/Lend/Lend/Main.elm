@@ -1903,6 +1903,7 @@ assetInSection model blockchain pool poolInfo { assetIn, tooltip, claimsOut } =
                                                 [ width fill
                                                 , height shrink
                                                 , spacing 8
+                                                , paddingXY 0 2
                                                 ]
                                                 [ el
                                                     [ Font.size 14

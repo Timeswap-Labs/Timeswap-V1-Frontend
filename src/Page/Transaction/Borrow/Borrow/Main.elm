@@ -39,6 +39,7 @@ import Element
         , map
         , none
         , padding
+        , paddingEach
         , paddingXY
         , row
         , shrink
@@ -2725,6 +2726,12 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                                 [ width fill
                                                                 , height shrink
                                                                 , spacing 8
+                                                                , paddingEach
+                                                                    { top = 4
+                                                                    , right = 0
+                                                                    , bottom = 2
+                                                                    , left = 0
+                                                                    }
                                                                 ]
                                                                 [ el
                                                                     [ Font.size 14
