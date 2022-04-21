@@ -1255,23 +1255,23 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@timeswap-labs/timeswap-v1-sdk-core@0.1.39", "@timeswap-labs/timeswap-v1-sdk-core@^0.1.39":
-  version "0.1.39"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk-core/0.1.39/caca142bb3c6c12a23783dd4c82935489d005abf726b7bad3c2edafbdd91efd3#7cba784bd5936c6edf99b4321a15e438ddf77321"
-  integrity sha512-PegXN2p1XSLJBBg+j2HP3p6bbQQFMJtynPoefnX7Gs/HCTbz8b7DEoy1cOzVp3ofFC99ogLyrqP7ON+Y7vSipA==
+"@timeswap-labs/timeswap-v1-sdk-core@1.2.2-Beta", "@timeswap-labs/timeswap-v1-sdk-core@^1.2.2-Beta":
+  version "1.2.2-Beta"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk-core/1.2.2-Beta/a889e8b9d406f9204860839c210229faf6ac038df842c426f03704d37d7a8584#9dcf014d10fabcd9214b9de7bc7967a8d7f11a6f"
+  integrity sha512-R/vchqDliOlhyqjebZZGc79AL/NmjAFumS5iYqVb8eZAHE6MCuGleqZ9FFk9DJx3sSSF6SoI3IOuIsRoGJeYFg==
   dependencies:
     "@ethersproject/address" "^5.5.0"
     tiny-invariant "^1.1.0"
 
-"@timeswap-labs/timeswap-v1-sdk@^0.1.76":
-  version "0.1.76"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/0.1.76/125c2ee28204581b4814204c46220f8709fc79d520bced58733c67fbb180efa1#dd73873e82433e43e8bd8226884a361511c2a55e"
-  integrity sha512-iNDeIFP4R76BRN3LOrNcWWxohK8js9217vz/QngFUn/BLRGktINrDvMSsV6JNTRfiyIFBfATnLvF3zTUoe4cTg==
+"@timeswap-labs/timeswap-v1-sdk@^1.2.4-Beta":
+  version "1.2.4-Beta"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/1.2.4-Beta/a6f52eb4373c5b3f3862c11c2fc9a966dd0add48933c2133bd8e430c0edb9336#dd005bd55f193d6254b32188207087c659d9f854"
+  integrity sha512-00TqvDcOH+43NOO6UEMrlzH+Ixyqgv3sgmKKZ7VGObyjsch7JUODQrr0mMiQAA93xGWwS0Po9lLp2ykExIxQYw==
   dependencies:
     "@ethersproject/abstract-provider" "^5.5.1"
     "@ethersproject/abstract-signer" "^5.5.0"
     "@ethersproject/contracts" "^5.5.0"
-    "@timeswap-labs/timeswap-v1-sdk-core" "0.1.39"
+    "@timeswap-labs/timeswap-v1-sdk-core" "1.2.2-Beta"
     tiny-invariant "^1.1.0"
 
 "@trysound/sax@0.2.0":
