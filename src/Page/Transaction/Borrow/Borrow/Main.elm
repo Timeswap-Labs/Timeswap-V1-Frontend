@@ -2832,7 +2832,7 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
                         , click = ClickSlider
                         , percent = percent
                         , min = 0
-                        , max = 120
+                        , max = 128
                         , theme = model.theme
                         , learnMore =
                             Builder.crossOrigin
