@@ -760,7 +760,7 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
                                                 , Font.size 14
                                                 , Font.bold
                                                 , Font.center
-                                                , Font.color Color.positive400
+                                                , Font.color Color.warning400
                                                 ]
                                                 (Calculate.apr summary.apr)
                                             , el

@@ -755,13 +755,10 @@ estimatedAPR poolInfo =
         (el
             [ width shrink
             , height shrink
-            , paddingXY 10 8
             , centerX
-            , Background.color Color.positive100
-            , Border.rounded 28
             , Font.bold
             , Font.size 14
-            , Font.color Color.positive500
+            , Font.color Color.warning400
             , Font.center
             ]
             (poolInfo.apr |> Calculate.apr)
@@ -776,7 +773,7 @@ collateralFactor :
         , poolInfo : PoolInfo
         }
     -> Element Msg
-collateralFactor ({ theme, priceFeed } as model) (PoolsData { tooltip }) { pool, poolInfo } =
+collateralFactor { theme, priceFeed } (PoolsData { tooltip }) { pool, poolInfo } =
     el
         [ px 170
             |> width
@@ -790,6 +787,7 @@ collateralFactor ({ theme, priceFeed } as model) (PoolsData { tooltip }) { pool,
         , centerX
         , centerY
         , Font.center
+        , Font.bold
         ]
         (el
             [ centerX, centerY ]
