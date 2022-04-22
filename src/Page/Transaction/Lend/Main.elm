@@ -309,6 +309,7 @@ update model blockchain msg (Transaction transaction) =
             (if
                 (chain == (blockchain |> Blockchain.toChain))
                     && (pool == currentPool)
+                    && (pool.maturity |> Maturity.shouldBeRemoved |> not)
              then
                 case
                     ( result
