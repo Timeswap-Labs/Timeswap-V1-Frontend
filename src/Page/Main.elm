@@ -728,10 +728,14 @@ subscriptions page =
             ]
                 |> Sub.batch
 
-        LiquidityPage { transaction } ->
+        LiquidityPage { transaction, position } ->
             [ transaction
                 |> Liquidity.subscriptions
                 |> Sub.map LiquidityMsg
+            , position
+                |> Maybe.map Liq.subscriptions
+                |> (Maybe.map << Sub.map) LiqMsg
+                |> Maybe.withDefault Sub.none
             ]
                 |> Sub.batch
 
@@ -861,11 +865,9 @@ view model blockchain page =
             LiquidityPage liquidityPage ->
                 Just
                     (\position user ->
-                        -- Liq.view model user position
-                        --     |> map LiqMsg
-                        --     |> List.singleton
-                        []
-                     -- |> Debug.log "edit"
+                        Liq.view model user position
+                            |> map LiqMsg
+                            |> List.singleton
                     )
                     |> Maybe.apply liquidityPage.position
                     |> Maybe.apply (blockchain |> Blockchain.toUser)

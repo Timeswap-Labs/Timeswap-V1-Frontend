@@ -195,7 +195,7 @@ loading { images, theme } timeline =
             , paddingXY 0 3
             , theme |> ThemeColor.textLight |> Font.color
             ]
-            [ text "Fetching your Lend positions..." ]
+            [ text "Fetching your Liquidity positions..." ]
         , el
             []
             (Loading.view timeline theme)
@@ -255,13 +255,13 @@ viewLiqs :
     -> Maybe Tooltip
     -> Liqs
     -> Element Msg
-viewLiqs ({ time } as model) tooltip liqs =
+viewLiqs ({ theme, time } as model) tooltip liqs =
     column
         [ width fill
         , height shrink
         , spacing 20
         ]
-        [ title liqs
+        [ title theme liqs
         , Keyed.column
             [ width fill
             , height shrink
@@ -279,16 +279,17 @@ viewLiqs ({ time } as model) tooltip liqs =
         ]
 
 
-title : Liqs -> Element msg
-title liqs =
+title : Theme -> Liqs -> Element msg
+title theme liqs =
     el
         [ width shrink
         , height shrink
         , Font.size 16
+        , Font.bold
         , paddingXY 0 2
-        , Font.color Color.transparent500
+        , theme |> ThemeColor.text |> Font.color
         ]
-        ([ "Your Liquidity Positions"
+        ([ "Your Liquidity Positions "
          , "("
          , liqs
             |> Dict.size
@@ -355,13 +356,25 @@ viewLiq { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                         , theme = theme
                         }
                     )
-                , el
+                , row
                     [ width shrink
                     , height shrink
                     , alignRight
                     , centerY
+                    , spacing 10
                     ]
-                    (Duration.viewMaturity
+                    [ images
+                        |> (case theme of
+                                Theme.Dark ->
+                                    Image.hourglassPrimary
+
+                                Theme.Light ->
+                                    Image.hourglassDark
+                           )
+                            [ width <| px 16
+                            , height <| px 16
+                            ]
+                    , Duration.viewMaturity
                         { onMouseEnter = OnMouseEnter
                         , onMouseLeave = OnMouseLeave
                         , tooltip = Tooltip.Maturity pool
@@ -372,11 +385,12 @@ viewLiq { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                         , maturity = pool.maturity
                         , theme = theme
                         }
-                    )
+                    ]
                 , if pool.maturity |> Maturity.isActive time then
                     el
                         [ width shrink
                         , height <| px 24
+                        , paddingXY 10 2
                         , Background.color Color.positive100
                         , Border.rounded 999
                         ]
@@ -386,6 +400,7 @@ viewLiq { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                             , centerX
                             , centerY
                             , Font.size 14
+                            , Font.bold
                             , Font.color Color.positive400
                             ]
                             (text "Active")

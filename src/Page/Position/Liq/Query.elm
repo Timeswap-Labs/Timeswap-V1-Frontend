@@ -18,7 +18,7 @@ import Page.Position.Liq.Error as Error exposing (Error)
 
 
 type alias Query =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , liquidityIn : Liq
@@ -26,7 +26,7 @@ type alias Query =
 
 
 type alias Answer =
-    { chainId : Chain
+    { chain : Chain
     , pool : Pool
     , poolInfo : PoolInfo
     , liquidityInt : Liq
@@ -35,8 +35,8 @@ type alias Answer =
 
 
 givenLiq : Query -> Value
-givenLiq { chainId, pool, poolInfo, liquidityIn } =
-    [ ( "chainId", chainId |> Chain.encode )
+givenLiq { chain, pool, poolInfo, liquidityIn } =
+    [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "liquidityIn", liquidityIn |> Liq.encode )
@@ -47,7 +47,7 @@ givenLiq { chainId, pool, poolInfo, liquidityIn } =
 decoder : Decoder Answer
 decoder =
     Decode.succeed Answer
-        |> Pipeline.required "chainId" Chain.decoder
+        |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "poolInfo" PoolInfo.decoder
         |> Pipeline.required "liquidityIn" Liq.decoder

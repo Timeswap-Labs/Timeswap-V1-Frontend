@@ -16,6 +16,7 @@ import { getChainData, getNativeToken, getTokenList } from "./chains";
 import { approveSigner } from "./approve";
 import { listenForPendingTxns, fetchRecentTxns } from "./helper";
 import { liquidity, liquiditySigner } from './liquidity';
+import { burn } from './burn';
 
 export declare let window: any;
 
@@ -76,6 +77,8 @@ export async function init(
 
   liquidity(app);
   liquiditySigner(app, gp);
+
+  burn(app);
 
   if (gp.walletProvider) {
     walletConnected(app, gp, user);

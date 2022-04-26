@@ -53,6 +53,8 @@ declare interface Ports {
   queryLiquidityPerSecond: PortFromElm<LiquidityQuery>;
   receiveAddLiqAnswer: PortToElm<LiquidityCalculate>;
   liquidity: PortFromElm<Liquidity>;
+  queryLiq: PortFromElm<LiqReturn>;
+  receiveLiqReturn: PortToElm<ReceiveLiqReturn>;
 
   scroll: PortsToElm;
 
@@ -288,6 +290,25 @@ type Liqs = {
   pool: Pool;
   liq: Uint;
 }[];
+
+type LiqReturn = {
+  chain: Chain;
+  pool: Pool;
+  poolInfo: PoolInfo;
+  liquidityIn: Uint;
+};
+
+type ReceiveLiqReturn = {
+  chain: Chain;
+  pool: Pool;
+  poolInfo: PoolInfo;
+  result:
+    | {
+        asset: string;
+        collateral: string;
+      }
+    | number;
+};
 
 interface ReceiveUser {
   chainId: int;

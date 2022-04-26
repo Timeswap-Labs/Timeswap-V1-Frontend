@@ -53,7 +53,7 @@ export function getCustomTokens(chainId: string): ERC20Token[] {
   return customTokens;
 }
 
-export function getPool(query: LendQuery | BorrowQuery | LiquidityQuery): Pool {
+export function getPool(query: LendQuery | BorrowQuery | LiquidityQuery | LiqReturn): Pool {
   let asset, collateral;
 
   if ((query.pool.asset as ERC20Token).address) {
