@@ -5,7 +5,8 @@ export function burn(app: ElmApp<Ports>) {
   app.ports.queryLiq.subscribe(async (liqData) => {
     const now = Date.now();
 
-    if (now > Number(liqData.pool.maturity) * 1000) {
+    // Active pool
+    if (now < Number(liqData.pool.maturity) * 1000) {
       let liqPercent = (BigInt(liqData.liquidityIn) * 10000n) / BigInt(liqData.poolInfo.totalLiquidity)
 
       app.ports.receiveLiqReturn.send({
