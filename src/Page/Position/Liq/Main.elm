@@ -620,7 +620,7 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
             burnDisabled theme
 
           else
-            burnButton
+            burnButton theme
         ]
 
 
@@ -670,13 +670,13 @@ addMoreDisabled =
         )
 
 
-burnButton : Element Msg
-burnButton =
+burnButton : Theme -> Element Msg
+burnButton theme =
     Input.button
         [ width <| px 102
         , height <| px 44
         , Border.rounded 4
-        , Background.color Color.primary500
+        , theme |> ThemeColor.primaryBtn |> Background.color
         ]
         { onPress = Just ClickBurn
         , label =

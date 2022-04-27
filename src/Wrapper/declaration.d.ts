@@ -56,6 +56,8 @@ declare interface Ports {
   queryLiq: PortFromElm<LiqReturn>;
   receiveLiqReturn: PortToElm<ReceiveLiqReturn>;
 
+  burn: PortFromElm<Burn>;
+
   scroll: PortsToElm;
 
   copyToClipboard: PortFromElm<string>;
@@ -72,6 +74,7 @@ declare interface Ports {
 
   receiveConfirm: PortToElm<ReceiveConfirm>;
   receiveReceipt: PortToElm<ReceiveReceipt>;
+  receiveUpdatedTxns: PortToElm<ReceiveUpdatedTxns>;
 
   signSwapTxn: PortFromElm;
   swapSignatureMsg: PortToElm<String>;
@@ -503,6 +506,20 @@ interface LiquidityQuery {
   collateralIn?: string;
 }
 
+interface Burn {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    assetTo: string;
+    collateralTo: string;
+    liquidityIn: string;
+  };
+}
+
 interface ReceiveConfirm {
   id: number;
   chain: Chain;
@@ -516,3 +533,11 @@ interface ReceiveReceipt {
   hash: string;
   state: string;
 }
+
+interface ReceiveUpdatedTxns {
+  chain: Chain;
+  address: string;
+  txns: Txns;
+}
+
+
