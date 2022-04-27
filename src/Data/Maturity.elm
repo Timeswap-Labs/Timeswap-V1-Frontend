@@ -5,6 +5,7 @@ module Data.Maturity exposing
     , encode
     , fromFragment
     , isActive
+    , shouldBeRemoved
     , sorter
     , toDuration
     , toQueryParameter
@@ -226,6 +227,15 @@ toTimeString zone (Maturity posix) =
         ++ minute
         ++ ":"
         ++ second
+
+
+shouldBeRemoved : Maturity -> Bool
+shouldBeRemoved (Maturity posix) =
+    if posix == (1651149000000 |> Time.millisToPosix) then
+        True
+
+    else
+        False
 
 
 fromMonthToString : Month -> String
