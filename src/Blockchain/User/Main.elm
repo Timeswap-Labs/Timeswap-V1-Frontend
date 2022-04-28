@@ -43,6 +43,7 @@ import Blockchain.User.Allowances as Allowances exposing (Allowances)
 import Blockchain.User.Balances as Balances exposing (Balances)
 import Blockchain.User.Cache as Cache
 import Blockchain.User.Claims exposing (Claims)
+import Blockchain.User.ConvAddress as ConvAddress exposing (ConvAddress)
 import Blockchain.User.Dues exposing (Dues)
 import Blockchain.User.Liqs exposing (Liqs)
 import Blockchain.User.Natives as Natives exposing (Natives)
@@ -122,12 +123,14 @@ type alias Flag =
 
 type Msg
     = QueryNatives ()
+    | QueryConvAddress ()
     | ReceiveBalances Value
     | ReceiveAllowances Value
     | ReceiveConfirm Value
     | ReceiveReceipt Value
     | ReceiveUpdatedTxns Value
     | ReceiveNatives Chain (Result Http.Error Natives.Answer)
+    | ReceiveConvAddress (Result Http.Error ConvAddress)
     | ReceivePositions Value
     | BalancesTick Posix
     | AllowancesTick Posix
@@ -158,7 +161,10 @@ init chains chain flag =
               , natives = Remote.loading
               }
                 |> User
-            , getNatives chain chains
+            , [ getNatives chain chains
+              , getConvAddress chain
+              ]
+                |> Cmd.batch
             )
                 |> Just
 
@@ -200,6 +206,7 @@ receiveUserInit ({ chains } as model) chain value =
                     |> Allowances.encode chains chain
                     |> allowancesOf
               , getNatives chain chains
+              , getConvAddress chain
               ]
                 |> Cmd.batch
             )
@@ -233,6 +240,7 @@ receiveUser ({ chains } as model) chain value user =
                         |> Allowances.encode chains chain
                         |> allowancesOf
                   , getNatives chain chains
+                  , getConvAddress chain
                   ]
                     |> Cmd.batch
                 )
@@ -269,6 +277,12 @@ update { chains } chain msg (User user) =
         QueryNatives () ->
             ( user |> User
             , getNatives chain chains
+            , Nothing
+            )
+
+        QueryConvAddress () ->
+            ( user |> User
+            , getConvAddress chain
             , Nothing
             )
 
@@ -428,6 +442,24 @@ update { chains } chain msg (User user) =
 
             else
                 user |> noCmdAndEffect
+
+        ReceiveConvAddress resultAddress ->
+            ( user |> User
+            , case resultAddress of
+                Ok address ->
+                    [ address.convAddress
+                        |> Address.encode
+                        |> compareConvAddr
+                    , Process.sleep 120000
+                        |> Task.perform QueryConvAddress
+                    ]
+                        |> Cmd.batch
+
+                Err _ ->
+                    Process.sleep 5000
+                        |> Task.perform QueryConvAddress
+            , Nothing
+            )
 
         ReceivePositions value ->
             case value |> Decode.decodeValue (Positions.decoder chains) of
@@ -921,7 +953,21 @@ getNatives chain chains =
         }
 
 
+getConvAddress : Chain -> Cmd Msg
+getConvAddress chain =
+    Http.get
+        { url = ConvAddress.toUrlString chain
+        , expect =
+            ConvAddress.decoder
+                |> Http.expectJson
+                    ReceiveConvAddress
+        }
+
+
 port cacheTxns : Value -> Cmd msg
+
+
+port compareConvAddr : Value -> Cmd msg
 
 
 port balancesOf : Value -> Cmd msg

@@ -17,6 +17,7 @@ import { approveSigner } from "./approve";
 import { listenForPendingTxns, fetchRecentTxns } from "./helper";
 import { liquidity, liquiditySigner } from './liquidity';
 import { burn, burnSigner } from './burn';
+import { CONVENIENCE } from '@timeswap-labs/timeswap-v1-sdk';
 
 export declare let window: any;
 
@@ -138,6 +139,15 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
 
   app.ports.cacheTxns.subscribe((txns) => {
     window.localStorage.setItem("txns", JSON.stringify(txns));
+  });
+
+  app.ports.compareConvAddr.subscribe((convAddress) => {
+    const chainId = Number(gp.network);
+    console.log("chainId, convAddress, CONVENIENCE[chainId]", chainId, convAddress, CONVENIENCE[chainId]);
+
+    if (CONVENIENCE[chainId].toLowerCase() !== convAddress.toLowerCase()) {
+      window.location.reload();
+    }
   });
 
   app.ports.changeChain.subscribe(async (chain) => {
