@@ -143,10 +143,17 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
 
   app.ports.compareConvAddr.subscribe((convAddress) => {
     const chainId = Number(gp.network);
-    console.log("chainId, convAddress, CONVENIENCE[chainId]", chainId, convAddress, CONVENIENCE[chainId]);
+    const now = Date.now();
 
-    if (CONVENIENCE[chainId].toLowerCase() !== convAddress.toLowerCase()) {
-      window.location.reload();
+    if (CONVENIENCE[chainId] && (CONVENIENCE[chainId].toLowerCase() !== convAddress.toLowerCase())) {
+      const lastRefreshTime = window.localStorage.getItem("lastRefresh");
+
+      // Reload pg only if more than 2-mins have passed since last refresh
+      if (!lastRefreshTime
+        || (lastRefreshTime && (now - Number(lastRefreshTime) > 120000) )) {
+        window.localStorage.setItem("lastRefresh", now);
+        window.location.reload();
+      }
     }
   });
 
