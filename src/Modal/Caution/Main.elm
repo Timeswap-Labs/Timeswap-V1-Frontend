@@ -268,7 +268,7 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                             ]
 
                          else
-                            [ ". However, due to transaction being undercollateralized, your realized APR will depend on amount of defaults & price of collateral at maturity"
+                            [ ". However, due to the transaction being undercollateralized, your realized APR will depend on the amount of defaults & the price of collateral at maturity"
                             ]
                         )
                             |> String.concat
@@ -283,7 +283,7 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                             [ "If collateral price falls more than "
                             , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
                             , "%"
-                            , ", the realized APR will be lower and depend on amount of default & price of collateral"
+                            , ", the realized APR will be lower and depend on the amount of defaults & the price of collateral"
                             ]
                                 |> String.concat
 

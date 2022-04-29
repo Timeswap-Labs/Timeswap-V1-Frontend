@@ -10,3 +10,5 @@ type Tooltip
     | CDP
     | Liquidity
     | TxnFee
+    | ApproxFutureAPR
+    | ApproxFutureCDP

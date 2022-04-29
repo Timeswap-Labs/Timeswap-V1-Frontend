@@ -24,13 +24,14 @@ import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
         , alignRight
+        , below
         , centerY
         , column
         , el
@@ -41,6 +42,7 @@ import Element
         , padding
         , paddingEach
         , paddingXY
+        , px
         , row
         , shrink
         , spacing
@@ -49,6 +51,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
@@ -70,9 +73,11 @@ import Time exposing (Posix)
 import Url.Builder as Builder
 import Utility.Calculate as Calculate
 import Utility.Color as Color
+import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
+import Utility.Tooltip as TooltipUtil
 import Utility.Truncate as Truncate
 
 
@@ -2659,11 +2664,39 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                         , height shrink
                                                         , spacing 8
                                                         ]
-                                                        [ el
+                                                        [ row
                                                             [ Font.size 14
                                                             , model.theme |> ThemeColor.textLight |> Font.color
+                                                            , spacing 8
+                                                            , centerY
                                                             ]
-                                                            (text "Change in APR")
+                                                            [ text "Change in APR"
+                                                            , model.images
+                                                                |> (case model.theme of
+                                                                        Theme.Dark ->
+                                                                            Image.info
+
+                                                                        Theme.Light ->
+                                                                            Image.infoDark
+                                                                   )
+                                                                    [ width <| px 12
+                                                                    , height <| px 12
+                                                                    , Events.onMouseEnter (OnMouseEnter Tooltip.ApproxFutureAPR)
+                                                                    , Events.onMouseLeave OnMouseLeave
+                                                                    , (if tooltip == Just Tooltip.ApproxFutureAPR then
+                                                                        el
+                                                                            [ Font.size 14
+                                                                            , model.theme |> ThemeColor.textLight |> Font.color
+                                                                            ]
+                                                                            ("This value is approximate" |> text)
+                                                                            |> TooltipUtil.belowAlignLeft model.theme
+
+                                                                       else
+                                                                        none
+                                                                      )
+                                                                        |> below
+                                                                    ]
+                                                            ]
                                                         , row
                                                             [ alignRight
                                                             , Font.size 14
@@ -2733,11 +2766,39 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                                     , left = 0
                                                                     }
                                                                 ]
-                                                                [ el
+                                                                [ row
                                                                     [ Font.size 14
                                                                     , model.theme |> ThemeColor.textLight |> Font.color
+                                                                    , spacing 7
+                                                                    , centerY
                                                                     ]
-                                                                    (text "Change in CDP")
+                                                                    [ text "Change in CDP"
+                                                                    , model.images
+                                                                        |> (case model.theme of
+                                                                                Theme.Dark ->
+                                                                                    Image.info
+
+                                                                                Theme.Light ->
+                                                                                    Image.infoDark
+                                                                           )
+                                                                            [ width <| px 12
+                                                                            , height <| px 12
+                                                                            , Events.onMouseEnter (OnMouseEnter Tooltip.ApproxFutureCDP)
+                                                                            , Events.onMouseLeave OnMouseLeave
+                                                                            , (if tooltip == Just Tooltip.ApproxFutureCDP then
+                                                                                el
+                                                                                    [ Font.size 14
+                                                                                    , model.theme |> ThemeColor.textLight |> Font.color
+                                                                                    ]
+                                                                                    ("This value is approximate" |> text)
+                                                                                    |> TooltipUtil.belowAlignLeft model.theme
+
+                                                                               else
+                                                                                none
+                                                                              )
+                                                                                |> below
+                                                                            ]
+                                                                    ]
                                                                 , row
                                                                     [ alignRight
                                                                     , Font.size 14
