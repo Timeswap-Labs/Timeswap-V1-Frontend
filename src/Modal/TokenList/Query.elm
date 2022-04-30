@@ -8,7 +8,7 @@ import Url.Builder as Builder
 
 toUrlString : Blockchain -> Address -> String
 toUrlString blockchain address =
-    Builder.crossOrigin "https://ts-mainnet-week2-3-test.herokuapp.com/v1/token/metadata"
+    Builder.crossOrigin "https://ts-mainnet-week2-3.herokuapp.com/v1/token/metadata"
         []
         [ blockchain
             |> Blockchain.toChain
