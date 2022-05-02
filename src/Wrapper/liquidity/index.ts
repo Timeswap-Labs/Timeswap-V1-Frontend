@@ -1,5 +1,5 @@
 import { GlobalParams } from './../global';
-import { getPool, getPoolSDK, handleTxnErrors, updateCachedTxns } from '../helper';
+import { compareConvAddress, getPool, getPoolSDK, handleTxnErrors, updateCachedTxns } from '../helper';
 import { assetCalculate, assetTransaction } from './asset';
 import { collateralCalculate, collateralTransaction } from './collateral';
 import { debtCalculate, debtTransaction } from './debt';
@@ -90,6 +90,8 @@ async function liquidityQueryCalculation(
   //     result: 5,
   //   });
   // }
+
+  compareConvAddress(query.poolInfo.convAddress, query.chain.chainId);
 
   const pool = getPool(query);
   if (query.assetIn !== undefined) {

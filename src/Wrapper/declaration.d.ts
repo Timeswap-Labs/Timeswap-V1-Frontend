@@ -75,8 +75,6 @@ declare interface Ports {
   receiveConfirm: PortToElm<ReceiveConfirm>;
   receiveReceipt: PortToElm<ReceiveReceipt>;
   receiveUpdatedTxns: PortToElm<ReceiveUpdatedTxns>;
-
-  compareConvAddr: PortFromElm<string>;
 }
 
 interface NativeToken {
@@ -374,6 +372,7 @@ interface PoolInfo {
   fee: number;
   feeStored: Uint;
   protocolFee: number;
+  convAddress: string;
 }
 
 interface Approve {

@@ -141,22 +141,6 @@ function portsInit(app: ElmApp<Ports>, gp: GlobalParams) {
     window.localStorage.setItem("txns", JSON.stringify(txns));
   });
 
-  app.ports.compareConvAddr.subscribe((convAddress) => {
-    const chainId = Number(gp.network);
-    const now = Date.now();
-
-    if (CONVENIENCE[chainId] && (CONVENIENCE[chainId].toLowerCase() !== convAddress.toLowerCase())) {
-      const lastRefreshTime = window.localStorage.getItem("lastRefresh");
-
-      // Reload pg only if more than 2-mins have passed since last refresh
-      if (!lastRefreshTime
-        || (lastRefreshTime && (now - Number(lastRefreshTime) > 120000) )) {
-        window.localStorage.setItem("lastRefresh", now);
-        window.location.reload();
-      }
-    }
-  });
-
   app.ports.changeChain.subscribe(async (chain) => {
     if (gp.walletProvider) {
       const chainId = chain.chainId.toString().startsWith("0x")
