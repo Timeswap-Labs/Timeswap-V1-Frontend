@@ -1,9 +1,12 @@
 module Modal.Caution.Main exposing (Effect(..), Modal, Msg, init, update, view)
 
-import Blockchain.User.WriteLend exposing (WriteLend)
+import Blockchain.User.WriteLend exposing (WriteLend(..))
 import Data.Backdrop exposing (Backdrop)
+import Data.CDP exposing (CDP)
 import Data.Images exposing (Images)
+import Data.Pair as Pair
 import Data.Theme exposing (Theme)
+import Data.Token as Token
 import Element
     exposing
         ( Element
@@ -13,7 +16,9 @@ import Element
         , el
         , fill
         , height
+        , none
         , padding
+        , paddingEach
         , paddingXY
         , paragraph
         , px
@@ -27,22 +32,31 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
+import Modal.Caution.Tooltip as Tooltip exposing (Tooltip)
 import Modal.Outside as Outside
+import Page.PoolInfo exposing (PoolInfo)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Image as Image
 import Utility.ThemeColor as ThemeColor
+import Utility.Truncate as Truncate
 
 
 type Modal
     = Modal
         { txn : WriteLend
+        , apr : Float
+        , cdp : CDP
+        , poolInfo : PoolInfo
+        , tooltip : Maybe Tooltip
         }
 
 
 type Msg
     = LendClick WriteLend
+    | OnMouseEnter Tooltip
+    | OnMouseLeave
     | Exit
 
 
@@ -50,19 +64,37 @@ type Effect
     = Lend WriteLend
 
 
-init : WriteLend -> Modal
-init writeLend =
+init : WriteLend -> Float -> CDP -> PoolInfo -> Modal
+init writeLend apr cdp poolInfo =
     { txn = writeLend
+    , apr = apr
+    , cdp = cdp
+    , poolInfo = poolInfo
+    , tooltip = Nothing
     }
         |> Modal
 
 
 update : Msg -> Modal -> ( Maybe Modal, Maybe Effect )
-update msg modal =
+update msg (Modal modal) =
     case msg of
         LendClick writeLend ->
-            ( modal |> Just
+            ( modal |> Modal |> Just
             , Lend writeLend |> Just
+            )
+
+        OnMouseEnter tooltip ->
+            ( { modal | tooltip = Just tooltip }
+                |> Modal
+                |> Just
+            , Nothing
+            )
+
+        OnMouseLeave ->
+            ( { modal | tooltip = Nothing }
+                |> Modal
+                |> Just
+            , Nothing
             )
 
         Exit ->
@@ -88,7 +120,7 @@ view ({ backdrop, theme } as model) modal =
                  ]
                     ++ Glass.background backdrop theme
                 )
-                [ header model
+                [ header model modal
                 , body model modal
                 ]
         }
@@ -96,8 +128,9 @@ view ({ backdrop, theme } as model) modal =
 
 header :
     { model | images : Images, backdrop : Backdrop, theme : Theme }
+    -> Modal
     -> Element Msg
-header ({ theme } as model) =
+header ({ theme } as model) (Modal { cdp }) =
     row
         [ width fill
         , height shrink
@@ -120,7 +153,19 @@ header ({ theme } as model) =
             , paddingXY 0 3
             , theme |> ThemeColor.text |> Font.color
             ]
-            (text "Caution : Low CDP")
+            ((case cdp.percent of
+                Just cdpPerc ->
+                    if cdpPerc * 100 > 100 then
+                        "Note"
+
+                    else
+                        "Caution : Low CDP"
+
+                _ ->
+                    "Note"
+             )
+                |> text
+            )
         , IconButton.exit model Exit
         ]
 
@@ -129,7 +174,7 @@ body :
     { model | images : Images, backdrop : Backdrop, theme : Theme }
     -> Modal
     -> Element Msg
-body { images, theme } (Modal { txn }) =
+body { images, theme } (Modal { txn, cdp, tooltip }) =
     column
         [ width fill
         , height shrink
@@ -155,19 +200,100 @@ body { images, theme } (Modal { txn }) =
                     , centerX
                     , centerY
                     ]
-            , paragraph
-                [ width shrink
-                , Font.alignLeft
-                ]
-                [ text "Your lending transaction will be under-collateralized (CDP < 100%) and there is a high probability of principal loss. Please confirm you still want to lend."
-                ]
+            , case cdp.percent of
+                Just percent ->
+                    if (percent * 100) < 100 then
+                        paragraph
+                            [ width shrink
+                            , Font.alignLeft
+                            , Font.color Color.negative500
+                            ]
+                            [ text "This is an under collateralized lending transaction (CDP < 100%), and there is a high risk of Principal loss."
+                            ]
+
+                    else
+                        none
+
+                _ ->
+                    none
             , paragraph
                 [ width shrink
                 , Font.size 14
                 , Font.alignLeft
                 , paddingXY 0 8
+                , spacing 6
                 ]
-                [ text "Alternatively, you can try to adjust your CDP or your transaction size to make it over-collateralized. If not, be patient and wait for pool to be over-collateralized."
+                [ text "Your expected principal along with interest is "
+                , (case txn of
+                    GivenPercent givenPercent ->
+                        ( givenPercent.minBond, givenPercent.pool )
+
+                    GivenBond givenBond ->
+                        ( givenBond.bondOut, givenBond.pool )
+
+                    GivenInsurance givenIns ->
+                        ( givenIns.minBond, givenIns.pool )
+                  )
+                    |> (\( bond, pool ) ->
+                            row [ spacing 4 ]
+                                [ el [ Font.bold ] (pool.pair |> Pair.toAsset |> Token.toSymbol |> text)
+                                , Truncate.viewAmount
+                                    { onMouseEnter = OnMouseEnter
+                                    , onMouseLeave = OnMouseLeave
+                                    , tooltip = Tooltip.AssetReturn
+                                    , opened = tooltip
+                                    , token = pool.pair |> Pair.toAsset
+                                    , amount = bond
+                                    , theme = theme
+                                    , customStyles =
+                                        [ Font.size 14
+                                        , Font.bold
+                                        , paddingEach
+                                            { top = 4
+                                            , right = 0
+                                            , bottom = 1
+                                            , left = 0
+                                            }
+                                        ]
+                                    }
+                                ]
+                       )
+                , text " after maturity"
+                , (case cdp.percent of
+                    Just cdpPerc ->
+                        (if (cdpPerc * 100) > 100 then
+                            [ ", with the assumption that collateral price will not fall more than "
+                            , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
+                            , "%. "
+                            ]
+
+                         else
+                            [ ". However, due to the transaction being undercollateralized, your realized APR will depend on the amount of defaults & the price of collateral at maturity"
+                            ]
+                        )
+                            |> String.concat
+
+                    _ ->
+                        ""
+                  )
+                    |> text
+                , (case cdp.percent of
+                    Just cdpPerc ->
+                        if (cdpPerc * 100) > 100 then
+                            [ "If collateral price falls more than "
+                            , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
+                            , "%"
+                            , ", the realized APR will be lower and depend on the amount of defaults & the price of collateral"
+                            ]
+                                |> String.concat
+
+                        else
+                            ""
+
+                    _ ->
+                        ""
+                  )
+                    |> text
                 ]
             ]
         , Input.button
@@ -182,6 +308,6 @@ body { images, theme } (Modal { txn }) =
             , Border.rounded 4
             ]
             { onPress = Just (LendClick txn)
-            , label = text "Confirm Lend"
+            , label = text "Confirm"
             }
         ]

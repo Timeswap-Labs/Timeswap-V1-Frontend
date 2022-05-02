@@ -1,4 +1,4 @@
-module Page.Info.Answer exposing (..)
+module Page.Markets.Answer exposing (..)
 
 import Data.Chain exposing (Chain)
 import Data.Chains exposing (Chains)

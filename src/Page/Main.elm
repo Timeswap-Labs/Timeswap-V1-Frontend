@@ -22,6 +22,7 @@ import Blockchain.User.WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
 import Data.Backdrop exposing (Backdrop)
+import Data.CDP exposing (CDP)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
@@ -51,7 +52,7 @@ import Element
         , spacing
         , width
         )
-import Page.Info.Main as Info exposing (PoolsData)
+import Page.Markets.Main as Markets exposing (PoolsData)
 import Page.PoolInfo exposing (PoolInfo)
 import Page.Position.Claim.Main as Claim
 import Page.Position.Due.Main as Due
@@ -86,7 +87,7 @@ type Page
         , positions : Liqs.Positions
         , position : Maybe Liq.Position
         }
-    | InfoPage PoolsData
+    | MarketsPage PoolsData
 
 
 type Msg
@@ -99,7 +100,7 @@ type Msg
     | LiquidityMsg Liquidity.Msg
     | LiqsMsg Liqs.Msg
     | LiqMsg Liq.Msg
-    | InfoMsg Info.Msg
+    | MarketsMsg Markets.Msg
 
 
 type Effect
@@ -108,7 +109,7 @@ type Effect
     | OpenInputMaturity Pair
     | OpenSettings
     | OpenConnect
-    | OpenCaution WriteLend
+    | OpenCaution WriteLend Float CDP PoolInfo
     | InputPool Pool
     | OpenPayTransaction Pool (Set TokenId)
     | Approve ERC20
@@ -280,11 +281,11 @@ construct ({ chains } as model) url maybePage =
                     )
                     (Cmd.map LiquidityMsg)
 
-        ( Just Route.Info, Supported blockchain, _ ) ->
-            Info.init model blockchain chains
+        ( Just Route.Markets, Supported blockchain, _ ) ->
+            Markets.init model blockchain chains
                 |> Tuple.mapBoth
-                    (\poolsData -> poolsData |> InfoPage)
-                    (Cmd.map InfoMsg)
+                    (\poolsData -> poolsData |> MarketsPage)
+                    (Cmd.map MarketsMsg)
 
         ( _, Supported blockchain, _ ) ->
             Nothing
@@ -524,16 +525,16 @@ update model blockchain msg page =
                     , Nothing
                     )
 
-        ( InfoMsg infoMsg, InfoPage infoPage ) ->
+        ( MarketsMsg infoMsg, MarketsPage infoPage ) ->
             infoPage
-                |> Info.update
+                |> Markets.update
                     infoMsg
                     blockchain
                     model.chains
                 |> (\( updated, cmd ) ->
                         ( updated
-                            |> InfoPage
-                        , cmd |> Cmd.map InfoMsg
+                            |> MarketsPage
+                        , cmd |> Cmd.map MarketsMsg
                         , Nothing
                         )
                    )
@@ -559,8 +560,8 @@ lendEffect effect =
         Lend.OpenSettings ->
             OpenSettings
 
-        Lend.OpenCaution txn ->
-            OpenCaution txn
+        Lend.OpenCaution txn apr cdp poolInfo ->
+            OpenCaution txn apr cdp poolInfo
 
         Lend.Approve erc20 ->
             Approve erc20
@@ -727,14 +728,18 @@ subscriptions page =
             ]
                 |> Sub.batch
 
-        LiquidityPage { transaction } ->
+        LiquidityPage { transaction, position } ->
             [ transaction
                 |> Liquidity.subscriptions
                 |> Sub.map LiquidityMsg
+            , position
+                |> Maybe.map Liq.subscriptions
+                |> (Maybe.map << Sub.map) LiqMsg
+                |> Maybe.withDefault Sub.none
             ]
                 |> Sub.batch
 
-        InfoPage _ ->
+        MarketsPage _ ->
             Sub.none
 
 
@@ -750,8 +755,8 @@ toTab page =
         LiquidityPage _ ->
             Tab.Liquidity
 
-        InfoPage _ ->
-            Tab.Info
+        MarketsPage _ ->
+            Tab.Markets
 
 
 toParameter : Page -> Maybe Parameter
@@ -769,7 +774,7 @@ toParameter page =
             transaction
                 |> Liquidity.toParameter
 
-        InfoPage _ ->
+        MarketsPage _ ->
             Nothing
 
 
@@ -788,7 +793,7 @@ toPoolInfo page =
             transaction
                 |> Liquidity.toPoolInfo
 
-        InfoPage _ ->
+        MarketsPage _ ->
             Nothing
 
 
@@ -860,11 +865,9 @@ view model blockchain page =
             LiquidityPage liquidityPage ->
                 Just
                     (\position user ->
-                        -- Liq.view model user position
-                        --     |> map LiqMsg
-                        --     |> List.singleton
-                        []
-                     -- |> Debug.log "edit"
+                        Liq.view model user position
+                            |> map LiqMsg
+                            |> List.singleton
                     )
                     |> Maybe.apply liquidityPage.position
                     |> Maybe.apply (blockchain |> Blockchain.toUser)
@@ -880,8 +883,8 @@ view model blockchain page =
                             |> Maybe.withDefault none
                         ]
 
-            InfoPage poolsData ->
-                Info.view model poolsData
-                    |> map InfoMsg
+            MarketsPage poolsData ->
+                Markets.view model poolsData
+                    |> map MarketsMsg
                     |> List.singleton
         )

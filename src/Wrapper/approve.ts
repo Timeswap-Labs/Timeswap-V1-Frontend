@@ -2,6 +2,7 @@ import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { CONVENIENCE, ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
 
 import { GlobalParams } from './global';
+import { handleTxnErrors } from "./helper";
 
 export function approveSigner(
   app: ElmApp<Ports>,
@@ -36,12 +37,7 @@ export function approveSigner(
       }
       app.ports.receiveReceipt.send(receiveReceipt);
     } catch (error) {
-      app.ports.receiveConfirm.send({
-        id: params.id,
-        chain: params.chain,
-        address: params.address,
-        hash: null
-      });
+      handleTxnErrors(error, app, gp, params);
     }
   });
 }

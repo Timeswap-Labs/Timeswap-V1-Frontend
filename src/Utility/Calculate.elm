@@ -46,10 +46,9 @@ cdp :
     , theme : Theme
     }
     -> PriceFeed
-    -> Color
     -> Int
     -> Element msg
-cdp params spot color fontSize =
+cdp params spot fontSize =
     el
         [ width fill
         , height <| px 24
@@ -68,8 +67,8 @@ cdp params spot color fontSize =
                         , height <| px 24
                         , Font.size fontSize
                         , paddingXY 0 3
-                        , (if percent <= 1 then
-                            color
+                        , (if percent < 1 then
+                            Color.negative500
 
                            else
                             Color.warning500

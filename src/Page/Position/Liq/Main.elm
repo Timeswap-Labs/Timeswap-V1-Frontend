@@ -5,6 +5,7 @@ port module Page.Position.Liq.Main exposing
     , init
     , subscriptions
     , update
+    , view
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
@@ -20,9 +21,11 @@ import Data.Images exposing (Images)
 import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
+import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
+import Data.TokenParam as TokenParam
 import Data.Web exposing (Web)
 import Element
     exposing
@@ -38,7 +41,6 @@ import Element
         , padding
         , paddingXY
         , px
-        , rotate
         , row
         , shrink
         , spacing
@@ -93,7 +95,7 @@ type Msg
     | PoolInfoQueryAgain
     | QueryAgain Posix
     | ReceivePoolInfo Chain Pool (Result Http.Error PoolInfoAnswer.Answer)
-    | ReceiveAnswer Value
+    | ReceiveLiqReturn Value
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
@@ -114,14 +116,7 @@ init { time } blockchain pool =
       , tooltip = Nothing
       }
         |> Position
-    , if
-        pool.maturity
-            |> Maturity.isActive time
-      then
-        Cmd.none
-
-      else
-        get blockchain pool
+    , get blockchain pool
     )
 
 
@@ -297,7 +292,6 @@ update { time } blockchain user msg (Position position) =
                         ( position
                             |> Position
                             |> Just
-                          -- |> Debug.log "fix"
                         , Process.sleep 5000
                             |> Task.perform (\_ -> PoolInfoQueryAgain)
                         , Nothing
@@ -321,7 +315,7 @@ update { time } blockchain user msg (Position position) =
                 , Nothing
                 )
 
-        ReceiveAnswer value ->
+        ReceiveLiqReturn value ->
             case
                 ( value |> Decode.decodeValue Query.decoder
                 , position.return
@@ -329,7 +323,7 @@ update { time } blockchain user msg (Position position) =
             of
                 ( Ok answer, Success ( poolInfo, status ) ) ->
                     if
-                        (answer.chainId == (blockchain |> Blockchain.toChain))
+                        (answer.chain == (blockchain |> Blockchain.toChain))
                             && (answer.pool == position.pool)
                             && (answer.poolInfo == poolInfo)
                     then
@@ -426,7 +420,7 @@ query :
         }
     -> Cmd Msg
 query blockchain poolInfo liquidityIn { pool } =
-    { chainId = blockchain |> Blockchain.toChain
+    { chain = blockchain |> Blockchain.toChain
     , pool = pool
     , poolInfo = poolInfo
     , liquidityIn = liquidityIn
@@ -435,10 +429,10 @@ query blockchain poolInfo liquidityIn { pool } =
         |> queryLiq
 
 
-port queryStake : Value -> Cmd msg
-
-
 port queryLiq : Value -> Cmd msg
+
+
+port receiveLiqReturn : (Value -> msg) -> Sub msg
 
 
 subscriptions : Position -> Sub Msg
@@ -458,6 +452,7 @@ subscriptions (Position { return }) =
             (return
                 |> Remote.subscriptions Tick
             )
+    , receiveLiqReturn ReceiveLiqReturn
     , Time.every 1000 QueryAgain
     ]
         |> Sub.batch
@@ -484,7 +479,7 @@ view ({ device, backdrop, theme } as model) user (Position position) =
         ]
         [ returnButton model
         , column
-            ([ Region.description "lend positions"
+            ([ Region.description "liquidity positions"
              , (case device of
                     Desktop ->
                         758
@@ -510,7 +505,9 @@ view ({ device, backdrop, theme } as model) user (Position position) =
              ]
                 ++ Glass.background backdrop theme
             )
-            [ header model position ]
+            [ header model position
+            , viewLiq model position
+            ]
         ]
 
 
@@ -620,10 +617,10 @@ header { time, offset, chosenZone, theme, images } { pool, tooltip } =
           else
             addMoreDisabled
         , if pool.maturity |> Maturity.isActive time then
-            burnDisabled
+            burnDisabled theme
 
           else
-            burnButton
+            burnButton theme
         ]
 
 
@@ -673,13 +670,13 @@ addMoreDisabled =
         )
 
 
-burnButton : Element Msg
-burnButton =
+burnButton : Theme -> Element Msg
+burnButton theme =
     Input.button
         [ width <| px 102
         , height <| px 44
         , Border.rounded 4
-        , Background.color Color.primary500
+        , theme |> ThemeColor.primaryBtn |> Background.color
         ]
         { onPress = Just ClickBurn
         , label =
@@ -696,13 +693,13 @@ burnButton =
         }
 
 
-burnDisabled : Element msg
-burnDisabled =
+burnDisabled : Theme -> Element msg
+burnDisabled theme =
     el
         [ width <| px 102
         , height <| px 44
         , Border.rounded 4
-        , Background.color Color.transparent200
+        , theme |> ThemeColor.btnBackground |> Background.color
         ]
         (el
             [ width shrink
@@ -710,7 +707,7 @@ burnDisabled =
             , centerX
             , centerY
             , Font.size 16
-            , Font.color Color.transparent300
+            , theme |> ThemeColor.textLight |> Font.color
             , Font.bold
             ]
             (text "Burn")
@@ -719,20 +716,19 @@ burnDisabled =
 
 viewLiq :
     { model | images : Images, theme : Theme }
-    -> User
     ->
         { pool : Pool
         , return : Web ( PoolInfo, Status )
         , tooltip : Maybe Tooltip
         }
     -> Element Msg
-viewLiq { images, theme } user { pool, return, tooltip } =
+viewLiq { images, theme } { pool, return, tooltip } =
     row
         [ width fill
         , height <| px 82
         , theme |> ThemeColor.positionBG |> Background.color
         , Border.rounded 8
-        , paddingXY 24 0
+        , paddingXY 24 16
         , spacing 48
         ]
         (case return of
@@ -749,9 +745,9 @@ viewLiq { images, theme } user { pool, return, tooltip } =
                                 , height shrink
                                 , Font.size 14
                                 , paddingXY 0 3
-                                , Font.color Color.transparent300
+                                , theme |> ThemeColor.textLight |> Font.color
                                 ]
-                                (text "Asset to Receive")
+                                (text "LP tokens owned (%)")
                             , el
                                 [ width shrink
                                 , height <| px 24
@@ -766,7 +762,7 @@ viewLiq { images, theme } user { pool, return, tooltip } =
                             ]
                         ]
 
-                    Maturity.Active (Failure error) ->
+                    Maturity.Active (Failure _) ->
                         [ column
                             [ width shrink
                             , height shrink
@@ -777,22 +773,243 @@ viewLiq { images, theme } user { pool, return, tooltip } =
                                 , height shrink
                                 , Font.size 14
                                 , paddingXY 0 3
-                                , Font.color Color.transparent300
+                                , theme |> ThemeColor.textLight |> Font.color
                                 ]
-                                (text "Asset to Receive")
-                            , none
-
-                            -- |> Debug.log "edit"
+                                (text "LP tokens owned (%)")
+                            , row [ width shrink, height shrink, spacing 4 ]
+                                [ images
+                                    |> Image.error
+                                        [ width <| px 24, height <| px 24 ]
+                                , el [ Font.size 14, Font.color Color.negative400 ] (text "Error occured")
+                                ]
                             ]
                         ]
 
-                    _ ->
-                        []
+                    Maturity.Active (Success liqPercent) ->
+                        [ column
+                            [ width shrink
+                            , height shrink
+                            , spacing 8
+                            ]
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , Font.size 14
+                                , paddingXY 0 3
+                                , theme |> ThemeColor.textLight |> Font.color
+                                ]
+                                (text "LP tokens owned (%)")
+                            , el
+                                [ width shrink
+                                , height shrink
+                                , Font.size 18
+                                , paddingXY 0 3
+                                , Font.color Color.positive400
+                                ]
+                                (String.concat [ liqPercent |> String.fromFloat, "%" ] |> text)
+                            ]
+                        ]
 
-            Failure error ->
-                []
+                    Maturity.Matured (Loading timeline) ->
+                        [ column
+                            [ width shrink
+                            , height shrink
+                            , spacing 8
+                            ]
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , Font.size 14
+                                , paddingXY 0 3
+                                , theme |> ThemeColor.textLight |> Font.color
+                                ]
+                                (text "Est. Asset at maturity")
+                            , el
+                                [ width shrink
+                                , height <| px 24
+                                ]
+                                (el
+                                    [ width shrink
+                                    , height shrink
+                                    , centerY
+                                    ]
+                                    (Loading.view timeline theme)
+                                )
+                            ]
+                        , el
+                            [ width <| px 1
+                            , height fill
+                            , theme |> ThemeColor.textDisabled |> Background.color
+                            ]
+                            none
+                        , column
+                            [ width shrink
+                            , height shrink
+                            , spacing 8
+                            ]
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , Font.size 14
+                                , paddingXY 0 3
+                                , theme |> ThemeColor.textLight |> Font.color
+                                ]
+                                (text "Est. Collateral at maturity")
+                            , el
+                                [ width shrink
+                                , height <| px 24
+                                ]
+                                (el
+                                    [ width shrink
+                                    , height shrink
+                                    , centerY
+                                    ]
+                                    (Loading.view timeline theme)
+                                )
+                            ]
+                        ]
 
-            -- |> Debug.log "change"
+                    Maturity.Matured (Failure _) ->
+                        [ column
+                            [ width shrink
+                            , height shrink
+                            , spacing 8
+                            ]
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , Font.size 14
+                                , paddingXY 0 3
+                                , theme |> ThemeColor.textLight |> Font.color
+                                ]
+                                (text "Est. Asset at maturity")
+                            , row [ width shrink, height shrink, spacing 4 ]
+                                [ images |> Image.error [ width <| px 24, height <| px 24 ]
+                                , el [ Font.size 14, Font.color Color.negative400 ] (text "Error occured")
+                                ]
+                            ]
+                        ]
+
+                    Maturity.Matured (Success liqReturn) ->
+                        [ column
+                            [ width shrink
+                            , height shrink
+                            , spacing 8
+                            ]
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , Font.size 14
+                                , paddingXY 0 3
+                                , theme |> ThemeColor.textLight |> Font.color
+                                ]
+                                (text "Est. Asset at maturity")
+                            , row
+                                [ width shrink
+                                , height <| px 24
+                                , spacing 12
+                                ]
+                                [ row
+                                    [ width shrink
+                                    , height shrink
+                                    , spacing 6
+                                    ]
+                                    [ images
+                                        |> Image.viewToken
+                                            [ width <| px 24
+                                            , height <| px 24
+                                            , centerY
+                                            ]
+                                            (pool.pair |> Pair.toAsset)
+                                    , Truncate.viewSymbol
+                                        { onMouseEnter = OnMouseEnter
+                                        , onMouseLeave = OnMouseLeave
+                                        , tooltip = Tooltip.Symbol TokenParam.Asset
+                                        , opened = tooltip
+                                        , token = pool.pair |> Pair.toAsset
+                                        , theme = theme
+                                        , customStyles = []
+                                        }
+                                    ]
+                                , Truncate.viewAmount
+                                    { onMouseEnter = OnMouseEnter
+                                    , onMouseLeave = OnMouseLeave
+                                    , tooltip = Tooltip.Amount TokenParam.Asset
+                                    , opened = tooltip
+                                    , token = pool.pair |> Pair.toAsset
+                                    , amount = liqReturn.asset
+                                    , theme = theme
+                                    , customStyles = []
+                                    }
+                                ]
+                            ]
+                        , el
+                            [ width <| px 1
+                            , height fill
+                            , theme |> ThemeColor.textDisabled |> Background.color
+                            ]
+                            none
+                        , column
+                            [ width shrink
+                            , height shrink
+                            , spacing 8
+                            ]
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , Font.size 14
+                                , paddingXY 0 3
+                                , theme |> ThemeColor.textLight |> Font.color
+                                ]
+                                (text "Est. Collateral at maturity")
+                            , row
+                                [ width shrink
+                                , height <| px 24
+                                , spacing 12
+                                ]
+                                [ row
+                                    [ width shrink
+                                    , height shrink
+                                    , spacing 6
+                                    ]
+                                    [ images
+                                        |> Image.viewToken
+                                            [ width <| px 24
+                                            , height <| px 24
+                                            , centerY
+                                            ]
+                                            (pool.pair |> Pair.toCollateral)
+                                    , Truncate.viewSymbol
+                                        { onMouseEnter = OnMouseEnter
+                                        , onMouseLeave = OnMouseLeave
+                                        , tooltip = Tooltip.Symbol TokenParam.Collateral
+                                        , opened = tooltip
+                                        , token = pool.pair |> Pair.toCollateral
+                                        , theme = theme
+                                        , customStyles = []
+                                        }
+                                    ]
+                                , Truncate.viewAmount
+                                    { onMouseEnter = OnMouseEnter
+                                    , onMouseLeave = OnMouseLeave
+                                    , tooltip = Tooltip.Amount TokenParam.Collateral
+                                    , opened = tooltip
+                                    , token = pool.pair |> Pair.toCollateral
+                                    , amount = liqReturn.collateral
+                                    , theme = theme
+                                    , customStyles = []
+                                    }
+                                ]
+                            ]
+                        ]
+
+            Failure _ ->
+                [ row [ width shrink, height shrink, spacing 4 ]
+                    [ images |> Image.error [ width <| px 24, height <| px 24 ]
+                    , el [ Font.size 14, Font.color Color.negative400 ] (text "Error in fetching pool info")
+                    ]
+                ]
+
             Loading timeline ->
                 el
                     [ width shrink

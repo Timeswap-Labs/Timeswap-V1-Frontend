@@ -721,12 +721,12 @@ pageEffects blockchain effect model =
             , Cmd.none
             )
 
-        Page.OpenCaution txnLend ->
+        Page.OpenCaution txnLend apr cdp poolInfo ->
             ( { model
                 | modal =
                     model.modal
                         |> Animator.go Animator.quickly
-                            (Modal.initCaution txnLend
+                            (Modal.initCaution txnLend apr cdp poolInfo
                                 |> Just
                             )
               }
@@ -1645,11 +1645,10 @@ tabs ({ device, backdrop, theme } as model) =
                         []
                )
         )
-        [ tab model Tab.Lend
+        [ tab model Tab.Markets
+        , tab model Tab.Lend
         , tab model Tab.Borrow
-        , tab model Tab.Info
-
-        --, tab model Tab.Liquidity -- Remove liquidity
+        , tab model Tab.Liquidity -- Remove liquidity
         ]
 
 

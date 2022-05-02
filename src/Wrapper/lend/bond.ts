@@ -2,13 +2,12 @@ import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Pool } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { Uint112, Uint128, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "../global";
-import { getCurrentTime } from "../helper";
+import { calculateMinValue, getCurrentTime } from "../helper";
 import {
   calculateApr,
   calculateCdp,
   calculateFuturisticApr,
   calculateFuturisticCdp,
-  calculateMinValue,
   calculatePercent,
   percentMinMaxValues,
 } from "./common";
@@ -105,12 +104,15 @@ export function bondCalculate(
       query.poolInfo.collateralSpot
     );
 
-    const futuristicApr = calculateFuturisticApr(state, xIncrease, yDecrease);
-    const futuristicCdp = calculateFuturisticCdp(
+    const futureApr = calculateFuturisticApr(state, xIncrease, yDecrease);
+    const futureCdp = calculateFuturisticCdp(
       state,
       query.pool.asset.decimals,
+      query.pool.collateral.decimals,
       xIncrease,
-      zDecrease
+      zDecrease,
+      query.poolInfo.assetSpot,
+      query.poolInfo.collateralSpot
     );
 
     query.pool.maturity = query.pool.maturity.toString();
@@ -123,6 +125,8 @@ export function bondCalculate(
         minInsurance,
         apr,
         cdp,
+        futureApr,
+        futureCdp,
         txnFee,
       },
     });

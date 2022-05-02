@@ -138,9 +138,9 @@ init { time } blockchain user pool =
             |> User.getClaims
             |> Remote.map (Dict.get pool)
             |> (Remote.map << Maybe.map)
-                (\claims ->
+                (\claim ->
                     { pool = pool }
-                        |> queryActive blockchain claims
+                        |> queryActive blockchain claim
                 )
             |> (Remote.map << Maybe.withDefault) Cmd.none
             |> Remote.withDefault Cmd.none

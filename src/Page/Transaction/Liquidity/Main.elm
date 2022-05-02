@@ -1303,7 +1303,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                     [ row
                         [ width fill
                         , height shrink
-                        , spacing 24
+                        , spacing 20
                         ]
                         [ case transaction.state of
                             Add _ ->
@@ -1330,7 +1330,8 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                             )
                         , case transaction.state of
                             Add _ ->
-                                createPoolButton model
+                                -- createPoolButton model
+                                none
 
                             New _ ->
                                 none

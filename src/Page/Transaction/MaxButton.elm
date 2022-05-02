@@ -9,6 +9,7 @@ import Element
     exposing
         ( Element
         , alignRight
+        , centerX
         , centerY
         , el
         , height
@@ -186,17 +187,15 @@ disabledUserBalance param =
                     , theme = param.theme
                     }
 
-            Loading _ ->
+            Loading timeline ->
                 el
                     [ width shrink
                     , height shrink
-                    , Font.size 12
-                    , paddingXY 0 2
-                    , Font.color Color.transparent300
+                    , centerX
+                    , centerY
                     ]
-                    (text "loading")
+                    (Loading.view timeline param.theme)
 
-            -- |> Debug.log "implement loading animation"
             Failure error ->
                 el
                     [ width shrink

@@ -1,5 +1,6 @@
 module Page.PoolInfo exposing (PoolInfo, decoder, encode)
 
+import Data.Address as Address exposing (Address)
 import Data.CDP as CDP exposing (CDP)
 import Data.Uint as Uint exposing (Uint)
 import Json.Decode as Decode exposing (Decoder)
@@ -22,9 +23,11 @@ type alias PoolInfo =
     , assetSpot : Maybe Float
     , collateralSpot : Maybe Float
     , fee : Int
+    , feeStored : Uint
     , protocolFee : Int
     , apr : Float
     , cdp : CDP
+    , convAddress : Address
     }
 
 
@@ -45,9 +48,11 @@ decoder =
         |> Pipeline.required "assetSpot" (Decode.float |> Decode.nullable)
         |> Pipeline.required "collateralSpot" (Decode.float |> Decode.nullable)
         |> Pipeline.required "fee" Decode.int
+        |> Pipeline.required "feeStored" Uint.decoder
         |> Pipeline.required "protocolFee" Decode.int
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "convAddress" Address.decoder
 
 
 encode : PoolInfo -> Value
@@ -92,6 +97,9 @@ encode poolInfo =
     , ( "fee"
       , poolInfo.fee |> Encode.int
       )
+    , ( "feeStored"
+      , poolInfo.feeStored |> Uint.encode
+      )
     , ( "protocolFee"
       , poolInfo.protocolFee |> Encode.int
       )
@@ -100,6 +108,9 @@ encode poolInfo =
       )
     , ( "cdp"
       , poolInfo.cdp |> CDP.encode
+      )
+    , ( "convAddress"
+      , poolInfo.convAddress |> Address.encode
       )
     ]
         |> Encode.object

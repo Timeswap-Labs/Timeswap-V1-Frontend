@@ -42,6 +42,8 @@ module Utility.Image exposing
     , option
     , plus
     , plusPositive
+    , questionMark
+    , questionMarkDark
     , semiCircleGreen
     , semiCircleRed
     , semiCircleYellow
@@ -397,6 +399,16 @@ tripleDots =
 video : List (Attribute msg) -> Images -> Element msg
 video =
     view "Video"
+
+
+questionMark : List (Attribute msg) -> Images -> Element msg
+questionMark =
+    view "QuestionMark"
+
+
+questionMarkDark : List (Attribute msg) -> Images -> Element msg
+questionMarkDark =
+    view "QuestionMarkDark"
 
 
 gitbook : List (Attribute msg) -> Images -> Element msg

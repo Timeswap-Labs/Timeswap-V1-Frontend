@@ -1,6 +1,6 @@
 import { Uint112 } from '@timeswap-labs/timeswap-v1-sdk-core';
 import { GlobalParams } from "../global";
-import { getPool, getPoolSDK, updateCachedTxns } from "../helper";
+import { compareConvAddress, getPool, getPoolSDK, handleTxnErrors, updateCachedTxns } from "../helper";
 import { collateralCalculate, collateralTransaction } from "./collateral";
 import { debtCalculate, debtTransaction } from "./debt";
 import { percentCalculate, percentTransaction } from "./percent";
@@ -69,12 +69,7 @@ export function borrowSigner(
         updateCachedTxns(receiveReceipt);
       }
     } catch (error) {
-      app.ports.receiveConfirm.send({
-        id: params.id,
-        chain: params.chain,
-        address: params.address,
-        hash: null
-      });
+      handleTxnErrors(error, app, gp, params);
     }
   });
 }
@@ -95,6 +90,8 @@ function borrowQueryCalculation(
 
     return;
   }
+
+  compareConvAddress(query.poolInfo.convAddress, query.chain.chainId);
 
   const pool = getPool(query);
   const { percent, debtIn, collateralIn } = query;

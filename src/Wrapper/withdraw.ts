@@ -1,6 +1,6 @@
 import { Pair, Uint112, Uint128 } from "@timeswap-labs/timeswap-v1-sdk-core";
 import { GlobalParams } from "./global";
-import { getPoolSDK, updateCachedTxns } from "./helper";
+import { getPoolSDK, handleTxnErrors, updateCachedTxns } from "./helper";
 
 export function withdraw(app: ElmApp<Ports>) {
   app.ports.querySum.subscribe((claimsData) => {
@@ -86,12 +86,7 @@ export function withdrawSigner(
         updateCachedTxns(receiveReceipt);
       }
     } catch (error) {
-      app.ports.receiveConfirm.send({
-        id: params.id,
-        chain: params.chain,
-        address: params.address,
-        hash: null
-      });
+      handleTxnErrors(error, app, gp, params);
     }
   });
 }

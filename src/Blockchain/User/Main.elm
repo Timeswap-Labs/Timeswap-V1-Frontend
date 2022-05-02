@@ -61,7 +61,7 @@ import Blockchain.User.WriteLiquidity as WriteLiquidity exposing (WriteLiquidity
 import Blockchain.User.WritePay as WritePay exposing (WritePay)
 import Blockchain.User.WriteWithdraw as WriteWithdraw exposing (WriteWithdraw)
 import Data.Address as Address exposing (Address)
-import Data.Chain exposing (Chain)
+import Data.Chain as Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
 import Data.ERC20 as ERC20 exposing (ERC20)
@@ -104,6 +104,14 @@ type NotSupported
         }
 
 
+type UpdatedTxns
+    = UpdatedTxns
+        { chain : Chain
+        , address : Address
+        , txns : Txns
+        }
+
+
 type alias Flag =
     { chainId : Int
     , wallet : Wallet.Flag
@@ -118,6 +126,7 @@ type Msg
     | ReceiveAllowances Value
     | ReceiveConfirm Value
     | ReceiveReceipt Value
+    | ReceiveUpdatedTxns Value
     | ReceiveNatives Chain (Result Http.Error Natives.Answer)
     | ReceivePositions Value
     | BalancesTick Posix
@@ -362,6 +371,26 @@ update { chains } chain msg (User user) =
                                     Receipt.Success ->
                                         user.txns
                                             |> Txns.updateSuccess decoded.hash
+                        }
+
+                    else
+                        user
+
+                Err _ ->
+                    user
+            )
+                |> noCmdAndEffect
+
+        ReceiveUpdatedTxns value ->
+            (case value |> Decode.decodeValue decoderUpdatedTxns of
+                Ok (UpdatedTxns decoded) ->
+                    if
+                        (decoded.chain == chain)
+                            && (decoded.address == user.address)
+                    then
+                        { user
+                            | txns =
+                                decoded.txns
                         }
 
                     else
@@ -857,6 +886,21 @@ decoderNotSupported =
         |> Pipeline.required "address" Address.decoder
 
 
+decoderUpdatedTxns : Decoder UpdatedTxns
+decoderUpdatedTxns =
+    Decode.succeed
+        (\chain address txns ->
+            { chain = chain
+            , address = address
+            , txns = txns
+            }
+                |> UpdatedTxns
+        )
+        |> Pipeline.required "chain" Chain.decoder
+        |> Pipeline.required "address" Address.decoder
+        |> Pipeline.required "txns" Txns.decoder
+
+
 isSame : User -> User -> Bool
 isSame (User user1) (User user2) =
     (user1.address == user2.address)
@@ -928,6 +972,9 @@ port receiveConfirm : (Value -> msg) -> Sub msg
 port receiveReceipt : (Value -> msg) -> Sub msg
 
 
+port receiveUpdatedTxns : (Value -> msg) -> Sub msg
+
+
 subscriptions : User -> Sub Msg
 subscriptions (User user) =
     [ receiveBalances ReceiveBalances
@@ -935,6 +982,7 @@ subscriptions (User user) =
     , receivePositions ReceivePositions
     , receiveConfirm ReceiveConfirm
     , receiveReceipt ReceiveReceipt
+    , receiveUpdatedTxns ReceiveUpdatedTxns
     , user.balances |> Balances.subscriptions BalancesTick
     , user.allowances |> Allowances.subscriptions AllowancesTick
     ]

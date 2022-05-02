@@ -1,4 +1,4 @@
-module Page.Info.Tooltip exposing (Tooltip(..))
+module Page.Markets.Tooltip exposing (Tooltip(..))
 
 import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)

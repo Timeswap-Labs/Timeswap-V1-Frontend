@@ -15,6 +15,9 @@ import { wallet } from "./wallet";
 import { getChainData, getNativeToken, getTokenList } from "./chains";
 import { approveSigner } from "./approve";
 import { listenForPendingTxns, fetchRecentTxns } from "./helper";
+import { liquidity, liquiditySigner } from './liquidity';
+import { burn, burnSigner } from './burn';
+import { CONVENIENCE } from '@timeswap-labs/timeswap-v1-sdk';
 
 export declare let window: any;
 
@@ -72,6 +75,12 @@ export async function init(
   borrowSigner(app, gp);
 
   paySigner(app, gp);
+
+  liquidity(app);
+  liquiditySigner(app, gp);
+
+  burn(app);
+  burnSigner(app, gp)
 
   if (gp.walletProvider) {
     walletConnected(app, gp, user);

@@ -70,6 +70,8 @@ import Page.Transaction.Switch as Switch
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Url.Builder as Builder
+import Utility.Calculate as Calculate
+import Utility.Color as Color
 import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Loading as Loading
@@ -120,6 +122,8 @@ type alias ClaimsGivenPercent =
     , minInsurance : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -129,6 +133,8 @@ type alias ClaimsGivenBond =
     , minInsurance : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -138,6 +144,8 @@ type alias ClaimsGivenInsurance =
     , minBond : Uint
     , apr : Float
     , cdp : CDP
+    , futureApr : Float
+    , futureCdp : CDP
     , txnFee : Uint
     }
 
@@ -164,7 +172,7 @@ type Msg
 
 type Effect
     = OpenConnect
-    | OpenCaution WriteLend
+    | OpenCaution WriteLend Float CDP PoolInfo
     | Approve ERC20
     | Lend WriteLend
 
@@ -189,6 +197,8 @@ initGivenPercent =
     , minInsurance = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , futureApr = 0
+    , futureCdp = CDP.init
     , txnFee = Uint.zero
     }
 
@@ -199,6 +209,8 @@ initGivenBond =
     , minInsurance = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , futureApr = 0
+    , futureCdp = CDP.init
     , txnFee = Uint.zero
     }
 
@@ -209,6 +221,8 @@ initGivenInsurance =
     , minBond = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , futureApr = 0
+    , futureCdp = CDP.init
     , txnFee = Uint.zero
     }
 
@@ -806,24 +820,18 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     then
                         ( transaction |> Transaction
                         , Cmd.none
-                        , { pool = pool
-                          , assetIn = assetIn
-                          , percent = Percent.init
-                          , minBond = answer.minBond
-                          , minInsurance = answer.minInsurance
-                          }
-                            |> WriteLend.GivenPercent
-                            |> (case answer.cdp.percent of
-                                    Just cdpPercent ->
-                                        if (cdpPercent * 100) < 100 then
-                                            OpenCaution
-
-                                        else
-                                            Lend
-
-                                    _ ->
-                                        Lend
-                               )
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , percent = Percent.init
+                             , minBond = answer.minBond
+                             , minInsurance = answer.minInsurance
+                             }
+                                |> WriteLend.GivenPercent
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
                             |> Just
                         )
                             |> Just
@@ -867,24 +875,18 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     then
                         ( transaction |> Transaction
                         , Cmd.none
-                        , { pool = pool
-                          , assetIn = assetIn
-                          , percent = percent
-                          , minBond = answer.minBond
-                          , minInsurance = answer.minInsurance
-                          }
-                            |> WriteLend.GivenPercent
-                            |> (case answer.cdp.percent of
-                                    Just cdpPercent ->
-                                        if (cdpPercent * 100) < 100 then
-                                            OpenCaution
-
-                                        else
-                                            Lend
-
-                                    _ ->
-                                        Lend
-                               )
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , percent = percent
+                             , minBond = answer.minBond
+                             , minInsurance = answer.minInsurance
+                             }
+                                |> WriteLend.GivenPercent
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
                             |> Just
                         )
                             |> Just
@@ -932,23 +934,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     then
                         ( transaction |> Transaction
                         , Cmd.none
-                        , { pool = pool
-                          , assetIn = assetIn
-                          , bondOut = bondOut
-                          , minInsurance = answer.minInsurance
-                          }
-                            |> WriteLend.GivenBond
-                            |> (case answer.cdp.percent of
-                                    Just cdpPercent ->
-                                        if (cdpPercent * 100) < 100 then
-                                            OpenCaution
-
-                                        else
-                                            Lend
-
-                                    _ ->
-                                        Lend
-                               )
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , bondOut = bondOut
+                             , minInsurance = answer.minInsurance
+                             }
+                                |> WriteLend.GivenBond
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
                             |> Just
                         )
                             |> Just
@@ -996,23 +992,17 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     then
                         ( transaction |> Transaction
                         , Cmd.none
-                        , { pool = pool
-                          , assetIn = assetIn
-                          , insuranceOut = insuranceOut
-                          , minBond = answer.minBond
-                          }
-                            |> WriteLend.GivenInsurance
-                            |> (case answer.cdp.percent of
-                                    Just cdpPercent ->
-                                        if (cdpPercent * 100) < 100 then
-                                            OpenCaution
-
-                                        else
-                                            Lend
-
-                                    _ ->
-                                        Lend
-                               )
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , insuranceOut = insuranceOut
+                             , minBond = answer.minBond
+                             }
+                                |> WriteLend.GivenInsurance
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
                             |> Just
                         )
                             |> Just
@@ -1322,11 +1312,13 @@ toClaimsGivenBond :
     -> Remote Error ClaimsGivenBond
 toClaimsGivenBond result =
     case result of
-        Ok { insuranceOut, minInsurance, apr, cdp, txnFee } ->
+        Ok { insuranceOut, minInsurance, apr, cdp, txnFee, futureApr, futureCdp } ->
             { insuranceOut = insuranceOut
             , minInsurance = minInsurance
             , apr = apr
             , cdp = cdp
+            , futureApr = futureApr
+            , futureCdp = futureCdp
             , txnFee = txnFee
             }
                 |> Success
@@ -1340,11 +1332,13 @@ toClaimsGivenInsurance :
     -> Remote Error ClaimsGivenInsurance
 toClaimsGivenInsurance result =
     case result of
-        Ok { bondOut, minBond, apr, cdp, txnFee } ->
+        Ok { bondOut, minBond, apr, cdp, txnFee, futureApr, futureCdp } ->
             { bondOut = bondOut
             , minBond = minBond
             , apr = apr
             , cdp = cdp
+            , futureApr = futureApr
+            , futureCdp = futureCdp
             , txnFee = txnFee
             }
                 |> Success
@@ -1665,7 +1659,8 @@ view model blockchain pool poolInfo (Transaction transaction) =
         transaction
             |> assetInSection model
                 blockchain
-                (pool.pair |> Pair.toAsset)
+                pool
+                poolInfo
     , second =
         transaction
             |> claimsOutSection model pool poolInfo
@@ -1678,12 +1673,13 @@ view model blockchain pool poolInfo (Transaction transaction) =
 
 
 assetInSection :
-    { model | images : Images, theme : Theme }
+    { model | priceFeed : PriceFeed, images : Images, theme : Theme }
     -> Blockchain
-    -> Token
+    -> Pool
+    -> PoolInfo
     -> { transaction | assetIn : String, tooltip : Maybe Tooltip, claimsOut : ClaimsOut }
     -> Element Msg
-assetInSection model blockchain asset { assetIn, tooltip, claimsOut } =
+assetInSection model blockchain pool poolInfo { assetIn, tooltip, claimsOut } =
     column
         [ Region.description "lend asset"
         , width fill
@@ -1709,7 +1705,7 @@ assetInSection model blockchain asset { assetIn, tooltip, claimsOut } =
                 (text "Amount to Lend")
             , blockchain
                 |> Blockchain.toUser
-                |> Maybe.andThen (User.getBalance asset)
+                |> Maybe.andThen (User.getBalance (pool.pair |> Pair.toAsset))
                 |> Maybe.map
                     (\balance ->
                         MaxButton.view
@@ -1718,7 +1714,7 @@ assetInSection model blockchain asset { assetIn, tooltip, claimsOut } =
                             , onMouseLeave = OnMouseLeave
                             , tooltip = Tooltip.Balance
                             , opened = tooltip
-                            , token = asset
+                            , token = pool.pair |> Pair.toAsset
                             , balance = balance
                             , theme = model.theme
                             }
@@ -1730,73 +1726,280 @@ assetInSection model blockchain asset { assetIn, tooltip, claimsOut } =
             , onMouseLeave = OnMouseLeave
             , tooltip = Tooltip.AssetInSymbol
             , opened = tooltip
-            , token = asset
+            , token = pool.pair |> Pair.toAsset
             , onClick = Nothing
             , onChange = InputAssetIn
             , text = Left assetIn
             , description = "asset in textbox"
             }
-        , (case claimsOut of
-            Default (Success claimsGivenPercent) ->
-                claimsGivenPercent.txnFee |> Just
+        , if assetIn |> Input.isZero then
+            none
 
-            Slider { claims } ->
-                case claims of
-                    Success claimsGivenPercent ->
+          else
+            column
+                [ width fill
+                , height fill
+                , spacing 10
+                ]
+                [ (case claimsOut of
+                    Default (Success claimsGivenPercent) ->
                         claimsGivenPercent.txnFee |> Just
 
+                    Slider { claims } ->
+                        case claims of
+                            Success claimsGivenPercent ->
+                                claimsGivenPercent.txnFee |> Just
+
+                            _ ->
+                                Nothing
+
+                    Bond { claims } ->
+                        case claims of
+                            Success claimsGivenBond ->
+                                claimsGivenBond.txnFee |> Just
+
+                            _ ->
+                                Nothing
+
+                    Insurance { claims } ->
+                        case claims of
+                            Success claimsGivenInsurance ->
+                                claimsGivenInsurance.txnFee |> Just
+
+                            _ ->
+                                Nothing
+
                     _ ->
                         Nothing
+                  )
+                    |> (\maybeTxnFee ->
+                            case maybeTxnFee of
+                                Just txnFee ->
+                                    row
+                                        [ width fill
+                                        , height shrink
+                                        , spacing 8
+                                        ]
+                                        [ el
+                                            [ Font.size 14
+                                            , model.theme |> ThemeColor.textLight |> Font.color
+                                            ]
+                                            (text "Transaction Fee")
+                                        , el [ alignRight ]
+                                            (Truncate.viewAmount
+                                                { onMouseEnter = OnMouseEnter
+                                                , onMouseLeave = OnMouseLeave
+                                                , tooltip = Tooltip.TxnFee
+                                                , opened = tooltip
+                                                , token = pool.pair |> Pair.toAsset
+                                                , amount = txnFee
+                                                , theme = model.theme
+                                                , customStyles = [ Font.size 14 ]
+                                                }
+                                            )
+                                        ]
 
-            Bond { claims } ->
-                case claims of
-                    Success claimsGivenBond ->
-                        claimsGivenBond.txnFee |> Just
+                                _ ->
+                                    none
+                       )
+                , (case claimsOut of
+                    Default (Success claimsGivenPercent) ->
+                        claimsGivenPercent.futureApr |> Just
+
+                    Slider { claims } ->
+                        case claims of
+                            Success claimsGivenPercent ->
+                                claimsGivenPercent.futureApr |> Just
+
+                            _ ->
+                                Nothing
+
+                    Bond { claims } ->
+                        case claims of
+                            Success claimsGivenBond ->
+                                claimsGivenBond.futureApr |> Just
+
+                            _ ->
+                                Nothing
+
+                    Insurance { claims } ->
+                        case claims of
+                            Success claimsGivenInsurance ->
+                                claimsGivenInsurance.futureApr |> Just
+
+                            _ ->
+                                Nothing
 
                     _ ->
                         Nothing
+                  )
+                    |> (\maybeFutureApr ->
+                            case maybeFutureApr of
+                                Just futureApr ->
+                                    row
+                                        [ width fill
+                                        , height shrink
+                                        ]
+                                        [ row
+                                            [ Font.size 14
+                                            , model.theme |> ThemeColor.textLight |> Font.color
+                                            , centerY
+                                            ]
+                                            [ text "Change in APR"
+                                            , model.images
+                                                |> (case model.theme of
+                                                        Theme.Dark ->
+                                                            Image.questionMark
 
-            Insurance { claims } ->
-                case claims of
-                    Success claimsGivenInsurance ->
-                        claimsGivenInsurance.txnFee |> Just
+                                                        Theme.Light ->
+                                                            Image.questionMarkDark
+                                                   )
+                                                    [ width <| px 12
+                                                    , height <| px 12
+                                                    , paddingXY 8 0
+                                                    , Events.onMouseEnter (OnMouseEnter Tooltip.ApproxFutureAPR)
+                                                    , Events.onMouseLeave OnMouseLeave
+                                                    , (if tooltip == Just Tooltip.ApproxFutureAPR then
+                                                        el
+                                                            [ Font.size 14
+                                                            , model.theme |> ThemeColor.textLight |> Font.color
+                                                            ]
+                                                            ("Approximate change in the pool's APR after this txn" |> text)
+                                                            |> Tooltip.belowAlignLeft model.theme
+
+                                                       else
+                                                        none
+                                                      )
+                                                        |> below
+                                                    ]
+                                            ]
+                                        , row
+                                            [ alignRight
+                                            , Font.size 14
+                                            , model.theme |> ThemeColor.text |> Font.color
+                                            ]
+                                            [ if futureApr > poolInfo.apr then
+                                                text "+"
+
+                                              else
+                                                none
+                                            , (futureApr - poolInfo.apr) |> Calculate.apr
+                                            ]
+                                        ]
+
+                                _ ->
+                                    none
+                       )
+                , (case claimsOut of
+                    Default (Success claimsGivenPercent) ->
+                        claimsGivenPercent.futureCdp |> Just
+
+                    Slider { claims } ->
+                        case claims of
+                            Success claimsGivenPercent ->
+                                claimsGivenPercent.futureCdp |> Just
+
+                            _ ->
+                                Nothing
+
+                    Bond { claims } ->
+                        case claims of
+                            Success claimsGivenBond ->
+                                claimsGivenBond.futureCdp |> Just
+
+                            _ ->
+                                Nothing
+
+                    Insurance { claims } ->
+                        case claims of
+                            Success claimsGivenInsurance ->
+                                claimsGivenInsurance.futureCdp |> Just
+
+                            _ ->
+                                Nothing
 
                     _ ->
                         Nothing
+                  )
+                    |> (\maybeFutureCdp ->
+                            case maybeFutureCdp of
+                                Just futureCdp ->
+                                    case ( futureCdp.percent, poolInfo.cdp.percent ) of
+                                        ( Just futureCdpPerc, Just poolCdpPerc ) ->
+                                            row
+                                                [ width fill
+                                                , height shrink
+                                                , spacing 8
+                                                , paddingXY 0 2
+                                                ]
+                                                [ row
+                                                    [ Font.size 14
+                                                    , model.theme |> ThemeColor.textLight |> Font.color
+                                                    ]
+                                                    [ text "Change in CDP"
+                                                    , model.images
+                                                        |> (case model.theme of
+                                                                Theme.Dark ->
+                                                                    Image.questionMark
 
-            _ ->
-                Nothing
-          )
-            |> (\maybeTxnFee ->
-                    case maybeTxnFee of
-                        Just txnFee ->
-                            row
-                                [ width fill
-                                , height shrink
-                                , spacing 8
-                                ]
-                                [ el
-                                    [ Font.size 14
-                                    , model.theme |> ThemeColor.textLight |> Font.color
-                                    ]
-                                    (text "Transaction Fee")
-                                , el [ alignRight ]
-                                    (Truncate.viewAmount
-                                        { onMouseEnter = OnMouseEnter
-                                        , onMouseLeave = OnMouseLeave
-                                        , tooltip = Tooltip.TxnFee
-                                        , opened = tooltip
-                                        , token = asset
-                                        , amount = txnFee
-                                        , theme = model.theme
-                                        , customStyles = []
-                                        }
-                                    )
-                                ]
+                                                                Theme.Light ->
+                                                                    Image.questionMarkDark
+                                                           )
+                                                            [ width <| px 12
+                                                            , height <| px 12
+                                                            , paddingXY 8 0
+                                                            , Events.onMouseEnter (OnMouseEnter Tooltip.ApproxFutureCDP)
+                                                            , Events.onMouseLeave OnMouseLeave
+                                                            , (if tooltip == Just Tooltip.ApproxFutureCDP then
+                                                                el
+                                                                    [ Font.size 14
+                                                                    , model.theme |> ThemeColor.textLight |> Font.color
+                                                                    ]
+                                                                    ("Approximate change in the pool's CDP after this txn" |> text)
+                                                                    |> Tooltip.belowAlignLeft model.theme
 
-                        _ ->
-                            none
-               )
+                                                               else
+                                                                none
+                                                              )
+                                                                |> below
+                                                            ]
+                                                    ]
+                                                , row
+                                                    [ alignRight
+                                                    , Font.size 14
+                                                    , (if futureCdpPerc < 1 then
+                                                        Color.negative500
+
+                                                       else
+                                                        model.theme |> ThemeColor.text
+                                                      )
+                                                        |> Font.color
+                                                    ]
+                                                    [ if futureCdpPerc > poolCdpPerc then
+                                                        text "+"
+
+                                                      else
+                                                        none
+                                                    , [ (futureCdpPerc - poolCdpPerc)
+                                                            |> (*) 10000
+                                                            |> truncate
+                                                            |> toFloat
+                                                            |> (\number -> number / 100)
+                                                            |> String.fromFloat
+                                                      , "%"
+                                                      ]
+                                                        |> String.concat
+                                                        |> text
+                                                    ]
+                                                ]
+
+                                        _ ->
+                                            none
+
+                                _ ->
+                                    none
+                       )
+                ]
         ]
 
 
@@ -1900,6 +2103,7 @@ claimsOutSection model pool poolInfo ({ assetIn, claimsOut, tooltip } as transac
                             , pair = pool.pair
                             , cdp = cdp
                             , poolInfo = poolInfo |> Just
+                            , assetIn = assetIn
                             }
                         ]
                    )

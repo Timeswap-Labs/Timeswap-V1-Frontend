@@ -5,7 +5,7 @@ type Tab
     = Lend
     | Borrow
     | Liquidity
-    | Info
+    | Markets
 
 
 toString : Tab -> String
@@ -20,5 +20,5 @@ toString tab =
         Liquidity ->
             "Liquidity"
 
-        Info ->
-            "Info"
+        Markets ->
+            "Markets"

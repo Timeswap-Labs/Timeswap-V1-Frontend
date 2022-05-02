@@ -10,3 +10,5 @@ type Tooltip
     | CDP
     | TxnFee
     | AmountToReceive
+    | ApproxFutureAPR
+    | ApproxFutureCDP

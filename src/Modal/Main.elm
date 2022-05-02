@@ -26,6 +26,7 @@ import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Blockchain.User.WriteLend exposing (WriteLend)
 import Blockchain.User.WritePay exposing (WritePay)
 import Data.Backdrop exposing (Backdrop)
+import Data.CDP exposing (CDP)
 import Data.Chain exposing (Chain)
 import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
@@ -59,6 +60,7 @@ import Modal.MaturityList.Main as MaturityList
 import Modal.PayTransaction.Main as PayTransaction
 import Modal.Settings.Main as Settings
 import Modal.TokenList.Main as TokenList
+import Page.PoolInfo exposing (PoolInfo)
 import Sort.Set exposing (Set)
 import Time exposing (Posix)
 
@@ -133,9 +135,9 @@ initConfirm id txnWrite =
         |> Confirm
 
 
-initCaution : WriteLend -> Modal
-initCaution txnWrite =
-    Caution.init txnWrite
+initCaution : WriteLend -> Float -> CDP -> PoolInfo -> Modal
+initCaution writeLend apr cdp poolInfo =
+    Caution.init writeLend apr cdp poolInfo
         |> Caution
 
 

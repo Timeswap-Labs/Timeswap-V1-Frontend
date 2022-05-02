@@ -49,7 +49,14 @@ declare interface Ports {
 
   withdraw: PortFromElm<Withdraw>;
 
-  faucetMint: PortFromElm<Faucet>;
+  queryLiquidity: PortFromElm<LiquidityQuery>;
+  queryLiquidityPerSecond: PortFromElm<LiquidityQuery>;
+  receiveAddLiqAnswer: PortToElm<LiquidityCalculate>;
+  liquidity: PortFromElm<Liquidity>;
+  queryLiq: PortFromElm<LiqReturn>;
+  receiveLiqReturn: PortToElm<ReceiveLiqReturn>;
+
+  burn: PortFromElm<Burn>;
 
   scroll: PortsToElm;
 
@@ -67,9 +74,7 @@ declare interface Ports {
 
   receiveConfirm: PortToElm<ReceiveConfirm>;
   receiveReceipt: PortToElm<ReceiveReceipt>;
-
-  signSwapTxn: PortFromElm;
-  swapSignatureMsg: PortToElm<String>;
+  receiveUpdatedTxns: PortToElm<ReceiveUpdatedTxns>;
 }
 
 interface NativeToken {
@@ -286,6 +291,25 @@ type Liqs = {
   liq: Uint;
 }[];
 
+type LiqReturn = {
+  chain: Chain;
+  pool: Pool;
+  poolInfo: PoolInfo;
+  liquidityIn: Uint;
+};
+
+type ReceiveLiqReturn = {
+  chain: Chain;
+  pool: Pool;
+  poolInfo: PoolInfo;
+  result:
+    | {
+        asset: string;
+        collateral: string;
+      }
+    | number;
+};
+
 interface ReceiveUser {
   chainId: int;
   wallet: string;
@@ -346,7 +370,9 @@ interface PoolInfo {
   assetSpot: number | null;
   collateralSpot: number | null;
   fee: number;
+  feeStored: Uint;
   protocolFee: number;
+  convAddress: string;
 }
 
 interface Approve {
@@ -447,6 +473,51 @@ interface Pay {
   };
 }
 
+interface Liquidity {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    liquidityTo: string;
+    dueTo: string;
+    assetIn?: string;
+    debtIn?: string;
+    collateralIn?: string;
+    minLiquidity: string;
+    maxAsset?: string;
+    maxDebt?: string;
+    maxCollateral?: string;
+    deadline: number;
+  };
+}
+
+interface LiquidityQuery {
+  chain: Chain;
+  pool: Pool;
+  poolInfo: PoolInfo;
+  slippage: number;
+  assetIn?: string;
+  debtIn?: string;
+  collateralIn?: string;
+}
+
+interface Burn {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    assetTo: string;
+    collateralTo: string;
+    liquidityIn: string;
+  };
+}
+
 interface ReceiveConfirm {
   id: number;
   chain: Chain;
@@ -460,3 +531,11 @@ interface ReceiveReceipt {
   hash: string;
   state: string;
 }
+
+interface ReceiveUpdatedTxns {
+  chain: Chain;
+  address: string;
+  txns: Txns;
+}
+
+

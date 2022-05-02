@@ -315,8 +315,8 @@ update model blockchain msg (Transaction transaction) =
                     , remote
                     )
                 of
-                    ( Ok (Right poolInfo), Success (Exist _ lend) ) ->
-                        lend
+                    ( Ok (Right poolInfo), Success (Exist _ borrow) ) ->
+                        borrow
                             |> Exist poolInfo
                             |> Success
                             |> Left
@@ -524,8 +524,8 @@ subscriptions : Transaction -> Sub Msg
 subscriptions (Transaction { state }) =
     [ Time.every 1000 CheckMaturity
     , case state of
-        Pool _ (Active (Success (Exist _ lend))) ->
-            lend
+        Pool _ (Active (Success (Exist _ borrow))) ->
+            borrow
                 |> Borrow.subscriptions
                 |> Sub.map BorrowMsg
 

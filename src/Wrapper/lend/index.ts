@@ -1,6 +1,6 @@
 import { Uint112 } from '@timeswap-labs/timeswap-v1-sdk-core';
 import { GlobalParams } from './../global';
-import { getPool, getPoolSDK, updateCachedTxns } from "../helper";
+import { compareConvAddress, getPool, getPoolSDK, handleTxnErrors, updateCachedTxns } from "../helper";
 import { bondCalculate, bondTransaction } from "./bond";
 import { insuranceCalculate, insuranceTransaction } from "./insurance";
 import { percentCalculate, percentTransaction } from "./percent";
@@ -55,7 +55,7 @@ export function lendSigner(
           id: params.id,
           chain: params.chain,
           address: params.address,
-          hash: txnConfirmation.hash || null
+          hash: txnConfirmation.hash
         });
 
         const txnReceipt = await txnConfirmation.wait();
@@ -68,13 +68,8 @@ export function lendSigner(
         app.ports.receiveReceipt.send(receiveReceipt);
         updateCachedTxns(receiveReceipt);
       }
-    } catch (error) {
-      app.ports.receiveConfirm.send({
-        id: params.id,
-        chain: params.chain,
-        address: params.address,
-        hash: null
-      });
+    } catch (error: any) {
+      handleTxnErrors(error, app, gp, params);
     }
   });
 }
@@ -94,6 +89,8 @@ async function lendQueryCalculation(
       result: 5,
     });
   }
+
+  compareConvAddress(query.poolInfo.convAddress, query.chain.chainId);
 
   const pool = getPool(query);
   const { percent, bondOut, insuranceOut } = query;

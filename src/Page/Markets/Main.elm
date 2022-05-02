@@ -1,4 +1,4 @@
-module Page.Info.Main exposing (Msg, PoolsData, init, update, view)
+module Page.Markets.Main exposing (Msg, PoolsData, init, update, view)
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Backdrop exposing (Backdrop)
@@ -48,8 +48,8 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import Http
-import Page.Info.Answer as Answer exposing (Answer)
-import Page.Info.Tooltip as Tooltip exposing (Tooltip)
+import Page.Markets.Answer as Answer exposing (Answer)
+import Page.Markets.Tooltip as Tooltip exposing (Tooltip)
 import Page.PoolInfo exposing (PoolInfo)
 import Page.Route as Route
 import Process
@@ -111,7 +111,7 @@ get blockchain chains =
         |> (\chain ->
                 Http.get
                     { url =
-                        Builder.crossOrigin "https://api.timeswap.io/v1/activepools"
+                        Builder.crossOrigin "https://backend-new-conv.herokuapp.com/v1/activepools"
                             []
                             [ chain |> Chain.toQueryParameter ]
                     , expect =
@@ -755,13 +755,10 @@ estimatedAPR poolInfo =
         (el
             [ width shrink
             , height shrink
-            , paddingXY 10 8
             , centerX
-            , Background.color Color.positive100
-            , Border.rounded 28
             , Font.bold
             , Font.size 14
-            , Font.color Color.positive500
+            , Font.color Color.warning400
             , Font.center
             ]
             (poolInfo.apr |> Calculate.apr)
@@ -776,7 +773,7 @@ collateralFactor :
         , poolInfo : PoolInfo
         }
     -> Element Msg
-collateralFactor ({ theme, priceFeed } as model) (PoolsData { tooltip }) { pool, poolInfo } =
+collateralFactor { theme, priceFeed } (PoolsData { tooltip }) { pool, poolInfo } =
     el
         [ px 170
             |> width
@@ -790,12 +787,13 @@ collateralFactor ({ theme, priceFeed } as model) (PoolsData { tooltip }) { pool,
         , centerX
         , centerY
         , Font.center
+        , Font.bold
         ]
         (el
             [ centerX, centerY ]
             (row
                 [ Font.size 14
-                , model.theme |> ThemeColor.text |> Font.color
+                , theme |> ThemeColor.text |> Font.color
                 , alignRight
                 , spacing 6
                 ]
@@ -809,7 +807,6 @@ collateralFactor ({ theme, priceFeed } as model) (PoolsData { tooltip }) { pool,
                     , theme = theme
                     }
                     priceFeed
-                    (theme |> ThemeColor.text)
                     14
                 , if
                     case priceFeed of
