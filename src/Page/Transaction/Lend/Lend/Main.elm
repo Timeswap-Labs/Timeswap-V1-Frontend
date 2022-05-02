@@ -1839,25 +1839,24 @@ assetInSection model blockchain pool poolInfo { assetIn, tooltip, claimsOut } =
                                     row
                                         [ width fill
                                         , height shrink
-                                        , spacing 8
                                         ]
                                         [ row
                                             [ Font.size 14
                                             , model.theme |> ThemeColor.textLight |> Font.color
-                                            , spacing 8
                                             , centerY
                                             ]
                                             [ text "Change in APR"
                                             , model.images
                                                 |> (case model.theme of
                                                         Theme.Dark ->
-                                                            Image.info
+                                                            Image.questionMark
 
                                                         Theme.Light ->
-                                                            Image.infoDark
+                                                            Image.questionMarkDark
                                                    )
                                                     [ width <| px 12
                                                     , height <| px 12
+                                                    , paddingXY 8 0
                                                     , Events.onMouseEnter (OnMouseEnter Tooltip.ApproxFutureAPR)
                                                     , Events.onMouseLeave OnMouseLeave
                                                     , (if tooltip == Just Tooltip.ApproxFutureAPR then
@@ -1865,7 +1864,7 @@ assetInSection model blockchain pool poolInfo { assetIn, tooltip, claimsOut } =
                                                             [ Font.size 14
                                                             , model.theme |> ThemeColor.textLight |> Font.color
                                                             ]
-                                                            ("This value is approximate" |> text)
+                                                            ("Approximate change in the pool's APR after this txn" |> text)
                                                             |> Tooltip.belowAlignLeft model.theme
 
                                                        else
@@ -1936,19 +1935,19 @@ assetInSection model blockchain pool poolInfo { assetIn, tooltip, claimsOut } =
                                                 [ row
                                                     [ Font.size 14
                                                     , model.theme |> ThemeColor.textLight |> Font.color
-                                                    , spacing 7
                                                     ]
                                                     [ text "Change in CDP"
                                                     , model.images
                                                         |> (case model.theme of
                                                                 Theme.Dark ->
-                                                                    Image.info
+                                                                    Image.questionMark
 
                                                                 Theme.Light ->
-                                                                    Image.infoDark
+                                                                    Image.questionMarkDark
                                                            )
                                                             [ width <| px 12
                                                             , height <| px 12
+                                                            , paddingXY 8 0
                                                             , Events.onMouseEnter (OnMouseEnter Tooltip.ApproxFutureCDP)
                                                             , Events.onMouseLeave OnMouseLeave
                                                             , (if tooltip == Just Tooltip.ApproxFutureCDP then
@@ -1956,7 +1955,7 @@ assetInSection model blockchain pool poolInfo { assetIn, tooltip, claimsOut } =
                                                                     [ Font.size 14
                                                                     , model.theme |> ThemeColor.textLight |> Font.color
                                                                     ]
-                                                                    ("This value is approximate" |> text)
+                                                                    ("Approximate change in the pool's CDP after this txn" |> text)
                                                                     |> Tooltip.belowAlignLeft model.theme
 
                                                                else

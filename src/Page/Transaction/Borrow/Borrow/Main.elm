@@ -2667,20 +2667,20 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                         [ row
                                                             [ Font.size 14
                                                             , model.theme |> ThemeColor.textLight |> Font.color
-                                                            , spacing 8
                                                             , centerY
                                                             ]
                                                             [ text "Change in APR"
                                                             , model.images
                                                                 |> (case model.theme of
                                                                         Theme.Dark ->
-                                                                            Image.info
+                                                                            Image.questionMark
 
                                                                         Theme.Light ->
-                                                                            Image.infoDark
+                                                                            Image.questionMarkDark
                                                                    )
                                                                     [ width <| px 12
                                                                     , height <| px 12
+                                                                    , paddingXY 8 0
                                                                     , Events.onMouseEnter (OnMouseEnter Tooltip.ApproxFutureAPR)
                                                                     , Events.onMouseLeave OnMouseLeave
                                                                     , (if tooltip == Just Tooltip.ApproxFutureAPR then
@@ -2688,7 +2688,7 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                                             [ Font.size 14
                                                                             , model.theme |> ThemeColor.textLight |> Font.color
                                                                             ]
-                                                                            ("This value is approximate" |> text)
+                                                                            ("Approximate change in the pool's APR after this txn" |> text)
                                                                             |> TooltipUtil.belowAlignLeft model.theme
 
                                                                        else
@@ -2769,20 +2769,20 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                                 [ row
                                                                     [ Font.size 14
                                                                     , model.theme |> ThemeColor.textLight |> Font.color
-                                                                    , spacing 7
                                                                     , centerY
                                                                     ]
                                                                     [ text "Change in CDP"
                                                                     , model.images
                                                                         |> (case model.theme of
                                                                                 Theme.Dark ->
-                                                                                    Image.info
+                                                                                    Image.questionMark
 
                                                                                 Theme.Light ->
-                                                                                    Image.infoDark
+                                                                                    Image.questionMarkDark
                                                                            )
                                                                             [ width <| px 12
                                                                             , height <| px 12
+                                                                            , paddingXY 8 0
                                                                             , Events.onMouseEnter (OnMouseEnter Tooltip.ApproxFutureCDP)
                                                                             , Events.onMouseLeave OnMouseLeave
                                                                             , (if tooltip == Just Tooltip.ApproxFutureCDP then
@@ -2790,7 +2790,7 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                                                     [ Font.size 14
                                                                                     , model.theme |> ThemeColor.textLight |> Font.color
                                                                                     ]
-                                                                                    ("This value is approximate" |> text)
+                                                                                    ("Approximate change in the pool's CDP after this txn" |> text)
                                                                                     |> TooltipUtil.belowAlignLeft model.theme
 
                                                                                else
