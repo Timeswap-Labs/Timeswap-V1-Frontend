@@ -69,7 +69,7 @@ export async function assetCalculate(
   } catch (err) {
     console.log("err", err);
 
-    app.ports.receiveLendAnswer.send({
+    app.ports.receiveAddLiqAnswer.send({
       ...query,
       result: 0,
     });

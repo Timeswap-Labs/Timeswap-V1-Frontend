@@ -52,7 +52,7 @@ import Element
         , spacing
         , width
         )
-import Page.Info.Main as Info exposing (PoolsData)
+import Page.Markets.Main as Markets exposing (PoolsData)
 import Page.PoolInfo exposing (PoolInfo)
 import Page.Position.Claim.Main as Claim
 import Page.Position.Due.Main as Due
@@ -87,7 +87,7 @@ type Page
         , positions : Liqs.Positions
         , position : Maybe Liq.Position
         }
-    | InfoPage PoolsData
+    | MarketsPage PoolsData
 
 
 type Msg
@@ -100,7 +100,7 @@ type Msg
     | LiquidityMsg Liquidity.Msg
     | LiqsMsg Liqs.Msg
     | LiqMsg Liq.Msg
-    | InfoMsg Info.Msg
+    | MarketsMsg Markets.Msg
 
 
 type Effect
@@ -281,11 +281,11 @@ construct ({ chains } as model) url maybePage =
                     )
                     (Cmd.map LiquidityMsg)
 
-        ( Just Route.Info, Supported blockchain, _ ) ->
-            Info.init model blockchain chains
+        ( Just Route.Markets, Supported blockchain, _ ) ->
+            Markets.init model blockchain chains
                 |> Tuple.mapBoth
-                    (\poolsData -> poolsData |> InfoPage)
-                    (Cmd.map InfoMsg)
+                    (\poolsData -> poolsData |> MarketsPage)
+                    (Cmd.map MarketsMsg)
 
         ( _, Supported blockchain, _ ) ->
             Nothing
@@ -525,16 +525,16 @@ update model blockchain msg page =
                     , Nothing
                     )
 
-        ( InfoMsg infoMsg, InfoPage infoPage ) ->
+        ( MarketsMsg infoMsg, MarketsPage infoPage ) ->
             infoPage
-                |> Info.update
+                |> Markets.update
                     infoMsg
                     blockchain
                     model.chains
                 |> (\( updated, cmd ) ->
                         ( updated
-                            |> InfoPage
-                        , cmd |> Cmd.map InfoMsg
+                            |> MarketsPage
+                        , cmd |> Cmd.map MarketsMsg
                         , Nothing
                         )
                    )
@@ -739,7 +739,7 @@ subscriptions page =
             ]
                 |> Sub.batch
 
-        InfoPage _ ->
+        MarketsPage _ ->
             Sub.none
 
 
@@ -755,8 +755,8 @@ toTab page =
         LiquidityPage _ ->
             Tab.Liquidity
 
-        InfoPage _ ->
-            Tab.Info
+        MarketsPage _ ->
+            Tab.Markets
 
 
 toParameter : Page -> Maybe Parameter
@@ -774,7 +774,7 @@ toParameter page =
             transaction
                 |> Liquidity.toParameter
 
-        InfoPage _ ->
+        MarketsPage _ ->
             Nothing
 
 
@@ -793,7 +793,7 @@ toPoolInfo page =
             transaction
                 |> Liquidity.toPoolInfo
 
-        InfoPage _ ->
+        MarketsPage _ ->
             Nothing
 
 
@@ -883,8 +883,8 @@ view model blockchain page =
                             |> Maybe.withDefault none
                         ]
 
-            InfoPage poolsData ->
-                Info.view model poolsData
-                    |> map InfoMsg
+            MarketsPage poolsData ->
+                Markets.view model poolsData
+                    |> map MarketsMsg
                     |> List.singleton
         )

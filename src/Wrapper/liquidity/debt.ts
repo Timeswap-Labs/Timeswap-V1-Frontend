@@ -66,7 +66,7 @@ export async function debtCalculate(
   } catch(err) {
     console.log(err);
 
-    app.ports.receiveLendAnswer.send({
+    app.ports.receiveAddLiqAnswer.send({
       ...query,
       result: 0,
     });

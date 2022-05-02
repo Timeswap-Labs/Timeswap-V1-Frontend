@@ -1,4 +1,4 @@
-module Page.Info.Main exposing (Msg, PoolsData, init, update, view)
+module Page.Markets.Main exposing (Msg, PoolsData, init, update, view)
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Backdrop exposing (Backdrop)
@@ -48,8 +48,8 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import Http
-import Page.Info.Answer as Answer exposing (Answer)
-import Page.Info.Tooltip as Tooltip exposing (Tooltip)
+import Page.Markets.Answer as Answer exposing (Answer)
+import Page.Markets.Tooltip as Tooltip exposing (Tooltip)
 import Page.PoolInfo exposing (PoolInfo)
 import Page.Route as Route
 import Process

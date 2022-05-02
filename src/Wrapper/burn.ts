@@ -16,12 +16,15 @@ export function burn(app: ElmApp<Ports>) {
       });
     } else {
       const pool = getPool(liqData);
-      const reserves = { asset : new Uint128(liqData.poolInfo.assetReserve), collateral: new Uint128(liqData.poolInfo.assetReserve) };
+      const reserves = {
+        asset : new Uint128(liqData.poolInfo.assetReserve),
+        collateral: new Uint128(liqData.poolInfo.collateralReserve)
+      };
       const totalClaims = {
         bondPrincipal: new Uint112(liqData.poolInfo.totalBondPrincipal),
         bondInterest: new Uint112(liqData.poolInfo.totalBondInterest),
         insurancePrincipal: new Uint112(liqData.poolInfo.totalInsurancePrincipal),
-        insuranceInterest: new Uint112(liqData.poolInfo.totalBondInterest)
+        insuranceInterest: new Uint112(liqData.poolInfo.totalInsuranceInterest)
       }
       const { assetOut, collateralOut } = await pool.burn(
         reserves,
