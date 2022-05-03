@@ -258,42 +258,40 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                                     }
                                 ]
                        )
-                , text " after maturity"
-                , (case cdp.percent of
-                    Just cdpPerc ->
-                        (if (cdpPerc * 100) > 100 then
-                            [ ", with the assumption that collateral price will not fall more than "
-                            , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
-                            , "%. "
-                            ]
+                , text " after maturity."
+                , text " This is with the assumption that the price of the Collateral will not fall to an extent that the value of collateral is less than the debt owed by the borrowers. In that situation, it's likely that the borrowers may not pay back and you might receive collateral tokens on maturity."
 
-                         else
-                            [ ". However, due to the transaction being undercollateralized, your realized APR will depend on the amount of defaults & the price of collateral at maturity"
-                            ]
-                        )
-                            |> String.concat
-
-                    _ ->
-                        ""
-                  )
-                    |> text
-                , (case cdp.percent of
-                    Just cdpPerc ->
-                        if (cdpPerc * 100) > 100 then
-                            [ "If collateral price falls more than "
-                            , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
-                            , "%"
-                            , ", the realized APR will be lower and depend on the amount of defaults & the price of collateral"
-                            ]
-                                |> String.concat
-
-                        else
-                            ""
-
-                    _ ->
-                        ""
-                  )
-                    |> text
+                -- , (case cdp.percent of
+                --     Just cdpPerc ->
+                --         (if (cdpPerc * 100) > 100 then
+                --             [ ", with the assumption that collateral price will not fall more than "
+                --             , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
+                --             , "%. "
+                --             ]
+                --          else
+                --             [ ". However, due to the transaction being undercollateralized, your realized APR will depend on the amount of defaults & the price of collateral at maturity"
+                --             ]
+                --         )
+                --             |> String.concat
+                --     _ ->
+                --         ""
+                --   )
+                --     |> text
+                -- , (case cdp.percent of
+                --     Just cdpPerc ->
+                --         if (cdpPerc * 100) > 100 then
+                --             [ "If collateral price falls more than "
+                --             , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
+                --             , "%"
+                --             , ", the realized APR will be lower and depend on the amount of defaults & the price of collateral"
+                --             ]
+                --                 |> String.concat
+                --         else
+                --             ""
+                --     _ ->
+                --         ""
+                --   )
+                --     |> text
                 ]
             ]
         , Input.button
