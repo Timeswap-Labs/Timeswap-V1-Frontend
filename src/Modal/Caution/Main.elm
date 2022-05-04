@@ -261,34 +261,17 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                 , text " after maturity"
                 , (case cdp.percent of
                     Just cdpPerc ->
-                        (if (cdpPerc * 100) > 100 then
-                            [ ", with the assumption that collateral price will not fall more than "
-                            , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
-                            , "%. "
+                        (if cdpPerc > 1 then
+                            [ ", with the assumption that the collateral price will not fall more than "
+                            , ((cdpPerc - 1) / cdpPerc) * 10000 |> round |> toFloat |> (\float -> float / 100) |> String.fromFloat
+                            , "% than the current price, in which case the realized APR can be lower."
                             ]
 
                          else
-                            [ ". However, due to the transaction being undercollateralized, your realized APR will depend on the amount of defaults & the price of collateral at maturity"
+                            [ ". However, due to the transaction being undercollateralized, your realized APR will depend on the amount of defaults & the price of collateral at maturity."
                             ]
                         )
                             |> String.concat
-
-                    _ ->
-                        ""
-                  )
-                    |> text
-                , (case cdp.percent of
-                    Just cdpPerc ->
-                        if (cdpPerc * 100) > 100 then
-                            [ "If collateral price falls more than "
-                            , (cdpPerc * 100 - 100) * 100 |> round |> toFloat |> (\int -> int / 100) |> String.fromFloat
-                            , "%"
-                            , ", the realized APR will be lower and depend on the amount of defaults & the price of collateral"
-                            ]
-                                |> String.concat
-
-                        else
-                            ""
 
                     _ ->
                         ""

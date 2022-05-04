@@ -410,6 +410,7 @@ viewLiq { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                     el
                         [ width shrink
                         , height <| px 24
+                        , paddingXY 10 2
                         , Background.color Color.negative100
                         , Border.rounded 999
                         ]
