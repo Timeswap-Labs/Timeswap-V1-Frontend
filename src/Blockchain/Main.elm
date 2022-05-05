@@ -61,6 +61,7 @@ type Effect
     | OpenConfirm Int TxnWrite
     | ConfirmTxn Int Hash
     | RejectTxn Int
+    | CompletedTxn Hash
 
 
 init :
@@ -151,6 +152,9 @@ userEffect effect =
 
         User.RejectTxn id ->
             RejectTxn id
+
+        User.CompletedTxn hash ->
+            CompletedTxn hash
 
 
 updateClearTxns : Blockchain -> ( Blockchain, Cmd Msg )

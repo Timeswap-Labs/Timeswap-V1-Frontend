@@ -138,6 +138,7 @@ type Effect
     | OpenConfirm Int TxnWrite
     | ConfirmTxn Int Hash
     | RejectTxn Int
+    | CompletedTxn Hash
 
 
 init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
@@ -351,7 +352,7 @@ update { chains } chain msg (User user) =
                     user |> noCmdAndEffect
 
         ReceiveReceipt value ->
-            (case value |> Decode.decodeValue Receipt.decoder of
+            case value |> Decode.decodeValue Receipt.decoder of
                 Ok decoded ->
                     if
                         (decoded.chain == chain)
@@ -372,14 +373,18 @@ update { chains } chain msg (User user) =
                                         user.txns
                                             |> Txns.updateSuccess decoded.hash
                         }
+                            |> (\updatedUser ->
+                                    ( updatedUser |> User
+                                    , Cmd.none
+                                    , CompletedTxn decoded.hash |> Just
+                                    )
+                               )
 
                     else
-                        user
+                        user |> noCmdAndEffect
 
                 Err _ ->
-                    user
-            )
-                |> noCmdAndEffect
+                    user |> noCmdAndEffect
 
         ReceiveUpdatedTxns value ->
             (case value |> Decode.decodeValue decoderUpdatedTxns of

@@ -651,6 +651,19 @@ blockchainEffect effect model =
             , Cmd.none
             )
 
+        ( Blockchain.CompletedTxn hash, Supported _ ) ->
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (model.modal
+                                |> Animator.current
+                                |> Maybe.map (Modal.completed hash)
+                            )
+              }
+            , Cmd.none
+            )
+
         _ ->
             ( model, Cmd.none )
 

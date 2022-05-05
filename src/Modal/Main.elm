@@ -2,6 +2,7 @@ module Modal.Main exposing
     ( Effect(..)
     , Modal
     , Msg
+    , completed
     , confirm
     , initCaution
     , initChainList
@@ -159,6 +160,18 @@ reject id modal =
         Confirm confirmModal ->
             confirmModal
                 |> Confirm.reject id
+                |> Confirm
+
+        _ ->
+            modal
+
+
+completed : Hash -> Modal -> Modal
+completed hash modal =
+    case modal of
+        Confirm confirmModal ->
+            confirmModal
+                |> Confirm.completed hash
                 |> Confirm
 
         _ ->

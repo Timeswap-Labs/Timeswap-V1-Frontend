@@ -8,6 +8,7 @@ module Utility.Image exposing
     , calendar
     , checkbox
     , checkboxSelected
+    , circleGreen
     , close
     , closeDark
     , copy
@@ -169,6 +170,11 @@ copy =
 plusPositive : List (Attribute msg) -> Images -> Element msg
 plusPositive =
     view "PlusPositive"
+
+
+circleGreen : List (Attribute msg) -> Images -> Element msg
+circleGreen =
+    view "CircleGreen"
 
 
 semiCircleGreen : List (Attribute msg) -> Images -> Element msg
