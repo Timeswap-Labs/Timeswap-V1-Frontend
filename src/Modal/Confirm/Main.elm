@@ -1,4 +1,4 @@
-module Modal.Confirm.Main exposing (Modal, Msg, completed, confirm, init, reject, update, view)
+module Modal.Confirm.Main exposing (Modal, Msg, confirmed, init, reject, submit, update, view)
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
@@ -44,10 +44,10 @@ type Modal
 
 
 type State
-    = Confirming Int
+    = Initiating Int
     | Rejected
+    | Submitted Hash
     | Confirmed Hash
-    | Completed Hash
 
 
 type Msg
@@ -57,7 +57,7 @@ type Msg
 init : Int -> TxnWrite -> Modal
 init id txnWrite =
     { write = txnWrite
-    , state = Confirming id
+    , state = Initiating id
     }
         |> Modal
 
@@ -69,14 +69,14 @@ update msg =
             Nothing
 
 
-confirm : Int -> Hash -> Modal -> Modal
-confirm id hash (Modal modal) =
+submit : Int -> Hash -> Modal -> Modal
+submit id hash (Modal modal) =
     { modal
         | state =
             case modal.state of
-                Confirming currentId ->
+                Initiating currentId ->
                     if id == currentId then
-                        Confirmed hash
+                        Submitted hash
 
                     else
                         modal.state
@@ -92,7 +92,7 @@ reject id (Modal modal) =
     { modal
         | state =
             case modal.state of
-                Confirming currentId ->
+                Initiating currentId ->
                     if id == currentId then
                         Rejected
 
@@ -105,14 +105,14 @@ reject id (Modal modal) =
         |> Modal
 
 
-completed : Hash -> Modal -> Modal
-completed hash (Modal modal) =
+confirmed : Hash -> Modal -> Modal
+confirmed hash (Modal modal) =
     { modal
         | state =
             case modal.state of
-                Confirmed currentHash ->
+                Submitted currentHash ->
                     if hash == currentHash then
-                        Completed hash
+                        Confirmed hash
 
                     else
                         modal.state
@@ -179,17 +179,17 @@ header ({ theme } as model) (Modal modal) =
             ]
             (text
                 (case modal.state of
-                    Confirming _ ->
+                    Initiating _ ->
                         "Awaiting Submission"
 
                     Rejected ->
                         "Transaction Rejected"
 
-                    Confirmed _ ->
+                    Submitted _ ->
                         "Transaction Submitted"
 
-                    Completed _ ->
-                        "Transaction Completed"
+                    Confirmed _ ->
+                        "Transaction Confirmed"
                 )
             )
         , IconButton.exit model Exit
@@ -215,7 +215,7 @@ body ({ images, theme } as model) blockchain (Modal { state }) =
                     Rejected ->
                         Image.semiCircleRed
 
-                    Completed _ ->
+                    Confirmed _ ->
                         Image.circleGreen
 
                     _ ->
@@ -227,16 +227,16 @@ body ({ images, theme } as model) blockchain (Modal { state }) =
                 , Font.center
                 , (images
                     |> (case state of
-                            Confirmed hash ->
-                                Image.matured
-
-                            Confirming int ->
+                            Initiating int ->
                                 Image.hourglassPrimary
+
+                            Submitted hash ->
+                                Image.matured
 
                             Rejected ->
                                 Image.error
 
-                            Completed _ ->
+                            Confirmed _ ->
                                 Image.matured
                        )
                         [ width <| px 36, height <| px 36, centerX, centerY, Font.center ]
@@ -257,24 +257,24 @@ body ({ images, theme } as model) blockchain (Modal { state }) =
                 ]
                 (text
                     (case state of
-                        Confirming _ ->
+                        Initiating _ ->
                             "Transaction is being initiated"
 
                         Rejected ->
                             "Transaction was not submitted"
 
-                        Confirmed _ ->
+                        Submitted _ ->
                             "Transaction submitted"
 
-                        Completed _ ->
-                            "Your transaction has been completed"
+                        Confirmed _ ->
+                            "Your transaction has been confirmed"
                     )
                 )
             , case state of
-                Confirmed hash ->
+                Submitted hash ->
                     txnExplorerLink model blockchain hash
 
-                Completed hash ->
+                Confirmed hash ->
                     txnExplorerLink model blockchain hash
 
                 _ ->

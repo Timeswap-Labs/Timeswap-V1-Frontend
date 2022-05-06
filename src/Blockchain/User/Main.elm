@@ -136,9 +136,9 @@ type Msg
 type Effect
     = AddERC20s ERC20s
     | OpenConfirm Int TxnWrite
-    | ConfirmTxn Int Hash
+    | SubmitTxn Int Hash
     | RejectTxn Int
-    | CompletedTxn Hash
+    | ConfirmedTxn Hash
 
 
 init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
@@ -335,7 +335,7 @@ update { chains } chain msg (User user) =
                                         , txns
                                             |> Cache.encodeTxns chain user.address
                                             |> cacheTxns
-                                        , ConfirmTxn decoded.id hash |> Just
+                                        , SubmitTxn decoded.id hash |> Just
                                         )
                                    )
 
@@ -376,7 +376,7 @@ update { chains } chain msg (User user) =
                             |> (\updatedUser ->
                                     ( updatedUser |> User
                                     , Cmd.none
-                                    , CompletedTxn decoded.hash |> Just
+                                    , ConfirmedTxn decoded.hash |> Just
                                     )
                                )
 

@@ -625,14 +625,14 @@ blockchainEffect effect model =
             , Cmd.none
             )
 
-        ( Blockchain.ConfirmTxn id hash, Supported _ ) ->
+        ( Blockchain.SubmitTxn id hash, Supported _ ) ->
             ( { model
                 | modal =
                     model.modal
                         |> Animator.go Animator.quickly
                             (model.modal
                                 |> Animator.current
-                                |> Maybe.map (Modal.confirm id hash)
+                                |> Maybe.map (Modal.submit id hash)
                             )
               }
             , Cmd.none
@@ -651,14 +651,14 @@ blockchainEffect effect model =
             , Cmd.none
             )
 
-        ( Blockchain.CompletedTxn hash, Supported _ ) ->
+        ( Blockchain.ConfirmedTxn hash, Supported _ ) ->
             ( { model
                 | modal =
                     model.modal
                         |> Animator.go Animator.quickly
                             (model.modal
                                 |> Animator.current
-                                |> Maybe.map (Modal.completed hash)
+                                |> Maybe.map (Modal.confirmed hash)
                             )
               }
             , Cmd.none
