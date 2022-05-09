@@ -9,7 +9,7 @@ import Url.Builder as Builder
 
 toUrlString : Chain -> Pair -> String
 toUrlString chain pair =
-    Builder.crossOrigin "https://backend-new-conv.herokuapp.com/v1/pool/summary"
+    Builder.crossOrigin "https://api.timeswap.io/v1/pool/summary"
         []
         [ chain
             |> Chain.toQueryParameter
