@@ -1,4 +1,4 @@
-module Modal.Confirm.Main exposing (Modal, Msg, confirm, init, reject, update, view)
+module Modal.Confirm.Main exposing (Modal, Msg, confirmed, init, reject, submit, update, view)
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
@@ -44,8 +44,9 @@ type Modal
 
 
 type State
-    = Confirming Int
+    = Initiating Int
     | Rejected
+    | Submitted Hash
     | Confirmed Hash
 
 
@@ -56,7 +57,7 @@ type Msg
 init : Int -> TxnWrite -> Modal
 init id txnWrite =
     { write = txnWrite
-    , state = Confirming id
+    , state = Initiating id
     }
         |> Modal
 
@@ -68,14 +69,14 @@ update msg =
             Nothing
 
 
-confirm : Int -> Hash -> Modal -> Modal
-confirm id hash (Modal modal) =
+submit : Int -> Hash -> Modal -> Modal
+submit id hash (Modal modal) =
     { modal
         | state =
             case modal.state of
-                Confirming currentId ->
+                Initiating currentId ->
                     if id == currentId then
-                        Confirmed hash
+                        Submitted hash
 
                     else
                         modal.state
@@ -91,9 +92,27 @@ reject id (Modal modal) =
     { modal
         | state =
             case modal.state of
-                Confirming currentId ->
+                Initiating currentId ->
                     if id == currentId then
                         Rejected
+
+                    else
+                        modal.state
+
+                _ ->
+                    modal.state
+    }
+        |> Modal
+
+
+confirmed : Hash -> Modal -> Modal
+confirmed hash (Modal modal) =
+    { modal
+        | state =
+            case modal.state of
+                Submitted currentHash ->
+                    if hash == currentHash then
+                        Confirmed hash
 
                     else
                         modal.state
@@ -160,14 +179,17 @@ header ({ theme } as model) (Modal modal) =
             ]
             (text
                 (case modal.state of
-                    Confirming _ ->
+                    Initiating _ ->
                         "Awaiting Submission"
 
                     Rejected ->
                         "Transaction Rejected"
 
-                    Confirmed _ ->
+                    Submitted _ ->
                         "Transaction Submitted"
+
+                    Confirmed _ ->
+                        "Transaction Confirmed"
                 )
             )
         , IconButton.exit model Exit
@@ -179,7 +201,7 @@ body :
     -> Blockchain
     -> Modal
     -> Element Msg
-body { images, theme } blockchain (Modal { state }) =
+body ({ images, theme } as model) blockchain (Modal { state }) =
     column
         [ width fill
         , centerX
@@ -193,6 +215,9 @@ body { images, theme } blockchain (Modal { state }) =
                     Rejected ->
                         Image.semiCircleRed
 
+                    Confirmed _ ->
+                        Image.circleGreen
+
                     _ ->
                         Image.semiCircleGreen
                )
@@ -202,14 +227,17 @@ body { images, theme } blockchain (Modal { state }) =
                 , Font.center
                 , (images
                     |> (case state of
-                            Confirmed hash ->
-                                Image.matured
-
-                            Confirming int ->
+                            Initiating int ->
                                 Image.hourglassPrimary
+
+                            Submitted hash ->
+                                Image.matured
 
                             Rejected ->
                                 Image.error
+
+                            Confirmed _ ->
+                                Image.matured
                        )
                         [ width <| px 36, height <| px 36, centerX, centerY, Font.center ]
                   )
@@ -229,42 +257,57 @@ body { images, theme } blockchain (Modal { state }) =
                 ]
                 (text
                     (case state of
-                        Confirming _ ->
+                        Initiating _ ->
                             "Transaction is being initiated"
 
                         Rejected ->
-                            "Transaction not submitted"
+                            "Transaction was not submitted"
+
+                        Submitted _ ->
+                            "Transaction submitted"
 
                         Confirmed _ ->
-                            "Transaction submitted"
+                            "Your transaction has been confirmed"
                     )
                 )
             , case state of
-                Confirmed hash ->
-                    newTabLink [ width fill, centerX, Font.center ]
-                        { url = Hash.toUrlString (blockchain |> Blockchain.toChain) hash
-                        , label =
-                            row [ spacing 8, centerX, centerY, Font.center ]
-                                [ el
-                                    [ Font.size 12
-                                    , Font.center
-                                    , centerX
-                                    , theme |> ThemeColor.actionElemLabel |> Font.color
-                                    ]
-                                    (text "View on Explorer")
-                                , images
-                                    |> (case theme of
-                                            Theme.Dark ->
-                                                Image.link
+                Submitted hash ->
+                    txnExplorerLink model blockchain hash
 
-                                            Theme.Light ->
-                                                Image.linkSecondary
-                                       )
-                                        [ width <| px 16, height <| px 16 ]
-                                ]
-                        }
+                Confirmed hash ->
+                    txnExplorerLink model blockchain hash
 
                 _ ->
                     none
             ]
         ]
+
+
+txnExplorerLink :
+    { model | images : Images, backdrop : Backdrop, theme : Theme }
+    -> Blockchain
+    -> Hash
+    -> Element Msg
+txnExplorerLink { images, theme } blockchain hash =
+    newTabLink [ width fill, centerX, Font.center ]
+        { url = Hash.toUrlString (blockchain |> Blockchain.toChain) hash
+        , label =
+            row [ spacing 8, centerX, centerY, Font.center ]
+                [ el
+                    [ Font.size 12
+                    , Font.center
+                    , centerX
+                    , theme |> ThemeColor.actionElemLabel |> Font.color
+                    ]
+                    (text "View on Explorer")
+                , images
+                    |> (case theme of
+                            Theme.Dark ->
+                                Image.link
+
+                            Theme.Light ->
+                                Image.linkSecondary
+                       )
+                        [ width <| px 16, height <| px 16 ]
+                ]
+        }
