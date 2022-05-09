@@ -136,8 +136,9 @@ type Msg
 type Effect
     = AddERC20s ERC20s
     | OpenConfirm Int TxnWrite
-    | ConfirmTxn Int Hash
+    | SubmitTxn Int Hash
     | RejectTxn Int
+    | ConfirmedTxn Hash
 
 
 init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
@@ -334,7 +335,7 @@ update { chains } chain msg (User user) =
                                         , txns
                                             |> Cache.encodeTxns chain user.address
                                             |> cacheTxns
-                                        , ConfirmTxn decoded.id hash |> Just
+                                        , SubmitTxn decoded.id hash |> Just
                                         )
                                    )
 
@@ -351,7 +352,7 @@ update { chains } chain msg (User user) =
                     user |> noCmdAndEffect
 
         ReceiveReceipt value ->
-            (case value |> Decode.decodeValue Receipt.decoder of
+            case value |> Decode.decodeValue Receipt.decoder of
                 Ok decoded ->
                     if
                         (decoded.chain == chain)
@@ -372,14 +373,18 @@ update { chains } chain msg (User user) =
                                         user.txns
                                             |> Txns.updateSuccess decoded.hash
                         }
+                            |> (\updatedUser ->
+                                    ( updatedUser |> User
+                                    , Cmd.none
+                                    , ConfirmedTxn decoded.hash |> Just
+                                    )
+                               )
 
                     else
-                        user
+                        user |> noCmdAndEffect
 
                 Err _ ->
-                    user
-            )
-                |> noCmdAndEffect
+                    user |> noCmdAndEffect
 
         ReceiveUpdatedTxns value ->
             (case value |> Decode.decodeValue decoderUpdatedTxns of

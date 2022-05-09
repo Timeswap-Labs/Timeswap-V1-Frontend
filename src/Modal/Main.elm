@@ -2,7 +2,7 @@ module Modal.Main exposing
     ( Effect(..)
     , Modal
     , Msg
-    , confirm
+    , confirmed
     , initCaution
     , initChainList
     , initConfirm
@@ -14,6 +14,7 @@ module Modal.Main exposing
     , initTokenList
     , receiveUser
     , reject
+    , submit
     , subscriptions
     , update
     , view
@@ -141,12 +142,12 @@ initCaution writeLend apr cdp poolInfo =
         |> Caution
 
 
-confirm : Int -> Hash -> Modal -> Modal
-confirm id hash modal =
+submit : Int -> Hash -> Modal -> Modal
+submit id hash modal =
     case modal of
         Confirm confirmModal ->
             confirmModal
-                |> Confirm.confirm id hash
+                |> Confirm.submit id hash
                 |> Confirm
 
         _ ->
@@ -159,6 +160,18 @@ reject id modal =
         Confirm confirmModal ->
             confirmModal
                 |> Confirm.reject id
+                |> Confirm
+
+        _ ->
+            modal
+
+
+confirmed : Hash -> Modal -> Modal
+confirmed hash modal =
+    case modal of
+        Confirm confirmModal ->
+            confirmModal
+                |> Confirm.confirmed hash
                 |> Confirm
 
         _ ->

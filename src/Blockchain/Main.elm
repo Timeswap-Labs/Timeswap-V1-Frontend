@@ -59,8 +59,9 @@ type Msg
 type Effect
     = AddERC20s ERC20s
     | OpenConfirm Int TxnWrite
-    | ConfirmTxn Int Hash
+    | SubmitTxn Int Hash
     | RejectTxn Int
+    | ConfirmedTxn Hash
 
 
 init :
@@ -146,11 +147,14 @@ userEffect effect =
         User.OpenConfirm id txnWrite ->
             OpenConfirm id txnWrite
 
-        User.ConfirmTxn id hash ->
-            ConfirmTxn id hash
+        User.SubmitTxn id hash ->
+            SubmitTxn id hash
 
         User.RejectTxn id ->
             RejectTxn id
+
+        User.ConfirmedTxn hash ->
+            ConfirmedTxn hash
 
 
 updateClearTxns : Blockchain -> ( Blockchain, Cmd Msg )

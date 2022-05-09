@@ -625,14 +625,14 @@ blockchainEffect effect model =
             , Cmd.none
             )
 
-        ( Blockchain.ConfirmTxn id hash, Supported _ ) ->
+        ( Blockchain.SubmitTxn id hash, Supported _ ) ->
             ( { model
                 | modal =
                     model.modal
                         |> Animator.go Animator.quickly
                             (model.modal
                                 |> Animator.current
-                                |> Maybe.map (Modal.confirm id hash)
+                                |> Maybe.map (Modal.submit id hash)
                             )
               }
             , Cmd.none
@@ -646,6 +646,19 @@ blockchainEffect effect model =
                             (model.modal
                                 |> Animator.current
                                 |> Maybe.map (Modal.reject id)
+                            )
+              }
+            , Cmd.none
+            )
+
+        ( Blockchain.ConfirmedTxn hash, Supported _ ) ->
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (model.modal
+                                |> Animator.current
+                                |> Maybe.map (Modal.confirmed hash)
                             )
               }
             , Cmd.none
@@ -1648,6 +1661,7 @@ tabs ({ device, backdrop, theme } as model) =
         [ tab model Tab.Markets
         , tab model Tab.Lend
         , tab model Tab.Borrow
+
         -- , tab model Tab.Liquidity -- Remove liquidity
         ]
 
