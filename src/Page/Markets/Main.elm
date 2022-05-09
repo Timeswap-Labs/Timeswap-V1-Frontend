@@ -678,7 +678,7 @@ poolDetails ({ theme } as model) page poolList =
                         , Font.center
                         ]
                         (text "MIN CDP")
-              , width = px 190
+              , width = px 130
               , view =
                     \info ->
                         el
@@ -944,7 +944,7 @@ collateralFactor :
     -> Element Msg
 collateralFactor { theme, priceFeed } (PoolsData { tooltip }) { pool, poolInfo } =
     el
-        [ px 170
+        [ px 130
             |> width
         , height shrink
         , paddingEach
