@@ -25,6 +25,18 @@ export const whitelistChains: Whitelist = {
         name: "USDC",
         symbol: "USDC",
         decimals: 6,
+      },
+      {
+        address: "0x8f3Cf7ad23Cd3CaDbD9735AFf958023239c6A063",
+        name: "DAI",
+        symbol: "DAI",
+        decimals: 18,
+      },
+      {
+        address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+        name: "WETH",
+        symbol: "WETH",
+        decimals: 18,
       }
     ],
     custom: getCustomTokens(String(137)),
