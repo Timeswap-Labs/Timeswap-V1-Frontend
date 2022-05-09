@@ -567,6 +567,80 @@ poolDetails ({ theme } as model) page poolList =
                         , theme |> ThemeColor.textLight |> Font.color
                         , Font.center
                         ]
+                        (text "TOTAL LENT")
+              , width = px 170
+              , view =
+                    \info ->
+                        el
+                            [ width fill
+                            , height <| px 72
+                            , Border.solid
+                            , Border.widthEach
+                                { top = 0
+                                , right = 0
+                                , bottom = 1
+                                , left = 0
+                                }
+                            , theme |> ThemeColor.textboxBorder |> Border.color
+                            ]
+                            (totalLentAmount model page info)
+              }
+            , { header =
+                    el
+                        [ width fill
+                        , height shrink
+                        , paddingXY 0 20
+                        , theme |> ThemeColor.tableHeaderBG |> Background.color
+                        , Border.solid
+                        , Border.widthEach
+                            { top = 1
+                            , right = 0
+                            , bottom = 1
+                            , left = 0
+                            }
+                        , theme |> ThemeColor.textboxBorder |> Border.color
+                        , Font.bold
+                        , Font.size 12
+                        , theme |> ThemeColor.textLight |> Font.color
+                        , Font.center
+                        ]
+                        (text "TOTAL BORROWED")
+              , width = px 170
+              , view =
+                    \info ->
+                        el
+                            [ width fill
+                            , height <| px 72
+                            , Border.solid
+                            , Border.widthEach
+                                { top = 0
+                                , right = 0
+                                , bottom = 1
+                                , left = 0
+                                }
+                            , theme |> ThemeColor.textboxBorder |> Border.color
+                            ]
+                            (totalBorrowedAmount model page info)
+              }
+            , { header =
+                    el
+                        [ width fill
+                        , height shrink
+                        , paddingXY 0 20
+                        , theme |> ThemeColor.tableHeaderBG |> Background.color
+                        , Border.solid
+                        , Border.widthEach
+                            { top = 1
+                            , right = 0
+                            , bottom = 1
+                            , left = 0
+                            }
+                        , theme |> ThemeColor.textboxBorder |> Border.color
+                        , Font.bold
+                        , Font.size 12
+                        , theme |> ThemeColor.textLight |> Font.color
+                        , Font.center
+                        ]
                         (text "MAX APR")
               , width = px 130
               , view =
@@ -745,6 +819,94 @@ liquidities model (PoolsData { tooltip }) { pool, poolInfo } =
                 }
             , text (pool.pair |> Pair.toAsset |> Token.toSymbol)
             ]
+        ]
+
+
+totalLentAmount :
+    { model | theme : Theme }
+    -> PoolsData
+    ->
+        { pool : Pool
+        , poolInfo : PoolInfo
+        }
+    -> Element Msg
+totalLentAmount model (PoolsData { tooltip }) { pool, poolInfo } =
+    column
+        [ width shrink
+        , centerX
+        , centerY
+        , spacing 4
+        , Font.bold
+        , Font.size 14
+        ]
+        [ row
+            [ Font.size 14
+            , model.theme |> ThemeColor.text |> Font.color
+            , alignRight
+            , spacing 6
+            ]
+            (case poolInfo.totalLend of
+                Just totalLend ->
+                    [ Truncate.viewAmount
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.TotalLend pool
+                        , opened = tooltip
+                        , token = pool.pair |> Pair.toAsset
+                        , amount = totalLend
+                        , theme = model.theme
+                        , customStyles = [ Font.size 14 ]
+                        }
+                    , text (pool.pair |> Pair.toAsset |> Token.toSymbol)
+                    ]
+
+                _ ->
+                    [ text "N/A" ]
+            )
+        ]
+
+
+totalBorrowedAmount :
+    { model | theme : Theme }
+    -> PoolsData
+    ->
+        { pool : Pool
+        , poolInfo : PoolInfo
+        }
+    -> Element Msg
+totalBorrowedAmount model (PoolsData { tooltip }) { pool, poolInfo } =
+    column
+        [ width shrink
+        , centerX
+        , centerY
+        , spacing 4
+        , Font.bold
+        , Font.size 14
+        ]
+        [ row
+            [ Font.size 14
+            , model.theme |> ThemeColor.text |> Font.color
+            , alignRight
+            , spacing 6
+            ]
+            (case poolInfo.totalBorrow of
+                Just totalBorrow ->
+                    [ Truncate.viewAmount
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.TotalBorrow pool
+                        , opened = tooltip
+                        , token = pool.pair |> Pair.toAsset
+                        , amount = totalBorrow
+                        , theme = model.theme
+                        , customStyles = [ Font.size 14 ]
+                        }
+                    , text (pool.pair |> Pair.toAsset |> Token.toSymbol)
+                    ]
+
+                _ ->
+                    [ text "N/A" ]
+            )
         ]
 
 
