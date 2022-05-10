@@ -182,6 +182,13 @@ update msg blockchain chains (PoolsData page) =
 
                             Err error ->
                                 Failure error
+                    , expanded =
+                        case result of
+                            Ok a ->
+                                getFirstPairSet a
+
+                            Err _ ->
+                                Set.empty Pair.sorter
                   }
                     |> PoolsData
                 , case result |> Web.fromResult of
@@ -897,6 +904,17 @@ getPairSet poolsDataDict =
     poolsDataDict
         |> Dict.keys
         |> List.map (\pool -> pool.pair)
+        |> Set.fromList Pair.sorter
+
+
+getFirstPairSet : Answer -> Set Pair
+getFirstPairSet poolsDataDict =
+    poolsDataDict
+        |> Dict.keys
+        |> List.map (\pool -> pool.pair)
+        |> List.head
+        |> Maybe.map (\head -> [ head ])
+        |> Maybe.withDefault []
         |> Set.fromList Pair.sorter
 
 

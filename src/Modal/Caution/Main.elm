@@ -264,7 +264,7 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                         (if cdpPerc > 1 then
                             [ ", with the assumption that the collateral price will not fall more than "
                             , ((cdpPerc - 1) / cdpPerc) * 10000 |> round |> toFloat |> (\float -> float / 100) |> String.fromFloat
-                            , "% than the current price, in which case the realized APR can be lower."
+                            , "% from the current price, in which case the realized APR can be lower."
                             ]
 
                          else
