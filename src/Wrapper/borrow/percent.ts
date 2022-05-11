@@ -46,10 +46,10 @@ export function percentCalculate(
     const txnFee = xDecrease.sub(assetOutReturn).toString();
 
     const timeSlippageBefore = currentTime.sub(60);
-    // const timeSlippageAfter =
-    //   currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
-    //     ? maturity.sub(1)
-    //     : currentTime.add(3 * 60);
+    const timeSlippageAfter =
+      currentTime.add(3 * 60).toBigInt() >= maturity.toBigInt()
+        ? maturity.sub(1)
+        : currentTime.add(3 * 60);
 
     const {
       dueOut: dueSlippageBefore,
@@ -62,12 +62,12 @@ export function percentCalculate(
         new Uint40(query.percent!),
         timeSlippageBefore
       );
-    // const { xDecrease: xDecreaseAfter } = pool.borrowGivenPercent(
-    //   state,
-    //   new Uint112(query.assetOut),
-    //   new Uint40(query.percent!),
-    //   timeSlippageAfter
-    // );
+    const { xDecrease: xDecreaseAfter } = pool.borrowGivenPercent(
+      state,
+      new Uint112(query.assetOut),
+      new Uint40(query.percent!),
+      timeSlippageAfter
+    );
 
     const interestBefore = calculateHelper(
       maturity,
@@ -76,6 +76,9 @@ export function percentCalculate(
     );
 
     // const principalAfter = xDecreaseAfter;
+
+    console.log("xDecreaseBefor", xDecreaseBefore.toString());
+    console.log("xDecreaseAfter", xDecreaseAfter.toString());
 
     const maxDebt = calculateMaxValue(interestBefore, query.slippage)
       .add(xDecreaseBefore)
