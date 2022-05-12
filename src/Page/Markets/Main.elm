@@ -21,6 +21,7 @@ import Element
         , alignLeft
         , alignRight
         , alignTop
+        , below
         , centerX
         , centerY
         , column
@@ -44,6 +45,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
@@ -66,6 +68,7 @@ import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
+import Utility.Tooltip as TooltipUtil
 import Utility.Truncate as Truncate
 
 
@@ -456,7 +459,7 @@ poolDetails :
     -> PoolsData
     -> List ( Pool, PoolInfo )
     -> Element Msg
-poolDetails ({ theme } as model) page poolList =
+poolDetails ({ theme, images } as model) ((PoolsData { tooltip }) as page) poolList =
     table
         [ width fill
         , height shrink
@@ -549,10 +552,12 @@ poolDetails ({ theme } as model) page poolList =
                             (liquidities model page info)
               }
             , { header =
-                    el
+                    row
                         [ width fill
                         , height shrink
+                        , spacing 8
                         , paddingXY 0 20
+                        , centerX
                         , theme |> ThemeColor.tableHeaderBG |> Background.color
                         , Border.solid
                         , Border.widthEach
@@ -563,11 +568,38 @@ poolDetails ({ theme } as model) page poolList =
                             }
                         , theme |> ThemeColor.textboxBorder |> Border.color
                         , Font.bold
-                        , Font.size 12
-                        , theme |> ThemeColor.textLight |> Font.color
                         , Font.center
+                        , theme |> ThemeColor.textLight |> Font.color
                         ]
-                        (text "TOTAL LENT")
+                        [ el [ Font.size 12, Font.center, centerX ] (text "TOTAL LENT")
+                        , images
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.info
+
+                                    Theme.Light ->
+                                        Image.infoDark
+                               )
+                                [ width <| px 12
+                                , height <| px 12
+                                , Font.center
+                                , centerX
+                                , Events.onMouseEnter (OnMouseEnter Tooltip.TotalLendInfo)
+                                , Events.onMouseLeave OnMouseLeave
+                                , (if tooltip == Just Tooltip.TotalLendInfo then
+                                    el
+                                        [ Font.size 14
+                                        , model.theme |> ThemeColor.textLight |> Font.color
+                                        ]
+                                        ("This is the total amount lent in the Pool, after adjusting for the Fee" |> text)
+                                        |> TooltipUtil.belowAlignLeft model.theme
+
+                                   else
+                                    none
+                                  )
+                                    |> below
+                                ]
+                        ]
               , width = px 170
               , view =
                     \info ->
@@ -586,10 +618,11 @@ poolDetails ({ theme } as model) page poolList =
                             (totalLentAmount model page info)
               }
             , { header =
-                    el
+                    row
                         [ width fill
                         , height shrink
                         , paddingXY 0 20
+                        , spacing 8
                         , theme |> ThemeColor.tableHeaderBG |> Background.color
                         , Border.solid
                         , Border.widthEach
@@ -600,11 +633,38 @@ poolDetails ({ theme } as model) page poolList =
                             }
                         , theme |> ThemeColor.textboxBorder |> Border.color
                         , Font.bold
-                        , Font.size 12
                         , theme |> ThemeColor.textLight |> Font.color
                         , Font.center
                         ]
-                        (text "TOTAL BORROWED")
+                        [ el [ Font.size 12, Font.center, centerX ] (text "TOTAL BORROWED")
+                        , images
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.info
+
+                                    Theme.Light ->
+                                        Image.infoDark
+                               )
+                                [ width <| px 12
+                                , height <| px 12
+                                , Font.center
+                                , centerX
+                                , Events.onMouseEnter (OnMouseEnter Tooltip.TotalBorrowInfo)
+                                , Events.onMouseLeave OnMouseLeave
+                                , (if tooltip == Just Tooltip.TotalBorrowInfo then
+                                    el
+                                        [ Font.size 14
+                                        , model.theme |> ThemeColor.textLight |> Font.color
+                                        ]
+                                        ("This is the total amount borrowed from the Pool, after adjusting for the Fee" |> text)
+                                        |> TooltipUtil.belowAlignLeft model.theme
+
+                                   else
+                                    none
+                                  )
+                                    |> below
+                                ]
+                        ]
               , width = px 170
               , view =
                     \info ->

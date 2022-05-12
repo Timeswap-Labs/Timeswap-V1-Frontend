@@ -12,3 +12,5 @@ type Tooltip
     | AssetLiquidity Pool
     | TotalLend Pool
     | TotalBorrow Pool
+    | TotalLendInfo
+    | TotalBorrowInfo
