@@ -3,6 +3,8 @@ import { compareConvAddress, getPool, getPoolSDK, handleTxnErrors, updateCachedT
 import { assetCalculate, assetTransaction } from './asset';
 import { collateralCalculate, collateralTransaction } from './collateral';
 import { debtCalculate, debtTransaction } from './debt';
+import { newLiquidityCalculate } from './new';
+import { Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-sdk-core';
 
 export function liquidity(app: ElmApp<Ports>) {
   app.ports.queryLiquidity.subscribe((query) => {
@@ -12,6 +14,10 @@ export function liquidity(app: ElmApp<Ports>) {
   app.ports.queryLiquidityPerSecond.subscribe((query) =>
     liquidityQueryCalculation(app, query)
   );
+
+  app.ports.queryCreate.subscribe((query) => {
+    newLiquidityQueryCalculation(app, query)
+  });
 }
 
 export function liquiditySigner(
@@ -73,6 +79,51 @@ export function liquiditySigner(
       handleTxnErrors(error, app, gp, params);
     }
   });
+
+  // New Liquidity txn
+  app.ports.create.subscribe(async (params) => {
+    const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
+    const { assetIn, debtIn, collateralIn } = params.send;
+    let txnConfirmation;
+
+    try {
+      if (
+        assetIn !== undefined &&
+        debtIn !== undefined &&
+        collateralIn !== undefined
+      ) {
+        txnConfirmation = await pool.upgrade(gp.walletSigner!).newLiquidity({
+          liquidityTo: params.send.liquidityTo,
+          dueTo: params.send.dueTo,
+          assetIn: new Uint112(params.send.assetIn!),
+          debtIn: new Uint112(params.send.debtIn!),
+          collateralIn: new Uint112(params.send.collateralIn!),
+          deadline: new Uint256(params.send.deadline),
+        });
+      }
+
+      if (txnConfirmation) {
+        app.ports.receiveConfirm.send({
+          id: params.id,
+          chain: params.chain,
+          address: params.address,
+          hash: txnConfirmation.hash || null
+        });
+
+        const txnReceipt = await txnConfirmation.wait();
+        const receiveReceipt = {
+          chain: params.chain,
+          address: params.address,
+          hash: txnConfirmation.hash,
+          state: txnReceipt.status ? "success" : "failed"
+        }
+        app.ports.receiveReceipt.send(receiveReceipt);
+        updateCachedTxns(receiveReceipt);
+      }
+    } catch (error) {
+      handleTxnErrors(error, app, gp, params);
+    }
+  });
 }
 
 async function liquidityQueryCalculation(
@@ -93,12 +144,21 @@ async function liquidityQueryCalculation(
 
   compareConvAddress(query.poolInfo.convAddress, query.chain.chainId);
 
-  const pool = getPool(query);
+  const pool = getPool(query, query.poolInfo.fee, query.poolInfo.protocolFee);
   if (query.assetIn !== undefined) {
-    assetCalculate(app, pool, query);
+    await assetCalculate(app, pool, query);
   } else if (query.debtIn !== undefined) {
     await debtCalculate(app, pool, query);
   } else if (query.collateralIn !== undefined) {
     await collateralCalculate(app, pool, query);
   }
 }
+
+async function newLiquidityQueryCalculation(
+  app: ElmApp<Ports>,
+  query: NewLiquidityQuery,
+) {
+  const pool = getPool(query, 0, 0);
+  await newLiquidityCalculate(app, pool, query)
+}
+

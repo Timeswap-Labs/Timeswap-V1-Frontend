@@ -7,8 +7,8 @@ module Modal.Main exposing
     , initChainList
     , initConfirm
     , initConnect
-    , initInputMaturity
     , initMaturityList
+    , initMaturityPicker
     , initPayTransaction
     , initSettings
     , initTokenList
@@ -56,8 +56,8 @@ import Modal.Caution.Main as Caution
 import Modal.ChainList.Main as ChainList
 import Modal.Confirm.Main as Confirm
 import Modal.Connect.Main as Connect
-import Modal.InputMaturity.Main as InputMaturity
 import Modal.MaturityList.Main as MaturityList
+import Modal.MaturityPicker.Main as MaturityPicker
 import Modal.PayTransaction.Main as PayTransaction
 import Modal.Settings.Main as Settings
 import Modal.TokenList.Main as TokenList
@@ -72,7 +72,7 @@ type Modal
     | ChainList
     | TokenList TokenList.Modal
     | MaturityList MaturityList.Modal
-    | InputMaturity InputMaturity.Modal
+    | MaturityPicker MaturityPicker.Modal
     | PayTransaction PayTransaction.Modal
     | Confirm Confirm.Modal
     | Caution Caution.Modal
@@ -84,7 +84,7 @@ type Msg
     | ChainListMsg ChainList.Msg
     | TokenListMsg TokenList.Msg
     | MaturityListMsg MaturityList.Msg
-    | InputMaturityMsg InputMaturity.Msg
+    | MaturityPickerMsg MaturityPicker.Msg
     | PayTransactionMsg PayTransaction.Msg
     | ConfirmMsg Confirm.Msg
     | CautionMsg Caution.Msg
@@ -99,6 +99,7 @@ type Effect
     | RemoveERC20 ERC20
     | RemoveAll
     | InputPool Pool
+    | InputMaturity Pool
     | ClearTxns
     | ChangeChain Chain
     | Approve ERC20
@@ -189,10 +190,12 @@ initMaturityList blockchain pair =
             (Cmd.map MaturityListMsg)
 
 
-initInputMaturity : Pair -> Modal
-initInputMaturity pair =
-    InputMaturity.init pair
-        |> InputMaturity
+initMaturityPicker : Pair -> ( Modal, Cmd Msg )
+initMaturityPicker pair =
+    MaturityPicker.init pair
+        |> Tuple.mapBoth
+            MaturityPicker
+            (Cmd.map MaturityPickerMsg)
 
 
 initChainList : Modal
@@ -273,13 +276,13 @@ update model msg modal =
                         )
                    )
 
-        ( InputMaturityMsg inputMaturityMsg, InputMaturity inputMaturity, Supported _ ) ->
+        ( MaturityPickerMsg inputMaturityMsg, MaturityPicker inputMaturity, Supported _ ) ->
             inputMaturity
-                |> InputMaturity.update inputMaturityMsg
-                |> (\updated ->
-                        ( updated |> Maybe.map InputMaturity
+                |> MaturityPicker.update inputMaturityMsg
+                |> (\( updated, maybeEffect ) ->
+                        ( updated |> Maybe.map MaturityPicker
                         , Cmd.none
-                        , Nothing
+                        , maybeEffect |> Maybe.map maturityPickerEffect
                         )
                    )
 
@@ -376,6 +379,13 @@ maturityListEffect effect =
     case effect of
         MaturityList.InputPool pool ->
             InputPool pool
+
+
+maturityPickerEffect : MaturityPicker.Effect -> Effect
+maturityPickerEffect effect =
+    case effect of
+        MaturityPicker.InputMaturity pool ->
+            InputMaturity pool
 
 
 payTransactionEffect : PayTransaction.Effect -> Effect
@@ -477,11 +487,11 @@ view model modal =
                 _ ->
                     none
 
-        InputMaturity inputMaturity ->
+        MaturityPicker inputMaturity ->
             case model.blockchain of
                 Supported _ ->
-                    InputMaturity.view model inputMaturity
-                        |> map InputMaturityMsg
+                    MaturityPicker.view model inputMaturity
+                        |> map MaturityPickerMsg
 
                 _ ->
                     none

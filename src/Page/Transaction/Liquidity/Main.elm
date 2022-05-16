@@ -10,6 +10,7 @@ module Page.Transaction.Liquidity.Main exposing
     , toParameter
     , toPoolInfo
     , update
+    , updateInputMaturity
     , view
     )
 
@@ -22,7 +23,7 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
-import Data.Maturity as Maturity
+import Data.Maturity as Maturity exposing (Maturity)
 import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair exposing (Pair)
@@ -145,7 +146,7 @@ type Msg
 type Effect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
-    | OpenInputMaturity Pair
+    | OpenMaturityPicker Pair
     | OpenConnect
     | OpenSettings
     | Approve ERC20
@@ -471,16 +472,14 @@ update model blockchain msg (Transaction transaction) =
         ( SelectMaturity, New (Pair pair) ) ->
             ( transaction |> Transaction
             , Cmd.none
-            , pair
-                |> OpenInputMaturity
+            , OpenMaturityPicker pair
                 |> Just
             )
 
         ( SelectMaturity, New (Pool pool _) ) ->
             ( transaction |> Transaction
             , Cmd.none
-            , pool.pair
-                |> OpenInputMaturity
+            , OpenMaturityPicker pool.pair
                 |> Just
             )
 
@@ -1330,8 +1329,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                             )
                         , case transaction.state of
                             Add _ ->
-                                -- createPoolButton model
-                                none
+                                createPoolButton model
 
                             New _ ->
                                 none
@@ -1680,3 +1678,33 @@ maturityParameter model { state, tooltip } =
                     |> MaturityButton.disabled
                     |> map never
         ]
+
+
+updateInputMaturity :
+    { model | time : Posix }
+    -> Blockchain
+    -> Maturity
+    -> Transaction
+    -> ( Transaction, Cmd Msg )
+updateInputMaturity { time } blockchain maturity (Transaction transaction) =
+    case transaction.state of
+        New (Pair pair) ->
+            if maturity |> Maturity.isActive time then
+                ( { transaction
+                    | state = New (Pool { pair = pair, maturity = maturity } (Active Remote.loading))
+                  }
+                    |> Transaction
+                , get blockchain { pair = pair, maturity = maturity }
+                )
+
+            else
+                ( { transaction
+                    | state = New (Pool { pair = pair, maturity = maturity } Matured)
+                  }
+                    |> Transaction
+                , Cmd.none
+                )
+
+        -- New (Pool pool status) ->
+        _ ->
+            ( transaction |> Transaction, Cmd.none )

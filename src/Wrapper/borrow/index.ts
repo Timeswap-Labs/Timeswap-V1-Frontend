@@ -93,7 +93,7 @@ function borrowQueryCalculation(
 
   compareConvAddress(query.poolInfo.convAddress, query.chain.chainId);
 
-  const pool = getPool(query);
+  const pool = getPool(query, query.poolInfo.fee, query.poolInfo.protocolFee);
   const { percent, debtIn, collateralIn } = query;
 
   if (percent !== undefined) {

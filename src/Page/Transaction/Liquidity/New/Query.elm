@@ -29,7 +29,7 @@ type alias QueryNew =
 type alias Answer =
     { chain : Chain
     , pool : Pool
-    , price : Maybe Uint
+    , price : Maybe Price
     , assetIn : Uint
     , debtIn : Uint
     , collateralIn : Uint
@@ -61,7 +61,7 @@ decoder =
     Decode.succeed Answer
         |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "pool" Pool.decoder
-        |> Pipeline.required "price" (Uint.decoder |> Decode.nullable)
+        |> Pipeline.required "price" (Price.decoder |> Decode.nullable)
         |> Pipeline.required "assetIn" Uint.decoder
         |> Pipeline.required "debtIn" Uint.decoder
         |> Pipeline.required "collateralIn" Uint.decoder

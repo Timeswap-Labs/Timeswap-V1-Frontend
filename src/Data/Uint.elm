@@ -220,6 +220,8 @@ isAmount token string =
         |> Maybe.withDefault False
 
 
+{-| if uint2 is greater than uint1, return true.
+-}
 hasEnough : Uint -> Uint -> Bool
 hasEnough uint1 uint2 =
     case compare uint1 uint2 of
