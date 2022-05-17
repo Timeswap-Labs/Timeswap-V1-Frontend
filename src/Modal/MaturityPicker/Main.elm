@@ -267,6 +267,12 @@ view ({ backdrop, theme, time } as model) ((Modal { date, dateText, hours, minut
                     , el
                         [ theme |> ThemeColor.textLight |> Font.color
                         , Font.size 14
+                        , paddingEach
+                            { top = 10
+                            , right = 0
+                            , bottom = 0
+                            , left = 0
+                            }
                         ]
                         (text "Unix Time")
 

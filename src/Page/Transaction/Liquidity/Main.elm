@@ -157,9 +157,10 @@ type Effect
 init :
     { model | time : Posix }
     -> Blockchain
+    -> Maybe Transaction
     -> Maybe Parameter
     -> ( Transaction, Cmd Msg )
-init { time } blockchain parameter =
+init { time } blockchain maybeTxn parameter =
     case parameter of
         Nothing ->
             ( { state = Add None
@@ -195,18 +196,168 @@ init { time } blockchain parameter =
 
         Just (Parameter.Pool pool) ->
             if pool.maturity |> Maturity.isActive time then
+                case maybeTxn of
+                    Just (Transaction { state }) ->
+                        case state of
+                            Add _ ->
+                                ( { state =
+                                        Remote.loading
+                                            |> Active
+                                            |> Pool pool
+                                            |> Add
+                                  , tooltip = Nothing
+                                  }
+                                    |> Transaction
+                                , get blockchain pool
+                                )
+
+                            New _ ->
+                                ( { state =
+                                        Remote.loading
+                                            |> Active
+                                            |> Pool pool
+                                            |> New
+                                  , tooltip = Nothing
+                                  }
+                                    |> Transaction
+                                , get blockchain pool
+                                )
+
+                    _ ->
+                        ( { state =
+                                Remote.loading
+                                    |> Active
+                                    |> Pool pool
+                                    |> Add
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , get blockchain pool
+                        )
+
+            else
+                case maybeTxn of
+                    Just (Transaction { state }) ->
+                        case state of
+                            Add _ ->
+                                ( { state =
+                                        Matured
+                                            |> Pool pool
+                                            |> Add
+                                  , tooltip = Nothing
+                                  }
+                                    |> Transaction
+                                , Cmd.none
+                                )
+
+                            New _ ->
+                                ( { state =
+                                        Matured
+                                            |> Pool pool
+                                            |> New
+                                  , tooltip = Nothing
+                                  }
+                                    |> Transaction
+                                , Cmd.none
+                                )
+
+                    _ ->
+                        ( { state =
+                                Matured
+                                    |> Pool pool
+                                    |> Add
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , Cmd.none
+                        )
+
+
+initGivenPoolInfo :
+    { model | time : Posix }
+    -> Blockchain
+    -> Maybe Transaction
+    -> Pool
+    -> PoolInfo
+    -> ( Transaction, Cmd Msg )
+initGivenPoolInfo { time } blockchain maybeTxn pool poolInfo =
+    if pool.maturity |> Maturity.isActive time then
+        case maybeTxn of
+            Just (Transaction { state }) ->
+                case state of
+                    Add _ ->
+                        ( { state =
+                                Add.init
+                                    |> Exist poolInfo
+                                    |> Success
+                                    |> Active
+                                    |> Pool pool
+                                    |> Add
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , Cmd.none
+                        )
+
+                    New _ ->
+                        ( { state =
+                                New.init
+                                    |> DoesNotExist
+                                        { asset = poolInfo.assetSpot
+                                        , collateral = poolInfo.collateralSpot
+                                        }
+                                    |> Success
+                                    |> Active
+                                    |> Pool pool
+                                    |> New
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , Cmd.none
+                        )
+
+            _ ->
                 ( { state =
-                        Remote.loading
+                        Add.init
+                            |> Exist poolInfo
+                            |> Success
                             |> Active
                             |> Pool pool
                             |> Add
                   , tooltip = Nothing
                   }
                     |> Transaction
-                , get blockchain pool
+                  --, get blockchain pool
+                , Cmd.none
                 )
 
-            else
+    else
+        case maybeTxn of
+            Just (Transaction { state }) ->
+                case state of
+                    Add _ ->
+                        ( { state =
+                                Matured
+                                    |> Pool pool
+                                    |> Add
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , Cmd.none
+                        )
+
+                    New _ ->
+                        ( { state =
+                                Matured
+                                    |> Pool pool
+                                    |> New
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , Cmd.none
+                        )
+
+            _ ->
                 ( { state =
                         Matured
                             |> Pool pool
@@ -216,40 +367,6 @@ init { time } blockchain parameter =
                     |> Transaction
                 , Cmd.none
                 )
-
-
-initGivenPoolInfo :
-    { model | time : Posix }
-    -> Blockchain
-    -> Pool
-    -> PoolInfo
-    -> ( Transaction, Cmd Msg )
-initGivenPoolInfo { time } blockchain pool poolInfo =
-    if pool.maturity |> Maturity.isActive time then
-        ( { state =
-                Add.init
-                    |> Exist poolInfo
-                    |> Success
-                    |> Active
-                    |> Pool pool
-                    |> Add
-          , tooltip = Nothing
-          }
-            |> Transaction
-          --, get blockchain pool
-        , Cmd.none
-        )
-
-    else
-        ( { state =
-                Matured
-                    |> Pool pool
-                    |> Add
-          , tooltip = Nothing
-          }
-            |> Transaction
-        , Cmd.none
-        )
 
 
 initGivenSpot :

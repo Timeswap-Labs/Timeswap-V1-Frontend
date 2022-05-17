@@ -246,7 +246,7 @@ construct ({ chains } as model) url maybePage =
 
         ( Just (Route.Liquidity (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
             poolInfo
-                |> Liquidity.initGivenPoolInfo model blockchain pool
+                |> Liquidity.initGivenPoolInfo model blockchain (maybePage |> toLiquidityTxn) pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction
@@ -272,7 +272,7 @@ construct ({ chains } as model) url maybePage =
 
         ( Just (Route.Liquidity parameter), Supported blockchain, _ ) ->
             parameter
-                |> Liquidity.init model blockchain
+                |> Liquidity.init model blockchain (maybePage |> toLiquidityTxn)
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction
@@ -796,6 +796,17 @@ toPoolInfo page =
                 |> Liquidity.toPoolInfo
 
         MarketsPage _ ->
+            Nothing
+
+
+toLiquidityTxn : Maybe Page -> Maybe Liquidity.Transaction
+toLiquidityTxn page =
+    case page of
+        Just (LiquidityPage { transaction }) ->
+            transaction
+                |> Just
+
+        _ ->
             Nothing
 
 
