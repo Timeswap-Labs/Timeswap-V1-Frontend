@@ -227,11 +227,11 @@ body ({ images, theme } as model) blockchain (Modal { state }) =
                 , Font.center
                 , (images
                     |> (case state of
-                            Initiating int ->
+                            Initiating _ ->
                                 Image.hourglassPrimary
 
-                            Submitted hash ->
-                                Image.matured
+                            Submitted _ ->
+                                Image.logoPure
 
                             Rejected ->
                                 Image.error
@@ -264,7 +264,7 @@ body ({ images, theme } as model) blockchain (Modal { state }) =
                             "Transaction was not submitted"
 
                         Submitted _ ->
-                            "Transaction submitted"
+                            "Transaction submitted, waiting for confirmation"
 
                         Confirmed _ ->
                             "Your transaction has been confirmed"
