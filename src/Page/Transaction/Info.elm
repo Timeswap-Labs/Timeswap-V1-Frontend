@@ -100,7 +100,7 @@ lendAPR remote assetIn maybePoolInfo theme =
                     , height <| px 24
                     , Font.size 18
                     , paddingXY 0 3
-                    , Font.color Color.warning400
+                    , Font.color Color.warning500
                     ]
                     ((case maybePoolInfo of
                         Just poolInfo ->
@@ -172,7 +172,7 @@ borrowAPR remote assetOut maybePoolInfo theme =
                     , height <| px 24
                     , Font.size 18
                     , paddingXY 0 3
-                    , Font.color Color.warning400
+                    , Font.color Color.warning500
                     ]
                     ((case maybePoolInfo of
                         Just poolInfo ->
@@ -326,7 +326,7 @@ lendCDP { priceFeed, theme } param =
                                         Color.negative400
 
                                        else
-                                        Color.warning400
+                                        Color.warning500
                                       )
                                         |> Font.color
                                     ]
@@ -500,7 +500,7 @@ borrowCDP { priceFeed, theme } param =
                                         Color.negative400
 
                                        else
-                                        Color.warning400
+                                        Color.warning500
                                       )
                                         |> Font.color
                                     ]

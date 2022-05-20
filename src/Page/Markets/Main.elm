@@ -21,6 +21,7 @@ import Element
         , alignLeft
         , alignRight
         , alignTop
+        , below
         , centerX
         , centerY
         , column
@@ -44,6 +45,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
@@ -66,6 +68,7 @@ import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
+import Utility.Tooltip as TooltipUtil
 import Utility.Truncate as Truncate
 
 
@@ -456,7 +459,7 @@ poolDetails :
     -> PoolsData
     -> List ( Pool, PoolInfo )
     -> Element Msg
-poolDetails ({ theme } as model) page poolList =
+poolDetails ({ theme, images } as model) ((PoolsData { tooltip }) as page) poolList =
     table
         [ width fill
         , height shrink
@@ -549,6 +552,137 @@ poolDetails ({ theme } as model) page poolList =
                             (liquidities model page info)
               }
             , { header =
+                    row
+                        [ width fill
+                        , height shrink
+                        , spacing 8
+                        , paddingXY 0 20
+                        , centerX
+                        , theme |> ThemeColor.tableHeaderBG |> Background.color
+                        , Border.solid
+                        , Border.widthEach
+                            { top = 1
+                            , right = 0
+                            , bottom = 1
+                            , left = 0
+                            }
+                        , theme |> ThemeColor.textboxBorder |> Border.color
+                        , Font.bold
+                        , Font.center
+                        , theme |> ThemeColor.textLight |> Font.color
+                        ]
+                        [ el [ Font.size 12, Font.center, centerX ] (text "TOTAL LENT")
+                        , images
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.info
+
+                                    Theme.Light ->
+                                        Image.infoDark
+                               )
+                                [ width <| px 12
+                                , height <| px 12
+                                , Font.center
+                                , centerX
+                                , Events.onMouseEnter (OnMouseEnter Tooltip.TotalLendInfo)
+                                , Events.onMouseLeave OnMouseLeave
+                                , (if tooltip == Just Tooltip.TotalLendInfo then
+                                    el
+                                        [ Font.size 14
+                                        , model.theme |> ThemeColor.textLight |> Font.color
+                                        ]
+                                        ("This is the total amount lent in the Pool, after adjusting for the Fee" |> text)
+                                        |> TooltipUtil.belowAlignLeft model.theme
+
+                                   else
+                                    none
+                                  )
+                                    |> below
+                                ]
+                        ]
+              , width = px 170
+              , view =
+                    \info ->
+                        el
+                            [ width fill
+                            , height <| px 72
+                            , Border.solid
+                            , Border.widthEach
+                                { top = 0
+                                , right = 0
+                                , bottom = 1
+                                , left = 0
+                                }
+                            , theme |> ThemeColor.textboxBorder |> Border.color
+                            ]
+                            (totalLentAmount model page info)
+              }
+            , { header =
+                    row
+                        [ width fill
+                        , height shrink
+                        , paddingXY 0 20
+                        , spacing 8
+                        , theme |> ThemeColor.tableHeaderBG |> Background.color
+                        , Border.solid
+                        , Border.widthEach
+                            { top = 1
+                            , right = 0
+                            , bottom = 1
+                            , left = 0
+                            }
+                        , theme |> ThemeColor.textboxBorder |> Border.color
+                        , Font.bold
+                        , theme |> ThemeColor.textLight |> Font.color
+                        , Font.center
+                        ]
+                        [ el [ Font.size 12, Font.center, centerX ] (text "TOTAL BORROWED")
+                        , images
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.info
+
+                                    Theme.Light ->
+                                        Image.infoDark
+                               )
+                                [ width <| px 12
+                                , height <| px 12
+                                , Font.center
+                                , centerX
+                                , Events.onMouseEnter (OnMouseEnter Tooltip.TotalBorrowInfo)
+                                , Events.onMouseLeave OnMouseLeave
+                                , (if tooltip == Just Tooltip.TotalBorrowInfo then
+                                    el
+                                        [ Font.size 14
+                                        , model.theme |> ThemeColor.textLight |> Font.color
+                                        ]
+                                        ("This is the total amount borrowed from the Pool, after adjusting for the Fee" |> text)
+                                        |> TooltipUtil.belowAlignLeft model.theme
+
+                                   else
+                                    none
+                                  )
+                                    |> below
+                                ]
+                        ]
+              , width = px 170
+              , view =
+                    \info ->
+                        el
+                            [ width fill
+                            , height <| px 72
+                            , Border.solid
+                            , Border.widthEach
+                                { top = 0
+                                , right = 0
+                                , bottom = 1
+                                , left = 0
+                                }
+                            , theme |> ThemeColor.textboxBorder |> Border.color
+                            ]
+                            (totalBorrowedAmount model page info)
+              }
+            , { header =
                     el
                         [ width fill
                         , height shrink
@@ -604,7 +738,7 @@ poolDetails ({ theme } as model) page poolList =
                         , Font.center
                         ]
                         (text "MIN CDP")
-              , width = px 190
+              , width = px 130
               , view =
                     \info ->
                         el
@@ -748,6 +882,94 @@ liquidities model (PoolsData { tooltip }) { pool, poolInfo } =
         ]
 
 
+totalLentAmount :
+    { model | theme : Theme }
+    -> PoolsData
+    ->
+        { pool : Pool
+        , poolInfo : PoolInfo
+        }
+    -> Element Msg
+totalLentAmount model (PoolsData { tooltip }) { pool, poolInfo } =
+    column
+        [ width shrink
+        , centerX
+        , centerY
+        , spacing 4
+        , Font.bold
+        , Font.size 14
+        ]
+        [ row
+            [ Font.size 14
+            , model.theme |> ThemeColor.text |> Font.color
+            , alignRight
+            , spacing 6
+            ]
+            (case poolInfo.totalLend of
+                Just totalLend ->
+                    [ Truncate.viewAmount
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.TotalLend pool
+                        , opened = tooltip
+                        , token = pool.pair |> Pair.toAsset
+                        , amount = totalLend
+                        , theme = model.theme
+                        , customStyles = [ Font.size 14 ]
+                        }
+                    , text (pool.pair |> Pair.toAsset |> Token.toSymbol)
+                    ]
+
+                _ ->
+                    [ text "N/A" ]
+            )
+        ]
+
+
+totalBorrowedAmount :
+    { model | theme : Theme }
+    -> PoolsData
+    ->
+        { pool : Pool
+        , poolInfo : PoolInfo
+        }
+    -> Element Msg
+totalBorrowedAmount model (PoolsData { tooltip }) { pool, poolInfo } =
+    column
+        [ width shrink
+        , centerX
+        , centerY
+        , spacing 4
+        , Font.bold
+        , Font.size 14
+        ]
+        [ row
+            [ Font.size 14
+            , model.theme |> ThemeColor.text |> Font.color
+            , alignRight
+            , spacing 6
+            ]
+            (case poolInfo.totalBorrow of
+                Just totalBorrow ->
+                    [ Truncate.viewAmount
+                        { onMouseEnter = OnMouseEnter
+                        , onMouseLeave = OnMouseLeave
+                        , tooltip = Tooltip.TotalBorrow pool
+                        , opened = tooltip
+                        , token = pool.pair |> Pair.toAsset
+                        , amount = totalBorrow
+                        , theme = model.theme
+                        , customStyles = [ Font.size 14 ]
+                        }
+                    , text (pool.pair |> Pair.toAsset |> Token.toSymbol)
+                    ]
+
+                _ ->
+                    [ text "N/A" ]
+            )
+        ]
+
+
 estimatedAPR :
     PoolInfo
     -> Element Msg
@@ -765,7 +987,7 @@ estimatedAPR poolInfo =
             , centerX
             , Font.bold
             , Font.size 14
-            , Font.color Color.warning400
+            , Font.color Color.warning500
             , Font.center
             ]
             (poolInfo.apr |> Calculate.apr)
@@ -782,7 +1004,7 @@ collateralFactor :
     -> Element Msg
 collateralFactor { theme, priceFeed } (PoolsData { tooltip }) { pool, poolInfo } =
     el
-        [ px 170
+        [ px 130
             |> width
         , height shrink
         , paddingEach

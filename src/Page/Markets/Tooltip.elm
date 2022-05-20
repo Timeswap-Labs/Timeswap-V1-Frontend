@@ -10,3 +10,7 @@ type Tooltip
     | CDPSymbol Pool
     | PairSymbol Pair
     | AssetLiquidity Pool
+    | TotalLend Pool
+    | TotalBorrow Pool
+    | TotalLendInfo
+    | TotalBorrowInfo

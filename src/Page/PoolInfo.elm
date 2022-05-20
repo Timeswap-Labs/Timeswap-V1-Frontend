@@ -28,6 +28,8 @@ type alias PoolInfo =
     , apr : Float
     , cdp : CDP
     , convAddress : Address
+    , totalLend : Maybe Uint
+    , totalBorrow : Maybe Uint
     }
 
 
@@ -53,6 +55,8 @@ decoder =
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
         |> Pipeline.required "convAddress" Address.decoder
+        |> Pipeline.optional "totalLend" (Uint.decoder |> Decode.nullable) Nothing
+        |> Pipeline.optional "totalBorrow" (Uint.decoder |> Decode.nullable) Nothing
 
 
 encode : PoolInfo -> Value
