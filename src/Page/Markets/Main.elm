@@ -230,7 +230,7 @@ view ({ backdrop, theme } as model) ((PoolsData { data }) as page) =
     case data of
         Success poolsDataDict ->
             column
-                ([ width <| minimum 975 fill
+                ([ width <| minimum 1200 fill
                  , height shrink
                  , spacing 30
                  , padding 24
@@ -1020,11 +1020,10 @@ collateralFactor { theme, priceFeed } (PoolsData { tooltip }) { pool, poolInfo }
         ]
         (el
             [ centerX, centerY ]
-            (row
+            (column
                 [ Font.size 14
                 , theme |> ThemeColor.text |> Font.color
                 , alignRight
-                , spacing 6
                 ]
                 [ Calculate.cdp
                     { onMouseEnter = OnMouseEnter
