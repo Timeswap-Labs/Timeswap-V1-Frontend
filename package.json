@@ -11,8 +11,8 @@
     "@ethersproject/providers": "^5.5.0",
     "@sentry/browser": "^6.18.1",
     "@sentry/tracing": "^6.18.1",
-    "@timeswap-labs/timeswap-v1-sdk": "^1.2.4-Beta",
-    "@timeswap-labs/timeswap-v1-sdk-core": "^1.2.2-Beta",
+    "@timeswap-labs/timeswap-v1-sdk": "1.2.8-Beta",
+    "@timeswap-labs/timeswap-v1-sdk-core": "1.2.5-Beta",
     "@walletconnect/web3-provider": "^1.7.4",
     "web3": "^1.7.1"
   },
