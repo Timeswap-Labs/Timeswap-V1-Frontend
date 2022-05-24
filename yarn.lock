@@ -1255,23 +1255,23 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@timeswap-labs/timeswap-v1-sdk-core@1.2.2-Beta", "@timeswap-labs/timeswap-v1-sdk-core@^1.2.2-Beta":
-  version "1.2.2-Beta"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk-core/1.2.2-Beta/a889e8b9d406f9204860839c210229faf6ac038df842c426f03704d37d7a8584#9dcf014d10fabcd9214b9de7bc7967a8d7f11a6f"
-  integrity sha512-R/vchqDliOlhyqjebZZGc79AL/NmjAFumS5iYqVb8eZAHE6MCuGleqZ9FFk9DJx3sSSF6SoI3IOuIsRoGJeYFg==
+"@timeswap-labs/timeswap-v1-sdk-core@1.2.5-Beta", "@timeswap-labs/timeswap-v1-sdk-core@=1.2.5-Beta":
+  version "1.2.5-Beta"
+  resolved "https://registry.yarnpkg.com/@timeswap-labs/timeswap-v1-sdk-core/-/timeswap-v1-sdk-core-1.2.5-Beta.tgz#335bbdffb71abda2de6c7e5c9381066c21e97177"
+  integrity sha512-TlK3EINDMv5ifVoeLLM+kPPpx+iI2Z9p1Xo1X2omtnkTHzWFmPxRuxJpbrcqiYRVE25LnDPwEoqiewD9F5YvBg==
   dependencies:
     "@ethersproject/address" "^5.5.0"
     tiny-invariant "^1.1.0"
 
-"@timeswap-labs/timeswap-v1-sdk@^1.2.4-Beta":
-  version "1.2.4-Beta"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-sdk/1.2.4-Beta/a6f52eb4373c5b3f3862c11c2fc9a966dd0add48933c2133bd8e430c0edb9336#dd005bd55f193d6254b32188207087c659d9f854"
-  integrity sha512-00TqvDcOH+43NOO6UEMrlzH+Ixyqgv3sgmKKZ7VGObyjsch7JUODQrr0mMiQAA93xGWwS0Po9lLp2ykExIxQYw==
+"@timeswap-labs/timeswap-v1-sdk@1.2.9-Beta":
+  version "1.2.9-Beta"
+  resolved "https://registry.yarnpkg.com/@timeswap-labs/timeswap-v1-sdk/-/timeswap-v1-sdk-1.2.9-Beta.tgz#f6dd19bfb1995b3d1b57acabd541d21703466ecc"
+  integrity sha512-L/H/zWeRXt1cndVHWU6pFJoKDMtWCwNbXMBO8ZkB+HBxOJSxFtAhn2Aqzpl8xbIjD0Ye2VASU00OgOodYeoG9A==
   dependencies:
     "@ethersproject/abstract-provider" "^5.5.1"
     "@ethersproject/abstract-signer" "^5.5.0"
     "@ethersproject/contracts" "^5.5.0"
-    "@timeswap-labs/timeswap-v1-sdk-core" "1.2.2-Beta"
+    "@timeswap-labs/timeswap-v1-sdk-core" "=1.2.5-Beta"
     tiny-invariant "^1.1.0"
 
 "@trysound/sax@0.2.0":
