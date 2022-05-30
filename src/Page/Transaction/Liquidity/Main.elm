@@ -10,6 +10,7 @@ module Page.Transaction.Liquidity.Main exposing
     , toParameter
     , toPoolInfo
     , update
+    , updateInputMaturity
     , view
     )
 
@@ -22,7 +23,7 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
-import Data.Maturity as Maturity
+import Data.Maturity as Maturity exposing (Maturity)
 import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair exposing (Pair)
@@ -145,7 +146,7 @@ type Msg
 type Effect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
-    | OpenInputMaturity Pair
+    | OpenMaturityPicker Pair
     | OpenConnect
     | OpenSettings
     | Approve ERC20
@@ -156,9 +157,10 @@ type Effect
 init :
     { model | time : Posix }
     -> Blockchain
+    -> Maybe Transaction
     -> Maybe Parameter
     -> ( Transaction, Cmd Msg )
-init { time } blockchain parameter =
+init { time } blockchain maybeTxn parameter =
     case parameter of
         Nothing ->
             ( { state = Add None
@@ -194,18 +196,168 @@ init { time } blockchain parameter =
 
         Just (Parameter.Pool pool) ->
             if pool.maturity |> Maturity.isActive time then
+                case maybeTxn of
+                    Just (Transaction { state }) ->
+                        case state of
+                            Add _ ->
+                                ( { state =
+                                        Remote.loading
+                                            |> Active
+                                            |> Pool pool
+                                            |> Add
+                                  , tooltip = Nothing
+                                  }
+                                    |> Transaction
+                                , get blockchain pool
+                                )
+
+                            New _ ->
+                                ( { state =
+                                        Remote.loading
+                                            |> Active
+                                            |> Pool pool
+                                            |> New
+                                  , tooltip = Nothing
+                                  }
+                                    |> Transaction
+                                , get blockchain pool
+                                )
+
+                    _ ->
+                        ( { state =
+                                Remote.loading
+                                    |> Active
+                                    |> Pool pool
+                                    |> Add
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , get blockchain pool
+                        )
+
+            else
+                case maybeTxn of
+                    Just (Transaction { state }) ->
+                        case state of
+                            Add _ ->
+                                ( { state =
+                                        Matured
+                                            |> Pool pool
+                                            |> Add
+                                  , tooltip = Nothing
+                                  }
+                                    |> Transaction
+                                , Cmd.none
+                                )
+
+                            New _ ->
+                                ( { state =
+                                        Matured
+                                            |> Pool pool
+                                            |> New
+                                  , tooltip = Nothing
+                                  }
+                                    |> Transaction
+                                , Cmd.none
+                                )
+
+                    _ ->
+                        ( { state =
+                                Matured
+                                    |> Pool pool
+                                    |> Add
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , Cmd.none
+                        )
+
+
+initGivenPoolInfo :
+    { model | time : Posix }
+    -> Blockchain
+    -> Maybe Transaction
+    -> Pool
+    -> PoolInfo
+    -> ( Transaction, Cmd Msg )
+initGivenPoolInfo { time } blockchain maybeTxn pool poolInfo =
+    if pool.maturity |> Maturity.isActive time then
+        case maybeTxn of
+            Just (Transaction { state }) ->
+                case state of
+                    Add _ ->
+                        ( { state =
+                                Add.init
+                                    |> Exist poolInfo
+                                    |> Success
+                                    |> Active
+                                    |> Pool pool
+                                    |> Add
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , Cmd.none
+                        )
+
+                    New _ ->
+                        ( { state =
+                                New.init
+                                    |> DoesNotExist
+                                        { asset = poolInfo.assetSpot
+                                        , collateral = poolInfo.collateralSpot
+                                        }
+                                    |> Success
+                                    |> Active
+                                    |> Pool pool
+                                    |> New
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , Cmd.none
+                        )
+
+            _ ->
                 ( { state =
-                        Remote.loading
+                        Add.init
+                            |> Exist poolInfo
+                            |> Success
                             |> Active
                             |> Pool pool
                             |> Add
                   , tooltip = Nothing
                   }
                     |> Transaction
-                , get blockchain pool
+                  --, get blockchain pool
+                , Cmd.none
                 )
 
-            else
+    else
+        case maybeTxn of
+            Just (Transaction { state }) ->
+                case state of
+                    Add _ ->
+                        ( { state =
+                                Matured
+                                    |> Pool pool
+                                    |> Add
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , Cmd.none
+                        )
+
+                    New _ ->
+                        ( { state =
+                                Matured
+                                    |> Pool pool
+                                    |> New
+                          , tooltip = Nothing
+                          }
+                            |> Transaction
+                        , Cmd.none
+                        )
+
+            _ ->
                 ( { state =
                         Matured
                             |> Pool pool
@@ -215,40 +367,6 @@ init { time } blockchain parameter =
                     |> Transaction
                 , Cmd.none
                 )
-
-
-initGivenPoolInfo :
-    { model | time : Posix }
-    -> Blockchain
-    -> Pool
-    -> PoolInfo
-    -> ( Transaction, Cmd Msg )
-initGivenPoolInfo { time } blockchain pool poolInfo =
-    if pool.maturity |> Maturity.isActive time then
-        ( { state =
-                Add.init
-                    |> Exist poolInfo
-                    |> Success
-                    |> Active
-                    |> Pool pool
-                    |> Add
-          , tooltip = Nothing
-          }
-            |> Transaction
-          --, get blockchain pool
-        , Cmd.none
-        )
-
-    else
-        ( { state =
-                Matured
-                    |> Pool pool
-                    |> Add
-          , tooltip = Nothing
-          }
-            |> Transaction
-        , Cmd.none
-        )
 
 
 initGivenSpot :
@@ -471,16 +589,14 @@ update model blockchain msg (Transaction transaction) =
         ( SelectMaturity, New (Pair pair) ) ->
             ( transaction |> Transaction
             , Cmd.none
-            , pair
-                |> OpenInputMaturity
+            , OpenMaturityPicker pair
                 |> Just
             )
 
         ( SelectMaturity, New (Pool pool _) ) ->
             ( transaction |> Transaction
             , Cmd.none
-            , pool.pair
-                |> OpenInputMaturity
+            , OpenMaturityPicker pool.pair
                 |> Just
             )
 
@@ -1680,3 +1796,33 @@ maturityParameter model { state, tooltip } =
                     |> MaturityButton.disabled
                     |> map never
         ]
+
+
+updateInputMaturity :
+    { model | time : Posix }
+    -> Blockchain
+    -> Maturity
+    -> Transaction
+    -> ( Transaction, Cmd Msg )
+updateInputMaturity { time } blockchain maturity (Transaction transaction) =
+    case transaction.state of
+        New (Pair pair) ->
+            if maturity |> Maturity.isActive time then
+                ( { transaction
+                    | state = New (Pool { pair = pair, maturity = maturity } (Active Remote.loading))
+                  }
+                    |> Transaction
+                , get blockchain { pair = pair, maturity = maturity }
+                )
+
+            else
+                ( { transaction
+                    | state = New (Pool { pair = pair, maturity = maturity } Matured)
+                  }
+                    |> Transaction
+                , Cmd.none
+                )
+
+        -- New (Pool pool status) ->
+        _ ->
+            ( transaction |> Transaction, Cmd.none )

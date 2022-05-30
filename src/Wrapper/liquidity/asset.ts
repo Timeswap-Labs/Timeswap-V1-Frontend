@@ -2,7 +2,7 @@ import { GlobalParams } from './../global';
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
 import { Pool, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-sdk-core';
 import { calculateMaxValue, calculateMinValue, getCurrentTime } from "../helper";
-import { calculateApr, calculateCdp, calculateFuturisticApr, calculateFuturisticCdp } from './common';
+import { calculateFuturisticApr, calculateFuturisticCdp } from './common';
 
 export async function assetCalculate(
   app: ElmApp<Ports>,
@@ -10,7 +10,6 @@ export async function assetCalculate(
   query: LiquidityQuery
 ) {
   try {
-    const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
 
     const state = {
@@ -20,7 +19,6 @@ export async function assetCalculate(
     };
 
     const {
-      assetIn: assetInReturn,
       liquidityOut,
       dueOut,
       xIncrease,

@@ -15,7 +15,7 @@ export function burn(app: ElmApp<Ports>) {
         result: Number(liqPercent) / 100
       });
     } else {
-      const pool = getPool(liqData);
+      const pool = getPool(liqData, liqData.poolInfo.fee, liqData.poolInfo.protocolFee);
       const reserves = {
         asset : new Uint128(liqData.poolInfo.assetReserve),
         collateral: new Uint128(liqData.poolInfo.collateralReserve)

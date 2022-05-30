@@ -261,8 +261,6 @@ init flags url key =
                   , headerGlass = Animator.init Browser.Events.Hidden
                   , scrollToPositions =
                         Animator.init Browser.Events.Hidden
-
-                  -- |> Debug.log "edit"
                   , visibility = Browser.Events.Visible
                   , backdrop = flags.hasBackdropSupport |> Backdrop.init
                   , theme = flags.theme |> Theme.init
@@ -701,15 +699,18 @@ pageEffects blockchain effect model =
                     )
                     (Cmd.map ModalMsg)
 
-        Page.OpenInputMaturity pair ->
-            ( { model
-                | modal =
-                    model.modal
-                        |> Animator.go Animator.quickly
-                            (Modal.initInputMaturity pair |> Just)
-              }
-            , Cmd.none
-            )
+        Page.OpenMaturityPicker pair ->
+            Modal.initMaturityPicker pair
+                |> Tuple.mapBoth
+                    (\inputMaturity ->
+                        { model
+                            | modal =
+                                model.modal
+                                    |> Animator.go Animator.quickly
+                                        (inputMaturity |> Just)
+                        }
+                    )
+                    (Cmd.map ModalMsg)
 
         Page.OpenSettings ->
             ( { model
@@ -1040,6 +1041,28 @@ modalEffects effect model =
                 |> Navigation.pushUrl model.key
             )
 
+        Modal.InputMaturity pool ->
+            ( model
+            , Route.fromTab
+                (model.page |> Page.toTab)
+                (Parameter.Pool pool |> Just)
+                |> Route.toUrlString
+                |> Navigation.pushUrl model.key
+            )
+
+        -- case model.blockchain of
+        --     Supported blockchain ->
+        --         let
+        --             ( updatedPage, cmdVal ) =
+        --                 Page.updateInputMaturity model blockchain maturity model.page
+        --         in
+        --         ( { model | page = updatedPage }
+        --         , cmdVal |> Cmd.map PageMsg
+        --         )
+        --     _ ->
+        --         ( model
+        --         , Cmd.none
+        --         )
         Modal.ChangeChain chain ->
             Blockchain.initGivenChain chain
                 |> Tuple.mapBoth

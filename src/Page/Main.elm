@@ -9,6 +9,7 @@ module Page.Main exposing
     , toPoolInfo
     , toTab
     , update
+    , updateInputMaturity
     , view
     )
 
@@ -28,6 +29,7 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
+import Data.Maturity exposing (Maturity)
 import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
 import Data.Pair exposing (Pair)
@@ -106,7 +108,7 @@ type Msg
 type Effect
     = OpenTokenList TokenParam
     | OpenMaturityList Pair
-    | OpenInputMaturity Pair
+    | OpenMaturityPicker Pair
     | OpenSettings
     | OpenConnect
     | OpenCaution WriteLend Float CDP PoolInfo
@@ -244,7 +246,7 @@ construct ({ chains } as model) url maybePage =
 
         ( Just (Route.Liquidity (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
             poolInfo
-                |> Liquidity.initGivenPoolInfo model blockchain pool
+                |> Liquidity.initGivenPoolInfo model blockchain (maybePage |> toLiquidityTxn) pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction
@@ -270,7 +272,7 @@ construct ({ chains } as model) url maybePage =
 
         ( Just (Route.Liquidity parameter), Supported blockchain, _ ) ->
             parameter
-                |> Liquidity.init model blockchain
+                |> Liquidity.init model blockchain (maybePage |> toLiquidityTxn)
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction
@@ -662,8 +664,8 @@ liquidityEffect effect =
         Liquidity.OpenMaturityList pair ->
             OpenMaturityList pair
 
-        Liquidity.OpenInputMaturity pair ->
-            OpenInputMaturity pair
+        Liquidity.OpenMaturityPicker pair ->
+            OpenMaturityPicker pair
 
         Liquidity.OpenConnect ->
             OpenConnect
@@ -797,6 +799,17 @@ toPoolInfo page =
             Nothing
 
 
+toLiquidityTxn : Maybe Page -> Maybe Liquidity.Transaction
+toLiquidityTxn page =
+    case page of
+        Just (LiquidityPage { transaction }) ->
+            transaction
+                |> Just
+
+        _ ->
+            Nothing
+
+
 view :
     { model
         | time : Posix
@@ -888,3 +901,22 @@ view model blockchain page =
                     |> map MarketsMsg
                     |> List.singleton
         )
+
+
+updateInputMaturity : { model | time : Posix } -> Blockchain -> Maturity -> Page -> ( Page, Cmd Msg )
+updateInputMaturity model blockchain maturity page =
+    case page of
+        LiquidityPage liqPage ->
+            let
+                ( txn, cmdVal ) =
+                    liqPage.transaction |> Liquidity.updateInputMaturity model blockchain maturity
+            in
+            ( { liqPage
+                | transaction = txn
+              }
+                |> LiquidityPage
+            , cmdVal |> Cmd.map LiquidityMsg
+            )
+
+        _ ->
+            ( page, Cmd.none )

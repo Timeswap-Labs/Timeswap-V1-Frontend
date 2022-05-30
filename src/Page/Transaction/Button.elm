@@ -65,6 +65,7 @@ view params =
                 [ centerX
                 , centerY
                 , Font.size 16
+                , Font.bold
                 , paddingXY 0 4
                 , Font.color Color.light100
                 ]
@@ -85,6 +86,7 @@ disabled theme string =
             [ centerX
             , centerY
             , Font.size 16
+            , Font.bold
             , paddingXY 0 4
             , theme |> ThemeColor.textDisabled |> Font.color
             ]
@@ -117,6 +119,7 @@ approve params =
                 [ centerX
                 , centerY
                 , Font.size 16
+                , Font.bold
                 , paddingXY 0 4
                 , Font.color Color.light100
                 ]
@@ -191,6 +194,7 @@ disabledApprove theme erc20 =
             [ centerX
             , centerY
             , Font.size 16
+            , Font.bold
             , paddingXY 0 4
             , theme |> ThemeColor.textDisabled |> Font.color
             ]
@@ -223,6 +227,7 @@ pendingApprove theme erc20 =
             [ centerX
             , centerY
             , Font.size 16
+            , Font.bold
             , paddingXY 0 4
             , theme |> ThemeColor.textDisabled |> Font.color
             ]

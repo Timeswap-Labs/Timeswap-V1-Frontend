@@ -54,9 +54,13 @@ declare interface Ports {
   receiveAddLiqAnswer: PortToElm<LiquidityCalculate>;
   liquidity: PortFromElm<Liquidity>;
   queryLiq: PortFromElm<LiqReturn>;
-  receiveLiqReturn: PortToElm<ReceiveLiqReturn>;
+  receiveLiqReturn: PortToElm<LiquidityCalculate>;
 
   burn: PortFromElm<Burn>;
+
+  queryCreate: PortFromElm<NewLiquidityQuery>;
+  receiveNewLiqAnswer: PortToElm<NewLiquidityCalculate>;
+  create: PortFromElm<NewLiquidity>;
 
   scroll: PortsToElm;
 
@@ -502,6 +506,35 @@ interface LiquidityQuery {
   assetIn?: string;
   debtIn?: string;
   collateralIn?: string;
+}
+
+interface NewLiquidityQuery {
+  chain: Chain;
+  pool: Pool;
+  price: {
+    assetSpot: number;
+    collateralSpot: number;
+  };
+  assetIn: string;
+  debtIn: string;
+  collateralIn: string;
+}
+
+interface NewLiquidity {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    liquidityTo: string;
+    dueTo: string;
+    assetIn?: string;
+    debtIn?: string;
+    collateralIn?: string;
+    deadline: number;
+  };
 }
 
 interface Burn {

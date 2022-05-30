@@ -6,23 +6,23 @@ import {
 
 export function calculateApr(
   debt: Uint112,
-  assetOut: string,
+  assetIn: Uint112,
   maturity: Uint256,
   currentTime: Uint256
 ): number {
   const SECONDS = 31556926;
   const apr = debt
-    .sub(assetOut)
+    .sub(assetIn)
     .mul(SECONDS)
     .mul(10000)
-    .div(assetOut)
+    .div(assetIn)
     .div(maturity.sub(currentTime));
 
   return Number(apr.toBigInt()) / 10_000;
 }
 
 export function calculateCdp(
-  assetOut: string,
+  assetIn: Uint112 | string,
   assetDecimals: number,
   assetSpot: number | null,
   collateralIn: Uint112 | string,
@@ -32,7 +32,7 @@ export function calculateCdp(
   let percent = null;
   const ratio = new Uint256(collateralIn)
     .mul(pow(10n, BigInt(assetDecimals)))
-    .div(assetOut)
+    .div(assetIn)
     .toString();
 
   if (assetSpot && collateralSpot) {
@@ -41,7 +41,7 @@ export function calculateCdp(
         (new Uint256(collateralIn).toBigInt() *
           BigInt(Math.floor(collateralSpot * 10000000000)) *
           pow(10n, BigInt(assetDecimals))) /
-          BigInt(assetOut) /
+          BigInt(assetIn.toString()) /
           BigInt(Math.floor(assetSpot * 1000000)) /
           pow(10n, BigInt(collateralDecimals))
       ) / 10000;

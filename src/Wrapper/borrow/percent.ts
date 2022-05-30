@@ -46,8 +46,11 @@ export function percentCalculate(
     const txnFee = xDecrease.sub(assetOutReturn).toString();
 
     const timeSlippageBefore = currentTime.sub(60);
-
-    const { dueOut: dueSlippageBefore, yIncrease: yIncreaseBefore, xDecrease: xDecreaseBefore } =
+    const {
+      dueOut: dueSlippageBefore,
+      yIncrease: yIncreaseBefore,
+      xDecrease: xDecreaseBefore
+    } =
       pool.borrowGivenPercent(
         state,
         new Uint112(query.assetOut),

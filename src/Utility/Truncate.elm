@@ -993,7 +993,7 @@ fromCDPSymbol : Pair -> ( String, Maybe String )
 fromCDPSymbol pair =
     (\collateral asset ->
         ( [ collateral
-          , "per"
+          , "Per"
           , asset
           ]
             |> String.join " "
@@ -1004,7 +1004,7 @@ fromCDPSymbol pair =
                 > 6
           then
             [ collateral |> String.left 6
-            , "per"
+            , "Per"
             , asset |> String.left 6
             ]
                 |> String.join " "

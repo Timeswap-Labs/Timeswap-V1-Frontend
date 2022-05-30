@@ -5,6 +5,7 @@ module Data.Maturity exposing
     , encode
     , fromFragment
     , isActive
+    , posixToMaturity
     , sorter
     , toDuration
     , toQueryParameter
@@ -102,6 +103,11 @@ toString zone maturity =
     , maturity |> toTimeString zone
     ]
         |> String.join " "
+
+
+posixToMaturity : Posix -> Maturity
+posixToMaturity posix =
+    Maturity posix
 
 
 toDuration : Posix -> Maturity -> Status String String

@@ -92,7 +92,7 @@ async function lendQueryCalculation(
 
   compareConvAddress(query.poolInfo.convAddress, query.chain.chainId);
 
-  const pool = getPool(query);
+  const pool = getPool(query, query.poolInfo.fee, query.poolInfo.protocolFee);
   const { percent, bondOut, insuranceOut } = query;
 
   if (percent !== undefined) {

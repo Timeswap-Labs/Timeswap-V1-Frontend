@@ -55,7 +55,11 @@ export function getCustomTokens(chainId: string): ERC20Token[] {
   return customTokens;
 }
 
-export function getPool(query: LendQuery | BorrowQuery | LiquidityQuery | LiqReturn): Pool {
+export function getPool(
+  query: LendQuery | BorrowQuery | LiquidityQuery | NewLiquidityQuery | LiqReturn,
+  fee: number,
+  protocolFee: number,
+): Pool {
   let asset, collateral;
 
   if ((query.pool.asset as ERC20Token).address) {
@@ -90,8 +94,8 @@ export function getPool(query: LendQuery | BorrowQuery | LiquidityQuery | LiqRet
     asset,
     collateral,
     query.pool.maturity,
-    query.poolInfo.fee,
-    query.poolInfo.protocolFee
+    fee,
+    protocolFee
   );
 }
 
@@ -273,7 +277,7 @@ export function handleTxnErrors(
   error: any,
   app: ElmApp<Ports>,
   gp: GlobalParams,
-  params: Lend | Borrow | Approve | Burn | Pay | Withdraw | Liquidity
+  params: Lend | Borrow | Approve | Burn | Pay | Withdraw | Liquidity | NewLiquidity
 ) {
   // If txn is canceled or sped-up, new txn-hash is created
   if (error.code === ethers.utils.Logger.errors.TRANSACTION_REPLACED) {

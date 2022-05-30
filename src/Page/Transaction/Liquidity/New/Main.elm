@@ -17,7 +17,7 @@ import Data.CDP as CDP exposing (CDP)
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Or exposing (Or(..))
-import Data.Pair as Pair
+import Data.Pair as Pair exposing (Pair)
 import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
@@ -27,14 +27,17 @@ import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , centerX
         , centerY
         , column
         , el
         , fill
         , height
+        , map
         , none
         , padding
         , paddingXY
+        , px
         , row
         , shrink
         , spacing
@@ -59,6 +62,7 @@ import Page.Transaction.Output as Output
 import Page.Transaction.Price exposing (Price)
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
+import Utility.Color as Color
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
@@ -663,10 +667,16 @@ constructQueryNew givenCmd blockchain pool price transaction =
 port queryCreate : Value -> Cmd msg
 
 
+port receiveNewLiqAnswer : (Value -> msg) -> Sub msg
+
+
 subscriptions : Transaction -> Sub Msg
 subscriptions (Transaction transaction) =
-    transaction.liquidityOut
+    [ transaction.liquidityOut
         |> Remote.subscriptions Tick
+    , receiveNewLiqAnswer ReceiveAnswer
+    ]
+        |> Sub.batch
 
 
 view :
@@ -690,7 +700,7 @@ view model blockchain pool (Transaction transaction) =
     , third =
         transaction
             |> liqOutSection model pool
-    , buttons = buttons model.theme blockchain
+    , buttons = buttons model.theme blockchain pool.pair transaction
     }
 
 
@@ -968,8 +978,13 @@ liqOutSection model pool { liquidityOut } =
         ]
 
 
-buttons : Theme -> Blockchain -> Element Msg
-buttons theme blockchain =
+buttons :
+    Theme
+    -> Blockchain
+    -> Pair
+    -> { transaction | assetIn : String, debtIn : String, collateralIn : String, liquidityOut : Remote Error LiquidityGivenNew }
+    -> Element Msg
+buttons theme blockchain pair { assetIn, debtIn, collateralIn, liquidityOut } =
     column
         [ width fill
         , height shrink
@@ -978,7 +993,224 @@ buttons theme blockchain =
         (blockchain
             |> Blockchain.toUser
             |> Maybe.map
-                (\_ -> [])
+                (\user ->
+                    case
+                        ( assetIn |> Uint.fromAmount (pair |> Pair.toAsset)
+                        , debtIn |> Uint.fromAmount (pair |> Pair.toAsset)
+                        , collateralIn |> Uint.fromAmount (pair |> Pair.toCollateral)
+                        )
+                    of
+                        ( Just assetUint, Just debtUint, Just collateralUint ) ->
+                            if
+                                (assetUint |> Uint.isZero)
+                                    || (debtUint |> Uint.isZero)
+                                    || (collateralUint |> Uint.isZero)
+                            then
+                                [ Button.disabled theme "Create Pool" |> map never ]
+
+                            else if
+                                (assetUint |> Uint.isZero |> not)
+                                    && (debtUint |> Uint.isZero |> not)
+                                    && Uint.hasEnough debtUint assetUint
+                            then
+                                [ Button.customError "Debt should be higher than Asset" |> map never ]
+
+                            else
+                                case
+                                    ( pair |> Pair.toAsset |> Token.toERC20
+                                    , pair |> Pair.toCollateral |> Token.toERC20
+                                    , liquidityOut
+                                    )
+                                of
+                                    ( Just assetErc20, Just collErc20, Success _ ) ->
+                                        case
+                                            ( user
+                                                |> User.getAllowance assetErc20
+                                                |> (Maybe.map << Remote.map)
+                                                    (Uint.hasEnough assetUint)
+                                            , user
+                                                |> User.getAllowance collErc20
+                                                |> (Maybe.map << Remote.map)
+                                                    (Uint.hasEnough collateralUint)
+                                            )
+                                        of
+                                            ( Just (Success True), Just (Success True) ) ->
+                                                case
+                                                    ( user
+                                                        |> User.getBalance (pair |> Pair.toAsset)
+                                                        |> (Maybe.map << Remote.map)
+                                                            (Uint.hasEnough assetUint)
+                                                    , user
+                                                        |> User.getBalance (pair |> Pair.toCollateral)
+                                                        |> (Maybe.map << Remote.map)
+                                                            (Uint.hasEnough collateralUint)
+                                                    )
+                                                of
+                                                    ( Just (Success True), Just (Success True) ) ->
+                                                        [ createPoolButton theme ]
+
+                                                    ( Just (Success False), Just (Success True) ) ->
+                                                        [ insufficientTokenBalance (pair |> Pair.toAsset) ]
+
+                                                    ( Just (Success True), Just (Success False) ) ->
+                                                        [ insufficientTokenBalance (pair |> Pair.toCollateral) ]
+
+                                                    ( Just (Success False), Just (Success False) ) ->
+                                                        [ insufficientTokenBalance (pair |> Pair.toAsset)
+                                                        , insufficientTokenBalance (pair |> Pair.toCollateral)
+                                                        ]
+
+                                                    _ ->
+                                                        [ Button.disabled theme "Create Pool" |> map never ]
+
+                                            ( Just (Success False), Just (Success True) ) ->
+                                                [ Button.approveAsset ClickApproveAsset theme ]
+
+                                            ( Just (Success True), Just (Success False) ) ->
+                                                [ Button.approveCollateral ClickApproveCollateral theme ]
+
+                                            ( Just (Success False), Just (Success False) ) ->
+                                                [ Button.approveAsset ClickApproveAsset theme
+                                                , Button.approveCollateral ClickApproveCollateral theme
+                                                ]
+
+                                            ( Just (Success True), Just (Loading _) ) ->
+                                                [ theme |> Button.checkingAllowance |> map never
+                                                , Button.disabled theme "Create Pool" |> map never
+                                                ]
+
+                                            ( Just (Loading _), Just (Success True) ) ->
+                                                [ theme |> Button.checkingAllowance |> map never
+                                                , Button.disabled theme "Create Pool" |> map never
+                                                ]
+
+                                            ( Just (Loading _), Just (Loading _) ) ->
+                                                [ theme |> Button.checkingAllowance |> map never
+                                                , Button.disabled theme "Create Pool" |> map never
+                                                ]
+
+                                            ( Just (Failure error), _ ) ->
+                                                [ Button.error error |> map never ]
+
+                                            ( _, Just (Failure error) ) ->
+                                                [ Button.error error |> map never ]
+
+                                            _ ->
+                                                [ Button.disabled theme "Create Pool" |> map never ]
+
+                                    ( Just assetErc20, Nothing, Success _ ) ->
+                                        case
+                                            user
+                                                |> User.getAllowance assetErc20
+                                                |> (Maybe.map << Remote.map)
+                                                    (Uint.hasEnough assetUint)
+                                        of
+                                            Just (Success True) ->
+                                                case
+                                                    user
+                                                        |> User.getBalance (pair |> Pair.toAsset)
+                                                        |> (Maybe.map << Remote.map)
+                                                            (Uint.hasEnough assetUint)
+                                                of
+                                                    Just (Success True) ->
+                                                        [ createPoolButton theme ]
+
+                                                    Just (Success False) ->
+                                                        [ insufficientTokenBalance (pair |> Pair.toAsset) ]
+
+                                                    Just (Loading _) ->
+                                                        [ Button.checkingBalance theme |> map never ]
+
+                                                    _ ->
+                                                        []
+
+                                            Just (Success False) ->
+                                                [ Button.approveAsset ClickApproveAsset theme ]
+
+                                            Just (Loading _) ->
+                                                [ Button.checkingAllowance theme |> map never ]
+
+                                            _ ->
+                                                []
+
+                                    ( Nothing, Just collErc20, Success _ ) ->
+                                        case
+                                            user
+                                                |> User.getAllowance collErc20
+                                                |> (Maybe.map << Remote.map)
+                                                    (Uint.hasEnough collateralUint)
+                                        of
+                                            Just (Success True) ->
+                                                case
+                                                    user
+                                                        |> User.getBalance (pair |> Pair.toCollateral)
+                                                        |> (Maybe.map << Remote.map)
+                                                            (Uint.hasEnough collateralUint)
+                                                of
+                                                    Just (Success True) ->
+                                                        [ createPoolButton theme ]
+
+                                                    Just (Success False) ->
+                                                        [ insufficientTokenBalance (pair |> Pair.toCollateral) ]
+
+                                                    Just (Loading _) ->
+                                                        [ Button.checkingBalance theme |> map never ]
+
+                                                    _ ->
+                                                        []
+
+                                            Just (Success False) ->
+                                                [ Button.approveCollateral ClickApproveCollateral theme ]
+
+                                            Just (Loading _) ->
+                                                [ Button.checkingAllowance theme |> map never ]
+
+                                            _ ->
+                                                [ Button.disabled theme "Create Pool" |> map never ]
+
+                                    -- ( _, _, Err err ) ->
+                                    --     [ Button.customError (err |> Error.toString) |> map never ]
+                                    _ ->
+                                        [ Button.disabled theme "Create Pool" |> map never ]
+
+                        _ ->
+                            [ Button.disabled theme "Create Pool" |> map never ]
+                )
             |> Maybe.withDefault
                 [ Button.connect theme ClickConnect ]
+        )
+
+
+createPoolButton : Theme -> Element Msg
+createPoolButton theme =
+    Button.view
+        { onPress = ClickCreate
+        , text = "Create Pool"
+        , theme = theme
+        }
+
+
+insufficientTokenBalance : Token -> Element msg
+insufficientTokenBalance token =
+    el
+        [ width fill
+        , height <| px 44
+        , Background.color Color.negative500
+        , Border.rounded 4
+        ]
+        (el
+            [ centerX
+            , centerY
+            , paddingXY 0 4
+            , Font.size 16
+            , Font.bold
+            , Font.color Color.light100
+            ]
+            ([ "Insufficient"
+             , token |> Token.toSymbol
+             , "Balance"
+             ]
+                |> String.join " "
+                |> text
+            )
         )

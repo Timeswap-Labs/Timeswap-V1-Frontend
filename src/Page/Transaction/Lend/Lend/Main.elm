@@ -1845,7 +1845,7 @@ assetInSection model blockchain pool poolInfo { assetIn, tooltip, claimsOut } =
                                             , model.theme |> ThemeColor.textLight |> Font.color
                                             , centerY
                                             ]
-                                            [ text "Change in APR"
+                                            [ text "Change in Pool APR"
                                             , model.images
                                                 |> (case model.theme of
                                                         Theme.Dark ->
@@ -1936,7 +1936,7 @@ assetInSection model blockchain pool poolInfo { assetIn, tooltip, claimsOut } =
                                                     [ Font.size 14
                                                     , model.theme |> ThemeColor.textLight |> Font.color
                                                     ]
-                                                    [ text "Change in CDP"
+                                                    [ text "Change in Pool CDP"
                                                     , model.images
                                                         |> (case model.theme of
                                                                 Theme.Dark ->

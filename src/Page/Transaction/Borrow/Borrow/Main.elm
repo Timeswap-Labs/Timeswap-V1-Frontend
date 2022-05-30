@@ -2669,7 +2669,7 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                             , model.theme |> ThemeColor.textLight |> Font.color
                                                             , centerY
                                                             ]
-                                                            [ text "Change in APR"
+                                                            [ text "Change in Pool APR"
                                                             , model.images
                                                                 |> (case model.theme of
                                                                         Theme.Dark ->
@@ -2771,7 +2771,7 @@ assetOutSection model pool poolInfo { state, tooltip } =
                                                                     , model.theme |> ThemeColor.textLight |> Font.color
                                                                     , centerY
                                                                     ]
-                                                                    [ text "Change in CDP"
+                                                                    [ text "Change in Pool CDP"
                                                                     , model.images
                                                                         |> (case model.theme of
                                                                                 Theme.Dark ->
