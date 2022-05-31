@@ -1506,9 +1506,9 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                             )
                         , case transaction.state of
                             Add _ ->
-                                createPoolButton model
+                                -- createPoolButton model
+                                none
 
-                            -- none
                             New _ ->
                                 none
                         , settingsButton model
