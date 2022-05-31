@@ -114,7 +114,7 @@ get blockchain chains =
         |> (\chain ->
                 Http.get
                     { url =
-                        Builder.crossOrigin "https://api.timeswap.io/v1/activepools"
+                        Builder.crossOrigin "https://ts-mainnet-week8.herokuapp.com/v1/activepools"
                             []
                             [ chain |> Chain.toQueryParameter ]
                     , expect =
