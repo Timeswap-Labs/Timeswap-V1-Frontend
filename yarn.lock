@@ -1255,7 +1255,7 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@timeswap-labs/timeswap-v1-sdk-core@1.2.5-Beta", "@timeswap-labs/timeswap-v1-sdk-core@=1.2.5-Beta":
+"@timeswap-labs/timeswap-v1-sdk-core@=1.2.5-Beta", "@timeswap-labs/timeswap-v1-sdk-core@^1.2.5-Beta":
   version "1.2.5-Beta"
   resolved "https://registry.yarnpkg.com/@timeswap-labs/timeswap-v1-sdk-core/-/timeswap-v1-sdk-core-1.2.5-Beta.tgz#335bbdffb71abda2de6c7e5c9381066c21e97177"
   integrity sha512-TlK3EINDMv5ifVoeLLM+kPPpx+iI2Z9p1Xo1X2omtnkTHzWFmPxRuxJpbrcqiYRVE25LnDPwEoqiewD9F5YvBg==
@@ -1263,10 +1263,10 @@
     "@ethersproject/address" "^5.5.0"
     tiny-invariant "^1.1.0"
 
-"@timeswap-labs/timeswap-v1-sdk@1.2.8-Beta":
-  version "1.2.8-Beta"
-  resolved "https://registry.yarnpkg.com/@timeswap-labs/timeswap-v1-sdk/-/timeswap-v1-sdk-1.2.8-Beta.tgz#10fe0c3dce335b5c83181a5cc7d3d3c628745572"
-  integrity sha512-5SpjFBa64KlPetZlO6dS+QUrblIGmVZVMbLBpU0KVQIEGYt/mi5TPqgViD/LOh+nLzyJ4PidW+UDd74QahTiEg==
+"@timeswap-labs/timeswap-v1-sdk@^1.2.10-Beta":
+  version "1.2.10-Beta"
+  resolved "https://registry.yarnpkg.com/@timeswap-labs/timeswap-v1-sdk/-/timeswap-v1-sdk-1.2.10-Beta.tgz#4080999365e20426b37fc9067e344cab3b2359b5"
+  integrity sha512-+XVSxJ1AVcibP+9XuvAhxzqSeCK0d3eTqjk89YgqDj9adZSLrLOCseR55HplAa/1rHx9NW332MteNTd8guZXqw==
   dependencies:
     "@ethersproject/abstract-provider" "^5.5.1"
     "@ethersproject/abstract-signer" "^5.5.0"
