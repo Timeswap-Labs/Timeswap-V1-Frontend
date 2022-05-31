@@ -43,4 +43,15 @@ async function elmInit() {
 }
 
 sentry();
-elmInit();
+
+let pw = window.prompt("Enter password to gain access...", "");
+
+if (pw === "TS-MAIN-123") {
+  elmInit();
+} else {
+  let errElement = document.getElementById("pw-err");
+
+  if (errElement) {
+    errElement.innerHTML = "Access Denied";
+  }
+}

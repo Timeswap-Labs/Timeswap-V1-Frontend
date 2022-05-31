@@ -123,14 +123,17 @@ fromFragment blockchain chains fragment =
         ( Nothing, Just ("borrow" :: _) ) ->
             Nothing |> Borrow
 
-        -- ( Just chain, Just ("liquidity" :: parameters :: _) ) ->
-        --     parameters
-        --         |> Parameter.fromFragment chain chains
-        --         |> Liquidity
-        -- ( Just _, Just ("liquidity" :: _) ) ->
-        --     Nothing |> Liquidity
-        -- ( Nothing, Just ("liquidity" :: _) ) ->
-        --     Nothing |> Liquidity
+        ( Just chain, Just ("liquidity" :: parameters :: _) ) ->
+            parameters
+                |> Parameter.fromFragment chain chains
+                |> Liquidity
+
+        ( Just _, Just ("liquidity" :: _) ) ->
+            Nothing |> Liquidity
+
+        ( Nothing, Just ("liquidity" :: _) ) ->
+            Nothing |> Liquidity
+
         ( Just _, Just ("markets" :: _) ) ->
             Markets
 
