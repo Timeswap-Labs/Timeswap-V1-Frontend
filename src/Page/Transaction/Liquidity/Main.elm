@@ -171,28 +171,88 @@ init { time } blockchain maybeTxn parameter =
             )
 
         Just (Parameter.Asset asset) ->
-            ( { state = Asset asset |> Add
-              , tooltip = Nothing
-              }
-                |> Transaction
-            , Cmd.none
-            )
+            case maybeTxn of
+                Just (Transaction { state }) ->
+                    case state of
+                        Add _ ->
+                            ( { state = Asset asset |> Add
+                              , tooltip = Nothing
+                              }
+                                |> Transaction
+                            , Cmd.none
+                            )
+
+                        New _ ->
+                            ( { state = Asset asset |> New
+                              , tooltip = Nothing
+                              }
+                                |> Transaction
+                            , Cmd.none
+                            )
+
+                _ ->
+                    ( { state = Asset asset |> Add
+                      , tooltip = Nothing
+                      }
+                        |> Transaction
+                    , Cmd.none
+                    )
 
         Just (Parameter.Collateral collateral) ->
-            ( { state = Collateral collateral |> Add
-              , tooltip = Nothing
-              }
-                |> Transaction
-            , Cmd.none
-            )
+            case maybeTxn of
+                Just (Transaction { state }) ->
+                    case state of
+                        Add _ ->
+                            ( { state = Collateral collateral |> Add
+                              , tooltip = Nothing
+                              }
+                                |> Transaction
+                            , Cmd.none
+                            )
+
+                        New _ ->
+                            ( { state = Collateral collateral |> New
+                              , tooltip = Nothing
+                              }
+                                |> Transaction
+                            , Cmd.none
+                            )
+
+                _ ->
+                    ( { state = Collateral collateral |> Add
+                      , tooltip = Nothing
+                      }
+                        |> Transaction
+                    , Cmd.none
+                    )
 
         Just (Parameter.Pair pair) ->
-            ( { state = Pair pair |> Add
-              , tooltip = Nothing
-              }
-                |> Transaction
-            , Cmd.none
-            )
+            case maybeTxn of
+                Just (Transaction { state }) ->
+                    case state of
+                        Add _ ->
+                            ( { state = Pair pair |> Add
+                              , tooltip = Nothing
+                              }
+                                |> Transaction
+                            , Cmd.none
+                            )
+
+                        New _ ->
+                            ( { state = Pair pair |> New
+                              , tooltip = Nothing
+                              }
+                                |> Transaction
+                            , Cmd.none
+                            )
+
+                _ ->
+                    ( { state = Pair pair |> Add
+                      , tooltip = Nothing
+                      }
+                        |> Transaction
+                    , Cmd.none
+                    )
 
         Just (Parameter.Pool pool) ->
             if pool.maturity |> Maturity.isActive time then
