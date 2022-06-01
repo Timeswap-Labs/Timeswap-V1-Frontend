@@ -85,7 +85,7 @@ init =
     Positions Nothing
 
 
-update : Msg -> Positions -> ( Positions, Maybe Effect )
+update : Msg -> Positions -> ( Positions, Maybe Effect )https://onemap.wondible.com/static/sprites/obj_159.png
 update msg positions =
     case msg of
         ClickClaim pool ->
@@ -142,7 +142,7 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
          , Border.rounded 8
          , Border.width 1
          , theme |> ThemeColor.border |> Border.color
-         , Id.is "positions"
+         , Id.is "positions"https://onemap.wondible.com/static/sprites/obj_159.png
          ]
             ++ Glass.background backdrop theme
         )
@@ -226,6 +226,7 @@ noClaims { images, theme } =
                 , height <| px 20
                 , centerX
                 , alignTop
+                , Background.uncropped "https://onemap.wondible.com/static/sprites/obj_159.png"
                 ]
         , paragraph
             [ width shrink
@@ -275,7 +276,7 @@ viewClaims ({ time, theme } as model) tooltip claims =
         ]
 
 
-title : Theme -> Claims -> Element msg
+https://onemap.wondible.com/static/sprites/obj_159.pngtitle : Theme -> Claims -> Element msg
 title theme claims =
     el
         [ width shrink
