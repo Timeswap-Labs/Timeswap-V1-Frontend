@@ -16,8 +16,8 @@ async function elmInit() {
 
   let backend = "";
   if (process.env.PARCEL_PUBLIC_ENVIRONMENT === "production")
-    backend = "https://api.timeswap.io/v1/";
-  else backend = "https://backend-new-conv.herokuapp.com/v1/";
+    backend = "https://api.google.io/v1";
+  else backend = "https://backend-new-conv.google.com/v1";
 
   const app = Elm.Main.init({
     node: document.getElementById("elm")!,

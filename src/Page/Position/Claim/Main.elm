@@ -109,12 +109,12 @@ type Effect
 
 
 init :
-    { model | time : Posix }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> User
     -> Pool
     -> ( Position, Cmd Msg )
-init { time } blockchain user pool =
+init { time, endPoint } blockchain user pool =
     ( { pool = pool
       , state =
             if
@@ -146,17 +146,18 @@ init { time } blockchain user pool =
             |> Remote.withDefault Cmd.none
 
       else
-        get blockchain pool
+        get blockchain endPoint pool
     )
 
 
 update :
     Blockchain
+    -> String
     -> User
     -> Msg
     -> Position
     -> ( Maybe Position, Cmd Msg, Maybe Effect )
-update blockchain user msg (Position position) =
+update blockchain endPoint user msg (Position position) =
     case ( msg, position.state ) of
         ( ClickLendMore, Active _ ) ->
             ( Nothing
@@ -202,7 +203,7 @@ update blockchain user msg (Position position) =
                   }
                     |> Position
                     |> Just
-                , get blockchain position.pool
+                , get blockchain endPoint position.pool
                 , Nothing
                 )
 
@@ -239,7 +240,7 @@ update blockchain user msg (Position position) =
             ( position
                 |> Position
                 |> Just
-            , get blockchain position.pool
+            , get blockchain endPoint position.pool
             , Nothing
             )
 
@@ -440,16 +441,17 @@ noCmdAndEffect position =
 
 get :
     Blockchain
+    -> String
     -> Pool
     -> Cmd Msg
-get blockchain pool =
+get blockchain endPoint pool =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
                     { url =
                         pool
-                            |> PoolInfoQuery.toUrlString chain
+                            |> PoolInfoQuery.toUrlString chain endPoint
                     , expect =
                         PoolInfoAnswer.decoder
                             |> Http.expectJson

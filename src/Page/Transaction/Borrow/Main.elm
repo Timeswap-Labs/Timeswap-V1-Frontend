@@ -132,11 +132,11 @@ type Effect
 
 
 init :
-    { model | time : Posix }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Maybe Parameter
     -> ( Transaction, Cmd Msg )
-init { time } blockchain parameter =
+init { time, endPoint } blockchain parameter =
     case parameter of
         Nothing ->
             ( { state = None
@@ -179,7 +179,7 @@ init { time } blockchain parameter =
                   , tooltip = Nothing
                   }
                     |> Transaction
-                , get blockchain pool
+                , get blockchain endPoint pool
                 )
 
             else
@@ -222,12 +222,12 @@ initGivenPoolInfo { time } blockchain pool poolInfo =
 
 
 initGivenSpot :
-    { model | time : Posix }
+    { model | time : Posix , endPoint: String }
     -> Blockchain
     -> Pool
     -> Price
     -> ( Transaction, Cmd Msg )
-initGivenSpot { time } blockchain pool priceFeed =
+initGivenSpot { time, endPoint} blockchain pool priceFeed =
     if pool.maturity |> Maturity.isActive time then
         ( { state =
                 DoesNotExist priceFeed
@@ -237,7 +237,7 @@ initGivenSpot { time } blockchain pool priceFeed =
           , tooltip = Nothing
           }
             |> Transaction
-        , get blockchain pool
+        , get blockchain endPoint pool
         )
 
     else
@@ -258,7 +258,7 @@ notSupported =
 
 
 update :
-    { model | slippage : Slippage }
+    { model | slippage : Slippage, endPoint : String }
     -> Blockchain
     -> Msg
     -> Transaction
@@ -295,13 +295,13 @@ update model blockchain msg (Transaction transaction) =
 
         ( QueryAgain, Pool pool (Active (Success _)) ) ->
             ( transaction |> Transaction
-            , get blockchain pool
+            , get blockchain model.endPoint pool
             , Nothing
             )
 
         ( QueryAgain, Pool pool (Active (Failure _)) ) ->
             ( transaction |> Transaction
-            , get blockchain pool
+            , get blockchain model.endPoint pool
             , Nothing
             )
 
@@ -502,16 +502,17 @@ noCmdAndEffect transaction =
 
 get :
     Blockchain
+    -> String
     -> Pool
     -> Cmd Msg
-get blockchain pool =
+get blockchain endPoint pool =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
                     { url =
                         pool
-                            |> Query.toUrlString chain
+                            |> Query.toUrlString chain endPoint
                     , expect =
                         Answer.decoder
                             |> Http.expectJson

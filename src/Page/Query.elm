@@ -9,9 +9,9 @@ import Data.TokenParam as TokenParam
 import Url.Builder as Builder
 
 
-toUrlString : Chain -> Pool -> String
-toUrlString chain { pair, maturity } =
-    Builder.crossOrigin "https://backend-new-conv.herokuapp.com/v1"
+toUrlString : Chain -> String -> Pool -> String
+toUrlString chain endPoint { pair, maturity } =
+    Builder.crossOrigin endPoint
         [ "pool" ]
         [ chain |> Chain.toQueryParameter
         , pair

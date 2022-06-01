@@ -191,7 +191,7 @@ init flags url key =
     (case ( flags.chains |> Chains.init, flags.user ) of
         ( chains, Just user ) ->
             (case
-                ( user |> Blockchain.init chains
+                ( user |> Blockchain.init chains flags.endPoint
                 , Blockchain.initDefault chains
                 , User.initNotSupported user
                 )
@@ -238,6 +238,7 @@ init flags url key =
                         { time = flags.time |> Time.millisToPosix
                         , chains = chains
                         , blockchain = blockchain
+                        , endPoint = flags.endPoint
                         }
                     |> (\( page, pageCmd ) ->
                             { chains = chains
@@ -674,7 +675,7 @@ pageEffects :
     -> Page.Effect
     -> Model
     -> ( Model, Cmd Msg )
-pageEffects blockchain effect model =
+pageEffects blockchain  effect model =
     case effect of
         Page.OpenTokenList tokenParam ->
             ( { model
@@ -690,7 +691,7 @@ pageEffects blockchain effect model =
             )
 
         Page.OpenMaturityList pair ->
-            Modal.initMaturityList blockchain pair
+            Modal.initMaturityList blockchain model.endPoint pair
                 |> Tuple.mapBoth
                     (\maturityList ->
                         { model
