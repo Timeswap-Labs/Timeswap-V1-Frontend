@@ -221,6 +221,7 @@ update :
         | chains : Chains
         , blockchain : Support User.NotSupported Blockchain
         , time : Posix
+        , endPoint : String
     }
     -> Msg
     -> Modal
