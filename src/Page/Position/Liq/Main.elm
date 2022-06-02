@@ -26,6 +26,7 @@ import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
 import Data.TokenParam as TokenParam
+import Data.Uint as Uint
 import Data.Web exposing (Web)
 import Element
     exposing
@@ -327,20 +328,49 @@ update { time, endPoint } blockchain user msg (Position position) =
                             && (answer.pool == position.pool)
                             && (answer.poolInfo == poolInfo)
                     then
-                        ( { position
-                            | return =
-                                ( poolInfo
-                                , case answer.result of
-                                    Ok (Maturity.Active float) ->
-                                        Success float
+                        case answer.result of
+                            Ok (Maturity.Active float) ->
+                                ( { position
+                                    | return =
+                                        ( poolInfo
+                                        , Success float
                                             |> Maturity.Active
+                                        )
+                                            |> Success
+                                  }
+                                    |> Position
+                                    |> Just
+                                , Cmd.none
+                                , Nothing
+                                )
 
-                                    Ok (Maturity.Matured return) ->
-                                        Success return
-                                            |> Maturity.Matured
+                            Ok (Maturity.Matured return) ->
+                                if (return.asset |> Uint.isZero) && (return.collateral |> Uint.isZero) then
+                                    ( Nothing
+                                    , Cmd.none
+                                    , Nothing
+                                    )
 
-                                    Err error ->
-                                        case status of
+                                else
+                                    ( { position
+                                        | return =
+                                            ( poolInfo
+                                            , Success return
+                                                |> Maturity.Matured
+                                            )
+                                                |> Success
+                                      }
+                                        |> Position
+                                        |> Just
+                                    , Cmd.none
+                                    , Nothing
+                                    )
+
+                            Err error ->
+                                ( { position
+                                    | return =
+                                        ( poolInfo
+                                        , case status of
                                             Maturity.Active _ ->
                                                 Failure error
                                                     |> Maturity.Active
@@ -348,14 +378,14 @@ update { time, endPoint } blockchain user msg (Position position) =
                                             Maturity.Matured _ ->
                                                 Failure error
                                                     |> Maturity.Matured
+                                        )
+                                            |> Success
+                                  }
+                                    |> Position
+                                    |> Just
+                                , Cmd.none
+                                , Nothing
                                 )
-                                    |> Success
-                          }
-                            |> Position
-                            |> Just
-                        , Cmd.none
-                        , Nothing
-                        )
 
                     else
                         ( position
