@@ -207,36 +207,59 @@ loading { images, theme } timeline =
 
 noClaims : { model | images : Images, theme : Theme } -> Element msg
 noClaims { images, theme } =
-    row
-        [ width shrink
+    column
+        [ width fill
         , height shrink
-        , centerX
-        , centerY
-        , spacing 8
+        , spacing 16
         ]
-        [ images
-            |> (case theme of
-                    Theme.Dark ->
-                        Image.info
-
-                    Theme.Light ->
-                        Image.infoDark
-               )
-                [ width <| px 20
-                , height <| px 20
-                , centerX
-                , alignTop
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 16
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , paddingXY 4 4
+                , Font.size 16
+                , theme |> ThemeColor.text |> Font.color
+                , Font.bold
                 ]
-        , paragraph
+                (text "Your Lend Positions")
+            ]
+        , row
             [ width shrink
             , height shrink
             , centerX
+            , Background.image "https://i.imgur.com/9eHlAXE.png"
+            , height <| px 120
+            , width <| px 700
             , centerY
-            , Font.size 14
-            , paddingXY 0 3
-            , theme |> ThemeColor.textLight |> Font.color
+            , spacing 8
             ]
-            [ text "Your Lend positions will appear here..." ]
+            [ images
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.info
+
+                        Theme.Light ->
+                            Image.infoDark
+                   )
+                    [ width <| px 20
+                    , height <| px 20
+                    , centerX
+                    ]
+            , paragraph
+                [ width shrink
+                , height shrink
+                , centerX
+                , centerY
+                , Font.size 14
+                , paddingXY 0 3
+                , theme |> ThemeColor.textLight |> Font.color
+                ]
+                [ text "Your Lend positions will appear here..." ]
+            ]
         ]
 
 
