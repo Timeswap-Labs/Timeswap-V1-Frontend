@@ -106,7 +106,7 @@ type Effect
 
 
 init :
-    { model | time : Posix, endPoint: String }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Pool
     -> ( Position, Cmd Msg )
@@ -402,7 +402,7 @@ get blockchain endPoint pool =
                 Http.get
                     { url =
                         pool
-                            |> PoolInfoQuery.toUrlString chain endPoint 
+                            |> PoolInfoQuery.toUrlString chain endPoint
                     , expect =
                         PoolInfoAnswer.decoder
                             |> Http.expectJson

@@ -675,7 +675,7 @@ pageEffects :
     -> Page.Effect
     -> Model
     -> ( Model, Cmd Msg )
-pageEffects blockchain  effect model =
+pageEffects blockchain effect model =
     case effect of
         Page.OpenTokenList tokenParam ->
             ( { model
@@ -1054,19 +1054,6 @@ modalEffects effect model =
                 |> Navigation.pushUrl model.key
             )
 
-        -- case model.blockchain of
-        --     Supported blockchain ->
-        --         let
-        --             ( updatedPage, cmdVal ) =
-        --                 Page.updateInputMaturity model blockchain maturity model.page
-        --         in
-        --         ( { model | page = updatedPage }
-        --         , cmdVal |> Cmd.map PageMsg
-        --         )
-        --     _ ->
-        --         ( model
-        --         , Cmd.none
-        --         )
         Modal.ChangeChain chain ->
             Blockchain.initGivenChain chain
                 |> Tuple.mapBoth

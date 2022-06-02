@@ -9,7 +9,7 @@ import Url.Builder as Builder
 toUrlString : Blockchain -> String -> Address -> String
 toUrlString blockchain endPoint address =
     Builder.crossOrigin endPoint
-        ["token" , "metadata"]
+        [ "token", "metadata" ]
         [ blockchain
             |> Blockchain.toChain
             |> Chain.toQueryParameter
