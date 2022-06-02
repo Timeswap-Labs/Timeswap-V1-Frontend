@@ -30,6 +30,8 @@ module Utility.Image exposing
     , linkDark
     , linkSecondary
     , linkWhite
+    , loadingPositions
+    , loadingPositionsDark
     , logoPure
     , logoText
     , logoTextDark
@@ -445,3 +447,13 @@ telegram =
 medium : List (Attribute msg) -> Images -> Element msg
 medium =
     view "Medium"
+
+
+loadingPositions : List (Attribute msg) -> Images -> Element msg
+loadingPositions =
+    view "LoadingPositions"
+
+
+loadingPositionsDark : List (Attribute msg) -> Images -> Element msg
+loadingPositionsDark =
+    view "LoadingPositionsDark"

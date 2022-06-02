@@ -31,6 +31,7 @@ import Element
         , el
         , fill
         , height
+        , inFront
         , none
         , padding
         , paddingXY
@@ -204,44 +205,117 @@ loading { images, theme } timeline =
 
 noLiqs : { model | device : Device, images : Images, theme : Theme } -> Element msg
 noLiqs { device, images, theme } =
-    row
-        [ (case device of
-            Desktop ->
-                shrink
-
-            _ ->
-                fill
-          )
-            |> width
+    column
+        [ width fill
         , height shrink
-        , centerX
-        , centerY
-        , spacing 12
+        , spacing 1
         ]
-        [ images
-            |> (case theme of
-                    Theme.Dark ->
-                        Image.info
-
-                    Theme.Light ->
-                        Image.infoDark
-               )
-                [ width <| px 20
-                , height <| px 20
-                , centerX
-                , alignTop
-                ]
-        , paragraph
+        [ row
             [ width fill
+            , height shrink
+            , spacing 16
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , paddingXY 4 4
+                , Font.size 16
+                , theme |> ThemeColor.text |> Font.color
+                , Font.bold
+                ]
+                (text "Your Lend Positions")
+            ]
+        , row
+            [ width shrink
             , height shrink
             , centerX
             , centerY
-            , Font.size 14
-            , paddingXY 0 3
-            , theme |> ThemeColor.textLight |> Font.color
+            , spacing 8
+            , inFront
+                (row
+                    [ centerX
+                    , centerY
+                    , paddingXY 0 0
+                    ]
+                    [ images
+                        |> (case theme of
+                                Theme.Dark ->
+                                    Image.info
+
+                                Theme.Light ->
+                                    Image.infoDark
+                           )
+                            [ width <| px 20
+                            , height <| px 20
+                            , centerX
+                            ]
+                    , paragraph
+                        [ width shrink
+                        , height shrink
+                        , centerX
+                        , centerY
+                        , Font.size 14
+                        , paddingXY 0 3
+                        , theme |> ThemeColor.textLight |> Font.color
+                        ]
+                        [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section. Your Liquidity positions will appear here..." ]
+                    ]
+                )
             ]
-            [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section. Your Liquidity positions will appear here..." ]
+            [ images
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.loadingPositionsDark
+
+                        -- Image
+                        Theme.Light ->
+                            Image.loadingPositions
+                   )
+                    [ height <| px 137
+                    , width <| px 900
+                    , centerX
+                    ]
+            ]
         ]
+
+
+
+-- row
+--     [ (case device of
+--         Desktop ->
+--             shrink
+--         _ ->
+--             fill
+--       )
+--         |> width
+--     , height shrink
+--     , centerX
+--     , centerY
+--     , spacing 12
+--     ]
+--     [ images
+--         |> (case theme of
+--                 Theme.Dark ->
+--                     Image.info
+--                 Theme.Light ->
+--                     Image.infoDark
+--            )
+--             [ width <| px 20
+--             , height <| px 20
+--             , centerX
+--             , alignTop
+--             ]
+--     , paragraph
+--         [ width fill
+--         , height shrink
+--         , centerX
+--         , centerY
+--         , Font.size 14
+--         , paddingXY 0 3
+--         , theme |> ThemeColor.textLight |> Font.color
+--         ]
+--         [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section. Your Liquidity positions will appear here..." ]
+--     ]
 
 
 viewLiqs :

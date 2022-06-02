@@ -34,6 +34,7 @@ import Element
         , el
         , fill
         , height
+        , inFront
         , none
         , padding
         , paddingXY
@@ -210,7 +211,7 @@ noClaims { images, theme } =
     column
         [ width fill
         , height shrink
-        , spacing 16
+        , spacing 1
         ]
         [ row
             [ width fill
@@ -231,34 +232,51 @@ noClaims { images, theme } =
             [ width shrink
             , height shrink
             , centerX
-            , Background.image "https://i.imgur.com/9eHlAXE.png"
-            , height <| px 120
-            , width <| px 700
             , centerY
             , spacing 8
+            , inFront
+                (row
+                    [ centerX
+                    , centerY
+                    ]
+                    [ images
+                        |> (case theme of
+                                Theme.Dark ->
+                                    Image.info
+
+                                Theme.Light ->
+                                    Image.infoDark
+                           )
+                            [ width <| px 20
+                            , height <| px 20
+                            , centerX
+                            ]
+                    , paragraph
+                        [ width shrink
+                        , height shrink
+                        , centerX
+                        , centerY
+                        , Font.size 14
+                        , paddingXY 0 3
+                        , theme |> ThemeColor.textLight |> Font.color
+                        ]
+                        [ text "Your Lend positions will appear here..." ]
+                    ]
+                )
             ]
             [ images
                 |> (case theme of
                         Theme.Dark ->
-                            Image.info
+                            Image.loadingPositionsDark
 
+                        -- Image
                         Theme.Light ->
-                            Image.infoDark
+                            Image.loadingPositions
                    )
-                    [ width <| px 20
-                    , height <| px 20
+                    [ height <| px 137
+                    , width <| px 900
                     , centerX
                     ]
-            , paragraph
-                [ width shrink
-                , height shrink
-                , centerX
-                , centerY
-                , Font.size 14
-                , paddingXY 0 3
-                , theme |> ThemeColor.textLight |> Font.color
-                ]
-                [ text "Your Lend positions will appear here..." ]
             ]
         ]
 
