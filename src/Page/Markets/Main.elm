@@ -70,6 +70,7 @@ import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
 import Utility.Tooltip as TooltipUtil
 import Utility.Truncate as Truncate
+import DatePicker exposing (Model)
 
 
 type PoolsData
@@ -90,32 +91,33 @@ type Msg
 
 
 init :
-    { model | time : Posix }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Chains
     -> ( PoolsData, Cmd Msg )
-init { time } blockchain chains =
+init { time, endPoint } blockchain chains =
     ( { data = Remote.loading
       , expanded = Set.empty Pair.sorter
       , tooltip = Nothing
       }
         |> PoolsData
-    , get blockchain chains
+    , get blockchain endPoint chains 
     )
 
 
 get :
     Blockchain
+    -> String
     -> Chains
     -> Cmd Msg
-get blockchain chains =
+get blockchain endPoint chains =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
                     { url =
-                        Builder.crossOrigin "https://backend-new-conv.herokuapp.com/v1/activepools"
-                            []
+                        Builder.crossOrigin endPoint
+                            ["activepools"]
                             [ chain |> Chain.toQueryParameter ]
                     , expect =
                         Answer.decoder chain chains
@@ -125,8 +127,8 @@ get blockchain chains =
            )
 
 
-update : Msg -> Blockchain -> Chains -> PoolsData -> ( PoolsData, Cmd Msg )
-update msg blockchain chains (PoolsData page) =
+update : Msg -> Blockchain -> {model | chains : Chains , endPoint : String }-> PoolsData -> ( PoolsData, Cmd Msg )
+update msg blockchain {chains , endPoint} (PoolsData page) =
     case msg of
         Expand pair ->
             case page.data of
@@ -210,7 +212,7 @@ update msg blockchain chains (PoolsData page) =
 
         QueryAgain ->
             ( page |> PoolsData
-            , get blockchain chains
+            , get blockchain endPoint chains 
             )
 
 

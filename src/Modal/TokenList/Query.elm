@@ -6,10 +6,10 @@ import Data.Chain as Chain
 import Url.Builder as Builder
 
 
-toUrlString : Blockchain -> Address -> String
-toUrlString blockchain address =
-    Builder.crossOrigin "https://backend-new-conv.herokuapp.com/v1/token/metadata"
-        []
+toUrlString : Blockchain -> String -> Address -> String
+toUrlString blockchain endPoint address =
+    Builder.crossOrigin endPoint
+        ["token" , "metadata"]
         [ blockchain
             |> Blockchain.toChain
             |> Chain.toQueryParameter

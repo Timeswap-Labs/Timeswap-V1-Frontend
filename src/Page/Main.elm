@@ -128,6 +128,7 @@ init :
         | time : Posix
         , chains : Chains
         , blockchain : Support userNotSupported Blockchain
+        , endPoint : String
     }
     -> Url
     -> ( Page, Cmd Msg )
@@ -141,6 +142,7 @@ change :
         | time : Posix
         , chains : Chains
         , blockchain : Support userNotSupported Blockchain
+        , endPoint : String
     }
     -> Url
     -> Page
@@ -155,6 +157,7 @@ construct :
         | time : Posix
         , chains : Chains
         , blockchain : Support userNotSupported Blockchain
+        , endPoint : String
     }
     -> Url
     -> Maybe Page
@@ -340,7 +343,7 @@ construct ({ chains } as model) url maybePage =
 
 
 update :
-    { model | time : Posix, slippage : Slippage, chains : Chains }
+    { model | time : Posix, slippage : Slippage, chains : Chains, endPoint : String }
     -> Blockchain
     -> Msg
     -> Page
@@ -390,7 +393,7 @@ update model blockchain msg page =
             Just
                 (\user position ->
                     position
-                        |> Claim.update blockchain user claimMsg
+                        |> Claim.update blockchain model.endPoint user claimMsg 
                         |> (\( updated, cmd, maybeEffect ) ->
                                 ( { lendPage | position = updated }
                                     |> LendPage
@@ -532,7 +535,7 @@ update model blockchain msg page =
                 |> Markets.update
                     infoMsg
                     blockchain
-                    model.chains
+                    model
                 |> (\( updated, cmd ) ->
                         ( updated
                             |> MarketsPage
@@ -573,7 +576,7 @@ lendEffect effect =
 
 
 claimsEffect :
-    { model | time : Posix }
+    { model | time : Posix,  endPoint : String }
     -> Blockchain
     -> Claims.Effect
     -> ( Maybe Claim.Position, Cmd Msg )
@@ -684,7 +687,7 @@ liquidityEffect effect =
 
 
 liqsEffect :
-    { model | time : Posix }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Liqs.Effect
     -> ( Maybe Liq.Position, Cmd Msg )
@@ -903,7 +906,7 @@ view model blockchain page =
         )
 
 
-updateInputMaturity : { model | time : Posix } -> Blockchain -> Maturity -> Page -> ( Page, Cmd Msg )
+updateInputMaturity : { model | time : Posix , endPoint : String} -> Blockchain -> Maturity -> Page -> ( Page, Cmd Msg )
 updateInputMaturity model blockchain maturity page =
     case page of
         LiquidityPage liqPage ->

@@ -141,8 +141,8 @@ type Effect
     | ConfirmedTxn Hash
 
 
-init : Chains -> Chain -> Flag -> Maybe ( User, Cmd Msg )
-init chains chain flag =
+init : Chains -> String -> Chain -> Flag -> Maybe ( User, Cmd Msg )
+init chains endPoint chain flag =
     case
         ( flag.wallet |> Wallet.init
         , flag.address |> Address.fromString
@@ -159,7 +159,7 @@ init chains chain flag =
               , natives = Remote.loading
               }
                 |> User
-            , getNatives chain chains
+            , getNatives chain endPoint chains
             )
                 |> Just
 
@@ -186,11 +186,11 @@ initNotSupported flag =
 
 
 receiveUserInit :
-    { model | chains : Chains }
+    { model | chains : Chains, endPoint : String }
     -> Chain
     -> Value
     -> Maybe ( User, Cmd Msg )
-receiveUserInit ({ chains } as model) chain value =
+receiveUserInit ({ chains, endPoint } as model) chain value =
     case value |> Decode.decodeValue (decoder model chain) of
         Ok (Just (User decodedUser)) ->
             ( User decodedUser
@@ -200,7 +200,7 @@ receiveUserInit ({ chains } as model) chain value =
               , decodedUser.address
                     |> Allowances.encode chains chain
                     |> allowancesOf
-              , getNatives chain chains
+              , getNatives chain endPoint chains
               ]
                 |> Cmd.batch
             )
@@ -211,12 +211,12 @@ receiveUserInit ({ chains } as model) chain value =
 
 
 receiveUser :
-    { model | chains : Chains }
+    { model | chains : Chains, endPoint : String }
     -> Chain
     -> Value
     -> User
     -> Maybe ( User, Cmd Msg )
-receiveUser ({ chains } as model) chain value user =
+receiveUser ({ chains, endPoint } as model) chain value user =
     case value |> Decode.decodeValue (decoder model chain) of
         Ok (Just (User decodedUser)) ->
             if isSame user (User decodedUser) then
@@ -233,7 +233,7 @@ receiveUser ({ chains } as model) chain value user =
                   , decodedUser.address
                         |> Allowances.encode chains chain
                         |> allowancesOf
-                  , getNatives chain chains
+                  , getNatives chain endPoint chains
                   ]
                     |> Cmd.batch
                 )
@@ -264,12 +264,12 @@ receiveNotSupported value =
             Nothing
 
 
-update : { model | chains : Chains } -> Chain -> Msg -> User -> ( User, Cmd Msg, Maybe Effect )
-update { chains } chain msg (User user) =
+update : { model | chains : Chains, endPoint : String } -> Chain -> Msg -> User -> ( User, Cmd Msg, Maybe Effect )
+update { chains, endPoint } chain msg (User user) =
     case msg of
         QueryNatives () ->
             ( user |> User
-            , getNatives chain chains
+            , getNatives chain endPoint chains
             , Nothing
             )
 
@@ -914,11 +914,12 @@ isSame (User user1) (User user2) =
 
 getNatives :
     Chain
+    -> String
     -> Chains
     -> Cmd Msg
-getNatives chain chains =
+getNatives chain endPoint chains =
     Http.get
-        { url = Natives.toUrlString chain
+        { url = Natives.toUrlString chain endPoint
         , expect =
             Natives.decoder chain chains
                 |> Http.expectJson
