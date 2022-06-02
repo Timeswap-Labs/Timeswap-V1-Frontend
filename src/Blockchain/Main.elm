@@ -408,7 +408,7 @@ decoder chains =
 
 
 receiveUserInit :
-    { model | key : Key, url : Url, chains : Chains , endPoint : String }
+    { model | key : Key, url : Url, chains : Chains, endPoint : String }
     -> Value
     -> Maybe ( Blockchain, Cmd Msg )
 receiveUserInit ({ key, url, chains } as model) value =
@@ -475,7 +475,7 @@ receiveUserInit ({ key, url, chains } as model) value =
 
 
 receiveUser :
-    { model | key : Key, url : Url, chains : Chains ,endPoint: String }
+    { model | key : Key, url : Url, chains : Chains, endPoint : String }
     -> Value
     -> Blockchain
     -> Maybe ( Blockchain, Cmd Msg )
