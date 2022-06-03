@@ -235,32 +235,42 @@ noClaims { images, theme } =
             , centerY
             , spacing 8
             , inFront
-                (row
+                (column
                     [ centerX
                     , centerY
                     ]
-                    [ images
-                        |> (case theme of
-                                Theme.Dark ->
-                                    Image.info
-
-                                Theme.Light ->
-                                    Image.infoDark
-                           )
-                            [ width <| px 20
-                            , height <| px 20
-                            , centerX
-                            ]
-                    , paragraph
-                        [ width shrink
-                        , height shrink
-                        , centerX
+                    [ row
+                        [ centerX
                         , centerY
-                        , Font.size 14
-                        , paddingXY 0 3
-                        , theme |> ThemeColor.textLight |> Font.color
                         ]
-                        [ text "Your Lend positions will appear here..." ]
+                        [ images
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.loadingPositionsIcon
+
+                                    Theme.Light ->
+                                        Image.loadingPositionsIconDark
+                               )
+                                [ width <| px 30
+                                , height <| px 30
+                                , centerX
+                                ]
+                        ]
+                    , row
+                        [ centerX
+                        , centerY
+                        ]
+                        [ paragraph
+                            [ width shrink
+                            , height shrink
+                            , centerX
+                            , centerY
+                            , Font.size 14
+                            , paddingXY 0 3
+                            , theme |> ThemeColor.textLight |> Font.color
+                            ]
+                            [ text "Your Lend positions will appear here..." ]
+                        ]
                     ]
                 )
             ]

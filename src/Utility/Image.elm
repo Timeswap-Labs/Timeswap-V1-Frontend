@@ -32,6 +32,8 @@ module Utility.Image exposing
     , linkWhite
     , loadingPositions
     , loadingPositionsDark
+    , loadingPositionsIcon
+    , loadingPositionsIconDark
     , logoPure
     , logoText
     , logoTextDark
@@ -457,3 +459,13 @@ loadingPositions =
 loadingPositionsDark : List (Attribute msg) -> Images -> Element msg
 loadingPositionsDark =
     view "LoadingPositionsDark"
+
+
+loadingPositionsIcon : List (Attribute msg) -> Images -> Element msg
+loadingPositionsIcon =
+    view "LendEmpty"
+
+
+loadingPositionsIconDark : List (Attribute msg) -> Images -> Element msg
+loadingPositionsIconDark =
+    view "LendEmptyDark"
