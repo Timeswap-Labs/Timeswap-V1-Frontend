@@ -223,7 +223,7 @@ noLiqs { device, images, theme } =
                 , theme |> ThemeColor.text |> Font.color
                 , Font.bold
                 ]
-                (text "Your Lend Positions")
+                (text "Your Borrow Positions")
             ]
         , row
             [ width shrink
@@ -232,33 +232,42 @@ noLiqs { device, images, theme } =
             , centerY
             , spacing 8
             , inFront
-                (row
+                (column
                     [ centerX
                     , centerY
-                    , paddingXY 0 0
                     ]
-                    [ images
-                        |> (case theme of
-                                Theme.Dark ->
-                                    Image.info
-
-                                Theme.Light ->
-                                    Image.infoDark
-                           )
-                            [ width <| px 20
-                            , height <| px 20
-                            , centerX
-                            ]
-                    , paragraph
-                        [ width shrink
-                        , height shrink
-                        , centerX
+                    [ row
+                        [ centerX
                         , centerY
-                        , Font.size 14
-                        , paddingXY 0 3
-                        , theme |> ThemeColor.textLight |> Font.color
                         ]
-                        [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section. Your Liquidity positions will appear here..." ]
+                        [ images
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.loadingPositionsIcon
+
+                                    Theme.Light ->
+                                        Image.loadingPositionsIconDark
+                               )
+                                [ width <| px 30
+                                , height <| px 30
+                                , centerX
+                                ]
+                        ]
+                    , row
+                        [ centerX
+                        , centerY
+                        ]
+                        [ paragraph
+                            [ width shrink
+                            , height shrink
+                            , centerX
+                            , centerY
+                            , Font.size 14
+                            , paddingXY 0 3
+                            , theme |> ThemeColor.textLight |> Font.color
+                            ]
+                            [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section. Your Liquidity positions will appear here..." ]
+                        ]
                     ]
                 )
             ]
@@ -272,7 +281,7 @@ noLiqs { device, images, theme } =
                             Image.loadingPositions
                    )
                     [ height <| px 137
-                    , width <| px 900
+                    , width <| px 710
                     , centerX
                     ]
             ]
