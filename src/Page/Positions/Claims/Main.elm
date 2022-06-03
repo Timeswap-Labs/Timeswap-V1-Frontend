@@ -284,7 +284,7 @@ noClaims { images, theme } =
                             Image.loadingPositions
                    )
                     [ height <| px 137
-                    , width <| px 900
+                    , width <| px 710
                     , centerX
                     ]
             ]
