@@ -246,10 +246,10 @@ noClaims { images, theme } =
                         [ images
                             |> (case theme of
                                     Theme.Dark ->
-                                        Image.loadingPositionsIcon
+                                        Image.loadingPositionsIconDark
 
                                     Theme.Light ->
-                                        Image.loadingPositionsIconDark
+                                        Image.loadingPositionsIcon
                                )
                                 [ width <| px 30
                                 , height <| px 30
@@ -266,7 +266,7 @@ noClaims { images, theme } =
                             , centerX
                             , centerY
                             , Font.size 14
-                            , paddingXY 0 3
+                            , paddingXY 0 8
                             , theme |> ThemeColor.textLight |> Font.color
                             ]
                             [ text "Your Lend positions will appear here..." ]
