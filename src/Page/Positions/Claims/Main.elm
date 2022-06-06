@@ -246,10 +246,10 @@ noClaims { images, theme } =
                         [ images
                             |> (case theme of
                                     Theme.Dark ->
-                                        Image.loadingPositionsIconDark
+                                        Image.lendloadingPositionsIconDark
 
                                     Theme.Light ->
-                                        Image.loadingPositionsIcon
+                                        Image.lendloadingPositionsIcon
                                )
                                 [ width <| px 30
                                 , height <| px 30

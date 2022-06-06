@@ -248,10 +248,10 @@ noDues { device, images, theme } =
                         [ images
                             |> (case theme of
                                     Theme.Dark ->
-                                        Image.loadingPositionsIconDark
+                                        Image.borrowloadingPositionsIconDark
 
                                     Theme.Light ->
-                                        Image.loadingPositionsIcon
+                                        Image.borrowloadingPositionsIcon
                                )
                                 [ width <| px 30
                                 , height <| px 30
