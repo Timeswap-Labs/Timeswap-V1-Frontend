@@ -213,17 +213,17 @@ noLiqs { device, images, theme } =
         [ row
             [ width fill
             , height shrink
-            , spacing 16
+            , spacing 0
             ]
             [ el
                 [ width shrink
                 , height shrink
-                , paddingXY 4 4
+                , paddingXY 4 8
                 , Font.size 16
                 , theme |> ThemeColor.text |> Font.color
                 , Font.bold
                 ]
-                (text "Your Borrow Positions")
+                (text "Your Liquidity Positions")
             ]
         , row
             [ width shrink
@@ -243,10 +243,10 @@ noLiqs { device, images, theme } =
                         [ images
                             |> (case theme of
                                     Theme.Dark ->
-                                        Image.loadingPositionsIcon
+                                        Image.loadingPositionsIconDark
 
                                     Theme.Light ->
-                                        Image.loadingPositionsIconDark
+                                        Image.loadingPositionsIcon
                                )
                                 [ width <| px 30
                                 , height <| px 30
@@ -263,10 +263,25 @@ noLiqs { device, images, theme } =
                             , centerX
                             , centerY
                             , Font.size 14
-                            , paddingXY 0 3
+                            , paddingXY 0 8
                             , theme |> ThemeColor.textLight |> Font.color
                             ]
-                            [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section. Your Liquidity positions will appear here..." ]
+                            [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section." ]
+                        ]
+                    , row
+                        [ centerX
+                        , centerY
+                        ]
+                        [ paragraph
+                            [ width shrink
+                            , height shrink
+                            , centerX
+                            , centerY
+                            , Font.size 14
+                            , paddingXY 0 2
+                            , theme |> ThemeColor.textLight |> Font.color
+                            ]
+                            [ text "Your Liquidity positions will appear here..." ]
                         ]
                     ]
                 )

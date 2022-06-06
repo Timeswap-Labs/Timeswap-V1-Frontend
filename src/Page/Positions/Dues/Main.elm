@@ -218,12 +218,12 @@ noDues { device, images, theme } =
         [ row
             [ width fill
             , height shrink
-            , spacing 16
+            , spacing 0
             ]
             [ el
                 [ width shrink
                 , height shrink
-                , paddingXY 4 4
+                , paddingXY 4 8
                 , Font.size 16
                 , theme |> ThemeColor.text |> Font.color
                 , Font.bold
@@ -248,10 +248,10 @@ noDues { device, images, theme } =
                         [ images
                             |> (case theme of
                                     Theme.Dark ->
-                                        Image.loadingPositionsIcon
+                                        Image.loadingPositionsIconDark
 
                                     Theme.Light ->
-                                        Image.loadingPositionsIconDark
+                                        Image.loadingPositionsIcon
                                )
                                 [ width <| px 30
                                 , height <| px 30
@@ -268,7 +268,7 @@ noDues { device, images, theme } =
                             , centerX
                             , centerY
                             , Font.size 14
-                            , paddingXY 0 3
+                            , paddingXY 0 8
                             , theme |> ThemeColor.textLight |> Font.color
                             ]
                             [ text "Your Borrow positions, including from Liquidity transactions, will appear here..." ]

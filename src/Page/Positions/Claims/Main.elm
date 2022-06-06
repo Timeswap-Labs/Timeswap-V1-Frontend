@@ -216,12 +216,12 @@ noClaims { images, theme } =
         [ row
             [ width fill
             , height shrink
-            , spacing 16
+            , spacing 0
             ]
             [ el
                 [ width shrink
                 , height shrink
-                , paddingXY 4 4
+                , paddingXY 4 8
                 , Font.size 16
                 , theme |> ThemeColor.text |> Font.color
                 , Font.bold
