@@ -30,6 +30,7 @@ module Utility.Image exposing
     , linkDark
     , linkSecondary
     , linkWhite
+    , loading
     , logoPure
     , logoText
     , logoTextDark
@@ -85,6 +86,19 @@ view name attributes images =
         { src =
             images
                 |> .images
+                |> Dict.get name
+                |> Maybe.withDefault ""
+        , description = name
+        }
+
+
+viewGifs : String -> List (Attribute msg) -> Images -> Element msg
+viewGifs name attributes images =
+    image
+        attributes
+        { src =
+            images
+                |> .gifs
                 |> Dict.get name
                 |> Maybe.withDefault ""
         , description = name
@@ -445,3 +459,8 @@ telegram =
 medium : List (Attribute msg) -> Images -> Element msg
 medium =
     view "Medium"
+
+
+loading : List (Attribute msg) -> Images -> Element msg
+loading =
+    viewGifs "Loading"

@@ -1,6 +1,7 @@
 import { Elm } from "../Main.elm";
 
 import * as images from "url:../../image/*.svg";
+import * as gifs from "url:../../image/gifs/*.gif";
 import * as tokenImages from "url:../../image/tokens/*.svg";
 import * as chainImages from "url:../../image/chains/*.svg";
 import * as walletImages from "url:../../image/wallets/*.svg";
@@ -32,6 +33,7 @@ async function elmInit() {
         CSS.supports("backdrop-filter: none"),
       theme: window.localStorage.getItem("theme"),
       images: Object.entries(images),
+      gifs: Object.entries(gifs),
       tokenImages: Object.entries(tokenImages),
       chainImages: Object.entries(chainImages),
       walletImages: Object.entries(walletImages),
@@ -46,9 +48,8 @@ async function elmInit() {
       endPoint: apiEndpoint,
     },
   });
-
+  // console.log(gifs, " gifs");
   init(app, gp, user);
 }
-
 sentry();
 elmInit();

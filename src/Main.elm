@@ -149,6 +149,7 @@ type alias Flags =
     , hasBackdropSupport : Backdrop.Flag
     , theme : Theme.Flag
     , images : Images.Flags
+    , gifs : Images.Flags
     , tokenImages : Images.Flags
     , chainImages : Images.Flags
     , walletImages : Images.Flags
@@ -270,6 +271,7 @@ init flags url key =
                   , images =
                         Images.init
                             { images = flags.images
+                            , gifs = flags.gifs
                             , tokenImages = flags.tokenImages
                             , chainImages = flags.chainImages
                             , walletImages = flags.walletImages

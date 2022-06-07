@@ -228,16 +228,16 @@ body ({ images, theme } as model) blockchain (Modal { state }) =
                 , (images
                     |> (case state of
                             Initiating _ ->
-                                Image.hourglassPrimary
+                                Image.loading
 
                             Submitted _ ->
-                                Image.logoPure
+                                Image.loading
 
                             Rejected ->
-                                Image.error
+                                Image.loading
 
                             Confirmed _ ->
-                                Image.matured
+                                Image.loading
                        )
                         [ width <| px 36, height <| px 36, centerX, centerY, Font.center ]
                   )
