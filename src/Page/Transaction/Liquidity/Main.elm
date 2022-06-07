@@ -10,7 +10,6 @@ module Page.Transaction.Liquidity.Main exposing
     , toParameter
     , toPoolInfo
     , update
-    , updateInputMaturity
     , view
     )
 
@@ -155,12 +154,12 @@ type Effect
 
 
 init :
-    { model | time : Posix }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Maybe Transaction
     -> Maybe Parameter
     -> ( Transaction, Cmd Msg )
-init { time } blockchain maybeTxn parameter =
+init { time, endPoint } blockchain maybeTxn parameter =
     case parameter of
         Nothing ->
             ( { state = Add None
@@ -268,7 +267,7 @@ init { time } blockchain maybeTxn parameter =
                                   , tooltip = Nothing
                                   }
                                     |> Transaction
-                                , get blockchain pool
+                                , get blockchain endPoint pool
                                 )
 
                             New _ ->
@@ -280,7 +279,7 @@ init { time } blockchain maybeTxn parameter =
                                   , tooltip = Nothing
                                   }
                                     |> Transaction
-                                , get blockchain pool
+                                , get blockchain endPoint pool
                                 )
 
                     _ ->
@@ -292,7 +291,7 @@ init { time } blockchain maybeTxn parameter =
                           , tooltip = Nothing
                           }
                             |> Transaction
-                        , get blockchain pool
+                        , get blockchain endPoint pool
                         )
 
             else
@@ -430,12 +429,12 @@ initGivenPoolInfo { time } blockchain maybeTxn pool poolInfo =
 
 
 initGivenSpot :
-    { model | time : Posix }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Pool
     -> Price
     -> ( Transaction, Cmd Msg )
-initGivenSpot { time } blockchain pool priceFeed =
+initGivenSpot { time, endPoint } blockchain pool priceFeed =
     if pool.maturity |> Maturity.isActive time then
         ( { state =
                 New.init
@@ -447,7 +446,7 @@ initGivenSpot { time } blockchain pool priceFeed =
           , tooltip = Nothing
           }
             |> Transaction
-        , get blockchain pool
+        , get blockchain endPoint pool
         )
 
     else
@@ -471,7 +470,7 @@ notSupported =
 
 
 update :
-    { model | slippage : Slippage }
+    { model | slippage : Slippage, endPoint : String }
     -> Blockchain
     -> Msg
     -> Transaction
@@ -662,25 +661,25 @@ update model blockchain msg (Transaction transaction) =
 
         ( QueryAgain, Add (Pool pool (Active (Success _))) ) ->
             ( transaction |> Transaction
-            , get blockchain pool
+            , get blockchain model.endPoint pool
             , Nothing
             )
 
         ( QueryAgain, Add (Pool pool (Active (Failure _))) ) ->
             ( transaction |> Transaction
-            , get blockchain pool
+            , get blockchain model.endPoint pool
             , Nothing
             )
 
         ( QueryAgain, New (Pool pool (Active (Success _))) ) ->
             ( transaction |> Transaction
-            , get blockchain pool
+            , get blockchain model.endPoint pool
             , Nothing
             )
 
         ( QueryAgain, New (Pool pool (Active (Failure _))) ) ->
             ( transaction |> Transaction
-            , get blockchain pool
+            , get blockchain model.endPoint pool
             , Nothing
             )
 
@@ -1052,16 +1051,17 @@ noCmdAndEffect transaction =
 
 get :
     Blockchain
+    -> String
     -> Pool
     -> Cmd Msg
-get blockchain pool =
+get blockchain endPoint pool =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
                     { url =
                         pool
-                            |> Query.toUrlString chain
+                            |> Query.toUrlString chain endPoint
                     , expect =
                         Answer.decoder
                             |> Http.expectJson
@@ -1855,33 +1855,3 @@ maturityParameter model { state, tooltip } =
                     |> MaturityButton.disabled
                     |> map never
         ]
-
-
-updateInputMaturity :
-    { model | time : Posix }
-    -> Blockchain
-    -> Maturity
-    -> Transaction
-    -> ( Transaction, Cmd Msg )
-updateInputMaturity { time } blockchain maturity (Transaction transaction) =
-    case transaction.state of
-        New (Pair pair) ->
-            if maturity |> Maturity.isActive time then
-                ( { transaction
-                    | state = New (Pool { pair = pair, maturity = maturity } (Active Remote.loading))
-                  }
-                    |> Transaction
-                , get blockchain { pair = pair, maturity = maturity }
-                )
-
-            else
-                ( { transaction
-                    | state = New (Pool { pair = pair, maturity = maturity } Matured)
-                  }
-                    |> Transaction
-                , Cmd.none
-                )
-
-        -- New (Pool pool status) ->
-        _ ->
-            ( transaction |> Transaction, Cmd.none )

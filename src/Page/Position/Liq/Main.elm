@@ -26,6 +26,7 @@ import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
 import Data.TokenParam as TokenParam
+import Data.Uint as Uint
 import Data.Web exposing (Web)
 import Element
     exposing
@@ -106,28 +107,28 @@ type Effect
 
 
 init :
-    { model | time : Posix }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Pool
     -> ( Position, Cmd Msg )
-init { time } blockchain pool =
+init { time, endPoint } blockchain pool =
     ( { pool = pool
       , return = Remote.loading
       , tooltip = Nothing
       }
         |> Position
-    , get blockchain pool
+    , get blockchain endPoint pool
     )
 
 
 update :
-    { model | time : Posix }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> User
     -> Msg
     -> Position
     -> ( Maybe Position, Cmd Msg, Maybe Effect )
-update { time } blockchain user msg (Position position) =
+update { time, endPoint } blockchain user msg (Position position) =
     case msg of
         ClickAddMore ->
             ( Nothing
@@ -201,7 +202,7 @@ update { time } blockchain user msg (Position position) =
             ( position
                 |> Position
                 |> Just
-            , get blockchain position.pool
+            , get blockchain endPoint position.pool
             , Nothing
             )
 
@@ -327,20 +328,49 @@ update { time } blockchain user msg (Position position) =
                             && (answer.pool == position.pool)
                             && (answer.poolInfo == poolInfo)
                     then
-                        ( { position
-                            | return =
-                                ( poolInfo
-                                , case answer.result of
-                                    Ok (Maturity.Active float) ->
-                                        Success float
+                        case answer.result of
+                            Ok (Maturity.Active float) ->
+                                ( { position
+                                    | return =
+                                        ( poolInfo
+                                        , Success float
                                             |> Maturity.Active
+                                        )
+                                            |> Success
+                                  }
+                                    |> Position
+                                    |> Just
+                                , Cmd.none
+                                , Nothing
+                                )
 
-                                    Ok (Maturity.Matured return) ->
-                                        Success return
-                                            |> Maturity.Matured
+                            Ok (Maturity.Matured return) ->
+                                if (return.asset |> Uint.isZero) && (return.collateral |> Uint.isZero) then
+                                    ( Nothing
+                                    , Cmd.none
+                                    , Nothing
+                                    )
 
-                                    Err error ->
-                                        case status of
+                                else
+                                    ( { position
+                                        | return =
+                                            ( poolInfo
+                                            , Success return
+                                                |> Maturity.Matured
+                                            )
+                                                |> Success
+                                      }
+                                        |> Position
+                                        |> Just
+                                    , Cmd.none
+                                    , Nothing
+                                    )
+
+                            Err error ->
+                                ( { position
+                                    | return =
+                                        ( poolInfo
+                                        , case status of
                                             Maturity.Active _ ->
                                                 Failure error
                                                     |> Maturity.Active
@@ -348,14 +378,14 @@ update { time } blockchain user msg (Position position) =
                                             Maturity.Matured _ ->
                                                 Failure error
                                                     |> Maturity.Matured
+                                        )
+                                            |> Success
+                                  }
+                                    |> Position
+                                    |> Just
+                                , Cmd.none
+                                , Nothing
                                 )
-                                    |> Success
-                          }
-                            |> Position
-                            |> Just
-                        , Cmd.none
-                        , Nothing
-                        )
 
                     else
                         ( position
@@ -392,16 +422,17 @@ update { time } blockchain user msg (Position position) =
 
 get :
     Blockchain
+    -> String
     -> Pool
     -> Cmd Msg
-get blockchain pool =
+get blockchain endPoint pool =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
                     { url =
                         pool
-                            |> PoolInfoQuery.toUrlString chain
+                            |> PoolInfoQuery.toUrlString chain endPoint
                     , expect =
                         PoolInfoAnswer.decoder
                             |> Http.expectJson
