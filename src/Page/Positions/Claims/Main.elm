@@ -262,6 +262,12 @@ noClaims { images, theme } =
                                 [ width <| px 36
                                 , height <| px 36
                                 , centerX
+                                , paddingEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 14
+                                    , left = 0
+                                    }
                                 ]
                         ]
                     , row
