@@ -10,7 +10,6 @@ module Page.Transaction.Liquidity.Main exposing
     , toParameter
     , toPoolInfo
     , update
-    , updateInputMaturity
     , view
     )
 
@@ -160,7 +159,7 @@ init :
     -> Maybe Transaction
     -> Maybe Parameter
     -> ( Transaction, Cmd Msg )
-init { time,  endPoint } blockchain maybeTxn parameter =
+init { time, endPoint } blockchain maybeTxn parameter =
     case parameter of
         Nothing ->
             ( { state = Add None
@@ -430,7 +429,7 @@ initGivenPoolInfo { time } blockchain maybeTxn pool poolInfo =
 
 
 initGivenSpot :
-    { model | time : Posix , endPoint : String}
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Pool
     -> Price
@@ -471,7 +470,7 @@ notSupported =
 
 
 update :
-    { model | slippage : Slippage ,endPoint : String }
+    { model | slippage : Slippage, endPoint : String }
     -> Blockchain
     -> Msg
     -> Transaction
@@ -1856,33 +1855,3 @@ maturityParameter model { state, tooltip } =
                     |> MaturityButton.disabled
                     |> map never
         ]
-
-
-updateInputMaturity :
-    { model | time : Posix, endPoint: String }
-    -> Blockchain
-    -> Maturity
-    -> Transaction
-    -> ( Transaction, Cmd Msg )
-updateInputMaturity { time, endPoint } blockchain maturity (Transaction transaction) =
-    case transaction.state of
-        New (Pair pair) ->
-            if maturity |> Maturity.isActive time then
-                ( { transaction
-                    | state = New (Pool { pair = pair, maturity = maturity } (Active Remote.loading))
-                  }
-                    |> Transaction
-                , get blockchain endPoint { pair = pair, maturity = maturity }
-                )
-
-            else
-                ( { transaction
-                    | state = New (Pool { pair = pair, maturity = maturity } Matured)
-                  }
-                    |> Transaction
-                , Cmd.none
-                )
-
-        -- New (Pool pool status) ->
-        _ ->
-            ( transaction |> Transaction, Cmd.none )

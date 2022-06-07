@@ -14,10 +14,10 @@ export declare let window: any;
 async function elmInit() {
   const { gp, user } = await elmUser();
 
-  let backend = "";
+  let apiEndpoint = "";
   if (process.env.PARCEL_PUBLIC_ENVIRONMENT === "production")
-    backend = "https://api.timeswap.io/v1";
-  else backend = "https://backend-new-conv.herokuapp.com/v1";
+    apiEndpoint = "https://api.timeswap.io/v1";
+  else apiEndpoint = "https://backend-new-conv.herokuapp.com/v1";
 
   const app = Elm.Main.init({
     node: document.getElementById("elm")!,
@@ -43,7 +43,7 @@ async function elmInit() {
         : ["walletConnect"],
       chains: whitelistChains,
       user,
-      endPoint: backend,
+      endPoint: apiEndpoint,
     },
   });
 

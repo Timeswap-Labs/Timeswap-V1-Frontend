@@ -9,7 +9,6 @@ module Page.Main exposing
     , toPoolInfo
     , toTab
     , update
-    , updateInputMaturity
     , view
     )
 
@@ -393,7 +392,7 @@ update model blockchain msg page =
             Just
                 (\user position ->
                     position
-                        |> Claim.update blockchain model.endPoint user claimMsg 
+                        |> Claim.update blockchain model.endPoint user claimMsg
                         |> (\( updated, cmd, maybeEffect ) ->
                                 ( { lendPage | position = updated }
                                     |> LendPage
@@ -576,7 +575,7 @@ lendEffect effect =
 
 
 claimsEffect :
-    { model | time : Posix,  endPoint : String }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Claims.Effect
     -> ( Maybe Claim.Position, Cmd Msg )
@@ -904,22 +903,3 @@ view model blockchain page =
                     |> map MarketsMsg
                     |> List.singleton
         )
-
-
-updateInputMaturity : { model | time : Posix , endPoint : String} -> Blockchain -> Maturity -> Page -> ( Page, Cmd Msg )
-updateInputMaturity model blockchain maturity page =
-    case page of
-        LiquidityPage liqPage ->
-            let
-                ( txn, cmdVal ) =
-                    liqPage.transaction |> Liquidity.updateInputMaturity model blockchain maturity
-            in
-            ( { liqPage
-                | transaction = txn
-              }
-                |> LiquidityPage
-            , cmdVal |> Cmd.map LiquidityMsg
-            )
-
-        _ ->
-            ( page, Cmd.none )

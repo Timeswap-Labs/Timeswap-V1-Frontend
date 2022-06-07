@@ -70,7 +70,6 @@ import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
 import Utility.Tooltip as TooltipUtil
 import Utility.Truncate as Truncate
-import DatePicker exposing (Model)
 
 
 type PoolsData
@@ -95,13 +94,13 @@ init :
     -> Blockchain
     -> Chains
     -> ( PoolsData, Cmd Msg )
-init { time, endPoint } blockchain chains =
+init { endPoint } blockchain chains =
     ( { data = Remote.loading
       , expanded = Set.empty Pair.sorter
       , tooltip = Nothing
       }
         |> PoolsData
-    , get blockchain endPoint chains 
+    , get blockchain endPoint chains
     )
 
 
@@ -117,7 +116,7 @@ get blockchain endPoint chains =
                 Http.get
                     { url =
                         Builder.crossOrigin endPoint
-                            ["activepools"]
+                            [ "activepools" ]
                             [ chain |> Chain.toQueryParameter ]
                     , expect =
                         Answer.decoder chain chains
@@ -127,8 +126,8 @@ get blockchain endPoint chains =
            )
 
 
-update : Msg -> Blockchain -> {model | chains : Chains , endPoint : String }-> PoolsData -> ( PoolsData, Cmd Msg )
-update msg blockchain {chains , endPoint} (PoolsData page) =
+update : Msg -> Blockchain -> { model | chains : Chains, endPoint : String } -> PoolsData -> ( PoolsData, Cmd Msg )
+update msg blockchain { chains, endPoint } (PoolsData page) =
     case msg of
         Expand pair ->
             case page.data of
@@ -212,7 +211,7 @@ update msg blockchain {chains , endPoint} (PoolsData page) =
 
         QueryAgain ->
             ( page |> PoolsData
-            , get blockchain endPoint chains 
+            , get blockchain endPoint chains
             )
 
 

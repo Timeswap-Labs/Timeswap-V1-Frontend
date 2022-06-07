@@ -134,7 +134,7 @@ type Effect
 
 
 init :
-    { model | time : Posix , endPoint : String}
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Maybe Parameter
     -> ( Transaction, Cmd Msg )
@@ -194,7 +194,7 @@ init { time, endPoint } blockchain parameter =
 
 
 initGivenPoolInfo :
-    { model | time : Posix , endPoint : String}
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Pool
     -> PoolInfo
@@ -210,7 +210,7 @@ initGivenPoolInfo { time, endPoint } blockchain pool poolInfo =
           , tooltip = Nothing
           }
             |> Transaction
-        , get blockchain  endPoint pool
+        , get blockchain endPoint pool
         )
 
     else
@@ -228,7 +228,7 @@ initGivenSpot :
     -> Pool
     -> Price
     -> ( Transaction, Cmd Msg )
-initGivenSpot { time ,endPoint } blockchain pool priceFeed =
+initGivenSpot { time, endPoint } blockchain pool priceFeed =
     if pool.maturity |> Maturity.isActive time then
         ( { state =
                 DoesNotExist priceFeed
