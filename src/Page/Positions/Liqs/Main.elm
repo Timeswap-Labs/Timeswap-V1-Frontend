@@ -34,6 +34,7 @@ import Element
         , inFront
         , none
         , padding
+        , paddingEach
         , paddingXY
         , paragraph
         , px
@@ -218,7 +219,12 @@ noLiqs { device, images, theme } =
             [ el
                 [ width shrink
                 , height shrink
-                , paddingXY 4 8
+                , paddingEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 22
+                    , left = 0
+                    }
                 , Font.size 16
                 , theme |> ThemeColor.text |> Font.color
                 , Font.bold
@@ -248,9 +254,15 @@ noLiqs { device, images, theme } =
                                     Theme.Light ->
                                         Image.borrowloadingPositionsIcon
                                )
-                                [ width <| px 30
-                                , height <| px 30
+                                [ width <| px 36
+                                , height <| px 36
                                 , centerX
+                                , paddingEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 14
+                                    , left = 0
+                                    }
                                 ]
                         ]
                     , row
@@ -298,48 +310,15 @@ noLiqs { device, images, theme } =
                     [ height <| px 137
                     , width <| px 710
                     , centerX
+                    , paddingEach
+                        { top = 0
+                        , right = 0
+                        , bottom = 26
+                        , left = 0
+                        }
                     ]
             ]
         ]
-
-
-
--- row
---     [ (case device of
---         Desktop ->
---             shrink
---         _ ->
---             fill
---       )
---         |> width
---     , height shrink
---     , centerX
---     , centerY
---     , spacing 12
---     ]
---     [ images
---         |> (case theme of
---                 Theme.Dark ->
---                     Image.info
---                 Theme.Light ->
---                     Image.infoDark
---            )
---             [ width <| px 20
---             , height <| px 20
---             , centerX
---             , alignTop
---             ]
---     , paragraph
---         [ width fill
---         , height shrink
---         , centerX
---         , centerY
---         , Font.size 14
---         , paddingXY 0 3
---         , theme |> ThemeColor.textLight |> Font.color
---         ]
---         [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section. Your Liquidity positions will appear here..." ]
---     ]
 
 
 viewLiqs :

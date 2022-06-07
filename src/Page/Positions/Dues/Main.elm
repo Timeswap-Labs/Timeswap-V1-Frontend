@@ -310,52 +310,6 @@ noDues { device, images, theme } =
             ]
         ]
 
-
-
--- row
---     [ (case device of
---         Desktop ->
---             shrink
---         _ ->
---             fill
---       )
---         |> width
---     , height shrink
---     , centerX
---     , centerY
---     , spacing 8
---     ]
---     [ images
---         |> (case theme of
---                 Theme.Dark ->
---                     Image.info
---                 Theme.Light ->
---                     Image.infoDark
---            )
---             [ width <| px 20
---             , height <| px 20
---             , centerX
---             , alignTop
---             ]
---     , paragraph
---         [ (case device of
---             Desktop ->
---                 shrink
---             _ ->
---                 fill
---           )
---             |> width
---         , height shrink
---         , centerX
---         , centerY
---         , Font.size 14
---         , paddingXY 0 3
---         , theme |> ThemeColor.textLight |> Font.color
---         ]
---         [ text "Your Borrow positions, including from Liquidity transactions, will appear here..." ]
---     ]
-
-
 viewDues :
     { model
         | time : Posix

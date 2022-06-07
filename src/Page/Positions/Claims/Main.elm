@@ -222,8 +222,6 @@ noClaims { images, theme } =
             [ el
                 [ width shrink
                 , height shrink
-
-                -- , paddingXY 4 8
                 , paddingEach
                     { top = 0
                     , right = 0
