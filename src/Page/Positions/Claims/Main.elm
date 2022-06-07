@@ -37,6 +37,7 @@ import Element
         , inFront
         , none
         , padding
+        , paddingEach
         , paddingXY
         , paragraph
         , px
@@ -221,7 +222,14 @@ noClaims { images, theme } =
             [ el
                 [ width shrink
                 , height shrink
-                , paddingXY 4 8
+
+                -- , paddingXY 4 8
+                , paddingEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 22
+                    , left = 0
+                    }
                 , Font.size 16
                 , theme |> ThemeColor.text |> Font.color
                 , Font.bold
@@ -251,8 +259,8 @@ noClaims { images, theme } =
                                     Theme.Light ->
                                         Image.lendloadingPositionsIcon
                                )
-                                [ width <| px 30
-                                , height <| px 30
+                                [ width <| px 36
+                                , height <| px 36
                                 , centerX
                                 ]
                         ]
@@ -286,6 +294,12 @@ noClaims { images, theme } =
                     [ height <| px 137
                     , width <| px 710
                     , centerX
+                    , paddingEach
+                        { top = 0
+                        , right = 0
+                        , bottom = 26
+                        , left = 0
+                        }
                     ]
             ]
         ]
