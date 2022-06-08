@@ -231,7 +231,7 @@ view ({ backdrop, theme } as model) ((PoolsData { data }) as page) =
     case data of
         Success poolsDataDict ->
             column
-                ([ width <| minimum 1200 fill
+                ([ width <| minimum 1250 fill
                  , height shrink
                  , spacing 30
                  , padding 24

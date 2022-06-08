@@ -34,8 +34,10 @@ import Element
         , el
         , fill
         , height
+        , inFront
         , none
         , padding
+        , paddingEach
         , paddingXY
         , paragraph
         , px
@@ -207,36 +209,103 @@ loading { images, theme } timeline =
 
 noClaims : { model | images : Images, theme : Theme } -> Element msg
 noClaims { images, theme } =
-    row
-        [ width shrink
+    column
+        [ width fill
         , height shrink
-        , centerX
-        , centerY
-        , spacing 8
+        , spacing 1
         ]
-        [ images
-            |> (case theme of
-                    Theme.Dark ->
-                        Image.info
-
-                    Theme.Light ->
-                        Image.infoDark
-               )
-                [ width <| px 20
-                , height <| px 20
-                , centerX
-                , alignTop
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 0
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 22
+                    , left = 0
+                    }
+                , Font.size 16
+                , theme |> ThemeColor.text |> Font.color
+                , Font.bold
                 ]
-        , paragraph
+                (text "Your Lend Positions")
+            ]
+        , row
             [ width shrink
             , height shrink
             , centerX
             , centerY
-            , Font.size 14
-            , paddingXY 0 3
-            , theme |> ThemeColor.textLight |> Font.color
+            , spacing 8
+            , inFront
+                (column
+                    [ centerX
+                    , centerY
+                    ]
+                    [ row
+                        [ centerX
+                        , centerY
+                        ]
+                        [ images
+                            |> (case theme of
+                                    Theme.Dark ->
+                                        Image.lendloadingPositionsIconDark
+
+                                    Theme.Light ->
+                                        Image.lendloadingPositionsIcon
+                               )
+                                [ width <| px 36
+                                , height <| px 36
+                                , centerX
+                                , paddingEach
+                                    { top = 0
+                                    , right = 0
+                                    , bottom = 14
+                                    , left = 0
+                                    }
+                                ]
+                        ]
+                    , row
+                        [ centerX
+                        , centerY
+                        ]
+                        [ paragraph
+                            [ width shrink
+                            , height shrink
+                            , centerX
+                            , centerY
+                            , Font.size 14
+                            , paddingXY 0 8
+                            , theme |> ThemeColor.textLight |> Font.color
+                            ]
+                            [ text "Your Lend positions will appear here..." ]
+                        ]
+                    ]
+                )
             ]
-            [ text "Your Lend positions will appear here..." ]
+            [ images
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.loadingPositionsDark
+
+                        -- Image
+                        Theme.Light ->
+                            Image.loadingPositions
+                   )
+                    [ height <| px 137
+                    , width <| px 710
+                    , centerX
+                    , paddingEach
+                        { top = 0
+                        , right = 0
+                        , bottom = 26
+                        , left = 0
+                        }
+                    ]
+            ]
         ]
 
 
