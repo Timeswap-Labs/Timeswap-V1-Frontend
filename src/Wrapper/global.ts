@@ -6,8 +6,11 @@ import {
   Web3Provider,
 } from "@ethersproject/providers";
 import { providers } from "@0xsequence/multicall";
+import { Biconomy } from "@biconomy/mexa";
 
 const { MulticallProvider } = providers;
+
+const API_KEY = "";
 
 export class GlobalParams {
   private _walletProvider?: Web3Provider;
@@ -28,6 +31,16 @@ export class GlobalParams {
     } else {
       this._walletProvider = new Web3Provider(value);
     }
+
+    const biconomy = new Biconomy(this._walletProvider, {
+      walletProvider: this._walletProvider,
+      apiKey: API_KEY,
+      debug: true,
+    });
+
+    // Handle the error
+
+    this._walletProvider = new Web3Provider(biconomy);
     this._walletProviderMulti = new MulticallProvider(this._walletProvider);
   }
 
