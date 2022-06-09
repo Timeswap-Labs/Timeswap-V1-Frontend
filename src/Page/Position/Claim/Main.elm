@@ -26,6 +26,7 @@ import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
 import Data.TokenParam as TokenParam
+import Data.Uint as Uint
 import Data.Web exposing (Web)
 import Element
     exposing
@@ -366,7 +367,7 @@ update blockchain endPoint user msg (Position position) =
                 |> noCmdAndEffect
 
         ( ReceiveReturn value, Matured (Success ( poolInfo, _ )) ) ->
-            (case value |> Decode.decodeValue Query.decoderReturn of
+            case value |> Decode.decodeValue Query.decoderReturn of
                 Ok answer ->
                     if
                         (answer.chain == (blockchain |> Blockchain.toChain))
@@ -377,28 +378,62 @@ update blockchain endPoint user msg (Position position) =
                                     |> Remote.map (Dict.get position.pool)
                                     |> (Remote.map << Maybe.map)
                                         (\claimsIn ->
-                                            answer.claimsIn == claimsIn
+                                            (answer.claimsIn == claimsIn)
+                                                && (claimsIn.bondPrincipal |> Uint.isZero |> not)
+                                                && (claimsIn.insurancePrincipal |> Uint.isZero |> not)
                                         )
                                     |> (Remote.map << Maybe.withDefault) False
                                     |> Remote.withDefault False
                                )
                     then
-                        { position
+                        ( { position
                             | state =
                                 ( poolInfo
                                 , answer.result |> toRemote
                                 )
                                     |> Success
                                     |> Matured
-                        }
+                          }
+                            |> Position
+                            |> Just
+                        , Cmd.none
+                        , Nothing
+                        )
+
+                    else if
+                        (answer.chain == (blockchain |> Blockchain.toChain))
+                            && (answer.pool == position.pool)
+                            && (answer.poolInfo == poolInfo)
+                            && (user
+                                    |> User.getClaims
+                                    |> Remote.map (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map)
+                                        (\claimsIn ->
+                                            answer.claimsIn
+                                                == claimsIn
+                                                && (claimsIn.bondPrincipal |> Uint.isZero)
+                                                && (claimsIn.insurancePrincipal |> Uint.isZero)
+                                        )
+                                    |> (Remote.map << Maybe.withDefault) False
+                                    |> Remote.withDefault False
+                               )
+                    then
+                        ( Nothing
+                        , Cmd.none
+                        , Nothing
+                        )
 
                     else
-                        position
+                        ( position |> Position |> Just
+                        , Cmd.none
+                        , Nothing
+                        )
 
                 _ ->
-                    position
-            )
-                |> noCmdAndEffect
+                    ( position |> Position |> Just
+                    , Cmd.none
+                    , Nothing
+                    )
 
         ( OnMouseEnter tooltip, _ ) ->
             { position | tooltip = Just tooltip }
