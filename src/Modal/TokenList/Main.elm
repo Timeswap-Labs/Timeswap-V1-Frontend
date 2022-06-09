@@ -457,7 +457,7 @@ get blockchain endPoint address =
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
-                    { url = address |> Query.toUrlString blockchain endPoint
+                    { url = address |> Query.toUrlString blockchain endPoint 
                     , expect =
                         Answer.decoder
                             |> Http.expectJson (ReceiveAnswer chain address)
