@@ -141,7 +141,7 @@ type Effect
     | ConfirmedTxn Hash
 
 
-init : Chains -> String -> Chain ->  Flag -> Maybe ( User, Cmd Msg )
+init : Chains -> String -> Chain -> Flag -> Maybe ( User, Cmd Msg )
 init chains endPoint chain flag =
     case
         ( flag.wallet |> Wallet.init
@@ -186,7 +186,7 @@ initNotSupported flag =
 
 
 receiveUserInit :
-    { model | chains : Chains, endPoint: String }
+    { model | chains : Chains, endPoint : String }
     -> Chain
     -> Value
     -> Maybe ( User, Cmd Msg )
@@ -264,7 +264,7 @@ receiveNotSupported value =
             Nothing
 
 
-update : { model | chains : Chains , endPoint : String } -> Chain -> Msg -> User -> ( User, Cmd Msg, Maybe Effect )
+update : { model | chains : Chains, endPoint : String } -> Chain -> Msg -> User -> ( User, Cmd Msg, Maybe Effect )
 update { chains, endPoint } chain msg (User user) =
     case msg of
         QueryNatives () ->
