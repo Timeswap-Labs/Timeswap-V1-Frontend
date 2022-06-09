@@ -135,6 +135,7 @@ type alias Model =
     , chains : Chains
     , blockchain : Support User.NotSupported Blockchain
     , page : Page
+    , endPoint : String
     , modal : Timeline (Maybe Modal)
     }
 
@@ -157,6 +158,7 @@ type alias Flags =
     , wallets : Wallets.Flags
     , chains : Chains.Flags
     , user : Maybe User.Flag
+    , endPoint : String
     }
 
 
@@ -278,6 +280,7 @@ init flags url key =
                   , chains = chains
                   , blockchain = blockchain
                   , page = page
+                  , endPoint = flags.endPoint
                   , modal = Animator.init Nothing
                   }
                 , [ Time.now |> Task.perform ReceiveTime
