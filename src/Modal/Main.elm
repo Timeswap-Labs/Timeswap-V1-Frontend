@@ -181,10 +181,11 @@ confirmed hash modal =
 
 initMaturityList :
     Blockchain
+    -> String
     -> Pair
     -> ( Modal, Cmd Msg )
-initMaturityList blockchain pair =
-    MaturityList.init blockchain pair
+initMaturityList blockchain endPoint pair =
+    MaturityList.init blockchain endPoint pair
         |> Tuple.mapBoth
             MaturityList
             (Cmd.map MaturityListMsg)
@@ -221,6 +222,7 @@ update :
         | chains : Chains
         , blockchain : Support User.NotSupported Blockchain
         , time : Posix
+        , endPoint : String
     }
     -> Msg
     -> Modal

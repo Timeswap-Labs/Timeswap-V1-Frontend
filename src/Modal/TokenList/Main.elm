@@ -128,12 +128,12 @@ type Effect
 
 
 update :
-    { model | chains : Chains }
+    { model | chains : Chains , endPoint : String   }
     -> Blockchain
     -> Msg
     -> Modal
     -> ( Maybe Modal, Cmd Msg, Maybe Effect )
-update { chains } blockchain msg (Modal modal) =
+update { chains, endPoint } blockchain msg (Modal modal) =
     case ( msg, modal.state ) of
         ( GoToCustomERC20s, AllTokens _ ) ->
             ( { modal | state = CustomERC20s { input = "" } }
@@ -221,7 +221,7 @@ update { chains } blockchain msg (Modal modal) =
                                   }
                                     |> Modal
                                     |> Just
-                                , get blockchain address
+                                , get blockchain endPoint address
                                 , Nothing
                                 )
                         )
@@ -328,7 +328,7 @@ update { chains } blockchain msg (Modal modal) =
                               }
                                 |> Modal
                                 |> Just
-                            , get blockchain address
+                            , get blockchain endPoint address
                             , Nothing
                             )
 
@@ -451,13 +451,13 @@ update { chains } blockchain msg (Modal modal) =
             )
 
 
-get : Blockchain -> Address -> Cmd Msg
-get blockchain address =
+get : Blockchain -> String -> Address -> Cmd Msg
+get blockchain endPoint address =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
-                    { url = address |> Query.toUrlString blockchain
+                    { url = address |> Query.toUrlString blockchain endPoint 
                     , expect =
                         Answer.decoder
                             |> Http.expectJson (ReceiveAnswer chain address)

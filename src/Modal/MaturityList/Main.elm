@@ -121,9 +121,10 @@ type Effect
 
 init :
     Blockchain
+    -> String
     -> Pair
     -> ( Modal, Cmd Msg )
-init blockchain pair =
+init blockchain endPoint pair =
     ( { pair = pair
       , sorting = Sorting.Liquidity
       , dropdown = Close
@@ -131,17 +132,17 @@ init blockchain pair =
       , tooltip = Nothing
       }
         |> Modal
-    , get blockchain pair
+    , get blockchain endPoint pair
     )
 
 
 update :
-    { model | time : Posix }
+    { model | time : Posix , endPoint : String }
     -> Blockchain
     -> Msg
     -> Modal
     -> ( Maybe Modal, Cmd Msg, Maybe Effect )
-update { time } blockchain msg (Modal modal) =
+update { time , endPoint } blockchain msg (Modal modal) =
     case msg of
         GoToSortMaturity ->
             ( { modal
@@ -192,7 +193,7 @@ update { time } blockchain msg (Modal modal) =
 
         QueryAgain ->
             ( modal |> Modal |> Just
-            , get blockchain modal.pair
+            , get blockchain endPoint modal.pair
             , Nothing
             )
 
@@ -311,14 +312,15 @@ decoderOutsideDropdown =
 
 get :
     Blockchain
+    -> String
     -> Pair
     -> Cmd Msg
-get blockchain pair =
+get blockchain endPoint pair =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
-                    { url = pair |> Query.toUrlString chain
+                    { url = pair |> Query.toUrlString chain endPoint
                     , expect =
                         Answer.decoder
                             |> Http.expectJson (ReceiveAnswer chain pair)
