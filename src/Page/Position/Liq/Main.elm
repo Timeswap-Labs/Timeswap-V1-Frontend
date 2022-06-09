@@ -106,28 +106,28 @@ type Effect
 
 
 init :
-    { model | time : Posix }
+    { model | time : Posix, endPoint: String }
     -> Blockchain
     -> Pool
     -> ( Position, Cmd Msg )
-init { time } blockchain pool =
+init { time, endPoint } blockchain pool =
     ( { pool = pool
       , return = Remote.loading
       , tooltip = Nothing
       }
         |> Position
-    , get blockchain pool
+    , get blockchain endPoint pool
     )
 
 
 update :
-    { model | time : Posix }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> User
     -> Msg
     -> Position
     -> ( Maybe Position, Cmd Msg, Maybe Effect )
-update { time } blockchain user msg (Position position) =
+update { time, endPoint } blockchain user msg (Position position) =
     case msg of
         ClickAddMore ->
             ( Nothing
@@ -201,7 +201,7 @@ update { time } blockchain user msg (Position position) =
             ( position
                 |> Position
                 |> Just
-            , get blockchain position.pool
+            , get blockchain endPoint position.pool
             , Nothing
             )
 
@@ -392,16 +392,17 @@ update { time } blockchain user msg (Position position) =
 
 get :
     Blockchain
+    -> String
     -> Pool
     -> Cmd Msg
-get blockchain pool =
+get blockchain endPoint pool =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
                     { url =
                         pool
-                            |> PoolInfoQuery.toUrlString chain
+                            |> PoolInfoQuery.toUrlString chain endPoint 
                     , expect =
                         PoolInfoAnswer.decoder
                             |> Http.expectJson

@@ -7,10 +7,10 @@ import Data.TokenParam as TokenParam
 import Url.Builder as Builder
 
 
-toUrlString : Chain -> Pair -> String
-toUrlString chain pair =
-    Builder.crossOrigin "https://api.timeswap.io/v1/pool/summary"
-        []
+toUrlString : Chain -> String -> Pair -> String
+toUrlString chain endPoint pair =
+    Builder.crossOrigin endPoint
+        ["pool", "summary"]
         [ chain
             |> Chain.toQueryParameter
         , pair
