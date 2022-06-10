@@ -48,6 +48,7 @@ import Time exposing (Month(..), Posix, Weekday(..), millisToPosix, posixToMilli
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
+import Utility.Id as Id
 import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Maybe as Maybe
@@ -318,7 +319,15 @@ dateField { images, theme, offset } (Modal { picker, dateText }) =
                             ]
                     ]
             }
-        , column [ width fill ]
+        , column
+            [ width fill
+            , case theme of
+                Theme.Light ->
+                    Id.is "picker-light"
+
+                _ ->
+                    Id.is "picker-dark"
+            ]
             [ SingleDatePicker.view (datePickerSettings offset) picker |> Element.html ]
         ]
 
