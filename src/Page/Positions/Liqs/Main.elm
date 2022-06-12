@@ -198,7 +198,13 @@ loading { images, theme } timeline =
             [ text "Fetching your Liquidity positions..." ]
         , el
             []
-            (Loading.view timeline theme)
+            (images
+                |> Image.loadingAnimation
+                    [ width <| px 20
+                    , height <| px 20
+                    , centerX
+                    ]
+            )
         ]
 
 
