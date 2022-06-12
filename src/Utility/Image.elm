@@ -31,6 +31,7 @@ module Utility.Image exposing
     , linkSecondary
     , linkWhite
     , loading
+    , loadingAnimation
     , logoPure
     , logoText
     , logoTextDark
@@ -464,3 +465,8 @@ medium =
 loading : List (Attribute msg) -> Images -> Element msg
 loading =
     viewGifs "Loading"
+
+
+loadingAnimation : List (Attribute msg) -> Images -> Element msg
+loadingAnimation =
+    viewGifs "LoadingAnimation"
