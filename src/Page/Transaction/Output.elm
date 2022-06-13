@@ -271,7 +271,7 @@ liquidity { images, theme } param =
                     , centerY
                     , Font.size 16
                     , paddingXY 0 4
-                    , Font.color Color.light100
+                    , theme |> ThemeColor.text |> Font.color
                     , moveLeft 12
                     ]
                     (text "LIQ")
@@ -284,7 +284,7 @@ liquidity { images, theme } param =
                 (case param.output of
                     Success output ->
                         output
-                            |> Fade.viewLP
+                            |> Fade.viewLP theme
 
                     Loading timeline ->
                         el

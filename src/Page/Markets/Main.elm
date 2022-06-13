@@ -227,11 +227,11 @@ view :
     }
     -> PoolsData
     -> Element Msg
-view ({ backdrop, theme } as model) ((PoolsData { data }) as page) =
+view ({ backdrop, theme, images } as model) ((PoolsData { data }) as page) =
     case data of
         Success poolsDataDict ->
             column
-                ([ width <| minimum 1200 fill
+                ([ width <| minimum 1250 fill
                  , height shrink
                  , spacing 30
                  , padding 24
@@ -247,8 +247,22 @@ view ({ backdrop, theme } as model) ((PoolsData { data }) as page) =
                 , allPairs model poolsDataDict page
                 ]
 
-        Loading timeline ->
-            Loading.view timeline theme
+        Loading _ ->
+            column
+                [ width fill
+                , centerX
+                , centerY
+                , Font.center
+                , padding 30
+                , spacing 24
+                ]
+                [ images
+                    |> Image.loadingAnimation
+                        [ width <| px 30
+                        , height <| px 30
+                        , centerX
+                        ]
+                ]
 
         Failure _ ->
             el

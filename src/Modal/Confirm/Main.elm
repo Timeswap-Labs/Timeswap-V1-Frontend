@@ -212,37 +212,19 @@ body ({ images, theme } as model) blockchain (Modal { state }) =
         ]
         [ images
             |> (case state of
+                    Initiating _ ->
+                        Image.loading
+
+                    Submitted _ ->
+                        Image.loadingAnimation
+
                     Rejected ->
-                        Image.semiCircleRed
+                        Image.loadingFailed
 
                     Confirmed _ ->
-                        Image.circleGreen
-
-                    _ ->
-                        Image.semiCircleGreen
+                        Image.loadingSuccess
                )
-                [ width <| px 80
-                , height <| px 80
-                , centerX
-                , Font.center
-                , (images
-                    |> (case state of
-                            Initiating _ ->
-                                Image.hourglassPrimary
-
-                            Submitted _ ->
-                                Image.logoPure
-
-                            Rejected ->
-                                Image.error
-
-                            Confirmed _ ->
-                                Image.matured
-                       )
-                        [ width <| px 36, height <| px 36, centerX, centerY, Font.center ]
-                  )
-                    |> inFront
-                ]
+                [ width <| px 80, height <| px 80, centerX, centerY, Font.center ]
         , column
             [ width fill
             , centerX
