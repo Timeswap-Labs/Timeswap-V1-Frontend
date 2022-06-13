@@ -49,6 +49,6 @@ export async function newLiquidityCalculate(
       },
     });
   } catch (error) {
-    console.log("Errrr", error);
+    console.log("Error", error);
   }
 }

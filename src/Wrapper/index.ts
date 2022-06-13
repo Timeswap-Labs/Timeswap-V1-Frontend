@@ -48,7 +48,7 @@ async function elmInit() {
       endPoint: apiEndpoint,
     },
   });
-  // console.log(gifs, " gifs");
+
   init(app, gp, user);
 }
 sentry();

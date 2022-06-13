@@ -7,3 +7,6 @@ command = "./scripts/deploy.sh"
 
 [context.main.environment]
   PARCEL_PUBLIC_ENVIRONMENT = "production"
+
+[context.main-new-liq.environment]
+  PARCEL_PUBLIC_ENVIRONMENT = "production"
