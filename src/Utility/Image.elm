@@ -36,6 +36,10 @@ module Utility.Image exposing
     , linkWhite
     , loadingPositions
     , loadingPositionsDark
+    , loading
+    , loadingAnimation
+    , loadingFailed
+    , loadingSuccess
     , logoPure
     , logoText
     , logoTextDark
@@ -91,6 +95,19 @@ view name attributes images =
         { src =
             images
                 |> .images
+                |> Dict.get name
+                |> Maybe.withDefault ""
+        , description = name
+        }
+
+
+viewGifs : String -> List (Attribute msg) -> Images -> Element msg
+viewGifs name attributes images =
+    image
+        attributes
+        { src =
+            images
+                |> .gifs
                 |> Dict.get name
                 |> Maybe.withDefault ""
         , description = name
@@ -452,7 +469,6 @@ medium : List (Attribute msg) -> Images -> Element msg
 medium =
     view "Medium"
 
-
 loadingPositions : List (Attribute msg) -> Images -> Element msg
 loadingPositions =
     view "LoadingPositions"
@@ -481,3 +497,22 @@ borrowloadingPositionsIcon =
 borrowloadingPositionsIconDark : List (Attribute msg) -> Images -> Element msg
 borrowloadingPositionsIconDark =
     view "BorrowEmptyDark"
+    
+loading : List (Attribute msg) -> Images -> Element msg
+loading =
+    viewGifs "Loading"
+
+
+loadingFailed : List (Attribute msg) -> Images -> Element msg
+loadingFailed =
+    viewGifs "LoadingFailed"
+
+
+loadingSuccess : List (Attribute msg) -> Images -> Element msg
+loadingSuccess =
+    viewGifs "LoadingSuccess"
+
+
+loadingAnimation : List (Attribute msg) -> Images -> Element msg
+loadingAnimation =
+    viewGifs "LoadingAnimation"

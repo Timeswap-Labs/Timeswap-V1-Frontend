@@ -200,10 +200,16 @@ loading { images, theme } timeline =
             , paddingXY 0 3
             , theme |> ThemeColor.textLight |> Font.color
             ]
-            [ text "Fetching your Lend positions..." ]
+            [ text "Fetching your Lend positions" ]
         , el
             []
-            (Loading.view timeline theme)
+            (images
+                |> Image.loadingAnimation
+                    [ width <| px 20
+                    , height <| px 20
+                    , centerX
+                    ]
+            )
         ]
 
 
