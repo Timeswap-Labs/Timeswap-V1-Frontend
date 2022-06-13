@@ -32,6 +32,8 @@ module Utility.Image exposing
     , linkWhite
     , loading
     , loadingAnimation
+    , loadingFailed
+    , loadingSuccess
     , logoPure
     , logoText
     , logoTextDark
@@ -465,6 +467,16 @@ medium =
 loading : List (Attribute msg) -> Images -> Element msg
 loading =
     viewGifs "Loading"
+
+
+loadingFailed : List (Attribute msg) -> Images -> Element msg
+loadingFailed =
+    viewGifs "LoadingFailed"
+
+
+loadingSuccess : List (Attribute msg) -> Images -> Element msg
+loadingSuccess =
+    viewGifs "LoadingSuccess"
 
 
 loadingAnimation : List (Attribute msg) -> Images -> Element msg
