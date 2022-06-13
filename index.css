@@ -261,6 +261,10 @@
   padding: 3px 8px;
 }
 
+.elm-datetimepicker-single--select select option {
+  color: #0F1426;
+}
+
 .elm-datetimepicker-single--selection-time {
   margin-left: 5px;
 }

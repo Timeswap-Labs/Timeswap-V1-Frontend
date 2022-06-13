@@ -10,7 +10,7 @@ module Modal.MaturityPicker.Main exposing
 
 import Data.Backdrop exposing (Backdrop)
 import Data.Images exposing (Images)
-import Data.Maturity exposing (Maturity, posixToMaturity, toString)
+import Data.Maturity as Maturity exposing (Maturity, posixToMaturity, toString)
 import Data.Offset as Offset exposing (Offset)
 import Data.Pair exposing (Pair)
 import Data.Pool exposing (Pool)
@@ -199,7 +199,7 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ backdrop, theme, time } as model) ((Modal { pickedTime }) as modal) =
+view ({ backdrop, theme, time } as model) ((Modal { dateText, pickedTime }) as modal) =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -268,7 +268,7 @@ dateField :
     }
     -> Modal
     -> Element Msg
-dateField { images, theme, offset } (Modal { picker, dateText }) =
+dateField { images, theme, time, offset } (Modal { picker, dateText, pickedTime }) =
     column
         [ width fill, spacing 10 ]
         [ el
@@ -319,6 +319,41 @@ dateField { images, theme, offset } (Modal { picker, dateText }) =
                             ]
                     ]
             }
+        , case pickedTime of
+            Just posixTime ->
+                if dateText == "" then
+                    Element.none
+
+                else
+                    el
+                        [ Font.size 14
+                        , centerX
+                        , Font.center
+                        , theme |> ThemeColor.textLight |> Font.color
+                        ]
+                        (posixTime
+                            |> Maturity.posixToMaturity
+                            |> Maturity.toDuration time
+                            |> (\status ->
+                                    case status of
+                                        Maturity.Active duration ->
+                                            [ "Maturing in"
+                                            , duration
+                                            ]
+                                                |> String.join " "
+
+                                        Maturity.Matured duration ->
+                                            [ "Matured"
+                                            , duration
+                                            , "ago"
+                                            ]
+                                                |> String.join " "
+                               )
+                            |> text
+                        )
+
+            _ ->
+                Element.none
         , column
             [ width fill
             , case theme of
