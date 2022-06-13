@@ -64,7 +64,7 @@ module Utility.Image exposing
     , viewWallet
     , wallet
     , warning
-    , warningCircle
+    , warningCircle, backgroundLight, backgroundDark
     )
 
 import Data.Chain exposing (Chain(..))
@@ -89,6 +89,19 @@ view name attributes images =
         { src =
             images
                 |> .images
+                |> Dict.get name
+                |> Maybe.withDefault ""
+        , description = name
+        }
+
+
+viewPngs : String -> List (Attribute msg) -> Images -> Element msg
+viewPngs name attributes images =
+    image
+        attributes
+        { src =
+            images
+                |> .pngimages
                 |> Dict.get name
                 |> Maybe.withDefault ""
         , description = name
@@ -482,3 +495,13 @@ loadingSuccess =
 loadingAnimation : List (Attribute msg) -> Images -> Element msg
 loadingAnimation =
     viewGifs "LoadingAnimation"
+
+
+backgroundDark : List (Attribute msg) -> Images -> Element msg
+backgroundDark =
+    viewPngs "BackgroundDark"
+
+
+backgroundLight : List (Attribute msg) -> Images -> Element msg
+backgroundLight =
+    viewPngs "BackgroundLight"

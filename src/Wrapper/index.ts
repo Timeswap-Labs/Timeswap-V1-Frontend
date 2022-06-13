@@ -1,5 +1,5 @@
 import { Elm } from "../Main.elm";
-
+import * as pngimages from "url:../../image/*.png";
 import * as images from "url:../../image/*.svg";
 import * as gifs from "url:../../image/gifs/*.gif";
 import * as tokenImages from "url:../../image/tokens/*.svg";
@@ -33,6 +33,7 @@ async function elmInit() {
         CSS.supports("backdrop-filter: none"),
       theme: window.localStorage.getItem("theme"),
       images: Object.entries(images),
+      pngimages: Object.entries(pngimages),
       gifs: Object.entries(gifs),
       tokenImages: Object.entries(tokenImages),
       chainImages: Object.entries(chainImages),

@@ -149,6 +149,7 @@ type alias Flags =
     , hasBackdropSupport : Backdrop.Flag
     , theme : Theme.Flag
     , images : Images.Flags
+    , pngimages : Images.Flags
     , gifs : Images.Flags
     , tokenImages : Images.Flags
     , chainImages : Images.Flags
@@ -271,6 +272,7 @@ init flags url key =
                   , images =
                         Images.init
                             { images = flags.images
+                            , pngimages = flags.pngimages
                             , gifs = flags.gifs
                             , tokenImages = flags.tokenImages
                             , chainImages = flags.chainImages
@@ -1274,6 +1276,14 @@ viewHtml model =
                 Color.dark500
           )
             |> Background.color
+
+        -- , (case model.theme of
+        --     Theme.Light ->
+        --         "https://i.imgur.com/jl0Jt6G.png"
+        --     Theme.Dark ->
+        --         "https://i.imgur.com/pRUmFvV.png"
+        --   )
+        --     |> Background.uncropped
         ]
         (body model)
 
