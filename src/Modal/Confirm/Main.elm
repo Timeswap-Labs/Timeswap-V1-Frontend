@@ -216,7 +216,7 @@ body ({ images, theme } as model) blockchain (Modal { state }) =
                         Image.loading
 
                     Submitted _ ->
-                        Image.loading
+                        Image.loadingAnimation
 
                     Rejected ->
                         Image.loadingFailed
