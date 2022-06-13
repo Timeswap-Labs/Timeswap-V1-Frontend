@@ -1,6 +1,8 @@
 # elm-package generated files
 elm-stuff
 
+*.log
+
 # ds-store
 .DS_Store
 
@@ -18,3 +20,4 @@ typechain
 .idea
 
 .env
+yarn-error.log

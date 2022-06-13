@@ -16,11 +16,10 @@
             "elm/svg": "1.0.1",
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
-            "fabhof/elm-ui-datepicker": "5.0.0",
-            "justinmimbs/date": "3.2.1",
             "linuss/smooth-scroll": "1.1.0",
             "mdgriffith/elm-animator": "1.1.1",
             "mdgriffith/elm-ui": "1.1.8",
+            "mercurymedia/elm-datetime-picker": "5.0.1",
             "prozacchiwawa/elm-keccak": "2.0.0",
             "rtfeldman/elm-hex": "1.0.0",
             "rtfeldman/elm-sorter-experiment": "2.1.1"
@@ -33,9 +32,12 @@
             "elm/regex": "1.0.0",
             "elm/virtual-dom": "1.0.2",
             "elm-community/easing-functions": "2.0.0",
+            "elm-community/html-extra": "3.4.0",
             "elm-community/list-extra": "8.5.1",
             "elm-community/maybe-extra": "5.3.0",
-            "ianmackenzie/elm-units": "2.9.0"
+            "ianmackenzie/elm-units": "2.9.0",
+            "justinmimbs/date": "4.0.1",
+            "justinmimbs/time-extra": "1.1.1"
         }
     },
     "test-dependencies": {
