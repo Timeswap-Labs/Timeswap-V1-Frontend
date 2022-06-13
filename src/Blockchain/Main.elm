@@ -66,14 +66,15 @@ type Effect
 
 init :
     Chains
+    -> String
     -> User.Flag
     -> Maybe ( Blockchain, Cmd Msg )
-init chains flag =
+init chains endPoint flag =
     chains
         |> Chains.getGivenChainId flag.chainId
         |> Maybe.map
             (\chain ->
-                User.init chains chain flag
+                User.init chains endPoint chain flag
                     |> Maybe.map
                         (\( user, cmd ) ->
                             ( { chain = chain
@@ -115,7 +116,7 @@ initGivenChain chain =
     )
 
 
-update : { model | chains : Chains } -> Msg -> Blockchain -> ( Blockchain, Cmd Msg, Maybe Effect )
+update : { model | chains : Chains, endPoint : String } -> Msg -> Blockchain -> ( Blockchain, Cmd Msg, Maybe Effect )
 update model msg (Blockchain blockchain) =
     case msg of
         UserMsg userMsg ->
@@ -407,7 +408,7 @@ decoder chains =
 
 
 receiveUserInit :
-    { model | key : Key, url : Url, chains : Chains }
+    { model | key : Key, url : Url, chains : Chains, endPoint : String }
     -> Value
     -> Maybe ( Blockchain, Cmd Msg )
 receiveUserInit ({ key, url, chains } as model) value =
@@ -474,7 +475,7 @@ receiveUserInit ({ key, url, chains } as model) value =
 
 
 receiveUser :
-    { model | key : Key, url : Url, chains : Chains }
+    { model | key : Key, url : Url, chains : Chains, endPoint : String }
     -> Value
     -> Blockchain
     -> Maybe ( Blockchain, Cmd Msg )

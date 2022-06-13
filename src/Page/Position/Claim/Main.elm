@@ -26,6 +26,7 @@ import Data.Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
 import Data.TokenParam as TokenParam
+import Data.Uint as Uint
 import Data.Web exposing (Web)
 import Element
     exposing
@@ -109,12 +110,12 @@ type Effect
 
 
 init :
-    { model | time : Posix }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> User
     -> Pool
     -> ( Position, Cmd Msg )
-init { time } blockchain user pool =
+init { time, endPoint } blockchain user pool =
     ( { pool = pool
       , state =
             if
@@ -146,17 +147,18 @@ init { time } blockchain user pool =
             |> Remote.withDefault Cmd.none
 
       else
-        get blockchain pool
+        get blockchain endPoint pool
     )
 
 
 update :
     Blockchain
+    -> String
     -> User
     -> Msg
     -> Position
     -> ( Maybe Position, Cmd Msg, Maybe Effect )
-update blockchain user msg (Position position) =
+update blockchain endPoint user msg (Position position) =
     case ( msg, position.state ) of
         ( ClickLendMore, Active _ ) ->
             ( Nothing
@@ -202,7 +204,7 @@ update blockchain user msg (Position position) =
                   }
                     |> Position
                     |> Just
-                , get blockchain position.pool
+                , get blockchain endPoint position.pool
                 , Nothing
                 )
 
@@ -239,7 +241,7 @@ update blockchain user msg (Position position) =
             ( position
                 |> Position
                 |> Just
-            , get blockchain position.pool
+            , get blockchain endPoint position.pool
             , Nothing
             )
 
@@ -365,7 +367,7 @@ update blockchain user msg (Position position) =
                 |> noCmdAndEffect
 
         ( ReceiveReturn value, Matured (Success ( poolInfo, _ )) ) ->
-            (case value |> Decode.decodeValue Query.decoderReturn of
+            case value |> Decode.decodeValue Query.decoderReturn of
                 Ok answer ->
                     if
                         (answer.chain == (blockchain |> Blockchain.toChain))
@@ -376,28 +378,62 @@ update blockchain user msg (Position position) =
                                     |> Remote.map (Dict.get position.pool)
                                     |> (Remote.map << Maybe.map)
                                         (\claimsIn ->
-                                            answer.claimsIn == claimsIn
+                                            (answer.claimsIn == claimsIn)
+                                                && (claimsIn.bondPrincipal |> Uint.isZero |> not)
+                                                && (claimsIn.insurancePrincipal |> Uint.isZero |> not)
                                         )
                                     |> (Remote.map << Maybe.withDefault) False
                                     |> Remote.withDefault False
                                )
                     then
-                        { position
+                        ( { position
                             | state =
                                 ( poolInfo
                                 , answer.result |> toRemote
                                 )
                                     |> Success
                                     |> Matured
-                        }
+                          }
+                            |> Position
+                            |> Just
+                        , Cmd.none
+                        , Nothing
+                        )
+
+                    else if
+                        (answer.chain == (blockchain |> Blockchain.toChain))
+                            && (answer.pool == position.pool)
+                            && (answer.poolInfo == poolInfo)
+                            && (user
+                                    |> User.getClaims
+                                    |> Remote.map (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map)
+                                        (\claimsIn ->
+                                            answer.claimsIn
+                                                == claimsIn
+                                                && (claimsIn.bondPrincipal |> Uint.isZero)
+                                                && (claimsIn.insurancePrincipal |> Uint.isZero)
+                                        )
+                                    |> (Remote.map << Maybe.withDefault) False
+                                    |> Remote.withDefault False
+                               )
+                    then
+                        ( Nothing
+                        , Cmd.none
+                        , Nothing
+                        )
 
                     else
-                        position
+                        ( position |> Position |> Just
+                        , Cmd.none
+                        , Nothing
+                        )
 
                 _ ->
-                    position
-            )
-                |> noCmdAndEffect
+                    ( position |> Position |> Just
+                    , Cmd.none
+                    , Nothing
+                    )
 
         ( OnMouseEnter tooltip, _ ) ->
             { position | tooltip = Just tooltip }
@@ -440,16 +476,17 @@ noCmdAndEffect position =
 
 get :
     Blockchain
+    -> String
     -> Pool
     -> Cmd Msg
-get blockchain pool =
+get blockchain endPoint pool =
     blockchain
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
                     { url =
                         pool
-                            |> PoolInfoQuery.toUrlString chain
+                            |> PoolInfoQuery.toUrlString chain endPoint
                     , expect =
                         PoolInfoAnswer.decoder
                             |> Http.expectJson

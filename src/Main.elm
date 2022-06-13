@@ -135,6 +135,7 @@ type alias Model =
     , chains : Chains
     , blockchain : Support User.NotSupported Blockchain
     , page : Page
+    , endPoint : String
     , modal : Timeline (Maybe Modal)
     }
 
@@ -157,6 +158,7 @@ type alias Flags =
     , wallets : Wallets.Flags
     , chains : Chains.Flags
     , user : Maybe User.Flag
+    , endPoint : String
     }
 
 
@@ -189,7 +191,7 @@ init flags url key =
     (case ( flags.chains |> Chains.init, flags.user ) of
         ( chains, Just user ) ->
             (case
-                ( user |> Blockchain.init chains
+                ( user |> Blockchain.init chains flags.endPoint
                 , Blockchain.initDefault chains
                 , User.initNotSupported user
                 )
@@ -236,6 +238,7 @@ init flags url key =
                         { time = flags.time |> Time.millisToPosix
                         , chains = chains
                         , blockchain = blockchain
+                        , endPoint = flags.endPoint
                         }
                     |> (\( page, pageCmd ) ->
                             { chains = chains
@@ -278,6 +281,7 @@ init flags url key =
                   , chains = chains
                   , blockchain = blockchain
                   , page = page
+                  , endPoint = flags.endPoint
                   , modal = Animator.init Nothing
                   }
                 , [ Time.now |> Task.perform ReceiveTime
@@ -687,7 +691,7 @@ pageEffects blockchain effect model =
             )
 
         Page.OpenMaturityList pair ->
-            Modal.initMaturityList blockchain pair
+            Modal.initMaturityList blockchain model.endPoint pair
                 |> Tuple.mapBoth
                     (\maturityList ->
                         { model
@@ -1050,19 +1054,6 @@ modalEffects effect model =
                 |> Navigation.pushUrl model.key
             )
 
-        -- case model.blockchain of
-        --     Supported blockchain ->
-        --         let
-        --             ( updatedPage, cmdVal ) =
-        --                 Page.updateInputMaturity model blockchain maturity model.page
-        --         in
-        --         ( { model | page = updatedPage }
-        --         , cmdVal |> Cmd.map PageMsg
-        --         )
-        --     _ ->
-        --         ( model
-        --         , Cmd.none
-        --         )
         Modal.ChangeChain chain ->
             Blockchain.initGivenChain chain
                 |> Tuple.mapBoth

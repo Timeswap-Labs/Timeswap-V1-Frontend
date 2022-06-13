@@ -3,3 +3,7 @@ publish = "dist/"
 command = "./scripts/deploy.sh"
 [build.environment]
   NPM_CONFIG_USERCONFIG = "./.npmrc"
+
+
+[context.main.environment]
+  PARCEL_PUBLIC_ENVIRONMENT = "production"

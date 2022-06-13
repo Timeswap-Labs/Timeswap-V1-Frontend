@@ -25,9 +25,9 @@ type alias Answer =
     Dict Pool Natives
 
 
-toUrlString : Chain -> String
-toUrlString chain =
-    Builder.crossOrigin "https://api.timeswap.io/v1"
+toUrlString : Chain -> String -> String
+toUrlString chain endPoint =
+    Builder.crossOrigin endPoint
         [ "natives" ]
         [ chain |> Chain.toQueryParameter ]
 
