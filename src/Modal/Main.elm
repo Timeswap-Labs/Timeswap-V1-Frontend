@@ -191,9 +191,9 @@ initMaturityList blockchain endPoint pair =
             (Cmd.map MaturityListMsg)
 
 
-initMaturityPicker : Pair -> ( Modal, Cmd Msg )
-initMaturityPicker pair =
-    MaturityPicker.init pair
+initMaturityPicker : Pair -> Posix -> ( Modal, Cmd Msg )
+initMaturityPicker pair time =
+    MaturityPicker.init pair time
         |> Tuple.mapBoth
             MaturityPicker
             (Cmd.map MaturityPickerMsg)
@@ -223,6 +223,7 @@ update :
         , blockchain : Support User.NotSupported Blockchain
         , time : Posix
         , endPoint : String
+        , offset : Offset
     }
     -> Msg
     -> Modal
@@ -280,7 +281,7 @@ update model msg modal =
 
         ( MaturityPickerMsg inputMaturityMsg, MaturityPicker inputMaturity, Supported _ ) ->
             inputMaturity
-                |> MaturityPicker.update inputMaturityMsg
+                |> MaturityPicker.update model inputMaturityMsg
                 |> (\( updated, maybeEffect ) ->
                         ( updated |> Maybe.map MaturityPicker
                         , Cmd.none
@@ -419,8 +420,8 @@ receiveUser modal =
             Just modal
 
 
-subscriptions : Modal -> Sub Msg
-subscriptions modal =
+subscriptions : { model | offset : Offset } -> Modal -> Sub Msg
+subscriptions model modal =
     case modal of
         Connect connect ->
             connect
@@ -436,6 +437,11 @@ subscriptions modal =
             maturityList
                 |> MaturityList.subscriptions
                 |> Sub.map MaturityListMsg
+
+        MaturityPicker maturityPicker ->
+            maturityPicker
+                |> MaturityPicker.subscriptions model.offset
+                |> Sub.map MaturityPickerMsg
 
         _ ->
             Sub.none

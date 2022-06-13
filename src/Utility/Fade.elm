@@ -57,13 +57,13 @@ view theme token amount =
             )
 
 
-viewLP : Uint -> Element msg
-viewLP amount =
+viewLP : Theme -> Uint -> Element msg
+viewLP theme amount =
     if amount |> Uint.isZero then
         el
             [ width shrink
             , height shrink
-            , Font.color Color.transparent200
+            , theme |> ThemeColor.placeholder |> Font.color
             , Font.size 16
             ]
             (text "0.0")

@@ -706,7 +706,7 @@ pageEffects blockchain effect model =
                     (Cmd.map ModalMsg)
 
         Page.OpenMaturityPicker pair ->
-            Modal.initMaturityPicker pair
+            Modal.initMaturityPicker pair model.time
                 |> Tuple.mapBoth
                     (\inputMaturity ->
                         { model
@@ -1207,7 +1207,7 @@ subscriptions model =
             Sub.none
     , model.modal
         |> Animator.current
-        |> Maybe.map Modal.subscriptions
+        |> Maybe.map (Modal.subscriptions model)
         |> (Maybe.map << Sub.map) ModalMsg
         |> Maybe.withDefault Sub.none
     , Animator.toSubscription Tick model animator
