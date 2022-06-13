@@ -87,9 +87,9 @@ view { images, theme } param =
                         ""
             , placeholder =
                 (case param.text of
-                    Left _ ->
+                    Left uint ->
                         Input.placeholder
-                            [ Font.size 16
+                            [ Font.size 18
                             , centerY
                             , Font.alignRight
                             , theme |> ThemeColor.placeholder |> Font.color
@@ -103,7 +103,7 @@ view { images, theme } param =
                             , centerY
                             , Font.alignRight
                             ]
-                            (Fade.view theme param.token uint)
+                            (text "0.0")
                 )
                     |> Just
             , label =
