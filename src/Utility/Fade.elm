@@ -35,7 +35,6 @@ view theme token amount =
         row
             [ width shrink
             , height shrink
-            , Font.alignRight
             ]
             (amount
                 |> Uint.toAmount token
@@ -46,7 +45,6 @@ view theme token amount =
                             , height shrink
                             , theme |> ThemeColor.text |> Font.color
                             , Font.size 16
-                            , Font.alignRight
                             ]
                             (text unFaded)
                         , el
@@ -54,7 +52,6 @@ view theme token amount =
                             , height shrink
                             , theme |> ThemeColor.placeholder |> Font.color
                             , Font.size 16
-                            , Font.alignRight
                             ]
                             (text faded)
                         ]
