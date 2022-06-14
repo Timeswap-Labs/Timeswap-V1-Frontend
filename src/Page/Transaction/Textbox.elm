@@ -89,21 +89,21 @@ view { images, theme } param =
                 (case param.text of
                     Left _ ->
                         Input.placeholder
-                            [ Font.size 18
+                            [ Font.size 16
                             , centerY
                             , Font.alignRight
                             , theme |> ThemeColor.placeholder |> Font.color
                             ]
                             (text "0.0")
 
-                    Right _ ->
+                    Right uint ->
                         Input.placeholder
                             [ width fill
                             , height fill
                             , centerY
                             , Font.alignRight
                             ]
-                            (text "0.0")
+                            (Fade.view theme param.token uint)
                 )
                     |> Just
             , label =

@@ -6,6 +6,7 @@ import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , alignRight
         , el
         , height
         , row
@@ -26,6 +27,7 @@ view theme token amount =
             , height shrink
             , theme |> ThemeColor.textLight |> Font.color
             , Font.size 16
+            , alignRight
             ]
             (text "0.0")
 
@@ -33,6 +35,7 @@ view theme token amount =
         row
             [ width shrink
             , height shrink
+            , Font.alignRight
             ]
             (amount
                 |> Uint.toAmount token
@@ -43,6 +46,7 @@ view theme token amount =
                             , height shrink
                             , theme |> ThemeColor.text |> Font.color
                             , Font.size 16
+                            , Font.alignRight
                             ]
                             (text unFaded)
                         , el
@@ -50,6 +54,7 @@ view theme token amount =
                             , height shrink
                             , theme |> ThemeColor.placeholder |> Font.color
                             , Font.size 16
+                            , Font.alignRight
                             ]
                             (text faded)
                         ]
