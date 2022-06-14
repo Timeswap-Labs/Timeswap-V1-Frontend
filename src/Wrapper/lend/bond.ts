@@ -1,5 +1,10 @@
 import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
-import { PoolCore, Uint112, Uint128, Uint256 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import {
+  PoolCore,
+  Uint112,
+  Uint128,
+  Uint256,
+} from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import { GlobalParams } from "../global";
 import { calculateMinValue, getCurrentTime } from "../helper";
 import {
@@ -142,14 +147,16 @@ export async function bondTransaction(
   gp: GlobalParams,
   lend: Lend
 ) {
-  return await pool.upgrade(gp.walletSigner!).lendGivenBond({
-    bondTo: lend.bondTo,
-    insuranceTo: lend.insuranceTo,
-    assetIn: new Uint112(lend.assetIn),
-    bondOut: new Uint128(lend.bondOut),
-    minInsurance: new Uint128(lend.minInsurance),
-    deadline: new Uint256(lend.deadline),
-  });
+  return await pool
+    .upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress()))
+    .lendGivenBond({
+      bondTo: lend.bondTo,
+      insuranceTo: lend.insuranceTo,
+      assetIn: new Uint112(lend.assetIn),
+      bondOut: new Uint128(lend.bondOut),
+      minInsurance: new Uint128(lend.minInsurance),
+      deadline: new Uint256(lend.deadline),
+    });
 }
 
 interface Lend {
