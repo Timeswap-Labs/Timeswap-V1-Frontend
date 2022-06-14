@@ -6,6 +6,7 @@ import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , alignRight
         , el
         , height
         , row
@@ -26,6 +27,7 @@ view theme token amount =
             , height shrink
             , theme |> ThemeColor.textLight |> Font.color
             , Font.size 16
+            , alignRight
             ]
             (text "0.0")
 
