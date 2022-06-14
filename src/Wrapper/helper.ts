@@ -6,7 +6,7 @@ import {
   Uint,
   Uint256,
 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
-import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { Pool as SDKPool, CONVENIENCE } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 
 import { Contract } from "@ethersproject/contracts";
 import { ethers } from 'ethers';
@@ -320,14 +320,14 @@ export function handleTxnErrors(
 export function compareConvAddress(convAddress: string, chainId: number) {
     const now = Date.now();
 
-    // if (CONVENIENCE[chainId] && (CONVENIENCE[chainId].toLowerCase() !== convAddress.toLowerCase())) {
-    //   const lastRefreshTime = window.localStorage.getItem("lastRefresh");
+    if (CONVENIENCE[chainId] && (CONVENIENCE[chainId].toLowerCase() !== convAddress.toLowerCase())) {
+      const lastRefreshTime = window.localStorage.getItem("lastRefresh");
 
-    //   // Reload pg only if more than 2-mins have passed since last refresh
-    //   if (!lastRefreshTime
-    //     || (lastRefreshTime && (now - Number(lastRefreshTime) > 120000) )) {
-    //     window.localStorage.setItem("lastRefresh", now.toString());
-    //     window.location.reload();
-    //   }
-    // }
+      // Reload pg only if more than 2-mins have passed since last refresh
+      if (!lastRefreshTime
+        || (lastRefreshTime && (now - Number(lastRefreshTime) > 120000) )) {
+        window.localStorage.setItem("lastRefresh", now.toString());
+        window.location.reload();
+      }
+    }
 }

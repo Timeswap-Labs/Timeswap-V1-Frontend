@@ -141,10 +141,6 @@ export async function percentTransaction(
   gp: GlobalParams,
   lend: Lend
 ) {
-  console.log("percentTxn", lend);
-  console.log(`factory: ${await pool.factory()}`);
-  console.log("walletSigner", await gp.walletSigner.getAddress());
-
   return await pool
     .upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress()))
     .lendGivenPercent({
