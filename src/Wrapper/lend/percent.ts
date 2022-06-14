@@ -142,7 +142,7 @@ export async function percentTransaction(
   lend: Lend
 ) {
   return await pool
-    .upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress()))
+    .upgrade(await gp.getSigner())
     .lendGivenPercent({
       bondTo: lend.bondTo,
       insuranceTo: lend.insuranceTo,

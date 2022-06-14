@@ -138,7 +138,7 @@ export async function debtTransaction(
   borrow: Borrow
 ) {
   return await pool
-    .upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress()))
+    .upgrade(await gp.getSigner())
     .borrowGivenDebt({
       assetTo: borrow.assetTo,
       dueTo: borrow.dueTo,

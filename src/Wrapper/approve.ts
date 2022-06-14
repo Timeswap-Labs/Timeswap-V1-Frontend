@@ -18,7 +18,7 @@ export function approveSigner(
 
     try {
       const txnConfirmation = await erc20
-        .upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress()))
+        .upgrade(await gp.getSigner())
         .approve(CONVENIENCE[params.chain.chainId], new Uint256((1n << 256n) - 1n));
 
       app.ports.receiveConfirm.send({

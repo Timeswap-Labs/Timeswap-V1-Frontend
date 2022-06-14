@@ -148,7 +148,7 @@ export async function bondTransaction(
   lend: Lend
 ) {
   return await pool
-    .upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress()))
+    .upgrade(await gp.getSigner())
     .lendGivenBond({
       bondTo: lend.bondTo,
       insuranceTo: lend.insuranceTo,

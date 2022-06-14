@@ -14,9 +14,7 @@ export function paySigner(app: ElmApp<Ports>, gp: GlobalParams) {
 
     try {
       const txnConfirmation = await pool
-        .upgrade(
-          gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress())
-        )
+        .upgrade(await gp.getSigner())
         .repay({
           collateralTo: params.send.collateralTo,
           ids: params.send.ids.map((id) => new Uint256(id)),

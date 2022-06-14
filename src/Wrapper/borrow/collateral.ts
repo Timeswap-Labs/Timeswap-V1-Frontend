@@ -158,7 +158,7 @@ export async function collateralTransaction(
   borrow: Borrow
 ) {
   return await pool
-    .upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress()))
+    .upgrade(await gp.getSigner())
     .borrowGivenCollateral({
       assetTo: borrow.assetTo,
       dueTo: borrow.dueTo,

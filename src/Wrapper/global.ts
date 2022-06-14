@@ -19,6 +19,7 @@ export class GlobalParams {
   private _biconomyProvider?: Web3Provider;
 
   public biconomy?: Biconomy;
+  public isBiconomyReady = false;
 
   network?: string;
 
@@ -55,11 +56,19 @@ export class GlobalParams {
     return this._walletProviderMulti!;
   }
 
-  public get walletSigner(): Signer {
+  public  get walletSigner(): Signer {
     return this._walletSigner!;
   }
 
   public set walletSigner(value: Signer) {
     this._walletSigner = value;
+  }
+
+  public async getSigner(): Promise<Signer> {
+    if (this.isBiconomyReady) {
+      return this.biconomy.getSignerByAddress(await this.walletSigner.getAddress())
+    } else {
+      return this._walletSigner!
+    }
   }
 }
