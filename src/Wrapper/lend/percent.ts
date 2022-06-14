@@ -142,17 +142,20 @@ export async function percentTransaction(
   lend: Lend
 ) {
   console.log("percentTxn", lend);
+  console.log(`factory: ${await pool.factory()}`);
   console.log("walletSigner", await gp.walletSigner.getAddress());
 
-  return await pool.upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress())).lendGivenPercent({
-    bondTo: lend.bondTo,
-    insuranceTo: lend.insuranceTo,
-    assetIn: new Uint112(lend.assetIn),
-    percent: new Uint40(lend.percent),
-    minBond: new Uint128(lend.minBond),
-    minInsurance: new Uint128(lend.minInsurance),
-    deadline: new Uint256(lend.deadline),
-  });
+  return await pool
+    .upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress()))
+    .lendGivenPercent({
+      bondTo: lend.bondTo,
+      insuranceTo: lend.insuranceTo,
+      assetIn: new Uint112(lend.assetIn),
+      percent: new Uint40(lend.percent),
+      minBond: new Uint128(lend.minBond),
+      minInsurance: new Uint128(lend.minInsurance),
+      deadline: new Uint256(lend.deadline),
+    });
 }
 
 interface Lend {

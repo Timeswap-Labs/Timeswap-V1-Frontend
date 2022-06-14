@@ -49,14 +49,13 @@ export function percentCalculate(
     const {
       dueOut: dueSlippageBefore,
       yIncrease: yIncreaseBefore,
-      xDecrease: xDecreaseBefore
-    } =
-      pool.borrowGivenPercent(
-        state,
-        new Uint112(query.assetOut),
-        new Uint40(query.percent!),
-        timeSlippageBefore
-      );
+      xDecrease: xDecreaseBefore,
+    } = pool.borrowGivenPercent(
+      state,
+      new Uint112(query.assetOut),
+      new Uint40(query.percent!),
+      timeSlippageBefore
+    );
 
     const interestBefore = calculateHelper(
       maturity,
@@ -128,15 +127,17 @@ export async function percentTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  return await pool.upgrade(gp.walletSigner!).borrowGivenPercent({
-    assetTo: borrow.assetTo,
-    dueTo: borrow.dueTo,
-    assetOut: new Uint112(borrow.assetOut),
-    percent: new Uint40(borrow.percent),
-    maxDebt: new Uint112(borrow.maxDebt),
-    maxCollateral: new Uint112(borrow.maxCollateral),
-    deadline: new Uint256(borrow.deadline),
-  });
+  return await pool
+    .upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress()))
+    .borrowGivenPercent({
+      assetTo: borrow.assetTo,
+      dueTo: borrow.dueTo,
+      assetOut: new Uint112(borrow.assetOut),
+      percent: new Uint40(borrow.percent),
+      maxDebt: new Uint112(borrow.maxDebt),
+      maxCollateral: new Uint112(borrow.maxCollateral),
+      deadline: new Uint256(borrow.deadline),
+    });
 }
 
 interface Borrow {

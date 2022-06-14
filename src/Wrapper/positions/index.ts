@@ -13,6 +13,12 @@ export async function positionsInit(app: ElmApp<Ports>, gp: GlobalParams) {
     const dues = await duesPromise;
     const liqs = await liqsPromise;
 
+    console.log({
+      claims,
+      dues,
+      liqs,
+    });
+
     app.ports.receivePositions.send({
       ...positionsOf,
       positions: {
