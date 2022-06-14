@@ -1,12 +1,12 @@
 import { GlobalParams } from "./global";
 import {
-  ERC20Token as SDKCoreERC20Token,
-  NativeToken as SDKCoreNativeToken,
-  Pool,
+  ERC20TokenCore,
+  NativeTokenCore,
+  PoolCore,
   Uint,
   Uint256,
-} from "@timeswap-labs/timeswap-v1-sdk-core";
-import { Pool as SDKPool, CONVENIENCE } from "@timeswap-labs/timeswap-v1-sdk";
+} from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 
 import { Contract } from "@ethersproject/contracts";
 import { ethers } from 'ethers';
@@ -59,17 +59,17 @@ export function getPool(
   query: LendQuery | BorrowQuery | LiquidityQuery | NewLiquidityQuery | LiqReturn,
   fee: number,
   protocolFee: number,
-): Pool {
+): PoolCore {
   let asset, collateral;
 
   if ((query.pool.asset as ERC20Token).address) {
-    asset = new SDKCoreERC20Token(
+    asset = new ERC20TokenCore(
       query.chain.chainId,
       query.pool.asset.decimals,
       (query.pool.asset as ERC20Token).address
     );
   } else {
-    asset = new SDKCoreNativeToken(
+    asset = new NativeTokenCore(
       query.chain.chainId,
       query.pool.asset.decimals,
       query.pool.asset.symbol
@@ -77,20 +77,20 @@ export function getPool(
   }
 
   if ((query.pool.collateral as ERC20Token).address) {
-    collateral = new SDKCoreERC20Token(
+    collateral = new ERC20TokenCore(
       query.chain.chainId,
       query.pool.collateral.decimals,
       (query.pool.collateral as ERC20Token).address
     );
   } else {
-    collateral = new SDKCoreNativeToken(
+    collateral = new NativeTokenCore(
       query.chain.chainId,
       query.pool.collateral.decimals,
       query.pool.collateral.symbol
     );
   }
 
-  return new Pool(
+  return new PoolCore(
     asset,
     collateral,
     query.pool.maturity,
@@ -109,13 +109,13 @@ export function getPoolSDK(
   let assetToken, collateralToken;
 
   if ((asset as ERC20Token).address) {
-    assetToken = new SDKCoreERC20Token(
+    assetToken = new ERC20TokenCore(
       chain.chainId,
       asset.decimals,
       (asset as ERC20Token).address
     );
   } else {
-    assetToken = new SDKCoreNativeToken(
+    assetToken = new NativeTokenCore(
       chain.chainId,
       asset.decimals,
       asset.symbol
@@ -123,13 +123,13 @@ export function getPoolSDK(
   }
 
   if ((collateral as ERC20Token).address) {
-    collateralToken = new SDKCoreERC20Token(
+    collateralToken = new ERC20TokenCore(
       chain.chainId,
       collateral.decimals,
       (collateral as ERC20Token).address
     );
   } else {
-    collateralToken = new SDKCoreNativeToken(
+    collateralToken = new NativeTokenCore(
       chain.chainId,
       collateral.decimals,
       collateral.symbol
@@ -137,7 +137,7 @@ export function getPoolSDK(
   }
 
   return new SDKPool(
-    gp.walletProvider,
+    gp.biconomyProvider,
     chain.chainId,
     assetToken,
     collateralToken,
@@ -320,14 +320,14 @@ export function handleTxnErrors(
 export function compareConvAddress(convAddress: string, chainId: number) {
     const now = Date.now();
 
-    if (CONVENIENCE[chainId] && (CONVENIENCE[chainId].toLowerCase() !== convAddress.toLowerCase())) {
-      const lastRefreshTime = window.localStorage.getItem("lastRefresh");
+    // if (CONVENIENCE[chainId] && (CONVENIENCE[chainId].toLowerCase() !== convAddress.toLowerCase())) {
+    //   const lastRefreshTime = window.localStorage.getItem("lastRefresh");
 
-      // Reload pg only if more than 2-mins have passed since last refresh
-      if (!lastRefreshTime
-        || (lastRefreshTime && (now - Number(lastRefreshTime) > 120000) )) {
-        window.localStorage.setItem("lastRefresh", now.toString());
-        window.location.reload();
-      }
-    }
+    //   // Reload pg only if more than 2-mins have passed since last refresh
+    //   if (!lastRefreshTime
+    //     || (lastRefreshTime && (now - Number(lastRefreshTime) > 120000) )) {
+    //     window.localStorage.setItem("lastRefresh", now.toString());
+    //     window.location.reload();
+    //   }
+    // }
 }

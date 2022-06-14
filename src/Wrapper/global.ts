@@ -10,12 +10,15 @@ import { Biconomy } from "@biconomy/mexa";
 
 const { MulticallProvider } = providers;
 
-const API_KEY = "";
+const API_KEY = "oeTYJXHrB.d0b9a0de-030f-48dc-adb6-7b3ac9d06722";
 
 export class GlobalParams {
   private _walletProvider?: Web3Provider;
   private _walletProviderMulti?: BaseProvider;
   private _walletSigner?: Signer;
+  private _biconomyProvider?: Web3Provider;
+
+  public biconomy?: Biconomy;
 
   network?: string;
 
@@ -32,16 +35,20 @@ export class GlobalParams {
       this._walletProvider = new Web3Provider(value);
     }
 
-    const biconomy = new Biconomy(this._walletProvider, {
-      walletProvider: this._walletProvider,
+    this.biconomy = new Biconomy(this._walletProvider, {
+      walletProvider: window.ethereum,
       apiKey: API_KEY,
       debug: true,
     });
 
     // Handle the error
 
-    this._walletProvider = new Web3Provider(biconomy);
+    this._biconomyProvider = this.biconomy.getEthersProvider();
     this._walletProviderMulti = new MulticallProvider(this._walletProvider);
+  }
+
+  public get biconomyProvider(): Web3Provider {
+    return this._biconomyProvider!;
   }
 
   public get walletProviderMulti(): BaseProvider {

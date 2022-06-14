@@ -1,5 +1,5 @@
-import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
-import { CONVENIENCE, ERC20Token } from "@timeswap-labs/timeswap-v1-sdk";
+import { Uint256 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { CONVENIENCE, ERC20Token } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 
 import { GlobalParams } from './global';
 import { handleTxnErrors } from "./helper";
@@ -10,7 +10,7 @@ export function approveSigner(
 ) {
   app.ports.approve.subscribe(async (params) => {
     const erc20 = new ERC20Token(
-      gp.walletProvider,
+      gp.biconomyProvider,
       params.chain.chainId,
       params.erc20.decimals,
       params.erc20.address
@@ -18,7 +18,7 @@ export function approveSigner(
 
     try {
       const txnConfirmation = await erc20
-        .upgrade(gp.walletSigner)
+        .upgrade(gp.biconomy.getSignerByAddress(await gp.walletSigner.getAddress()))
         .approve(CONVENIENCE[params.chain.chainId], new Uint256((1n << 256n) - 1n));
 
       app.ports.receiveConfirm.send({

@@ -1,4 +1,4 @@
-import { Uint112 } from '@timeswap-labs/timeswap-v1-sdk-core';
+import { Uint112 } from '@timeswap-labs/timeswap-v1-biconomy-sdk';
 import { GlobalParams } from "../global";
 import { compareConvAddress, getPool, getPoolSDK, handleTxnErrors, updateCachedTxns } from "../helper";
 import { collateralCalculate, collateralTransaction } from "./collateral";

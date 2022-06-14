@@ -1,7 +1,5 @@
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { Web3Provider } from "@ethersproject/providers";
-import { Biconomy } from "@biconomy/mexa";
-
 
 type Wallet = { [name: string]: Web3Provider | null };
 

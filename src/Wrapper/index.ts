@@ -47,7 +47,16 @@ async function elmInit() {
     },
   });
 
-  init(app, gp, user);
+  gp.biconomy.onEvent(gp.biconomy.READY, () => {
+    // Initialize the dapp here
+    console.log("Bico ready");
+
+    init(app, gp, user);
+
+  }).onEvent(gp.biconomy.ERROR, (error, message) => {
+    // Handle error while initializing mexa
+    console.log("Bico err", error, message);
+  });
 }
 
 sentry();

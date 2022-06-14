@@ -1,6 +1,5 @@
-import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Pool } from "@timeswap-labs/timeswap-v1-sdk-core";
-import { Uint112, Uint128, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { PoolCore, Uint112, Uint128, Uint256 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import { GlobalParams } from "../global";
 import { calculateMinValue, getCurrentTime } from "../helper";
 import {
@@ -14,7 +13,7 @@ import {
 
 export async function insuranceCalculate(
   app: ElmApp<Ports>,
-  pool: Pool,
+  pool: PoolCore,
   query: LendQuery
 ) {
   try {

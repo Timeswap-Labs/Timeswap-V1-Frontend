@@ -2,7 +2,7 @@ import {
   CP,
   Uint112,
   Uint256,
-} from "@timeswap-labs/timeswap-v1-sdk-core";
+} from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 
 export function calculateApr(
   debt: Uint112,

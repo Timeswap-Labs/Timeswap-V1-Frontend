@@ -1,13 +1,13 @@
 import { GlobalParams } from './../global';
-import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Pool, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-sdk-core';
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { PoolCore, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-biconomy-sdk';
 import { calculateMaxValue, calculateMinValue, getCurrentTime } from "../helper";
 import { calculateFuturisticApr, calculateFuturisticCdp } from './common';
 
 
 export async function debtCalculate(
   app: ElmApp<Ports>,
-  pool: Pool,
+  pool: PoolCore,
   query: LiquidityQuery
 ) {
   try {

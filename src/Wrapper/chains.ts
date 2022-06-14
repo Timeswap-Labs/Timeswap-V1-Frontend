@@ -1,5 +1,5 @@
 import { getCustomTokens } from "./helper";
-import { WNATIVE_ADDRESS } from "@timeswap-labs/timeswap-v1-sdk";
+import { WNATIVE_ADDRESS } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 
 export const whitelistChains: Whitelist = {
   default: {

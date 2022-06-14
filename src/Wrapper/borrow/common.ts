@@ -1,10 +1,10 @@
 import {
   CP,
-  Pool,
+  PoolCore,
   Uint112,
   Uint256,
   Uint40,
-} from "@timeswap-labs/timeswap-v1-sdk-core";
+} from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 
 export function calculateHelper(
   maturity: Uint256,
@@ -112,7 +112,7 @@ export function calculateFuturisticCdp(
 }
 
 export function percentMinMaxValues(
-  pool: Pool,
+  pool: PoolCore,
   state: CP,
   assetOut: Uint112,
   currentTime: Uint256

@@ -4,7 +4,7 @@ import { assetCalculate, assetTransaction } from './asset';
 import { collateralCalculate, collateralTransaction } from './collateral';
 import { debtCalculate, debtTransaction } from './debt';
 import { newLiquidityCalculate } from './new';
-import { Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-sdk-core';
+import { Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-biconomy-sdk';
 
 export function liquidity(app: ElmApp<Ports>) {
   app.ports.queryLiquidity.subscribe((query) => {

@@ -1,5 +1,5 @@
 import { GlobalParams } from './global';
-import { Uint112, Uint128, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Uint112, Uint128, Uint256 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import { getPool, getPoolSDK, handleTxnErrors, updateCachedTxns } from "./helper";
 
 export function burn(app: ElmApp<Ports>) {

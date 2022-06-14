@@ -1,4 +1,4 @@
-import { Pair, Uint112, Uint128 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { PairCore, Uint112, Uint128 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import { GlobalParams } from "./global";
 import { getPoolSDK, handleTxnErrors, updateCachedTxns } from "./helper";
 
@@ -45,7 +45,7 @@ export function withdraw(app: ElmApp<Ports>) {
         insurancePrincipal: new Uint112(claimsData.claimsIn.insurancePrincipal)
       }
 
-      const { asset, collateral } = Pair.calculateWithdraw(reserves, totalClaims, claimsIn)
+      const { asset, collateral } = PairCore.calculateWithdraw(reserves, totalClaims, claimsIn)
 
       app.ports.receiveReturn.send({
         ...claimsData,

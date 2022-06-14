@@ -1,4 +1,4 @@
-import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-sdk";
+import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import { updateTransferEventBalance } from "./helper";
 import erc20Abi from "./abi/erc20";
 import { Contract } from "@ethersproject/contracts";
