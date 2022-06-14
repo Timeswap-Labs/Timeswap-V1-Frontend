@@ -87,7 +87,7 @@ view { images, theme } param =
                         ""
             , placeholder =
                 (case param.text of
-                    Left uint ->
+                    Left _ ->
                         Input.placeholder
                             [ Font.size 18
                             , centerY
@@ -96,7 +96,7 @@ view { images, theme } param =
                             ]
                             (text "0.0")
 
-                    Right uint ->
+                    Right _ ->
                         Input.placeholder
                             [ width fill
                             , height fill
