@@ -2169,7 +2169,7 @@ body ({ device, page } as model) =
             Desktop ->
                 { top = 134
                 , right = 80
-                , bottom = 80
+                , bottom = 800
                 , left = 80
                 }
 
@@ -2188,6 +2188,14 @@ body ({ device, page } as model) =
                 }
           )
             |> paddingEach
+        , (case model.theme of
+            Theme.Light ->
+                "https://i.imgur.com/jl0Jt6G.png"
+
+            Theme.Dark ->
+                "https://i.imgur.com/pRUmFvV.png"
+          )
+            |> Background.uncropped
         , spacing 20
         ]
         [ case device of
