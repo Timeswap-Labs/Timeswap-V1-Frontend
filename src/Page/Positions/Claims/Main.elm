@@ -149,8 +149,8 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
             ++ Glass.background backdrop theme
         )
         (case user |> User.getClaims of
-            Loading timeline ->
-                loading model timeline
+            Loading _ ->
+                loading model
 
             Failure error ->
                 none
@@ -169,47 +169,45 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
         )
 
 
-loading : { model | images : Images, theme : Theme } -> Timeline () -> Element msg
-loading { images, theme } timeline =
-    row
-        [ width shrink
-        , height shrink
-        , centerX
+loading : { model | images : Images, theme : Theme } -> Element msg
+loading { images, theme } =
+    column
+        [ centerX
         , centerY
-        , spacing 12
         ]
-        [ images
-            |> (case theme of
-                    Theme.Dark ->
-                        Image.info
-
-                    Theme.Light ->
-                        Image.infoDark
-               )
-                [ width <| px 20
-                , height <| px 20
-                , centerX
-                , alignTop
-                ]
-        , paragraph
+        [ row
             [ width shrink
             , height shrink
             , centerX
             , centerY
-            , Font.size 14
-            , paddingXY 0 3
-            , theme |> ThemeColor.textLight |> Font.color
+            , spacing 12
             ]
-            [ text "Fetching your Lend positions" ]
-        , el
-            []
-            (images
-                |> Image.loadingAnimation
-                    [ width <| px 20
-                    , height <| px 20
-                    , centerX
-                    ]
-            )
+            [ el
+                []
+                (images
+                    |> Image.loadingAnimation
+                        [ width <| px 30
+                        , height <| px 30
+                        , centerX
+                        , centerY
+                        ]
+                )
+            ]
+        , row
+            [ centerX
+            , centerY
+            ]
+            [ paragraph
+                [ width shrink
+                , height shrink
+                , centerX
+                , centerY
+                , Font.size 14
+                , paddingXY 0 8
+                , theme |> ThemeColor.textLight |> Font.color
+                ]
+                [ text "Fetching your Lend Positions..." ]
+            ]
         ]
 
 
