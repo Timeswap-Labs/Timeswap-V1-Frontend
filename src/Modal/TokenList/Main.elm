@@ -101,7 +101,7 @@ type Msg
     | ChooseToken Token
     | ImportERC20
     | ClearERC20 ERC20
-    | ClearAll
+      -- | ClearAll
     | OnMouseEnter Tooltip
     | OnMouseLeave
     | Exit
@@ -416,12 +416,11 @@ update { chains, endPoint } blockchain msg (Modal modal) =
             , RemoveERC20 erc20 |> Just
             )
 
-        ( ClearAll, CustomERC20s _ ) ->
-            ( modal |> Modal |> Just
-            , Cmd.none
-            , RemoveAll |> Just
-            )
-
+        -- ( ClearAll, CustomERC20s _ ) ->
+        --     ( modal |> Modal |> Just
+        --     , Cmd.none
+        --     , RemoveAll |> Just
+        --     )
         ( Exit, _ ) ->
             ( Nothing
             , Cmd.none

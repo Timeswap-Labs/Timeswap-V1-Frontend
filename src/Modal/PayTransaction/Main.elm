@@ -108,12 +108,10 @@ type Effect
 
 
 init :
-    Blockchain
-    -> User
-    -> Pool
+    Pool
     -> Set TokenId
     -> ( Modal, Cmd Msg )
-init blockchain user pool set =
+init pool set =
     ( { pool = pool
       , state = set |> Full
       , tooltip = Nothing

@@ -759,8 +759,8 @@ pageEffects blockchain effect model =
             blockchain
                 |> Blockchain.toUser
                 |> Maybe.map
-                    (\user ->
-                        Modal.initPayTransaction blockchain user pool set
+                    (\_ ->
+                        Modal.initPayTransaction pool set
                     )
                 |> Maybe.map
                     (\( newModal, cmd ) ->

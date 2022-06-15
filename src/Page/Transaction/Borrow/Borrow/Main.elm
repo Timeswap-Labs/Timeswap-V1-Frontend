@@ -2986,7 +2986,6 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
                         |> Remote.map .collateralIn
                         |> Right
                         |> collateralInSection model
-                            blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
@@ -3005,7 +3004,6 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
                     , collateralIn
                         |> Left
                         |> collateralInSection model
-                            blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
@@ -3026,7 +3024,6 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
                         |> Remote.map .collateralIn
                         |> Right
                         |> advancedCollateralInSection model
-                            blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
@@ -3046,7 +3043,6 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
                         |> Remote.map .collateralIn
                         |> Right
                         |> advancedCollateralInSection model
-                            blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
@@ -3066,7 +3062,6 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
                     , collateralIn
                         |> Left
                         |> advancedCollateralInSection model
-                            blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
@@ -3086,7 +3081,6 @@ duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction)
                     , collateralIn
                         |> Left
                         |> advancedCollateralInSection model
-                            blockchain
                             (pool.pair |> Pair.toCollateral)
                             transaction
                     ]
@@ -3144,12 +3138,11 @@ debtInSection model asset { tooltip } output =
 
 collateralInSection :
     { model | images : Images, theme : Theme }
-    -> Blockchain
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Or String (Remote Error Uint)
     -> Element Msg
-collateralInSection model blockchain collateral { tooltip } or =
+collateralInSection model collateral { tooltip } or =
     column
         [ width fill
         , height shrink
@@ -3292,12 +3285,11 @@ advancedDebtInSection model asset { tooltip } or =
 
 advancedCollateralInSection :
     { model | images : Images, theme : Theme }
-    -> Blockchain
     -> Token
     -> { transaction | tooltip : Maybe Tooltip }
     -> Or String (Remote Error Uint)
     -> Element Msg
-advancedCollateralInSection model blockchain collateral { tooltip } or =
+advancedCollateralInSection model collateral { tooltip } or =
     column
         [ width fill
         , height shrink

@@ -7,7 +7,6 @@ module Page.Positions.Claims.Main exposing
     , view
     )
 
-import Animator exposing (Timeline)
 import Blockchain.User.Claim as Claim exposing (Claim)
 import Blockchain.User.Claims as Claims exposing (Claims)
 import Blockchain.User.Main as User exposing (User)
@@ -146,8 +145,8 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
             ++ Glass.background backdrop theme
         )
         (case user |> User.getClaims of
-            Loading timeline ->
-                loading model timeline
+            Loading _ ->
+                loading model
 
             Failure error ->
                 none
@@ -166,8 +165,8 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
         )
 
 
-loading : { model | images : Images, theme : Theme } -> Timeline () -> Element msg
-loading { images, theme } timeline =
+loading : { model | images : Images, theme : Theme } -> Element msg
+loading { images, theme } =
     row
         [ width shrink
         , height shrink

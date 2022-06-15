@@ -8,7 +8,6 @@ module Page.Positions.Dues.Main exposing
     , view
     )
 
-import Animator exposing (Timeline)
 import Blockchain.User.Due as Due exposing (Due)
 import Blockchain.User.Dues as Dues exposing (Dues)
 import Blockchain.User.Main as User exposing (User)
@@ -147,8 +146,8 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
             ++ Glass.background backdrop theme
         )
         (case user |> User.getDues of
-            Loading timeline ->
-                loading model timeline
+            Loading _ ->
+                loading model
 
             Failure error ->
                 none
@@ -168,8 +167,8 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
         )
 
 
-loading : { model | images : Images, theme : Theme } -> Timeline () -> Element msg
-loading { images, theme } timeline =
+loading : { model | images : Images, theme : Theme } -> Element msg
+loading { images, theme } =
     row
         [ width shrink
         , height shrink
@@ -213,7 +212,7 @@ loading { images, theme } timeline =
 
 
 noDues : { model | device : Device, images : Images, theme : Theme } -> Element msg
-noDues { device, images, theme } =
+noDues { images, theme } =
     column
         [ width fill
         , height shrink
@@ -312,6 +311,7 @@ noDues { device, images, theme } =
                     ]
             ]
         ]
+
 
 viewDues :
     { model

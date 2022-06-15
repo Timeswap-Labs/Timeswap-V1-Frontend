@@ -499,10 +499,9 @@ view :
         , theme : Theme
         , images : Images
     }
-    -> User
     -> Position
     -> Element Msg
-view ({ device, backdrop, theme } as model) user (Position position) =
+view ({ device, backdrop, theme } as model) (Position position) =
     column
         [ width shrink
         , height shrink

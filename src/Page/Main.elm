@@ -878,8 +878,8 @@ view model blockchain page =
 
             LiquidityPage liquidityPage ->
                 Just
-                    (\position user ->
-                        Liq.view model user position
+                    (\position _ ->
+                        Liq.view model position
                             |> map LiqMsg
                             |> List.singleton
                     )

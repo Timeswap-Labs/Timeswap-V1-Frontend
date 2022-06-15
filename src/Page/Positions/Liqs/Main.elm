@@ -7,7 +7,6 @@ module Page.Positions.Liqs.Main exposing
     , view
     )
 
-import Animator exposing (Timeline)
 import Blockchain.User.Liq as Liq exposing (Liq)
 import Blockchain.User.Liqs as Liqs exposing (Liqs)
 import Blockchain.User.Main as User exposing (User)
@@ -145,8 +144,8 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
             ++ Glass.background backdrop theme
         )
         (case user |> User.getLiqs of
-            Loading timeline ->
-                loading model timeline
+            Loading _ ->
+                loading model
 
             Failure _ ->
                 none
@@ -165,8 +164,8 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
         )
 
 
-loading : { model | images : Images, theme : Theme } -> Timeline () -> Element msg
-loading { images, theme } timeline =
+loading : { model | images : Images, theme : Theme } -> Element msg
+loading { images, theme } =
     row
         [ width shrink
         , height shrink
@@ -210,7 +209,7 @@ loading { images, theme } timeline =
 
 
 noLiqs : { model | device : Device, images : Images, theme : Theme } -> Element msg
-noLiqs { device, images, theme } =
+noLiqs { images, theme } =
     column
         [ width fill
         , height shrink

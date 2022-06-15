@@ -205,13 +205,11 @@ initChainList =
 
 
 initPayTransaction :
-    Blockchain
-    -> User
-    -> Pool
+    Pool
     -> Set TokenId
     -> ( Modal, Cmd Msg )
-initPayTransaction blockchain user pool set =
-    PayTransaction.init blockchain user pool set
+initPayTransaction pool set =
+    PayTransaction.init pool set
         |> Tuple.mapBoth
             PayTransaction
             (Cmd.map PayTransactionMsg)
