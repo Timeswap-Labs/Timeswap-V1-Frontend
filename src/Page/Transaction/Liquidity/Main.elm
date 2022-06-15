@@ -22,7 +22,7 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
-import Data.Maturity as Maturity exposing (Maturity)
+import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair exposing (Pair)

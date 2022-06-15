@@ -208,7 +208,7 @@ construct ({ chains } as model) url maybePage =
 
         ( Just (Route.Borrow (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
             poolInfo
-                |> Borrow.initGivenPoolInfo model blockchain pool
+                |> Borrow.initGivenPoolInfo model pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction
