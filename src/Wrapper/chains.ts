@@ -101,8 +101,8 @@ export const whitelistChains: Whitelist = {
         },
         {
           address: "0x4858B2C035A0434895cD16b7a7d4016AF7bce26C",
-          name: "Ethereum",
-          symbol: "ETH",
+          name: "Wrapped Ethereum",
+          symbol: "WETH",
           decimals: 18,
         },
       ],
