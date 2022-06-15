@@ -64,7 +64,6 @@ import Page.Transaction.Borrow.Borrow.Query as Query
 import Page.Transaction.Borrow.Borrow.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.Button as Button
 import Page.Transaction.Info as Info
-import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.Slider as Slider
 import Page.Transaction.Switch as Switch

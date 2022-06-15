@@ -111,7 +111,7 @@ init :
     -> Blockchain
     -> Pool
     -> ( Position, Cmd Msg )
-init { time, endPoint } blockchain pool =
+init { endPoint } blockchain pool =
     ( { pool = pool
       , return = Remote.loading
       , tooltip = Nothing

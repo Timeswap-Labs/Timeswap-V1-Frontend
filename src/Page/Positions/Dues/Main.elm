@@ -9,13 +9,11 @@ module Page.Positions.Dues.Main exposing
     )
 
 import Animator exposing (Timeline)
-import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Due as Due exposing (Due)
 import Blockchain.User.Dues as Dues exposing (Dues)
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.TokenId exposing (TokenId)
 import Data.Backdrop exposing (Backdrop)
-import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.Images exposing (Images)
@@ -63,7 +61,6 @@ import Utility.Duration as Duration
 import Utility.Glass as Glass
 import Utility.Id as Id
 import Utility.Image as Image
-import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
