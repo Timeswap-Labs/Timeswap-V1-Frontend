@@ -245,6 +245,7 @@ update blockchain pool priceFeed msg (Transaction transaction) =
 
                         else
                             Remote.loading
+
                 }
                     |> query blockchain pool priceFeed
 
@@ -594,17 +595,26 @@ query :
         }
     -> ( Transaction, Cmd Msg, Maybe Effect )
 query blockchain pool priceFeed transaction =
-    transaction
-        |> constructQueryNew queryCreate
-            blockchain
-            pool
-            priceFeed
-        |> (\( updated, cmd ) ->
-                ( updated
-                , cmd
-                , Nothing
-                )
-           )
+    case ( transaction.debtIn |> Uint.fromString, transaction.assetIn |> Uint.fromString ) of
+        ( Just debtInUint, Just assetInUint ) ->
+            if Uint.hasEnough debtInUint assetInUint then
+                ( transaction |> Transaction, Cmd.none, Nothing )
+
+            else
+                transaction
+                    |> constructQueryNew queryCreate
+                        blockchain
+                        pool
+                        priceFeed
+                    |> (\( updated, cmd ) ->
+                            ( updated
+                            , cmd
+                            , Nothing
+                            )
+                       )
+
+        _ ->
+            ( transaction |> Transaction, Cmd.none, Nothing )
 
 
 constructQueryNew :
@@ -855,6 +865,7 @@ debtOutSection model asset { tooltip } input =
             , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
             (text "Debt to Repay")
+
         , Textbox.view model
             { onMouseEnter = OnMouseEnter
             , onMouseLeave = OnMouseLeave
@@ -967,6 +978,7 @@ liqOutSection model pool { liquidityOut } =
 
                 _ ->
                     none
+
             ]
         , Output.liquidity model
             { pair = pool.pair
