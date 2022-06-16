@@ -2,9 +2,9 @@ import { Signer } from "@ethersproject/abstract-signer";
 import {
   BaseProvider,
   ExternalProvider,
-  JsonRpcFetchFunc,
   Web3Provider,
 } from "@ethersproject/providers";
+import WalletConnectProvider from "@walletconnect/web3-provider";
 import { providers } from "@0xsequence/multicall";
 import { Biconomy } from "@biconomy/mexa";
 
@@ -28,7 +28,7 @@ export class GlobalParams {
   }
 
   public set walletProvider(
-    value: ExternalProvider | JsonRpcFetchFunc | Web3Provider
+    value: ExternalProvider | WalletConnectProvider | Web3Provider
   ) {
     if (value instanceof Web3Provider) {
       this._walletProvider = value;
@@ -37,7 +37,7 @@ export class GlobalParams {
     }
 
     this.biconomy = new Biconomy(this._walletProvider, {
-      walletProvider: window.ethereum,
+      walletProvider: value,
       apiKey: API_KEY,
       debug: true,
     });
