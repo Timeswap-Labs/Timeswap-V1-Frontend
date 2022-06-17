@@ -10,7 +10,7 @@ import { Biconomy } from "@biconomy/mexa";
 
 const { MulticallProvider } = providers;
 
-const API_KEY = "oeTYJXHrB.d0b9a0de-030f-48dc-adb6-7b3ac9d06722";
+const API_KEY = "NS0bnWk0U.ff10032a-07a9-478e-835e-a6d0e93b7f86";
 
 export class GlobalParams {
   private _walletProvider?: Web3Provider;
