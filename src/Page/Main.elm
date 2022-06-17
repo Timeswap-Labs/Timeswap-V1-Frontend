@@ -206,7 +206,7 @@ construct ({ chains } as model) url maybePage =
                     )
                     (Cmd.map LendMsg)
 
-        ( Just (Route.Borrow (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
+        ( Just (Route.Borrow (Just (Parameter.Pool pool))), Supported _, Just (Right poolInfo) ) ->
             poolInfo
                 |> Borrow.initGivenPoolInfo model pool
                 |> Tuple.mapBoth
