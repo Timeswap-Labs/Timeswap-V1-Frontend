@@ -339,7 +339,7 @@ initGivenPoolInfo :
     -> Pool
     -> PoolInfo
     -> ( Transaction, Cmd Msg )
-initGivenPoolInfo { time } blockchain maybeTxn pool poolInfo =
+initGivenPoolInfo { time } _ maybeTxn pool poolInfo =
     if pool.maturity |> Maturity.isActive time then
         case maybeTxn of
             Just (Transaction { state }) ->
