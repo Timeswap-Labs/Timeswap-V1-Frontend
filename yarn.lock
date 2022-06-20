@@ -1782,10 +1782,10 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@timeswap-labs/timeswap-v1-biconomy-sdk@1.0.8":
-  version "1.0.8"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-biconomy-sdk/1.0.8/29eaca7703493e6ad12594b08f3f62be39f07ac12e257a368a9647d0ec1a3c1d#9cad319f5a500450e419a3d209677828ca2cdf8d"
-  integrity sha512-BhJQptzl4KqyiAcLjeDKsKX2mkfdop0H1YZnZ2PpldeAyXadSmC+pvHOB8R4JgV0yOKuyqKJ3z90lSgm4ZNrNQ==
+"@timeswap-labs/timeswap-v1-biconomy-sdk@1.0.9":
+  version "1.0.9"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/timeswap-v1-biconomy-sdk/1.0.9/756291a38a9edc0a5c13f851c81cd88941e7c5cf81dc0352e18ba09fb984273d#726ceda87ff4028a8860446fa97b17dc2cab5a9d"
+  integrity sha512-Pnp1rh9zX8lf2ilxpypl71IfeKHpIagtO0oI9JXu3LXcdL3P+xcSGvlFRd9gMp5NS7jg/tzmstSkqJSW2Hj7WQ==
   dependencies:
     "@biconomy/mexa" "^2.0.32"
     "@ethersproject/abstract-signer" "^5.5.0"
