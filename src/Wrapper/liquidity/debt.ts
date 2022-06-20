@@ -78,7 +78,7 @@ export async function debtTransaction(
   gp: GlobalParams,
   liquidity: Liquidity
 ) {
-  return await pool.upgrade(gp.walletSigner!).liquidityGivenDebt({
+  return await pool.upgrade(await gp.getSigner()).liquidityGivenDebt({
     liquidityTo: liquidity.liquidityTo,
     dueTo: liquidity.dueTo,
     debtIn: new Uint112(liquidity.debtIn),

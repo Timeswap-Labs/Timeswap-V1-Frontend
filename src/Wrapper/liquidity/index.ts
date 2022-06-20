@@ -92,7 +92,7 @@ export function liquiditySigner(
         debtIn !== undefined &&
         collateralIn !== undefined
       ) {
-        txnConfirmation = await pool.upgrade(gp.walletSigner!).newLiquidity({
+        txnConfirmation = await pool.upgrade(await gp.getSigner()).newLiquidity({
           liquidityTo: params.send.liquidityTo,
           dueTo: params.send.dueTo,
           assetIn: new Uint112(params.send.assetIn!),

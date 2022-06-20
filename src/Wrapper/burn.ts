@@ -63,7 +63,7 @@ export function burnSigner(
     const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
 
     try {
-      const txnConfirmation = await pool.upgrade(gp.walletSigner!).removeLiquidity({
+      const txnConfirmation = await pool.upgrade(await gp.getSigner()).removeLiquidity({
         assetTo: params.send.assetTo,
         collateralTo: params.send.collateralTo,
         liquidityIn: new Uint256(params.send.liquidityIn),

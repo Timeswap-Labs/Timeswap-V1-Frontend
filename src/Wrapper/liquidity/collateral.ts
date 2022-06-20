@@ -80,7 +80,7 @@ export async function collateralTransaction(
   gp: GlobalParams,
   liquidity: Liquidity
 ) {
-  return await pool.upgrade(gp.walletSigner!).liquidityGivenCollateral({
+  return await pool.upgrade(await gp.getSigner()).liquidityGivenCollateral({
     liquidityTo: liquidity.liquidityTo,
     dueTo: liquidity.dueTo,
     collateralIn: new Uint112(liquidity.collateralIn),
