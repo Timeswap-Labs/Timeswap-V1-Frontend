@@ -435,7 +435,7 @@ exist theme =
 
 
 error : Http.Error -> Element Never
-error httpError =
+error _ =
     el
         [ width fill
         , height <| px 44

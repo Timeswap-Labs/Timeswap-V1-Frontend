@@ -194,7 +194,7 @@ type Msg
     | InputDebtIn String
     | ClickCollateralIn
     | InputCollateralIn String
-    | InputMax
+      -- | InputMax
     | QueryAgain Posix
     | ClickConnect
     | ClickApprove
@@ -916,150 +916,144 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
             else
                 transaction |> noCmdAndEffect
 
-        ( InputMax, Default _ ) ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen
-                    (\user ->
-                        user
-                            |> User.getBalance
-                                (pool.pair |> Pair.toCollateral)
-                            |> (Maybe.map << Remote.map)
-                                (Uint.toAmount
-                                    (pool.pair |> Pair.toCollateral)
-                                )
-                            |> (Maybe.map << Remote.withDefault) ""
-                    )
-                |> Maybe.map
-                    (\collateralIn ->
-                        { transaction
-                            | state =
-                                collateralIn |> updateDefaultMax
-                        }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        ( InputMax, DefaultMax _ ) ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen
-                    (\user ->
-                        user
-                            |> User.getBalance
-                                (pool.pair |> Pair.toCollateral)
-                            |> (Maybe.map << Remote.map)
-                                (Uint.toAmount
-                                    (pool.pair |> Pair.toCollateral)
-                                )
-                            |> (Maybe.map << Remote.withDefault) ""
-                    )
-                |> Maybe.map
-                    (\collateralIn ->
-                        { transaction
-                            | state =
-                                collateralIn |> updateDefaultMax
-                        }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        ( InputMax, Slider { percent } ) ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen
-                    (\user ->
-                        user
-                            |> User.getBalance
-                                (pool.pair |> Pair.toCollateral)
-                            |> (Maybe.map << Remote.map)
-                                (Uint.toAmount
-                                    (pool.pair |> Pair.toCollateral)
-                                )
-                            |> (Maybe.map << Remote.withDefault) ""
-                    )
-                |> Maybe.map
-                    (\collateralIn ->
-                        { transaction
-                            | state =
-                                collateralIn |> updateAdvancedMax percent
-                        }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        ( InputMax, Debt { percent } ) ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen
-                    (\user ->
-                        user
-                            |> User.getBalance
-                                (pool.pair |> Pair.toCollateral)
-                            |> (Maybe.map << Remote.map)
-                                (Uint.toAmount
-                                    (pool.pair |> Pair.toCollateral)
-                                )
-                            |> (Maybe.map << Remote.withDefault) ""
-                    )
-                |> Maybe.map
-                    (\collateralIn ->
-                        { transaction
-                            | state =
-                                collateralIn |> updateAdvancedMax percent
-                        }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        ( InputMax, Collateral { percent } ) ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen
-                    (\user ->
-                        user
-                            |> User.getBalance
-                                (pool.pair |> Pair.toCollateral)
-                            |> (Maybe.map << Remote.map)
-                                (Uint.toAmount
-                                    (pool.pair |> Pair.toCollateral)
-                                )
-                            |> (Maybe.map << Remote.withDefault) ""
-                    )
-                |> Maybe.map
-                    (\collateralIn ->
-                        { transaction
-                            | state =
-                                collateralIn |> updateAdvancedMax percent
-                        }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
-        ( InputMax, AdvancedMax { percent } ) ->
-            blockchain
-                |> Blockchain.toUser
-                |> Maybe.andThen
-                    (\user ->
-                        user
-                            |> User.getBalance
-                                (pool.pair |> Pair.toCollateral)
-                            |> (Maybe.map << Remote.map)
-                                (Uint.toAmount
-                                    (pool.pair |> Pair.toCollateral)
-                                )
-                            |> (Maybe.map << Remote.withDefault) ""
-                    )
-                |> Maybe.map
-                    (\collateralIn ->
-                        { transaction
-                            | state =
-                                collateralIn |> updateAdvancedMax percent
-                        }
-                            |> query model blockchain pool poolInfo
-                    )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
-
+        -- ( InputMax, Default _ ) ->
+        --     blockchain
+        --         |> Blockchain.toUser
+        --         |> Maybe.andThen
+        --             (\user ->
+        --                 user
+        --                     |> User.getBalance
+        --                         (pool.pair |> Pair.toCollateral)
+        --                     |> (Maybe.map << Remote.map)
+        --                         (Uint.toAmount
+        --                             (pool.pair |> Pair.toCollateral)
+        --                         )
+        --                     |> (Maybe.map << Remote.withDefault) ""
+        --             )
+        --         |> Maybe.map
+        --             (\collateralIn ->
+        --                 { transaction
+        --                     | state =
+        --                         collateralIn |> updateDefaultMax
+        --                 }
+        --                     |> query model blockchain pool poolInfo
+        --             )
+        --         |> Maybe.withDefault (transaction |> noCmdAndEffect)
+        -- ( InputMax, DefaultMax _ ) ->
+        --     blockchain
+        --         |> Blockchain.toUser
+        --         |> Maybe.andThen
+        --             (\user ->
+        --                 user
+        --                     |> User.getBalance
+        --                         (pool.pair |> Pair.toCollateral)
+        --                     |> (Maybe.map << Remote.map)
+        --                         (Uint.toAmount
+        --                             (pool.pair |> Pair.toCollateral)
+        --                         )
+        --                     |> (Maybe.map << Remote.withDefault) ""
+        --             )
+        --         |> Maybe.map
+        --             (\collateralIn ->
+        --                 { transaction
+        --                     | state =
+        --                         collateralIn |> updateDefaultMax
+        --                 }
+        --                     |> query model blockchain pool poolInfo
+        --             )
+        --         |> Maybe.withDefault (transaction |> noCmdAndEffect)
+        -- ( InputMax, Slider { percent } ) ->
+        --     blockchain
+        --         |> Blockchain.toUser
+        --         |> Maybe.andThen
+        --             (\user ->
+        --                 user
+        --                     |> User.getBalance
+        --                         (pool.pair |> Pair.toCollateral)
+        --                     |> (Maybe.map << Remote.map)
+        --                         (Uint.toAmount
+        --                             (pool.pair |> Pair.toCollateral)
+        --                         )
+        --                     |> (Maybe.map << Remote.withDefault) ""
+        --             )
+        --         |> Maybe.map
+        --             (\collateralIn ->
+        --                 { transaction
+        --                     | state =
+        --                         collateralIn |> updateAdvancedMax percent
+        --                 }
+        --                     |> query model blockchain pool poolInfo
+        --             )
+        --         |> Maybe.withDefault (transaction |> noCmdAndEffect)
+        -- ( InputMax, Debt { percent } ) ->
+        --     blockchain
+        --         |> Blockchain.toUser
+        --         |> Maybe.andThen
+        --             (\user ->
+        --                 user
+        --                     |> User.getBalance
+        --                         (pool.pair |> Pair.toCollateral)
+        --                     |> (Maybe.map << Remote.map)
+        --                         (Uint.toAmount
+        --                             (pool.pair |> Pair.toCollateral)
+        --                         )
+        --                     |> (Maybe.map << Remote.withDefault) ""
+        --             )
+        --         |> Maybe.map
+        --             (\collateralIn ->
+        --                 { transaction
+        --                     | state =
+        --                         collateralIn |> updateAdvancedMax percent
+        --                 }
+        --                     |> query model blockchain pool poolInfo
+        --             )
+        --         |> Maybe.withDefault (transaction |> noCmdAndEffect)
+        -- ( InputMax, Collateral { percent } ) ->
+        --     blockchain
+        --         |> Blockchain.toUser
+        --         |> Maybe.andThen
+        --             (\user ->
+        --                 user
+        --                     |> User.getBalance
+        --                         (pool.pair |> Pair.toCollateral)
+        --                     |> (Maybe.map << Remote.map)
+        --                         (Uint.toAmount
+        --                             (pool.pair |> Pair.toCollateral)
+        --                         )
+        --                     |> (Maybe.map << Remote.withDefault) ""
+        --             )
+        --         |> Maybe.map
+        --             (\collateralIn ->
+        --                 { transaction
+        --                     | state =
+        --                         collateralIn |> updateAdvancedMax percent
+        --                 }
+        --                     |> query model blockchain pool poolInfo
+        --             )
+        --         |> Maybe.withDefault (transaction |> noCmdAndEffect)
+        -- ( InputMax, AdvancedMax { percent } ) ->
+        --     blockchain
+        --         |> Blockchain.toUser
+        --         |> Maybe.andThen
+        --             (\user ->
+        --                 user
+        --                     |> User.getBalance
+        --                         (pool.pair |> Pair.toCollateral)
+        --                     |> (Maybe.map << Remote.map)
+        --                         (Uint.toAmount
+        --                             (pool.pair |> Pair.toCollateral)
+        --                         )
+        --                     |> (Maybe.map << Remote.withDefault) ""
+        --             )
+        --         |> Maybe.map
+        --             (\collateralIn ->
+        --                 { transaction
+        --                     | state =
+        --                         collateralIn |> updateAdvancedMax percent
+        --                 }
+        --                     |> query model blockchain pool poolInfo
+        --             )
+        --         |> Maybe.withDefault (transaction |> noCmdAndEffect)
         ( QueryAgain _, _ ) ->
             transaction
                 |> queryPerSecond model blockchain pool poolInfo

@@ -33,7 +33,6 @@ import Element
         , fill
         , height
         , inFront
-        , none
         , padding
         , paddingEach
         , paddingXY
@@ -52,6 +51,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import Element.Region as Region
+import Page.Position.Claim.Error as Error exposing (Error, errorHandler)
 import Page.Positions.Dues.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Dict as Dict exposing (Dict)
 import Time exposing (Posix)
@@ -149,8 +149,8 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
             Loading _ ->
                 loading model
 
-            Failure error ->
-                none
+            Failure _ ->
+                errorHandler
 
             -- |> Debug.log "error view"
             Success dues ->
