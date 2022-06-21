@@ -5,7 +5,7 @@ port module Page.Position.Claim.Main exposing
     , init
     , subscriptions
     , update
-    , view
+    , view, errorHandler
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
@@ -59,7 +59,7 @@ import Json.Decode as Decode
 import Json.Encode exposing (Value)
 import Page.Answer as PoolInfoAnswer
 import Page.PoolInfo exposing (PoolInfo)
-import Page.Position.Claim.Error as Error exposing (Error, errorHandler)
+import Page.Position.Claim.Error as Error exposing (Error)
 import Page.Position.Claim.Query as Query
 import Page.Position.Claim.Tooltip as Tooltip exposing (Tooltip)
 import Page.Query as PoolInfoQuery
@@ -1174,3 +1174,24 @@ line { theme } =
         , theme |> ThemeColor.textDisabled |> Background.color
         ]
         none
+
+
+errorHandler : Element Msg
+errorHandler =
+    row
+        [ width shrink
+        , height shrink
+        , centerX
+        , centerY
+        , spacing 12
+        ]
+        [ paragraph
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.size 14
+            , Font.color Color.negative400
+            ]
+            [ text "Err: " ]
+        ]

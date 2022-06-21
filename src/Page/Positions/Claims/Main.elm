@@ -51,7 +51,7 @@ import Element.Input as Input
 import Element.Keyed as Keyed
 import Element.Region as Region
 import Http
-import Page.Position.Claim.Error as Error exposing (Error, errorHandler)
+import Page.Position.Claim.Main as Main exposing (errorHandler)
 import Page.Positions.Claims.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Dict as Dict
 import Time exposing (Posix)
