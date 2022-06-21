@@ -11,6 +11,7 @@ export async function assetCalculate(
 ) {
   try {
     const currentTime = getCurrentTime();
+    const totalLiquidity = new Uint256(query.poolInfo.totalLiquidity);
 
     const state = {
       x: new Uint112(query.poolInfo.x),
@@ -26,7 +27,7 @@ export async function assetCalculate(
       zIncrease,
     } = pool.liquidityGivenAsset(
       state,
-      new Uint256(query.poolInfo.totalLiquidity),
+      totalLiquidity,
       new Uint112(query.assetIn!),
       new Uint256(currentTime),
       new Uint256(query.poolInfo.feeStored),
@@ -37,6 +38,8 @@ export async function assetCalculate(
     const minLiquidity = calculateMinValue(liquidityOut, query.slippage);
     const maxDebt = calculateMaxValue(dueOut.debt, query.slippage);
     const maxCollateral = calculateMaxValue(dueOut.collateral, query.slippage);
+    const liqShareCalc = liquidityOut.mul(10000).div(totalLiquidity.add(liquidityOut));
+    const liquidityShare = Number(liqShareCalc.toBigInt()) / 10_000;
 
     const futureApr = calculateFuturisticApr(state, xIncrease, yIncrease);
     const futureCdp = calculateFuturisticCdp(
@@ -62,6 +65,7 @@ export async function assetCalculate(
         maxCollateral: maxCollateral.toString(),
         apr: futureApr,
         cdp: futureCdp,
+        liquidityShare
       }
     });
   } catch (err) {

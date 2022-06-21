@@ -22,12 +22,14 @@ import Data.Pool exposing (Pool)
 import Data.PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Slippage exposing (Slippage)
-import Data.Theme exposing (Theme)
+import Data.Theme as Theme exposing (Theme)
 import Data.Token as Token exposing (Token)
 import Data.Uint as Uint exposing (Uint)
 import Element
     exposing
         ( Element
+        , alignRight
+        , below
         , centerX
         , centerY
         , column
@@ -38,6 +40,7 @@ import Element
         , none
         , padding
         , paddingXY
+        , paragraph
         , px
         , row
         , shrink
@@ -47,6 +50,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
@@ -64,9 +68,12 @@ import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
+import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Loading as Loading
 import Utility.ThemeColor as ThemeColor
+import Utility.Tooltip as TooltipUtil
+import Utility.Truncate as Truncate
 
 
 type Transaction
@@ -109,6 +116,7 @@ type alias OutGivenAsset =
     , minLiquidity : Uint
     , apr : Float
     , cdp : CDP
+    , liquidityShare : Float
     }
 
 
@@ -133,6 +141,7 @@ type alias OutGivenCollateral =
     , minLiquidity : Uint
     , apr : Float
     , cdp : CDP
+    , liquidityShare : Float
     }
 
 
@@ -186,6 +195,7 @@ initGivenAsset =
     , minLiquidity = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , liquidityShare = 0
     }
 
 
@@ -212,6 +222,7 @@ initGivenCollateral =
     , minLiquidity = Uint.zero
     , apr = 0
     , cdp = CDP.init
+    , liquidityShare = 0
     }
 
 
@@ -1259,7 +1270,7 @@ view model blockchain pool poolInfo (Transaction transaction) =
         transaction
             |> assetInSection model
                 blockchain
-                (pool.pair |> Pair.toAsset)
+                pool
     , second =
         transaction
             |> duesInSection model
@@ -1268,7 +1279,7 @@ view model blockchain pool poolInfo (Transaction transaction) =
                 poolInfo
     , third =
         transaction
-            |> liqOutSection model
+            |> warningSection model
                 pool
     , buttons =
         transaction
@@ -1279,10 +1290,10 @@ view model blockchain pool poolInfo (Transaction transaction) =
 assetInSection :
     { model | images : Images, theme : Theme }
     -> Blockchain
-    -> Token
+    -> Pool
     -> { transaction | state : State, tooltip : Maybe Tooltip }
     -> Element Msg
-assetInSection model blockchain asset { state, tooltip } =
+assetInSection model blockchain pool ({ state, tooltip } as transaction) =
     column
         [ Region.description "lend asset"
         , width fill
@@ -1310,7 +1321,7 @@ assetInSection model blockchain asset { state, tooltip } =
                     , paddingXY 0 3
                     , model.theme |> ThemeColor.actionElemLabel |> Font.color
                     ]
-                    (text "Amount to Lend")
+                    (text "Add Asset")
                 , (case state of
                     Debt { out } ->
                         case out of
@@ -1344,7 +1355,7 @@ assetInSection model blockchain asset { state, tooltip } =
                 ]
             , blockchain
                 |> Blockchain.toUser
-                |> Maybe.andThen (User.getBalance asset)
+                |> Maybe.andThen (User.getBalance (pool.pair |> Pair.toAsset))
                 |> Maybe.map
                     (\balance ->
                         MaxButton.view
@@ -1353,7 +1364,7 @@ assetInSection model blockchain asset { state, tooltip } =
                             , onMouseLeave = OnMouseLeave
                             , tooltip = Tooltip.AssetBalance
                             , opened = tooltip
-                            , token = asset
+                            , token = pool.pair |> Pair.toAsset
                             , balance = balance
                             , theme = model.theme
                             }
@@ -1365,7 +1376,7 @@ assetInSection model blockchain asset { state, tooltip } =
             , onMouseLeave = OnMouseLeave
             , tooltip = Tooltip.AssetInSymbol
             , opened = tooltip
-            , token = asset
+            , token = pool.pair |> Pair.toAsset
             , onClick = Just ClickAssetIn
             , onChange = InputAssetIn
             , text =
@@ -1388,169 +1399,26 @@ assetInSection model blockchain asset { state, tooltip } =
 
                             _ ->
                                 Left ""
-            , description = "asset in textbox"
+            , description = "asset-in textbox"
             }
-        ]
+        , (case state of
+            Asset { out } ->
+                out
+                    |> Remote.map .collateralIn
+                    |> Right
 
+            Debt { out } ->
+                out
+                    |> Remote.map .collateralIn
+                    |> Right
 
-duesInSection :
-    { model | priceFeed : PriceFeed, images : Images, theme : Theme }
-    -> Blockchain
-    -> Pool
-    -> PoolInfo
-    -> { transaction | state : State, tooltip : Maybe Tooltip }
-    -> Element Msg
-duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction) =
-    column
-        [ Region.description "dues"
-        , width fill
-        , height shrink
-        , padding 16
-        , spacing 12
-        , model.theme |> ThemeColor.sectionBackground |> Background.color
-        , Border.rounded 8
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 16
-            ]
-            ((case state of
-                Asset { out, assetIn } ->
-                    ( out |> Remote.map .apr
-                    , out |> Remote.map .cdp
-                    , assetIn
-                    )
-
-                Debt { out } ->
-                    ( out |> Remote.map .apr
-                    , out |> Remote.map .cdp
-                    , "1"
-                    )
-
-                Collateral { out } ->
-                    ( out |> Remote.map .apr
-                    , out |> Remote.map .cdp
-                    , "1"
-                    )
-             )
-                |> (\( apr, cdp, assetIn ) ->
-                        [ Info.lendAPR apr assetIn (poolInfo |> Just) model.theme
-                        , Info.lendCDP model
-                            { onMouseEnter = OnMouseEnter
-                            , onMouseLeave = OnMouseLeave
-                            , cdpTooltip = Tooltip.CDP
-                            , symbolTooltip = Tooltip.CDPSymbol
-                            , opened = tooltip
-                            , pair = pool.pair
-                            , cdp = cdp
-                            , poolInfo = poolInfo |> Just
-                            , assetIn = assetIn
-                            }
-                        ]
-                   )
-            )
-        , column
-            [ width fill
-            , height shrink
-            , spacing 12
-            ]
-            [ (case state of
-                Asset { out } ->
-                    out
-                        |> Remote.map .debtIn
-                        |> Right
-
-                Debt { debtIn } ->
-                    Left debtIn
-
-                Collateral { out } ->
-                    out
-                        |> Remote.map .debtIn
-                        |> Right
-              )
-                |> debtInSection model
-                    (pool.pair |> Pair.toAsset)
-                    transaction
-            , (case state of
-                Asset { out } ->
-                    out
-                        |> Remote.map .collateralIn
-                        |> Right
-
-                Debt { out } ->
-                    out
-                        |> Remote.map .collateralIn
-                        |> Right
-
-                Collateral { collateralIn } ->
-                    Left collateralIn
-              )
-                |> collateralInSection model
-                    blockchain
-                    (pool.pair |> Pair.toCollateral)
-                    transaction
-            ]
-        ]
-
-
-debtInSection :
-    { model | images : Images, theme : Theme }
-    -> Token
-    -> { transaction | tooltip : Maybe Tooltip }
-    -> Or String (Remote Error Uint)
-    -> Element Msg
-debtInSection model asset { tooltip } or =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ row
-            [ width shrink
-            , height shrink
-            , spacing 10
-            ]
-            [ el
-                [ width shrink
-                , height shrink
-                , Font.size 14
-                , paddingXY 0 3
-                , model.theme |> ThemeColor.actionElemLabel |> Font.color
-                ]
-                (text "Debt to Repay")
-            , case or of
-                Right (Loading timeline) ->
-                    el
-                        [ width shrink
-                        , height shrink
-                        , centerY
-                        ]
-                        (Loading.view timeline model.theme)
-
-                _ ->
-                    none
-            ]
-        , Textbox.view model
-            { onMouseEnter = OnMouseEnter
-            , onMouseLeave = OnMouseLeave
-            , tooltip = Tooltip.DebtOutSymbol
-            , opened = tooltip
-            , token = asset
-            , onClick = Just ClickDebtIn
-            , onChange = InputDebtIn
-            , text =
-                case or of
-                    Right (Success uint) ->
-                        Right uint
-
-                    Left string ->
-                        Left string
-
-                    _ ->
-                        Left ""
-            , description = "debt out textbox"
-            }
+            Collateral { collateralIn } ->
+                Left collateralIn
+          )
+            |> collateralInSection model
+                blockchain
+                (pool.pair |> Pair.toCollateral)
+                transaction
         ]
 
 
@@ -1585,7 +1453,7 @@ collateralInSection model blockchain collateral { tooltip } or =
                     , paddingXY 0 3
                     , model.theme |> ThemeColor.actionElemLabel |> Font.color
                     ]
-                    (text "Collateral to Lock")
+                    (text "Add Collateral")
                 , case or of
                     Right (Loading timeline) ->
                         el
@@ -1634,8 +1502,270 @@ collateralInSection model blockchain collateral { tooltip } or =
 
                     _ ->
                         Left ""
-            , description = "collateral out textbox"
+            , description = "collateral-out textbox"
             }
+        ]
+
+
+duesInSection :
+    { model | priceFeed : PriceFeed, images : Images, theme : Theme }
+    -> Blockchain
+    -> Pool
+    -> PoolInfo
+    -> { transaction | state : State, tooltip : Maybe Tooltip }
+    -> Element Msg
+duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction) =
+    column [ width fill, spacing 16 ]
+        [ column
+            [ Region.description "APR and CDP"
+            , width fill
+            , height shrink
+            , padding 16
+            , spacing 12
+            , model.theme |> ThemeColor.sectionBackground |> Background.color
+            , Border.rounded 8
+            ]
+            [ row
+                [ width fill
+                , height shrink
+                , spacing 16
+                ]
+                ((case state of
+                    Asset { out, assetIn } ->
+                        ( out |> Remote.map .apr
+                        , out |> Remote.map .cdp
+                        , assetIn
+                        )
+
+                    Debt { out } ->
+                        ( out |> Remote.map .apr
+                        , out |> Remote.map .cdp
+                        , "1"
+                        )
+
+                    Collateral { out } ->
+                        ( out |> Remote.map .apr
+                        , out |> Remote.map .cdp
+                        , "1"
+                        )
+                 )
+                    |> (\( apr, cdp, assetIn ) ->
+                            [ Info.lendAPR apr assetIn (poolInfo |> Just) model.theme
+                            , Info.lendCDP model
+                                { onMouseEnter = OnMouseEnter
+                                , onMouseLeave = OnMouseLeave
+                                , cdpTooltip = Tooltip.CDP
+                                , symbolTooltip = Tooltip.CDPSymbol
+                                , opened = tooltip
+                                , pair = pool.pair
+                                , cdp = cdp
+                                , poolInfo = poolInfo |> Just
+                                , assetIn = assetIn
+                                }
+                            ]
+                       )
+                )
+            ]
+        , column
+            [ Region.description "debt and pool-share"
+            , width fill
+            , height shrink
+            , padding 16
+            , spacing 12
+            , model.theme |> ThemeColor.sectionBackground |> Background.color
+            , Border.rounded 8
+            ]
+            [ column
+                [ width fill
+                , height shrink
+                , spacing 12
+                ]
+                [ (case state of
+                    Asset { out } ->
+                        out
+                            |> Remote.map .debtIn
+                            |> Right
+
+                    Debt { debtIn } ->
+                        Left debtIn
+
+                    Collateral { out } ->
+                        out
+                            |> Remote.map .debtIn
+                            |> Right
+                  )
+                    |> debtInSection model
+                        (pool.pair |> Pair.toAsset)
+                        transaction
+                ]
+            ]
+        ]
+
+
+debtInSection :
+    { model | images : Images, theme : Theme }
+    -> Token
+    -> { transaction | state : State, tooltip : Maybe Tooltip }
+    -> Or String (Remote Error Uint)
+    -> Element Msg
+debtInSection model asset { state, tooltip } or =
+    column
+        [ width fill
+        , height shrink
+        , spacing 12
+        ]
+        [ row
+            [ width fill
+            , height shrink
+            , spacing 10
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , Font.size 14
+                , paddingXY 0 3
+                , model.theme |> ThemeColor.textLight |> Font.color
+                ]
+                (text "Debt to Repay")
+            , case or of
+                Right (Loading timeline) ->
+                    el
+                        [ width shrink
+                        , height shrink
+                        , centerY
+                        ]
+                        (Loading.view timeline model.theme)
+
+                _ ->
+                    none
+            , row [ spacing 8, alignRight ]
+                [ case or of
+                    Right (Success uint) ->
+                        Truncate.viewAmount
+                            { onMouseEnter = OnMouseEnter
+                            , onMouseLeave = OnMouseLeave
+                            , tooltip = Tooltip.DebtOutSymbol
+                            , opened = tooltip
+                            , token = asset
+                            , amount = uint
+                            , theme = model.theme
+                            , customStyles = []
+                            }
+
+                    _ ->
+                        none
+                , model.images
+                    |> Image.viewToken
+                        [ width <| px 24
+                        , height <| px 24
+                        ]
+                        asset
+                , Truncate.viewSymbol
+                    { onMouseEnter = OnMouseEnter
+                    , onMouseLeave = OnMouseLeave
+                    , tooltip = Tooltip.DebtOutSymbol
+                    , opened = tooltip
+                    , token = asset
+                    , theme = model.theme
+                    , customStyles = []
+                    }
+                ]
+            ]
+        , row [ width fill ]
+            [ row [ spacing 8 ]
+                [ el
+                    [ Font.size 14
+                    , model.theme |> ThemeColor.textLight |> Font.color
+                    ]
+                    (text "Pool Share")
+                , model.images
+                    |> (case model.theme of
+                            Theme.Dark ->
+                                Image.info
+
+                            Theme.Light ->
+                                Image.infoDark
+                       )
+                        [ width <| px 12
+                        , height <| px 12
+                        , Font.center
+                        , centerX
+                        , Events.onMouseEnter (OnMouseEnter Tooltip.PoolShare)
+                        , Events.onMouseLeave OnMouseLeave
+                        , (if tooltip == Just Tooltip.PoolShare then
+                            el
+                                [ Font.size 14
+                                , model.theme |> ThemeColor.textLight |> Font.color
+                                ]
+                                ("This is your share of the total liquidity provided in the pool" |> text)
+                                |> TooltipUtil.belowAlignLeft model.theme
+
+                           else
+                            none
+                          )
+                            |> below
+                        ]
+                , el [ alignRight, Font.color Color.positive500 ]
+                    ((case state of
+                        Asset { out } ->
+                            out
+                                |> Remote.map .liquidityOut
+
+                        Debt { out } ->
+                            out
+                                |> Remote.map .liquidityOut
+
+                        Collateral { out } ->
+                            out
+                                |> Remote.map .liquidityOut
+                     )
+                        |> (\poolShare ->
+                                case poolShare of
+                                    Success output ->
+                                        text ""
+
+                                    Loading timeline ->
+                                        el
+                                            [ width shrink
+                                            , height shrink
+                                            , centerX
+                                            , centerY
+                                            ]
+                                            (Loading.view timeline model.theme)
+
+                                    _ ->
+                                        none
+                           )
+                    )
+                ]
+            ]
+        ]
+
+
+warningSection :
+    { model | images : Images, theme : Theme }
+    -> Pool
+    -> { transaction | state : State }
+    -> Element Msg
+warningSection { images, theme } pool { state } =
+    column
+        [ width fill
+        , height shrink
+        , centerX
+        , padding 16
+        , spacing 12
+        , Font.size 14
+        , Border.rounded 8
+        , theme |> ThemeColor.sectionBackground |> Background.color
+        ]
+        [ images
+            |> Image.warning
+                [ width <| px 24, height <| px 24, Font.center, centerX ]
+        , paragraph
+            [ Font.color Color.warning400
+            , Font.center
+            ]
+            [ text "The above Debt must be repaid before maturity of the pool, or else the collateral locked will be forfeited. You can view the debt position under the Borrow tab." ]
         ]
 
 
@@ -2014,14 +2144,14 @@ liquidityButton : Theme -> Element Msg
 liquidityButton theme =
     Button.view
         { onPress = ClickLiquidity
-        , text = "Provide Liquidity"
+        , text = "Add Liquidity"
         , theme = theme
         }
 
 
 disabledLiquidityButton : Theme -> Element msg
 disabledLiquidityButton theme =
-    Button.disabled theme "Provide Liquidity"
+    Button.disabled theme "Add Liquidity"
         |> map never
 
 
