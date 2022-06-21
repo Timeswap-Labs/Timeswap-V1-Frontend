@@ -1383,7 +1383,7 @@ debtInSection model asset { state, tooltip } remote =
                         |> (\liquidityShare ->
                                 case liquidityShare of
                                     Success poolShare ->
-                                        text ("%" |> String.append (String.fromFloat (poolShare * 100)))
+                                        text ("%" |> String.append (String.fromFloat poolShare))
 
                                     Loading timeline ->
                                         el
@@ -1426,7 +1426,7 @@ warningSection { images, theme } pool { state } =
             [ Font.color Color.warning400
             , Font.center
             ]
-            [ text "The above Debt must be repaid before maturity of the pool, or else the collateral locked will be forfeited. You can view the debt position under the Borrow tab." ]
+            [ text "The above Debt must be repaid before maturity of the pool, else the collateral locked will be forfeited. You can view the debt position under the Borrow tab." ]
         ]
 
 

@@ -294,5 +294,5 @@ warningSection { images, theme } pool =
             [ Font.color Color.warning400
             , Font.center
             ]
-            [ text "The above Debt must be repaid before maturity of the pool, or else the collateral locked will be forfeited. You can view the debt position under the Borrow tab." ]
+            [ text "The above Debt must be repaid before maturity of the pool, else the collateral locked will be forfeited. You can view the debt position under the Borrow tab." ]
         ]
