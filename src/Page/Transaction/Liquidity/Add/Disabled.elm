@@ -285,7 +285,7 @@ warningSection { images, theme } pool =
         , Font.size 14
         , alpha 0.2
         , Border.rounded 8
-        , theme |> ThemeColor.sectionBackground |> Background.color
+        , Background.color Color.warning100
         ]
         [ images
             |> Image.warning

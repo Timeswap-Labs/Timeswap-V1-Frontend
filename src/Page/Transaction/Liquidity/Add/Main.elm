@@ -1278,7 +1278,7 @@ debtInSection model asset { state, tooltip } remote =
     column
         [ width fill
         , height shrink
-        , spacing 12
+        , spacing 14
         ]
         [ row
             [ width fill
@@ -1315,7 +1315,7 @@ debtInSection model asset { state, tooltip } remote =
                             , token = asset
                             , amount = uint
                             , theme = model.theme
-                            , customStyles = []
+                            , customStyles = [ Font.size 18 ]
                             }
 
                     _ ->
@@ -1333,7 +1333,7 @@ debtInSection model asset { state, tooltip } remote =
                     , opened = tooltip
                     , token = asset
                     , theme = model.theme
-                    , customStyles = []
+                    , customStyles = [ Font.size 18 ]
                     }
                 ]
             ]
@@ -1370,7 +1370,7 @@ debtInSection model asset { state, tooltip } remote =
                           )
                             |> below
                         ]
-                , el [ alignRight, Font.color Color.positive500, Font.size 16 ]
+                , el [ alignRight, Font.color Color.positive500, Font.size 18, Font.bold ]
                     ((case state of
                         Asset { out } ->
                             out
@@ -1417,7 +1417,7 @@ warningSection { images, theme } pool { state } =
         , spacing 12
         , Font.size 14
         , Border.rounded 8
-        , theme |> ThemeColor.sectionBackground |> Background.color
+        , Background.color Color.warning100
         ]
         [ images
             |> Image.warning
