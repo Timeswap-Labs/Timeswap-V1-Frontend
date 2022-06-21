@@ -1383,7 +1383,7 @@ debtInSection model asset { state, tooltip } remote =
                         |> (\liquidityShare ->
                                 case liquidityShare of
                                     Success poolShare ->
-                                        text ("%" |> String.append (String.fromFloat (poolShare * 100)))
+                                        text ("%" |> String.append (String.fromFloat poolShare))
 
                                     Loading timeline ->
                                         el

@@ -40,7 +40,7 @@ export async function collateralCalculate(
     const maxDebt = calculateMaxValue(dueOut.debt, query.slippage);
     const maxAsset = calculateMaxValue(assetInReturn, query.slippage);
     const liqShareCalc = liquidityOut.mul(10_000).div(totalLiquidity.add(liquidityOut));
-    const liquidityShare = Number(liqShareCalc.toBigInt()) / 10_000;
+    const liquidityShare = Math.round(Number(liqShareCalc.toBigInt())) / 100;
 
     const futureApr = calculateFuturisticApr(state, xIncrease, yIncrease);
     const futureCdp = calculateFuturisticCdp(
