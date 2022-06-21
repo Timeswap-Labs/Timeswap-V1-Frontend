@@ -2,10 +2,11 @@ port module Page.Position.Claim.Main exposing
     ( Effect(..)
     , Msg
     , Position
+    , errorHandler
     , init
     , subscriptions
     , update
-    , view, errorHandler
+    , view
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
@@ -1176,7 +1177,7 @@ line { theme } =
         none
 
 
-errorHandler : Element Msg
+errorHandler : Element msg
 errorHandler =
     row
         [ width shrink
