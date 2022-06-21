@@ -15,6 +15,7 @@ import Element
     exposing
         ( Element
         , alpha
+        , centerX
         , centerY
         , column
         , el
@@ -23,6 +24,7 @@ import Element
         , none
         , padding
         , paddingXY
+        , paragraph
         , px
         , row
         , shrink
@@ -38,12 +40,13 @@ import Page.Transaction.Info as Info
 import Page.Transaction.MaxButton as MaxButton
 import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
+import Utility.Color as Color
+import Utility.Image as Image
 import Utility.ThemeColor as ThemeColor
 
 
 type Transaction
     = Asset String
-    | Debt String
     | Collateral String
 
 
@@ -66,20 +69,20 @@ view model blockchain pool transaction =
     { first =
         assetInSection model
             blockchain
-            (pool.pair |> Pair.toAsset)
+            pool
             transaction
     , second = duesInSection model blockchain pool transaction
-    , third = liqOutSection model pool
+    , third = warningSection model pool
     }
 
 
 assetInSection :
     { model | images : Images, theme : Theme }
     -> Blockchain
-    -> Token
+    -> Pool
     -> Transaction
     -> Element Never
-assetInSection model blockchain asset transaction =
+assetInSection model blockchain pool transaction =
     column
         [ Region.description "lend asset"
         , width <| px 343
@@ -103,14 +106,14 @@ assetInSection model blockchain asset transaction =
                 , paddingXY 0 3
                 , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
-                (text "Amount to Lend")
+                (text "Add Asset")
             , blockchain
                 |> Blockchain.toUser
-                |> Maybe.andThen (User.getBalance asset)
+                |> Maybe.andThen (User.getBalance (pool.pair |> Pair.toAsset))
                 |> Maybe.map
                     (\balance ->
                         MaxButton.disabled
-                            { token = asset
+                            { token = pool.pair |> Pair.toAsset
                             , balance = balance
                             , theme = model.theme
                             }
@@ -126,88 +129,15 @@ assetInSection model blockchain asset transaction =
           )
             |> (\assetIn ->
                     Textbox.disabled model
-                        { token = asset
+                        { token = pool.pair |> Pair.toAsset
                         , text = assetIn
                         , description = "asset in textbox"
                         }
                )
-        ]
-
-
-duesInSection :
-    { model | images : Images, theme : Theme }
-    -> Blockchain
-    -> Pool
-    -> Transaction
-    -> Element Never
-duesInSection model blockchain pool transaction =
-    column
-        [ Region.description "dues"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 12
-        , alpha 0.2
-        , model.theme |> ThemeColor.sectionBackground |> Background.color
-        , Border.rounded 8
-        ]
-        [ row
-            [ width fill
-            , height shrink
-            , spacing 16
-            ]
-            [ Info.emptyAPR model.theme
-            , Info.emptyCDP model.theme
-            ]
-        , column
-            [ width fill
-            , height shrink
-            , spacing 12
-            ]
-            [ debtInSection model
-                (pool.pair |> Pair.toAsset)
-                transaction
-            , collateralInSection model
-                blockchain
-                (pool.pair |> Pair.toCollateral)
-                transaction
-            ]
-        ]
-
-
-debtInSection :
-    { model | images : Images, theme : Theme }
-    -> Token
-    -> Transaction
-    -> Element Never
-debtInSection model asset transaction =
-    column
-        [ width fill
-        , height shrink
-        , spacing 10
-        ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , model.theme |> ThemeColor.actionElemLabel |> Font.color
-            ]
-            (text "Debt to Repay")
-        , (case transaction of
-            Debt debtOut ->
-                debtOut
-
-            _ ->
-                ""
-          )
-            |> (\debtOut ->
-                    Textbox.disabled model
-                        { token = asset
-                        , text = debtOut
-                        , description = "debt output"
-                        }
-               )
+        , collateralInSection model
+            blockchain
+            (pool.pair |> Pair.toCollateral)
+            transaction
         ]
 
 
@@ -236,7 +166,7 @@ collateralInSection model blockchain collateral transaction =
                 , paddingXY 0 3
                 , model.theme |> ThemeColor.actionElemLabel |> Font.color
                 ]
-                (text "Collateral to Lock")
+                (text "Add Collateral")
             , blockchain
                 |> Blockchain.toUser
                 |> Maybe.andThen (User.getBalance collateral)
@@ -267,31 +197,102 @@ collateralInSection model blockchain collateral transaction =
         ]
 
 
-liqOutSection :
+duesInSection :
     { model | images : Images, theme : Theme }
+    -> Blockchain
     -> Pool
+    -> Transaction
     -> Element Never
-liqOutSection model pool =
+duesInSection model blockchain pool transaction =
     column
-        [ Region.description "liquidity output"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 10
+        [ spacing 16
         , alpha 0.2
-        , model.theme |> ThemeColor.sectionBackground |> Background.color
-        , Border.rounded 8
+        ]
+        [ column
+            [ Region.description "dues"
+            , width <| px 343
+            , height shrink
+            , padding 16
+            , spacing 12
+            , model.theme |> ThemeColor.sectionBackground |> Background.color
+            , Border.rounded 8
+            ]
+            [ row
+                [ width fill
+                , height shrink
+                , spacing 16
+                ]
+                [ Info.emptyAPR model.theme
+                , Info.emptyCDP model.theme
+                ]
+            ]
+        , column
+            [ width fill
+            , height shrink
+            , spacing 12
+            , padding 16
+            , model.theme |> ThemeColor.sectionBackground |> Background.color
+            , Border.rounded 8
+            ]
+            [ debtInSection model
+                (pool.pair |> Pair.toAsset)
+                transaction
+            ]
+        ]
+
+
+debtInSection :
+    { model | images : Images, theme : Theme }
+    -> Token
+    -> Transaction
+    -> Element Never
+debtInSection model asset transaction =
+    column
+        [ width fill
+        , height shrink
+        , spacing 10
         ]
         [ el
             [ width shrink
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , model.theme |> ThemeColor.actionElemLabel |> Font.color
+            , model.theme |> ThemeColor.textLight |> Font.color
             ]
-            (text "LP Tokens to Receive")
-        , Output.disabledLiquidity model
-            { pair = pool.pair
-            , description = "liquidity out"
-            }
+            (text "Debt to Repay")
+        , el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , paddingXY 0 3
+            , model.theme |> ThemeColor.textLight |> Font.color
+            ]
+            (text "Pool Share")
+        ]
+
+
+warningSection :
+    { model | images : Images, theme : Theme }
+    -> Pool
+    -> Element Never
+warningSection { images, theme } pool =
+    column
+        [ width fill
+        , height shrink
+        , centerX
+        , padding 16
+        , spacing 12
+        , Font.size 14
+        , alpha 0.2
+        , Border.rounded 8
+        , theme |> ThemeColor.sectionBackground |> Background.color
+        ]
+        [ images
+            |> Image.warning
+                [ width <| px 24, height <| px 24, Font.center, centerX ]
+        , paragraph
+            [ Font.color Color.warning400
+            , Font.center
+            ]
+            [ text "The above Debt must be repaid before maturity of the pool, or else the collateral locked will be forfeited. You can view the debt position under the Borrow tab." ]
         ]

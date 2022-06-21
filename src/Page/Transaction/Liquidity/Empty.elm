@@ -8,6 +8,7 @@ import Element
     exposing
         ( Element
         , alpha
+        , centerX
         , column
         , el
         , fill
@@ -15,6 +16,7 @@ import Element
         , none
         , padding
         , paddingXY
+        , paragraph
         , px
         , row
         , shrink
@@ -29,6 +31,8 @@ import Element.Region as Region
 import Page.Transaction.Info as Info
 import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
+import Utility.Color as Color
+import Utility.Image as Image
 import Utility.Maybe as Maybe
 import Utility.ThemeColor as ThemeColor
 
@@ -45,17 +49,18 @@ view :
         , third : Element Never
         }
 view model { asset, collateral } =
-    { first = assetInSection model asset
-    , second = duesOutSection model asset collateral
-    , third = liqOutSection model asset collateral
+    { first = assetInSection model asset collateral
+    , second = duesOutSection model asset
+    , third = warningSection model
     }
 
 
 assetInSection :
     { model | images : Images, theme : Theme }
     -> Maybe Token
+    -> Maybe Token
     -> Element Never
-assetInSection model token =
+assetInSection model asset collateral =
     column
         [ Region.description "lend asset"
         , width <| px 343
@@ -73,52 +78,58 @@ assetInSection model token =
             , paddingXY 0 3
             , model.theme |> ThemeColor.actionElemLabel |> Font.color
             ]
-            (text "Amount to Lend")
-        , token
+            (text "Add Asset")
+        , asset
             |> Maybe.map
-                (\asset ->
+                (\assetToken ->
                     Textbox.disabled model
-                        { token = asset
+                        { token = assetToken
                         , text = ""
                         , description = "asset in textbox"
                         }
                 )
             |> Maybe.withDefault
                 (Textbox.empty "asset in textbox")
+        , collateralOutSection model collateral
         ]
 
 
 duesOutSection :
     { model | images : Images, theme : Theme }
     -> Maybe Token
-    -> Maybe Token
     -> Element Never
-duesOutSection model asset collateral =
+duesOutSection model asset =
     column
-        [ Region.description "dues"
-        , width <| px 343
-        , height shrink
-        , padding 16
-        , spacing 12
+        [ spacing 16
         , alpha 0.2
-        , model.theme |> ThemeColor.sectionBackground |> Background.color
-        , Border.rounded 8
         ]
-        [ row
-            [ width fill
+        [ column
+            [ Region.description "dues"
+            , width <| px 343
             , height shrink
-            , spacing 16
+            , padding 16
+            , spacing 12
+            , model.theme |> ThemeColor.sectionBackground |> Background.color
+            , Border.rounded 8
             ]
-            [ Info.emptyAPR model.theme
-            , Info.emptyCDP model.theme
+            [ row
+                [ width fill
+                , height shrink
+                , spacing 16
+                ]
+                [ Info.emptyAPR model.theme
+                , Info.emptyCDP model.theme
+                ]
             ]
         , column
             [ width fill
             , height shrink
             , spacing 12
+            , padding 16
+            , model.theme |> ThemeColor.sectionBackground |> Background.color
+            , Border.rounded 8
             ]
             [ debtOutSection model asset
-            , collateralOutSection model collateral
             ]
         ]
 
@@ -138,20 +149,17 @@ debtOutSection model asset =
             , height shrink
             , Font.size 14
             , paddingXY 0 3
-            , model.theme |> ThemeColor.actionElemLabel |> Font.color
+            , model.theme |> ThemeColor.textLight |> Font.color
             ]
             (text "Debt to Repay")
-        , asset
-            |> Maybe.map
-                (\token ->
-                    Textbox.disabled model
-                        { token = token
-                        , text = ""
-                        , description = "debt output"
-                        }
-                )
-            |> Maybe.withDefault
-                (Textbox.empty "debt output")
+        , el
+            [ width shrink
+            , height shrink
+            , Font.size 14
+            , paddingXY 0 3
+            , model.theme |> ThemeColor.textLight |> Font.color
+            ]
+            (text "Pool Share")
         ]
 
 
@@ -187,49 +195,27 @@ collateralOutSection model collateral =
         ]
 
 
-liqOutSection :
+warningSection :
     { model | images : Images, theme : Theme }
-    -> Maybe Token
-    -> Maybe Token
     -> Element Never
-liqOutSection model maybeAsset maybeCollateral =
+warningSection { images, theme } =
     column
-        [ Region.description "liquidity output"
-        , width <| px 343
+        [ width fill
         , height shrink
+        , centerX
         , padding 16
-        , spacing 10
+        , spacing 12
+        , Font.size 14
         , alpha 0.2
-        , model.theme |> ThemeColor.sectionBackground |> Background.color
         , Border.rounded 8
+        , theme |> ThemeColor.sectionBackground |> Background.color
         ]
-        [ el
-            [ width shrink
-            , height shrink
-            , Font.size 14
-            , paddingXY 0 3
-            , model.theme |> ThemeColor.actionElemLabel |> Font.color
+        [ images
+            |> Image.warning
+                [ width <| px 24, height <| px 24, Font.center, centerX ]
+        , paragraph
+            [ Font.color Color.warning400
+            , Font.center
             ]
-            (text "LP Tokens to Receive")
-        , Just
-            (\asset collateral ->
-                Pair.init asset collateral
-                    |> Maybe.map
-                        (\pair ->
-                            Output.disabledLiquidity model
-                                { pair = pair
-                                , description = "liquidity out"
-                                }
-                        )
-            )
-            |> Maybe.apply maybeAsset
-            |> Maybe.apply maybeCollateral
-            |> Maybe.andThen identity
-            |> Maybe.withDefault
-                (el
-                    [ width fill
-                    , height <| px 24
-                    ]
-                    none
-                )
+            [ text "The above Debt must be repaid before maturity of the pool, or else the collateral locked will be forfeited. You can view the debt position under the Borrow tab." ]
         ]
