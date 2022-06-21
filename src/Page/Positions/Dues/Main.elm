@@ -51,7 +51,6 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import Element.Region as Region
-import Page.Position.Claim.Error as Error exposing (Error)
 import Page.Position.Claim.Main exposing (errorHandler)
 import Page.Positions.Dues.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Dict as Dict exposing (Dict)
