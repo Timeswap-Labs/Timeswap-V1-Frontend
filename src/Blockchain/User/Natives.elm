@@ -26,7 +26,7 @@ type alias Answer =
 
 
 toUrlString : Chain -> String -> String
-toUrlString chain  endPoint=
+toUrlString chain endPoint =
     Builder.crossOrigin endPoint
         [ "natives" ]
         [ chain |> Chain.toQueryParameter ]

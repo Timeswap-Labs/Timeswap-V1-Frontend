@@ -10,7 +10,7 @@ import Url.Builder as Builder
 toUrlString : Chain -> String -> Pair -> String
 toUrlString chain endPoint pair =
     Builder.crossOrigin endPoint
-        ["pool", "summary"]
+        [ "pool", "summary" ]
         [ chain
             |> Chain.toQueryParameter
         , pair

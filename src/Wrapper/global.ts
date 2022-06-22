@@ -7,7 +7,8 @@ import {
 import WalletConnectProvider from "@walletconnect/web3-provider";
 import { providers } from "@0xsequence/multicall";
 import { Biconomy } from "@biconomy/mexa";
-
+import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import axios from "axios";
 const { MulticallProvider } = providers;
 
 const API_KEY = "Vn-35Qi3F.eaa3ce10-82b8-4667-94bb-10669895ac82";
@@ -65,10 +66,32 @@ export class GlobalParams {
   }
 
   public async getSigner(): Promise<Signer> {
-    if (this.isBiconomyReady) {
-      return this.biconomy.getSignerByAddress(
-        await this.walletSigner.getAddress()
-      );
+    var address;
+    var allowed = false;
+    const valued = this.biconomy.getSignerByAddress(
+      (address = await this.walletSigner.getAddress())
+    );
+
+    await axios
+      .get(
+        "https://api.biconomy.io/api/v1/dapp/checkLimits?" +
+          "userAddress=" +
+          address +
+          "&apiId=" +
+          CONVENIENCE,
+        {
+          headers: {
+            "x-api-key": API_KEY,
+          },
+        }
+      )
+      .then((response) => {
+        console.log(response, " is response");
+        allowed = response.data.allowed;
+      });
+
+    if (allowed && this.isBiconomyReady) {
+      return valued;
     } else {
       return this._walletSigner!;
     }
