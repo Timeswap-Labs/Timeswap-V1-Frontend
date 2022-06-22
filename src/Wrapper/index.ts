@@ -18,7 +18,7 @@ async function elmInit() {
   let apiEndpoint = "";
   if (process.env.PARCEL_PUBLIC_ENVIRONMENT === "production")
     apiEndpoint = "https://api.timeswap.io/v1";
-  else apiEndpoint = "https://ts-bico-testnet.herokuapp.com/v1";
+  else apiEndpoint = "https://ts-bico-mainnet.herokuapp.com/v1";
 
   const app = Elm.Main.init({
     node: document.getElementById("elm")!,
@@ -51,15 +51,17 @@ async function elmInit() {
 
   init(app, gp, user);
 
-  gp.biconomy.onEvent(gp.biconomy.READY, () => {
-    // Initialize the dapp here
-    console.log("Bico ready");
-    gp.isBiconomyReady = true;
-  }).onEvent(gp.biconomy.ERROR, (error, message) => {
-    // Handle error while initializing mexa
-    console.log("Bico err", error, message);
-    gp.isBiconomyReady = false;
-  });
+  gp.biconomy
+    .onEvent(gp.biconomy.READY, () => {
+      // Initialize the dapp here
+      console.log("Bico ready");
+      gp.isBiconomyReady = true;
+    })
+    .onEvent(gp.biconomy.ERROR, (error, message) => {
+      // Handle error while initializing mexa
+      console.log("Bico err", error, message);
+      gp.isBiconomyReady = false;
+    });
 }
 
 sentry();
