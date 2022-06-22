@@ -247,7 +247,7 @@ construct ({ chains } as model) url maybePage =
 
         ( Just (Route.Liquidity (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
             poolInfo
-                |> Liquidity.initGivenPoolInfo model blockchain (maybePage |> toLiquidityTxn) pool
+                |> Liquidity.initGivenPoolInfo model (maybePage |> toLiquidityTxn) pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction

@@ -334,12 +334,11 @@ init { time, endPoint } blockchain maybeTxn parameter =
 
 initGivenPoolInfo :
     { model | time : Posix }
-    -> Blockchain
     -> Maybe Transaction
     -> Pool
     -> PoolInfo
     -> ( Transaction, Cmd Msg )
-initGivenPoolInfo { time } _ maybeTxn pool poolInfo =
+initGivenPoolInfo { time } maybeTxn pool poolInfo =
     if pool.maturity |> Maturity.isActive time then
         case maybeTxn of
             Just (Transaction { state }) ->
