@@ -73,7 +73,43 @@ export const whitelistChains: Whitelist = {
       }
     ],
     custom: getCustomTokens(String(80001)),
-  }]
+  },,
+  {
+    chainId: 4,
+    name: "Rinkeby",
+    rpcUrl: "https://rinkeby.infura.io/v3/",
+    blockExplorerUrl: "https://rinkeby.etherscan.io/",
+    nftExplorerUrl: "https://testnets.opensea.io/assets/rinkeby",
+    native: {
+      name: "Ethereum",
+      symbol: "ETH",
+      decimals: 18,
+    },
+    wrapper: {
+      address: WNATIVE_ADDRESS[4],
+      name: "Wrapped Ether",
+      symbol: "WETH",
+      decimals: 18,
+    },
+    whitelist: [
+      {
+        address: "0x332c7ac34580dfef553b7726549cec7015c4b39b",
+        name: "Dai Stablecoin",
+        symbol: "DAI",
+        decimals: 18,
+      },
+      {
+        address: "0x4858B2C035A0434895cD16b7a7d4016AF7bce26C",
+        name: "Wrapped Ethereum",
+        symbol: "WETH",
+        decimals: 18,
+      },
+    ],
+    custom: getCustomTokens(String(4)),
+  },
+],
+
+]
 };
 
 export function getChainData(chainId: number) {
