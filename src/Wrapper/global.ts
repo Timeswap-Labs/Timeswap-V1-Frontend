@@ -11,7 +11,7 @@ import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import axios from "axios";
 const { MulticallProvider } = providers;
 
-const API_KEY = "Vn-35Qi3F.eaa3ce10-82b8-4667-94bb-10669895ac82";
+const API_KEY = "cYpcPugzC.7b35f956-9eba-47fc-9151-5c0fcc73822b";
 // TODO: #64 #63 This api key is just for Biconomy branch
 export class GlobalParams {
   private _walletProvider?: Web3Provider;
