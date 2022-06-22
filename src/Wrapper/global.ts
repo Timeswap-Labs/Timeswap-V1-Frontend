@@ -10,8 +10,8 @@ import { Biconomy } from "@biconomy/mexa";
 
 const { MulticallProvider } = providers;
 
-const API_KEY = "NS0bnWk0U.ff10032a-07a9-478e-835e-a6d0e93b7f86";
-
+const API_KEY = "Vn-35Qi3F.eaa3ce10-82b8-4667-94bb-10669895ac82";
+// TODO: #64 #63 This api key is just for Biconomy branch
 export class GlobalParams {
   private _walletProvider?: Web3Provider;
   private _walletProviderMulti?: BaseProvider;
@@ -56,7 +56,7 @@ export class GlobalParams {
     return this._walletProviderMulti!;
   }
 
-  public  get walletSigner(): Signer {
+  public get walletSigner(): Signer {
     return this._walletSigner!;
   }
 
@@ -66,9 +66,11 @@ export class GlobalParams {
 
   public async getSigner(): Promise<Signer> {
     if (this.isBiconomyReady) {
-      return this.biconomy.getSignerByAddress(await this.walletSigner.getAddress())
+      return this.biconomy.getSignerByAddress(
+        await this.walletSigner.getAddress()
+      );
     } else {
-      return this._walletSigner!
+      return this._walletSigner!;
     }
   }
 }
