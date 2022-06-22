@@ -137,12 +137,12 @@ init blockchain endPoint pair =
 
 
 update :
-    { model | time : Posix , endPoint : String }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Msg
     -> Modal
     -> ( Maybe Modal, Cmd Msg, Maybe Effect )
-update { time , endPoint } blockchain msg (Modal modal) =
+update { time, endPoint } blockchain msg (Modal modal) =
     case msg of
         GoToSortMaturity ->
             ( { modal
@@ -694,7 +694,15 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
         ]
         (case pools of
             Loading timeline ->
-                [ el [ centerX, centerY ] (Loading.view timeline theme) ]
+                [ el [ centerX, centerY ]
+                    (images
+                        |> Image.loadingAnimation
+                            [ width <| px 40
+                            , height <| px 40
+                            , centerX
+                            ]
+                    )
+                ]
 
             Failure _ ->
                 [ el [ centerX, centerY, Font.color Color.negative400 ] (text "Error") ]

@@ -2,7 +2,6 @@ import { GlobalParams } from './../global';
 import { compareConvAddress, getPool, getPoolSDK, handleTxnErrors, updateCachedTxns } from '../helper';
 import { assetCalculate, assetTransaction } from './asset';
 import { collateralCalculate, collateralTransaction } from './collateral';
-import { debtCalculate, debtTransaction } from './debt';
 import { newLiquidityCalculate } from './new';
 import { Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-biconomy-sdk';
 
@@ -26,7 +25,7 @@ export function liquiditySigner(
 ) {
   app.ports.liquidity.subscribe(async (params) => {
     const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
-    const { assetIn, debtIn, collateralIn, maxAsset, maxDebt, maxCollateral } = params.send;
+    const { assetIn, collateralIn, maxAsset, maxDebt, maxCollateral } = params.send;
     let txnConfirmation;
 
     try {
@@ -39,13 +38,6 @@ export function liquiditySigner(
           ...params.send,
           assetIn,
           maxDebt,
-          maxCollateral,
-        });
-      } else if (debtIn !== undefined && maxAsset !== undefined && maxCollateral !== undefined) {
-        txnConfirmation = await debtTransaction(pool, gp, {
-          ...params.send,
-          debtIn,
-          maxAsset,
           maxCollateral,
         });
       } else if (collateralIn !== undefined && maxAsset !== undefined && maxDebt !== undefined) {
@@ -147,8 +139,6 @@ async function liquidityQueryCalculation(
   const pool = getPool(query, query.poolInfo.fee, query.poolInfo.protocolFee);
   if (query.assetIn !== undefined) {
     await assetCalculate(app, pool, query);
-  } else if (query.debtIn !== undefined) {
-    await debtCalculate(app, pool, query);
   } else if (query.collateralIn !== undefined) {
     await collateralCalculate(app, pool, query);
   }

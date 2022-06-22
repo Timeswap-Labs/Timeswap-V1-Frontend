@@ -99,12 +99,6 @@ export const whitelistChains: Whitelist = {
           symbol: "DAI",
           decimals: 18,
         },
-        // {
-        //   address: "0xc778417e063141139fce010982780140aa0cd5ab",
-        //   name: "Wrapped Ethereum",
-        //   symbol: "WETH",
-        //   decimals: 18,
-        // },
         {
           address: "0x521c1c37fDd245c313457FcbC6d5ED156647c2f3",
           name: "TS Matic",

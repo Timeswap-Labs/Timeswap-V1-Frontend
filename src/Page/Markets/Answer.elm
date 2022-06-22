@@ -17,7 +17,20 @@ decoder : Chain -> Chains -> Decoder Answer
 decoder chain chains =
     Decode.succeed Tuple.pair
         |> Pipeline.required "pool" Pool.decoder
-        |> Pipeline.required "poolInfo" PoolInfo.decoder
+        |> Pipeline.required "poolInfo"
+            (Decode.oneOf [ PoolInfo.decoder |> Decode.map Just, Decode.succeed Nothing ])
         |> Decode.list
+        |> Decode.map
+            (List.foldr
+                (\( pool, maybePoolInfo ) accumulator ->
+                    case maybePoolInfo of
+                        Just poolInfo ->
+                            ( pool, poolInfo ) :: accumulator
+
+                        Nothing ->
+                            accumulator
+                )
+                []
+            )
         |> (Decode.map << List.map << Tuple.mapFirst) (Pool.toNative chain chains)
         |> Decode.map (Dict.fromList Pool.sorter)

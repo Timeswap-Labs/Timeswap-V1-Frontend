@@ -11,8 +11,8 @@ export async function collateralCalculate(
   query: LiquidityQuery
 ) {
   try {
-    const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
+    const totalLiquidity = new Uint256(query.poolInfo.totalLiquidity);
 
     const state = {
       x: new Uint112(query.poolInfo.x),
@@ -29,17 +29,18 @@ export async function collateralCalculate(
       zIncrease,
     } = pool.liquidityGivenCollateral(
       state,
-      new Uint256(query.poolInfo.totalLiquidity),
+      totalLiquidity,
       new Uint112(query.collateralIn!),
       new Uint256(currentTime),
       new Uint256(query.poolInfo.feeStored),
     );
 
     const debtIn = dueOut.debt.toString();
-    const collateralIn = dueOut.collateral.toString();
     const minLiquidity = calculateMinValue(liquidityOut, query.slippage);
     const maxDebt = calculateMaxValue(dueOut.debt, query.slippage);
     const maxAsset = calculateMaxValue(assetInReturn, query.slippage);
+    const liqShareCalc = liquidityOut.mul(10_000).div(totalLiquidity.add(liquidityOut));
+    const liquidityShare = Math.round(Number(liqShareCalc.toBigInt())) / 100;
 
     const futureApr = calculateFuturisticApr(state, xIncrease, yIncrease);
     const futureCdp = calculateFuturisticCdp(
@@ -63,6 +64,7 @@ export async function collateralCalculate(
         maxDebt: maxDebt.toString(),
         apr: futureApr,
         cdp: futureCdp,
+        liquidityShare
       },
     });
   } catch(err) {
