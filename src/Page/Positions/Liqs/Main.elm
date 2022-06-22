@@ -23,7 +23,6 @@ import Element
     exposing
         ( Element
         , alignRight
-        , alignTop
         , centerX
         , centerY
         , column
