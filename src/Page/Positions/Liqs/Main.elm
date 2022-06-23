@@ -169,41 +169,96 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
 loading : { model | images : Images, theme : Theme } -> Element msg
 loading { images, theme } =
     column
-        [ centerX
-        , centerY
+        [ width fill
+        , height shrink
+        , spacing 1
         ]
         [ row
+            [ width fill
+            , height shrink
+            , spacing 0
+            ]
+            [ el
+                [ width shrink
+                , height shrink
+                , paddingEach
+                    { top = 0
+                    , right = 0
+                    , bottom = 22
+                    , left = 0
+                    }
+                , Font.size 16
+                , theme |> ThemeColor.text |> Font.color
+                , Font.bold
+                ]
+                (text "Your Liquidity Positions")
+            ]
+        , row
             [ width shrink
             , height shrink
             , centerX
             , centerY
-            , spacing 12
-            ]
-            [ el
-                []
-                (images
-                    |> Image.loadingAnimation
-                        [ width <| px 30
-                        , height <| px 30
+            , spacing 8
+            , inFront
+                (column
+                    [ centerX
+                    , centerY
+                    ]
+                    [ row
+                        [ width shrink
+                        , height shrink
                         , centerX
                         , centerY
+                        , spacing 12
                         ]
+                        [ el
+                            []
+                            (images
+                                |> Image.loadingAnimation
+                                    [ width <| px 30
+                                    , height <| px 30
+                                    , centerX
+                                    , centerY
+                                    ]
+                            )
+                        ]
+                    , row
+                        [ centerX
+                        , centerY
+                        ]
+                        [ paragraph
+                            [ width shrink
+                            , height shrink
+                            , centerX
+                            , centerY
+                            , Font.size 14
+                            , paddingXY 0 8
+                            , theme |> ThemeColor.textLight |> Font.color
+                            ]
+                            [ text "Fetching your Liquidity Positions..." ]
+                        ]
+                    ]
                 )
             ]
-        , row
-            [ centerX
-            , centerY
-            ]
-            [ paragraph
-                [ width shrink
-                , height shrink
-                , centerX
-                , centerY
-                , Font.size 14
-                , paddingXY 0 8
-                , theme |> ThemeColor.textLight |> Font.color
-                ]
-                [ text "Fetching your Liquidity Positions..." ]
+            [ images
+                |> (case theme of
+                        Theme.Dark ->
+                            Image.loadingPositionsDark
+
+                        -- Image
+                        Theme.Light ->
+                            Image.loadingPositions
+                   )
+                    [ height <| px 137
+                    , width <| px 710
+                    , centerX
+                    , paddingEach
+                        { top = 0
+                        , right = 0
+                        , bottom = 26
+                        , left = 0
+                        }
+                    ]
             ]
         ]
 
@@ -282,22 +337,7 @@ noLiqs { device, images, theme } =
                             , paddingXY 0 8
                             , theme |> ThemeColor.textLight |> Font.color
                             ]
-                            [ text "Your Borrow positions from your Liquidity transactions will appear in Borrow section." ]
-                        ]
-                    , row
-                        [ centerX
-                        , centerY
-                        ]
-                        [ paragraph
-                            [ width shrink
-                            , height shrink
-                            , centerX
-                            , centerY
-                            , Font.size 14
-                            , paddingXY 0 2
-                            , theme |> ThemeColor.textLight |> Font.color
-                            ]
-                            [ text "Your Liquidity positions will appear here..." ]
+                            [ text "You don’t have any open Liquidity positions" ]
                         ]
                     ]
                 )
