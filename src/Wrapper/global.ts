@@ -12,7 +12,7 @@ import axios from "axios";
 const { MulticallProvider } = providers;
 
 const API_KEY = "cYpcPugzC.7b35f956-9eba-47fc-9151-5c0fcc73822b";
-// TODO: #64 #63 This api key is just for Biconomy branch
+
 export class GlobalParams {
   private _walletProvider?: Web3Provider;
   private _walletProviderMulti?: BaseProvider;
@@ -40,10 +40,8 @@ export class GlobalParams {
     this.biconomy = new Biconomy(this._walletProvider, {
       walletProvider: value,
       apiKey: API_KEY,
-      debug: true,
+      debug: false,
     });
-
-    // Handle the error
 
     this._biconomyProvider = this.biconomy.getEthersProvider();
     this._walletProviderMulti = new MulticallProvider(this._walletProvider);
@@ -86,7 +84,6 @@ export class GlobalParams {
         }
       )
       .then((response) => {
-        console.log(response, " is response");
         allowed = response.data.allowed;
       });
 

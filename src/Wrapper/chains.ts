@@ -32,83 +32,16 @@ export const whitelistChains: Whitelist = {
         symbol: "DAI",
         decimals: 18,
       },
-      {
-        address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
-        name: "WETH",
-        symbol: "WETH",
-        decimals: 18,
-      },
+      // {
+      //   address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+      //   name: "WETH",
+      //   symbol: "WETH",
+      //   decimals: 18,
+      // },
     ],
     custom: getCustomTokens(String(137)),
   },
-  others: [
-    {
-      chainId: 80001,
-      name: "Polygon Testnet",
-      rpcUrl: "https://rpc-mumbai.matic.today",
-      blockExplorerUrl: "https://mumbai.polygonscan.com",
-      nftExplorerUrl: "https://testnets.opensea.io/assets/mumbai",
-      native: {
-        name: "MATIC",
-        symbol: "MATIC",
-        decimals: 18,
-      },
-      wrapper: {
-        address: WNATIVE_ADDRESS[80001],
-        name: "Wrapped Ether",
-        symbol: "WETH",
-        decimals: 18,
-      },
-      whitelist: [
-        {
-          address: "0xA4abf1B77d9171Eb910DD6f7ae863cF77c4225A4",
-          name: "Dai Stablecoin",
-          symbol: "DAI",
-          decimals: 18,
-        },
-        {
-          address: "0x2193fBf6F024aD9DCa5c7D615259CE4DDb8a9F89",
-          name: "Ethereum",
-          symbol: "ETH",
-          decimals: 18,
-        },
-      ],
-      custom: getCustomTokens(String(80001)),
-    },
-    {
-      chainId: 4,
-      name: "Rinkeby",
-      rpcUrl: "https://rinkeby.infura.io/v3/",
-      blockExplorerUrl: "https://rinkeby.etherscan.io/",
-      nftExplorerUrl: "https://testnets.opensea.io/assets/rinkeby",
-      native: {
-        name: "Ethereum",
-        symbol: "ETH",
-        decimals: 18,
-      },
-      wrapper: {
-        address: WNATIVE_ADDRESS[4],
-        name: "Wrapped Ether",
-        symbol: "WETH",
-        decimals: 18,
-      },
-      whitelist: [
-        {
-          address: "0x332c7ac34580dfef553b7726549cec7015c4b39b",
-          name: "Dai Stablecoin",
-          symbol: "DAI",
-          decimals: 18,
-        },
-        {
-          address: "0x521c1c37fDd245c313457FcbC6d5ED156647c2f3",
-          name: "TS Matic",
-          symbol: "TS-MATIC",
-          decimals: 18,
-        },
-      ],
-      custom: getCustomTokens(String(4)),
-    },
-  ],
+  others: [],
 };
 
 export function getChainData(chainId: number) {

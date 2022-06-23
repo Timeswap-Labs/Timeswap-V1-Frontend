@@ -1677,7 +1677,8 @@ tabs ({ device, backdrop, theme } as model) =
         [ tab model Tab.Markets
         , tab model Tab.Lend
         , tab model Tab.Borrow
-        , tab model Tab.Liquidity -- Remove liquidity
+
+        -- , tab model Tab.Liquidity -- Remove liquidity
         ]
 
 

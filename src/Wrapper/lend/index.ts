@@ -51,8 +51,6 @@ export function lendSigner(
       }
 
       if (txnConfirmation) {
-        console.log("txnConf", txnConfirmation);
-
         app.ports.receiveConfirm.send({
           id: params.id,
           chain: params.chain,
