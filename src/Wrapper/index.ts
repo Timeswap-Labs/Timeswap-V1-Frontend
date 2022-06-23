@@ -1,6 +1,7 @@
 import { Elm } from "../Main.elm";
 
 import * as images from "url:../../image/*.svg";
+import * as gifs from "url:../../image/gifs/*.gif";
 import * as tokenImages from "url:../../image/tokens/*.svg";
 import * as chainImages from "url:../../image/chains/*.svg";
 import * as walletImages from "url:../../image/wallets/*.svg";
@@ -16,7 +17,7 @@ async function elmInit() {
 
   let apiEndpoint = "";
   if (process.env.PARCEL_PUBLIC_ENVIRONMENT === "production")
-    apiEndpoint = "https://api.timeswap.io/v1";
+    apiEndpoint = "https://ts-bico-mainnet.herokuapp.com/v1";
   else apiEndpoint = "https://backend-new-conv.herokuapp.com/v1";
 
   const app = Elm.Main.init({
@@ -32,6 +33,7 @@ async function elmInit() {
         CSS.supports("backdrop-filter: none"),
       theme: window.localStorage.getItem("theme"),
       images: Object.entries(images),
+      gifs: Object.entries(gifs),
       tokenImages: Object.entries(tokenImages),
       chainImages: Object.entries(chainImages),
       walletImages: Object.entries(walletImages),
@@ -48,6 +50,16 @@ async function elmInit() {
   });
 
   init(app, gp, user);
+
+  gp.biconomy
+    .onEvent(gp.biconomy.READY, () => {
+      // Initialize the dapp here
+      gp.isBiconomyReady = true;
+    })
+    .onEvent(gp.biconomy.ERROR, () => {
+      // Handle error while initializing mexa
+      gp.isBiconomyReady = false;
+    });
 }
 
 sentry();

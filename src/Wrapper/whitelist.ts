@@ -1,6 +1,6 @@
 import { BaseProvider, Network } from "@ethersproject/providers";
-import { ERC20Token, NativeToken, Pool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { ERC20Token, NativeToken, Pool } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { Uint256 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import { Contract } from "@ethersproject/contracts";
 import cdTokenAbi from "./abi/cdToken";
 

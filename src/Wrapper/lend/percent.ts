@@ -1,11 +1,11 @@
-import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import {
   Uint112,
   Uint128,
   Uint256,
   Uint40,
-  Pool,
-} from "@timeswap-labs/timeswap-v1-sdk-core";
+  PoolCore,
+} from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import { GlobalParams } from "../global";
 import { calculateMinValue, getCurrentTime } from "../helper";
 import {
@@ -17,7 +17,7 @@ import {
 
 export async function percentCalculate(
   app: ElmApp<Ports>,
-  pool: Pool,
+  pool: PoolCore,
   query: LendQuery
 ) {
   try {
@@ -141,15 +141,17 @@ export async function percentTransaction(
   gp: GlobalParams,
   lend: Lend
 ) {
-  return await pool.upgrade(gp.walletSigner!).lendGivenPercent({
-    bondTo: lend.bondTo,
-    insuranceTo: lend.insuranceTo,
-    assetIn: new Uint112(lend.assetIn),
-    percent: new Uint40(lend.percent),
-    minBond: new Uint128(lend.minBond),
-    minInsurance: new Uint128(lend.minInsurance),
-    deadline: new Uint256(lend.deadline),
-  });
+  return await pool
+    .upgrade(await gp.getSigner())
+    .lendGivenPercent({
+      bondTo: lend.bondTo,
+      insuranceTo: lend.insuranceTo,
+      assetIn: new Uint112(lend.assetIn),
+      percent: new Uint40(lend.percent),
+      minBond: new Uint128(lend.minBond),
+      minInsurance: new Uint128(lend.minInsurance),
+      deadline: new Uint256(lend.deadline),
+    });
 }
 
 interface Lend {

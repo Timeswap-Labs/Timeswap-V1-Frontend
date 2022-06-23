@@ -1,11 +1,11 @@
-import { Pool, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-sdk-core';
+import { PoolCore, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-biconomy-sdk';
 import { calculateApr, calculateCdp } from './common';
 import { getCurrentTime } from '../helper';
 
 
 export async function newLiquidityCalculate(
   app: ElmApp<Ports>,
-  pool: Pool,
+  pool: PoolCore,
   query: NewLiquidityQuery
 ) {
   try {
@@ -49,6 +49,6 @@ export async function newLiquidityCalculate(
       },
     });
   } catch (error) {
-    console.log("Errrr", error);
+    console.log("Err", error);
   }
 }

@@ -9,3 +9,4 @@ type Tooltip
     | CollateralOutSymbol
     | CDPSymbol
     | CDP
+    | PoolShare
