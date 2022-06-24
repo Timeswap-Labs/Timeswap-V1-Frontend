@@ -65,7 +65,6 @@ import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
 import Utility.Image as Image
-import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
 import Utility.Tooltip as TooltipUtil

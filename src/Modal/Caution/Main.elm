@@ -279,7 +279,7 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                     |> text
                 ]
             , case cdp.percent of
-                Just cdpPerc ->
+                Just _ ->
                     Element.none
 
                 Nothing ->

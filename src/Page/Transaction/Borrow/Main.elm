@@ -193,11 +193,10 @@ init { time, endPoint } blockchain parameter =
 
 initGivenPoolInfo :
     { model | time : Posix }
-    -> Blockchain
     -> Pool
     -> PoolInfo
     -> ( Transaction, Cmd Msg )
-initGivenPoolInfo { time } blockchain pool poolInfo =
+initGivenPoolInfo { time } pool poolInfo =
     if pool.maturity |> Maturity.isActive time then
         ( { state =
                 Borrow.init
@@ -222,12 +221,12 @@ initGivenPoolInfo { time } blockchain pool poolInfo =
 
 
 initGivenSpot :
-    { model | time : Posix , endPoint: String }
+    { model | time : Posix, endPoint : String }
     -> Blockchain
     -> Pool
     -> Price
     -> ( Transaction, Cmd Msg )
-initGivenSpot { time, endPoint} blockchain pool priceFeed =
+initGivenSpot { time, endPoint } blockchain pool priceFeed =
     if pool.maturity |> Maturity.isActive time then
         ( { state =
                 DoesNotExist priceFeed

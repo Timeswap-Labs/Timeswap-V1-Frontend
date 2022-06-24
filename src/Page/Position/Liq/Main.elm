@@ -111,7 +111,7 @@ init :
     -> Blockchain
     -> Pool
     -> ( Position, Cmd Msg )
-init { time, endPoint } blockchain pool =
+init { endPoint } blockchain pool =
     ( { pool = pool
       , return = Remote.loading
       , tooltip = Nothing
@@ -499,10 +499,9 @@ view :
         , theme : Theme
         , images : Images
     }
-    -> User
     -> Position
     -> Element Msg
-view ({ device, backdrop, theme } as model) user (Position position) =
+view ({ device, backdrop, theme } as model) (Position position) =
     column
         [ width shrink
         , height shrink

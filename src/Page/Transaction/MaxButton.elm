@@ -102,7 +102,7 @@ userBalance param =
                     ]
                     (Loading.view timeline param.theme)
 
-            Failure error ->
+            Failure _ ->
                 el
                     [ width shrink
                     , height shrink
@@ -196,7 +196,7 @@ disabledUserBalance param =
                     ]
                     (Loading.view timeline param.theme)
 
-            Failure error ->
+            Failure _ ->
                 el
                     [ width shrink
                     , height shrink

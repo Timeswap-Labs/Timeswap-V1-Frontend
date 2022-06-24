@@ -2,6 +2,7 @@ port module Page.Position.Claim.Main exposing
     ( Effect(..)
     , Msg
     , Position
+    , errorHandler
     , init
     , subscriptions
     , update
@@ -41,6 +42,7 @@ import Element
         , none
         , padding
         , paddingXY
+        , paragraph
         , px
         , row
         , shrink
@@ -891,8 +893,8 @@ viewBond { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Failure error ->
-                    none
+                Failure _ ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success { asset } ->
@@ -968,8 +970,8 @@ viewInsurance { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Failure error ->
-                    none
+                Failure _ ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success { collateral } ->
@@ -1046,8 +1048,8 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Failure error ->
-                    none
+                Failure _ ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success ( _, Loading timeline ) ->
@@ -1057,8 +1059,8 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Success ( _, Failure error ) ->
-                    none
+                Success ( _, Failure _ ) ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success ( _, Success { asset } ) ->
@@ -1135,8 +1137,8 @@ viewCollateralReturn { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Failure error ->
-                    none
+                Failure _ ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success ( _, Loading timeline ) ->
@@ -1146,8 +1148,8 @@ viewCollateralReturn { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Success ( _, Failure error ) ->
-                    none
+                Success ( _, Failure _ ) ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success ( _, Success { collateral } ) ->
@@ -1173,3 +1175,24 @@ line { theme } =
         , theme |> ThemeColor.textDisabled |> Background.color
         ]
         none
+
+
+errorHandler : Element msg
+errorHandler =
+    row
+        [ width shrink
+        , height shrink
+        , centerX
+        , centerY
+        , spacing 12
+        ]
+        [ paragraph
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.size 14
+            , Font.color Color.negative400
+            ]
+            [ text "Err: " ]
+        ]

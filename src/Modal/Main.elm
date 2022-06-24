@@ -21,7 +21,7 @@ module Modal.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User exposing (User)
+import Blockchain.User.Main as User
 import Blockchain.User.TokenId exposing (TokenId)
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Blockchain.User.WriteLend exposing (WriteLend)
@@ -205,13 +205,11 @@ initChainList =
 
 
 initPayTransaction :
-    Blockchain
-    -> User
-    -> Pool
+    Pool
     -> Set TokenId
     -> ( Modal, Cmd Msg )
-initPayTransaction blockchain user pool set =
-    PayTransaction.init blockchain user pool set
+initPayTransaction pool set =
+    PayTransaction.init pool set
         |> Tuple.mapBoth
             PayTransaction
             (Cmd.map PayTransactionMsg)

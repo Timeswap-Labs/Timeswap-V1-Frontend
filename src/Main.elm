@@ -4,14 +4,7 @@ import Animator exposing (Animator, Timeline)
 import Animator.Css
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
-import Blockchain.User.Txns.TxnWrite as TxnWrite
-import Blockchain.User.WriteBorrow as WriteBorrow
-import Blockchain.User.WriteBurn as WriteBurn
-import Blockchain.User.WriteCreate as WriteCreate
 import Blockchain.User.WriteLend as WriteLend
-import Blockchain.User.WriteLiquidity as WriteLiquidity
-import Blockchain.User.WritePay as WritePay
-import Blockchain.User.WriteWithdraw as WriteWithdraw
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events exposing (Visibility)
 import Browser.Navigation as Navigation exposing (Key)
@@ -766,8 +759,8 @@ pageEffects blockchain effect model =
             blockchain
                 |> Blockchain.toUser
                 |> Maybe.map
-                    (\user ->
-                        Modal.initPayTransaction blockchain user pool set
+                    (\_ ->
+                        Modal.initPayTransaction pool set
                     )
                 |> Maybe.map
                     (\( newModal, cmd ) ->

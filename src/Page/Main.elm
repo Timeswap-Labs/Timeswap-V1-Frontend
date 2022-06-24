@@ -28,7 +28,6 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
-import Data.Maturity exposing (Maturity)
 import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
 import Data.Pair exposing (Pair)
@@ -207,9 +206,9 @@ construct ({ chains } as model) url maybePage =
                     )
                     (Cmd.map LendMsg)
 
-        ( Just (Route.Borrow (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
+        ( Just (Route.Borrow (Just (Parameter.Pool pool))), Supported _, Just (Right poolInfo) ) ->
             poolInfo
-                |> Borrow.initGivenPoolInfo model blockchain pool
+                |> Borrow.initGivenPoolInfo model pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction
@@ -248,7 +247,7 @@ construct ({ chains } as model) url maybePage =
 
         ( Just (Route.Liquidity (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
             poolInfo
-                |> Liquidity.initGivenPoolInfo model blockchain (maybePage |> toLiquidityTxn) pool
+                |> Liquidity.initGivenPoolInfo model (maybePage |> toLiquidityTxn) pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction
@@ -879,8 +878,8 @@ view model blockchain page =
 
             LiquidityPage liquidityPage ->
                 Just
-                    (\position user ->
-                        Liq.view model user position
+                    (\position _ ->
+                        Liq.view model position
                             |> map LiqMsg
                             |> List.singleton
                     )

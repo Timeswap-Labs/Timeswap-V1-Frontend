@@ -6,8 +6,7 @@ import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Theme exposing (Theme)
 import Element
     exposing
-        ( Color
-        , Element
+        ( Element
         , centerX
         , el
         , fill
