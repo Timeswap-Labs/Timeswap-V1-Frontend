@@ -1806,6 +1806,7 @@ connectButton ({ device, images, theme } as model) =
          , height <| px 44
          , paddingXY 12 0
          , Border.rounded 4
+         , Id.is "btn"
          ]
             ++ (case model.blockchain of
                     Supported blockchain ->
@@ -1823,7 +1824,8 @@ connectButton ({ device, images, theme } as model) =
                                 [ Region.description "connect button"
                                 , theme |> ThemeColor.primaryBtn |> Background.color
                                 , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
-                                , mouseOver [ Background.color Color.primary400 ]
+
+                                -- , mouseOver [ Background.color Color.primary400 ]
                                 ]
 
                     NotSupported _ ->
