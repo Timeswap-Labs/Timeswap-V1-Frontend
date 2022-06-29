@@ -139,7 +139,7 @@ export async function percentCalculate(
 export async function percentTransaction(
   pool: SDKPool,
   gp: GlobalParams,
-  lend: Lend
+  lend: LendTxn
 ) {
   return await pool.upgrade(gp.walletSigner!).lendGivenPercent({
     bondTo: lend.bondTo,
@@ -152,7 +152,7 @@ export async function percentTransaction(
   });
 }
 
-interface Lend {
+interface LendTxn {
   bondTo: string;
   insuranceTo: string;
   assetIn: string;

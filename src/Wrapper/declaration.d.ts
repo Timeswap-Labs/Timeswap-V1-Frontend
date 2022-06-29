@@ -46,6 +46,8 @@ declare interface Ports {
   sdkPayMsg: PortToElm<PayCalculate>;
 
   approve: PortFromElm<Approve>;
+  approveAndLend: PortFromElm<Lend>;
+  approveAndBorrow: PortFromElm<Borrow>;
 
   withdraw: PortFromElm<Withdraw>;
 
@@ -329,13 +331,18 @@ interface Txns {
 interface Confirmed {
   id: number;
   hash: string;
-  write: string;
+  write: Write;
   state: string;
 }
 
 interface Uncomfirmed {
   id: number;
-  write: string;
+  write: Write;
+}
+
+interface Write {
+  txn: string;
+  pool: Pool
 }
 
 type Uint = string;
@@ -563,6 +570,7 @@ interface ReceiveReceipt {
   address: string;
   hash: string;
   state: string;
+  txnType?: Write;
 }
 
 interface ReceiveUpdatedTxns {

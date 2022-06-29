@@ -105,6 +105,7 @@ type Effect
     | Approve ERC20
     | Pay WritePay
     | Lend WriteLend
+    | ApproveAndLend WriteLend
 
 
 initConnect : Support User.NotSupported Blockchain -> Modal
@@ -137,9 +138,9 @@ initConfirm id txnWrite =
         |> Confirm
 
 
-initCaution : WriteLend -> Float -> CDP -> PoolInfo -> Modal
-initCaution writeLend apr cdp poolInfo =
-    Caution.init writeLend apr cdp poolInfo
+initCaution : WriteLend -> Float -> CDP -> PoolInfo -> Bool -> Modal
+initCaution writeLend apr cdp poolInfo isAssetApproved =
+    Caution.init writeLend apr cdp poolInfo isAssetApproved
         |> Caution
 
 
@@ -404,6 +405,9 @@ cautionLendEffect effect =
     case effect of
         Caution.Lend writeLend ->
             Lend writeLend
+
+        Caution.ApproveAndLend writeLend ->
+            ApproveAndLend writeLend
 
 
 receiveUser : Modal -> Maybe Modal

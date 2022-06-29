@@ -109,12 +109,13 @@ type Effect
     | OpenMaturityPicker Pair
     | OpenSettings
     | OpenConnect
-    | OpenCaution WriteLend Float CDP PoolInfo
+    | OpenCaution WriteLend Float CDP PoolInfo Bool
     | InputPool Pool
     | OpenPayTransaction Pool (Set TokenId)
     | Approve ERC20
     | Lend WriteLend
     | Borrow WriteBorrow
+    | ApproveAndBorrow WriteBorrow
     | Liquidity WriteLiquidity
     | Create WriteCreate
     | Withdraw WriteWithdraw
@@ -563,8 +564,8 @@ lendEffect effect =
         Lend.OpenSettings ->
             OpenSettings
 
-        Lend.OpenCaution txn apr cdp poolInfo ->
-            OpenCaution txn apr cdp poolInfo
+        Lend.OpenCaution txn apr cdp poolInfo isAssetApproved ->
+            OpenCaution txn apr cdp poolInfo isAssetApproved
 
         Lend.Approve erc20 ->
             Approve erc20
@@ -630,6 +631,9 @@ borrowEffect effect =
 
         Borrow.Borrow writeBorrow ->
             Borrow writeBorrow
+
+        Borrow.ApproveAndBorrow writeBorrow ->
+            ApproveAndBorrow writeBorrow
 
 
 duesEffect :

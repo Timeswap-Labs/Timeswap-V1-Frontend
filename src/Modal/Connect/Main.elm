@@ -19,10 +19,12 @@ import Data.Backdrop exposing (Backdrop)
 import Data.ERC20 as ERC20
 import Data.Hash as Hash exposing (Hash)
 import Data.Images exposing (Images)
+import Data.Pair as Pair
 import Data.Pool as Pool
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Support exposing (Support(..))
 import Data.Theme as Theme exposing (Theme)
+import Data.Token as Token
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Wallets exposing (Wallets)
 import Element
@@ -1087,10 +1089,28 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                     ]
                         |> String.join " "
 
+                TxnWrite.ApproveAndLend pool ->
+                    [ "Approve"
+                    , pool.pair
+                        |> Pair.toAsset
+                        |> Token.toSymbol
+                        |> String.left 5
+                    ]
+                        |> String.join " "
+
                 TxnWrite.Borrow pool ->
                     [ "Borrow :"
                     , pool |> Pool.toString
                     , "pool"
+                    ]
+                        |> String.join " "
+
+                TxnWrite.ApproveAndBorrow pool ->
+                    [ "Approve"
+                    , pool.pair
+                        |> Pair.toCollateral
+                        |> Token.toSymbol
+                        |> String.left 5
                     ]
                         |> String.join " "
 

@@ -129,6 +129,7 @@ type Effect
     | OpenSettings
     | Approve ERC20
     | Borrow WriteBorrow
+    | ApproveAndBorrow WriteBorrow
 
 
 init :
@@ -485,6 +486,9 @@ borrowEffects effect =
 
         Borrow.Borrow writeBorrow ->
             Borrow writeBorrow
+
+        Borrow.ApproveAndBorrow writeBorrow ->
+            ApproveAndBorrow writeBorrow
 
 
 noCmdAndEffect :

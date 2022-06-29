@@ -18,7 +18,9 @@ import Json.Encode as Encode exposing (Value)
 type TxnWrite
     = Approve ERC20
     | Lend Pool
+    | ApproveAndLend Pool
     | Borrow Pool
+    | ApproveAndBorrow Pool
     | Liquidity Pool
     | Create Pool
     | Withdraw Pool
@@ -57,7 +59,9 @@ decoder : Decoder TxnWrite
 decoder =
     [ decoderApprove
     , decoderLend
+    , decoderApproveAndLend
     , decoderBorrow
+    , decoderApproveAndBorrow
     , decoderLiquidity
     , decoderCreate
     , decoderWithdraw
@@ -97,12 +101,42 @@ decoderLend =
         |> Decode.andThen identity
 
 
+decoderApproveAndLend : Decoder TxnWrite
+decoderApproveAndLend =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "approveAndLend" then
+                ApproveAndLend pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
 decoderBorrow : Decoder TxnWrite
 decoderBorrow =
     Decode.succeed
         (\txn pool ->
             if txn == "borrow" then
                 Borrow pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
+decoderApproveAndBorrow : Decoder TxnWrite
+decoderApproveAndBorrow =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "approveAndBorrow" then
+                ApproveAndBorrow pool |> Decode.succeed
 
             else
                 Decode.fail "Not a txn"
@@ -202,8 +236,20 @@ encode write =
             ]
                 |> Encode.object
 
+        ApproveAndLend pool ->
+            [ ( "txn", "approveAndLend" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
+            ]
+                |> Encode.object
+
         Borrow pool ->
             [ ( "txn", "borrow" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
+            ]
+                |> Encode.object
+
+        ApproveAndBorrow pool ->
+            [ ( "txn", "approveAndBorrow" |> Encode.string )
             , ( "pool", pool |> Pool.encode )
             ]
                 |> Encode.object

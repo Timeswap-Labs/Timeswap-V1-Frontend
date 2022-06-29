@@ -734,12 +734,12 @@ pageEffects blockchain effect model =
             , Cmd.none
             )
 
-        Page.OpenCaution txnLend apr cdp poolInfo ->
+        Page.OpenCaution txnLend apr cdp poolInfo isAssetApproved ->
             ( { model
                 | modal =
                     model.modal
                         |> Animator.go Animator.quickly
-                            (Modal.initCaution txnLend apr cdp poolInfo
+                            (Modal.initCaution txnLend apr cdp poolInfo isAssetApproved
                                 |> Just
                             )
               }
@@ -804,6 +804,26 @@ pageEffects blockchain effect model =
         Page.Borrow writeBorrow ->
             blockchain
                 |> Blockchain.updateBorrow model writeBorrow
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
+
+        Page.ApproveAndBorrow writeBorrow ->
+            blockchain
+                |> Blockchain.updateApproveAndBorrow model writeBorrow
                 |> (\( updated, cmd, maybeEffect ) ->
                         maybeEffect
                             |> Maybe.map
@@ -1121,11 +1141,43 @@ modalEffects effect model =
                     , Cmd.none
                     )
 
+        Modal.ApproveAndLend writeLend ->
+            case model.blockchain of
+                Supported blockchain ->
+                    approveAndLendTxn writeLend blockchain model
+
+                _ ->
+                    ( model
+                    , Cmd.none
+                    )
+
 
 lendTxn : WriteLend.WriteLend -> Blockchain -> Model -> ( Model, Cmd Msg )
 lendTxn writeLend blockchain model =
     blockchain
         |> Blockchain.updateLend model writeLend
+        |> (\( updated, cmd, maybeEffect ) ->
+                maybeEffect
+                    |> Maybe.map
+                        (\pageEffect ->
+                            { model | blockchain = Supported updated }
+                                |> blockchainEffect pageEffect
+                                |> Tuple.mapSecond List.singleton
+                                |> Tuple.mapSecond
+                                    ((::) (cmd |> Cmd.map BlockchainMsg))
+                                |> Tuple.mapSecond Cmd.batch
+                        )
+                    |> Maybe.withDefault
+                        ( { model | blockchain = Supported updated }
+                        , cmd |> Cmd.map BlockchainMsg
+                        )
+           )
+
+
+approveAndLendTxn : WriteLend.WriteLend -> Blockchain -> Model -> ( Model, Cmd Msg )
+approveAndLendTxn writeLend blockchain model =
+    blockchain
+        |> Blockchain.updateApproveAndLend model writeLend
         |> (\( updated, cmd, maybeEffect ) ->
                 maybeEffect
                     |> Maybe.map

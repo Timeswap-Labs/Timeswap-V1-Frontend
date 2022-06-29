@@ -6,6 +6,26 @@ interface Lend {
   slippage: number;
 }
 
+interface Lend {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    bondTo: string;
+    insuranceTo: string;
+    assetIn: string;
+    bondOut?: string;
+    insuranceOut?: string;
+    percent?: number;
+    minBond?: string;
+    minInsurance?: string;
+    deadline: number;
+  };
+}
+
 interface LendResult {
   apr: number;
   cdp: {
