@@ -278,7 +278,7 @@ export function handleTxnErrors(
   error: any,
   app: ElmApp<Ports>,
   gp: GlobalParams,
-  params: Lend | Borrow | Approve | Burn | Pay | Withdraw | Liquidity | NewLiquidity
+  params: Lend | Borrow | Approve | Burn | Pay | Withdraw | Liquidity | NewLiquidity | FlashRepay | ApproveCDT
 ) {
   // If txn is canceled or sped-up, new txn-hash is created
   if (error.code === ethers.utils.Logger.errors.TRANSACTION_REPLACED) {

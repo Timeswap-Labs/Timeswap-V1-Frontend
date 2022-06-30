@@ -8,3 +8,9 @@ type Tooltip
     | Maturity
     | Symbol TokenParam
     | Amount TokenParam
+    | TotalDebtSymbol TokenParam
+    | TotalCollateralSymbol TokenParam
+    | TotalDebt TokenParam
+    | TotalCollateral TokenParam
+    | BorrowPositionInfo
+    | FlashRepayDisabled

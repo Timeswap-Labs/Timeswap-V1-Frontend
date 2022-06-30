@@ -921,6 +921,46 @@ pageEffects blockchain effect model =
                                 )
                    )
 
+        Page.ApproveCDT cdtAddress ->
+            blockchain
+                |> Blockchain.updateApproveCDT cdtAddress
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
+
+        Page.FlashRepay writeFlashRepay ->
+            blockchain
+                |> Blockchain.updateFlashRepay writeFlashRepay
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
+
 
 modalEffects :
     Modal.Effect

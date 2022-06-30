@@ -655,7 +655,7 @@ returnButton { images, theme } =
                     , theme |> ThemeColor.text |> Font.color
                     , centerY
                     ]
-                    (text "Back to lend")
+                    (text "Back to Lend")
                 ]
         }
 

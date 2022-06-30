@@ -9,10 +9,14 @@ port module Page.Position.Liq.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
+import Blockchain.User.Due exposing (Due)
 import Blockchain.User.Liq exposing (Liq)
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.Return exposing (Return)
+import Blockchain.User.TokenId exposing (TokenId)
 import Blockchain.User.WriteBurn exposing (WriteBurn)
+import Blockchain.User.WriteFlashRepay exposing (WriteFlashRepay)
+import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
@@ -32,6 +36,7 @@ import Element
     exposing
         ( Element
         , alignRight
+        , below
         , centerX
         , centerY
         , column
@@ -41,6 +46,7 @@ import Element
         , none
         , padding
         , paddingXY
+        , paragraph
         , px
         , row
         , shrink
@@ -50,6 +56,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
@@ -59,7 +66,7 @@ import Json.Encode exposing (Value)
 import Page.Answer as PoolInfoAnswer
 import Page.PoolInfo exposing (PoolInfo)
 import Page.Position.Liq.Error exposing (Error)
-import Page.Position.Liq.Query as Query
+import Page.Position.Liq.Query as Query exposing (ActiveReturn)
 import Page.Position.Liq.Tooltip as Tooltip exposing (Tooltip)
 import Page.Query as PoolInfoQuery
 import Process
@@ -71,8 +78,10 @@ import Utility.Duration as Duration
 import Utility.Glass as Glass
 import Utility.Image as Image
 import Utility.Loading as Loading
+import Utility.Maybe as Maybe
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
+import Utility.Tooltip as TooltipUtil
 import Utility.Truncate as Truncate
 
 
@@ -85,12 +94,14 @@ type Position
 
 
 type alias Status =
-    Maturity.Status (Remote Error Return) (Remote Error Float)
+    Maturity.Status (Remote Error Return) (Remote Error ActiveReturn)
 
 
 type Msg
     = ClickAddMore
     | ClickBurn
+    | ClickAppoveCDT Address
+    | ClickFlashRepay
     | ClickReturn
     | Tick Posix
     | PoolInfoQueryAgain
@@ -104,6 +115,8 @@ type Msg
 type Effect
     = InputPool Pool
     | Burn WriteBurn
+    | FlashRepay WriteFlashRepay
+    | ApproveCDT Address
 
 
 init :
@@ -158,6 +171,29 @@ update { time, endPoint } blockchain user msg (Position position) =
                                 |> Just
                         )
                     |> Remote.withDefault Nothing
+            )
+
+        ClickAppoveCDT addr ->
+            ( Position position |> Just
+            , Cmd.none
+            , ApproveCDT addr |> Just
+            )
+
+        ClickFlashRepay ->
+            ( Position position |> Just
+            , Cmd.none
+            , user
+                |> User.getDues
+                |> Remote.map (Dict.get position.pool)
+                |> (Remote.map << Maybe.andThen)
+                    (\dict ->
+                        { pool = position.pool
+                        , tokenIds = dict |> Dict.keys
+                        }
+                            |> FlashRepay
+                            |> Just
+                    )
+                |> Remote.withDefault Nothing
             )
 
         ClickReturn ->
@@ -233,7 +269,26 @@ update { time, endPoint } blockchain user msg (Position position) =
                         |> Remote.map (Dict.get position.pool)
                         |> (Remote.map << Maybe.map)
                             (\liquidityIn ->
-                                query blockchain poolInfo liquidityIn position
+                                user
+                                    |> User.getDues
+                                    |> Remote.map (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map)
+                                        (\dict ->
+                                            dict
+                                                |> Dict.keys
+                                                |> query blockchain
+                                                    poolInfo
+                                                    liquidityIn
+                                                    position
+                                                    (dict
+                                                        |> Dict.toList
+                                                        |> List.head
+                                                        |> Maybe.map (\( _, due ) -> due.collateralizedDebt)
+                                                        |> Maybe.withDefault Nothing
+                                                    )
+                                        )
+                                    |> (Remote.map << Maybe.withDefault) (query blockchain poolInfo liquidityIn position Nothing [])
+                                    |> Remote.withDefault (query blockchain poolInfo liquidityIn position Nothing [])
                             )
                         |> (Remote.map << Maybe.withDefault) Cmd.none
                         |> Remote.withDefault Cmd.none
@@ -329,11 +384,11 @@ update { time, endPoint } blockchain user msg (Position position) =
                             && (answer.poolInfo == poolInfo)
                     then
                         case answer.result of
-                            Ok (Maturity.Active float) ->
+                            Ok (Maturity.Active activeReturn) ->
                                 ( { position
                                     | return =
                                         ( poolInfo
-                                        , Success float
+                                        , Success activeReturn
                                             |> Maturity.Active
                                         )
                                             |> Success
@@ -449,12 +504,16 @@ query :
         { position
             | pool : Pool
         }
+    -> Maybe Address
+    -> List TokenId
     -> Cmd Msg
-query blockchain poolInfo liquidityIn { pool } =
+query blockchain poolInfo liquidityIn { pool } cdtAddress tokenIds =
     { chain = blockchain |> Blockchain.toChain
     , pool = pool
     , poolInfo = poolInfo
     , liquidityIn = liquidityIn
+    , tokenIds = tokenIds
+    , cdtAddress = cdtAddress
     }
         |> Query.givenLiq
         |> queryLiq
@@ -484,7 +543,7 @@ subscriptions (Position { return }) =
                 |> Remote.subscriptions Tick
             )
     , receiveLiqReturn ReceiveLiqReturn
-    , Time.every 1000 QueryAgain
+    , Time.every 5000 QueryAgain
     ]
         |> Sub.batch
 
@@ -499,9 +558,10 @@ view :
         , theme : Theme
         , images : Images
     }
+    -> Blockchain
     -> Position
     -> Element Msg
-view ({ device, backdrop, theme } as model) (Position position) =
+view ({ device, backdrop, theme } as model) blockchain (Position position) =
     column
         [ width shrink
         , height shrink
@@ -537,6 +597,7 @@ view ({ device, backdrop, theme } as model) (Position position) =
             )
             [ header model position
             , viewLiq model position
+            , viewDues model blockchain position
             ]
         ]
 
@@ -575,7 +636,7 @@ returnButton { images, theme } =
                     , theme |> ThemeColor.text |> Font.color
                     , centerY
                     ]
-                    (text "Back to liquidity")
+                    (text "Back to Liquidity")
                 ]
         }
 
@@ -815,7 +876,7 @@ viewLiq { images, theme } { pool, return, tooltip } =
                             ]
                         ]
 
-                    Maturity.Active (Success liqPercent) ->
+                    Maturity.Active (Success activeReturn) ->
                         [ column
                             [ width shrink
                             , height shrink
@@ -836,7 +897,7 @@ viewLiq { images, theme } { pool, return, tooltip } =
                                 , paddingXY 0 3
                                 , Font.color Color.positive400
                                 ]
-                                (String.concat [ liqPercent |> String.fromFloat, "%" ] |> text)
+                                (String.concat [ activeReturn.liqPercent |> String.fromFloat, "%" ] |> text)
                             ]
                         ]
 
@@ -1048,4 +1109,328 @@ viewLiq { images, theme } { pool, return, tooltip } =
                     ]
                     (Loading.view timeline theme)
                     |> List.singleton
+        )
+
+
+viewDues :
+    { model | images : Images, theme : Theme }
+    -> Blockchain
+    ->
+        { pool : Pool
+        , return : Web ( PoolInfo, Status )
+        , tooltip : Maybe Tooltip
+        }
+    -> Element Msg
+viewDues { images, theme } blockchain { pool, return, tooltip } =
+    case ( blockchain |> Blockchain.toUser, return ) of
+        ( Just user, Success ( _, status ) ) ->
+            case status of
+                Maturity.Active (Success activeReturn) ->
+                    column
+                        [ width fill
+                        , height fill
+                        , theme |> ThemeColor.positionBG |> Background.color
+                        , Border.rounded 8
+                        , paddingXY 24 16
+                        , spacing 20
+                        ]
+                        [ row [ spacing 8 ]
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , Font.size 14
+                                , paddingXY 0 3
+                                , theme |> ThemeColor.textLight |> Font.color
+                                ]
+                                (text "Aggregate Borrow Position")
+                            , images
+                                |> (case theme of
+                                        Theme.Dark ->
+                                            Image.info
+
+                                        Theme.Light ->
+                                            Image.infoDark
+                                   )
+                                    [ width <| px 12
+                                    , height <| px 12
+                                    , Font.center
+                                    , centerX
+                                    , Events.onMouseEnter (OnMouseEnter Tooltip.BorrowPositionInfo)
+                                    , Events.onMouseLeave OnMouseLeave
+                                    , (if tooltip == Just Tooltip.BorrowPositionInfo then
+                                        paragraph
+                                            [ Font.size 14
+                                            , width <| px 345
+                                            , theme |> ThemeColor.textLight |> Font.color
+                                            ]
+                                            [ "This is your total borrowed position in this Pool." |> text
+                                            , " For more details and partial repayment, visit the Borrow positions screen."
+                                                |> text
+                                            ]
+                                            |> TooltipUtil.belowAlignLeft theme
+
+                                       else
+                                        none
+                                      )
+                                        |> below
+                                    ]
+                            ]
+                        , user
+                            |> User.getDues
+                            |> Remote.map (Dict.get pool)
+                            |> (Remote.map << Maybe.map)
+                                (\dict ->
+                                    dict
+                                        |> Dict.foldl
+                                            (\_ { debt, collateral, collateralizedDebt } accumulator ->
+                                                accumulator
+                                                    |> Maybe.andThen
+                                                        (\accumulatedDue ->
+                                                            Just Due
+                                                                |> Maybe.apply
+                                                                    (Uint.add accumulatedDue.debt debt)
+                                                                |> Maybe.apply
+                                                                    (Uint.add accumulatedDue.collateral collateral)
+                                                                |> Maybe.apply
+                                                                    (collateralizedDebt |> Just)
+                                                        )
+                                            )
+                                            (Due Uint.zero Uint.zero Nothing |> Just)
+                                        |> (\maybeDue ->
+                                                case maybeDue of
+                                                    Just totalDue ->
+                                                        row
+                                                            [ width fill
+                                                            , height fill
+                                                            , spacing 48
+                                                            ]
+                                                            [ column
+                                                                [ width shrink
+                                                                , height shrink
+                                                                , spacing 8
+                                                                , centerY
+                                                                ]
+                                                                [ el
+                                                                    [ width shrink
+                                                                    , height shrink
+                                                                    , Font.size 14
+                                                                    , paddingXY 0 3
+                                                                    , theme |> ThemeColor.textLight |> Font.color
+                                                                    ]
+                                                                    ("Total Assets to Repay"
+                                                                        |> text
+                                                                    )
+                                                                , row
+                                                                    [ width shrink
+                                                                    , height <| px 24
+                                                                    , spacing 12
+                                                                    ]
+                                                                    [ row
+                                                                        [ width shrink
+                                                                        , height shrink
+                                                                        , spacing 6
+                                                                        ]
+                                                                        [ images
+                                                                            |> Image.viewToken
+                                                                                [ width <| px 24
+                                                                                , height <| px 24
+                                                                                , centerY
+                                                                                ]
+                                                                                (pool.pair |> Pair.toAsset)
+                                                                        , Truncate.viewSymbol
+                                                                            { onMouseEnter = OnMouseEnter
+                                                                            , onMouseLeave = OnMouseLeave
+                                                                            , tooltip = Tooltip.Symbol TokenParam.Asset
+                                                                            , opened = tooltip
+                                                                            , token = pool.pair |> Pair.toAsset
+                                                                            , theme = theme
+                                                                            , customStyles = []
+                                                                            }
+                                                                        ]
+                                                                    , Truncate.viewAmount
+                                                                        { onMouseEnter = OnMouseEnter
+                                                                        , onMouseLeave = OnMouseLeave
+                                                                        , tooltip = Tooltip.TotalDebt TokenParam.Asset
+                                                                        , opened = tooltip
+                                                                        , token = pool.pair |> Pair.toAsset
+                                                                        , amount = totalDue.debt
+                                                                        , theme = theme
+                                                                        , customStyles = []
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                            , el
+                                                                [ width <| px 1
+                                                                , height fill
+                                                                , theme |> ThemeColor.textDisabled |> Background.color
+                                                                ]
+                                                                none
+                                                            , column
+                                                                [ width shrink
+                                                                , height shrink
+                                                                , spacing 8
+                                                                ]
+                                                                [ el
+                                                                    [ width shrink
+                                                                    , height shrink
+                                                                    , Font.size 14
+                                                                    , paddingXY 0 3
+                                                                    , theme |> ThemeColor.textLight |> Font.color
+                                                                    ]
+                                                                    ("Total Collateral to unlock"
+                                                                        |> text
+                                                                    )
+                                                                , row
+                                                                    [ width shrink
+                                                                    , height <| px 24
+                                                                    , spacing 12
+                                                                    ]
+                                                                    [ row
+                                                                        [ width shrink
+                                                                        , height shrink
+                                                                        , spacing 6
+                                                                        ]
+                                                                        [ images
+                                                                            |> Image.viewToken
+                                                                                [ width <| px 24
+                                                                                , height <| px 24
+                                                                                , centerY
+                                                                                ]
+                                                                                (pool.pair |> Pair.toCollateral)
+                                                                        , Truncate.viewSymbol
+                                                                            { onMouseEnter = OnMouseEnter
+                                                                            , onMouseLeave = OnMouseLeave
+                                                                            , tooltip = Tooltip.TotalCollateralSymbol TokenParam.Collateral
+                                                                            , opened = tooltip
+                                                                            , token = pool.pair |> Pair.toCollateral
+                                                                            , theme = theme
+                                                                            , customStyles = []
+                                                                            }
+                                                                        ]
+                                                                    , Truncate.viewAmount
+                                                                        { onMouseEnter = OnMouseEnter
+                                                                        , onMouseLeave = OnMouseLeave
+                                                                        , tooltip = Tooltip.TotalCollateral TokenParam.Collateral
+                                                                        , opened = tooltip
+                                                                        , token = pool.pair |> Pair.toCollateral
+                                                                        , amount = totalDue.collateral
+                                                                        , theme = theme
+                                                                        , customStyles = []
+                                                                        }
+                                                                    ]
+                                                                ]
+                                                            , case ( activeReturn.isCDTApproved, activeReturn.isFlashRepayAllowed ) of
+                                                                ( False, _ ) ->
+                                                                    row [ alignRight, centerY ]
+                                                                        [ approveCDTButton theme totalDue.collateralizedDebt ]
+
+                                                                ( True, False ) ->
+                                                                    row [ alignRight, centerY ]
+                                                                        [ disabledFlashRepayButton theme tooltip ]
+
+                                                                ( True, True ) ->
+                                                                    row [ alignRight, centerY ]
+                                                                        [ flashRepayButton theme ]
+                                                            ]
+
+                                                    _ ->
+                                                        none
+                                           )
+                                )
+                            |> (Remote.map << Maybe.withDefault) none
+                            |> Remote.withDefault none
+                        ]
+
+                _ ->
+                    none
+
+        _ ->
+            none
+
+
+approveCDTButton : Theme -> Maybe Address -> Element Msg
+approveCDTButton theme maybeCDTAddress =
+    case maybeCDTAddress of
+        Just cdtAddress ->
+            Input.button
+                [ width <| px 115
+                , height <| px 44
+                , Border.rounded 4
+                , theme |> ThemeColor.primaryBtn |> Background.color
+                ]
+                { onPress = Just (ClickAppoveCDT cdtAddress)
+                , label =
+                    el
+                        [ width shrink
+                        , height shrink
+                        , centerX
+                        , centerY
+                        , Font.size 16
+                        , Font.color Color.light100
+                        , Font.bold
+                        ]
+                        (text "Approve CDT")
+                }
+
+        _ ->
+            none
+
+
+flashRepayButton : Theme -> Element Msg
+flashRepayButton theme =
+    Input.button
+        [ width <| px 115
+        , height <| px 44
+        , Border.rounded 4
+        , theme |> ThemeColor.primaryBtn |> Background.color
+        ]
+        { onPress = Just ClickFlashRepay
+        , label =
+            el
+                [ width shrink
+                , height shrink
+                , centerX
+                , centerY
+                , Font.size 16
+                , Font.color Color.light100
+                , Font.bold
+                ]
+                (text "Flash Repay")
+        }
+
+
+disabledFlashRepayButton : Theme -> Maybe Tooltip -> Element Msg
+disabledFlashRepayButton theme tooltip =
+    el
+        [ Region.description "Flash Repay disabled"
+        , width fill
+        , height <| px 44
+        , paddingXY 12 4
+        , theme |> ThemeColor.btnBackground |> Background.color
+        , Border.rounded 4
+        , Events.onMouseEnter (OnMouseEnter Tooltip.FlashRepayDisabled)
+        , Events.onMouseLeave OnMouseLeave
+        , (if tooltip == Just Tooltip.FlashRepayDisabled then
+            el
+                [ Font.size 14
+                , width fill
+                , theme |> ThemeColor.textLight |> Font.color
+                ]
+                ("Flash Repay is currently not possible as per our computation." |> text)
+                |> TooltipUtil.belowAlignRight theme
+
+           else
+            none
+          )
+            |> below
+        ]
+        (el
+            [ centerX
+            , centerY
+            , Font.size 16
+            , Font.bold
+            , paddingXY 0 4
+            , theme |> ThemeColor.textDisabled |> Font.color
+            ]
+            (text "Flash Repay")
         )

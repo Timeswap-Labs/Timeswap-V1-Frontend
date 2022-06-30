@@ -8,6 +8,7 @@ module Blockchain.User.Txns.TxnWrite exposing
     , initUnconfirmed
     )
 
+import Data.Address as Address exposing (Address)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Pool as Pool exposing (Pool)
 import Json.Decode as Decode exposing (Decoder)
@@ -26,6 +27,8 @@ type TxnWrite
     | Withdraw Pool
     | Pay Pool
     | Burn Pool
+    | ApproveCDT Address
+    | FlashRepay Pool
 
 
 type alias Flag =
@@ -67,6 +70,7 @@ decoder =
     , decoderWithdraw
     , decoderPay
     , decoderBurn
+    , decoderFlashRepay
     ]
         |> Decode.oneOf
 
@@ -221,6 +225,21 @@ decoderBurn =
         |> Decode.andThen identity
 
 
+decoderFlashRepay : Decoder TxnWrite
+decoderFlashRepay =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "flashRepay" then
+                FlashRepay pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
 encode : TxnWrite -> Value
 encode write =
     case write of
@@ -280,6 +299,18 @@ encode write =
 
         Burn pool ->
             [ ( "txn", "burn" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
+            ]
+                |> Encode.object
+
+        ApproveCDT address ->
+            [ ( "txn", "approveCDT" |> Encode.string )
+            , ( "address", address |> Address.encode )
+            ]
+                |> Encode.object
+
+        FlashRepay pool ->
+            [ ( "txn", "flashRepay" |> Encode.string )
             , ( "pool", pool |> Pool.encode )
             ]
                 |> Encode.object
