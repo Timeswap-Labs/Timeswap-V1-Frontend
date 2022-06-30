@@ -27,6 +27,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Utility.Color as Color
+import Utility.Id as Id
 import Utility.Image as Image
 import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
@@ -118,6 +119,7 @@ view { images, theme } param =
                 , height <| px 44
                 , theme |> ThemeColor.primaryBtn |> Background.color
                 , Border.rounded 8
+                , Id.is "btn"
                 ]
                 { onPress = param.onPress param.tokenParam |> Just
                 , label =

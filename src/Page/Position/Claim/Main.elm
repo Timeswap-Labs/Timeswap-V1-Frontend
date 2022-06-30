@@ -71,6 +71,7 @@ import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
+import Utility.Id as Id
 import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
@@ -764,6 +765,7 @@ claimButton theme =
     Input.button
         [ width <| px 102
         , height <| px 44
+        , Id.is "btn"
         , Border.rounded 4
         , theme |> ThemeColor.primaryBtn |> Background.color
         ]

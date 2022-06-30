@@ -64,6 +64,7 @@ import Utility.Calculate as Calculate
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
+import Utility.Id as Id
 import Utility.Image as Image
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
@@ -1097,6 +1098,7 @@ buttons { theme } pool =
                 , theme |> ThemeColor.primaryBtn |> Background.color
                 , Border.rounded 4
                 , Font.bold
+                , Id.is "btn"
                 , Font.size 16
                 , Font.color Color.light100
                 ]
@@ -1121,6 +1123,7 @@ buttons { theme } pool =
                 , Font.bold
                 , Font.size 16
                 , Font.color Color.light100
+                , Id.is "btn"
                 ]
                 { url = Route.toUrlString (Route.Borrow (Parameter.Pool pool |> Just))
                 , label =

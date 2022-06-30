@@ -69,6 +69,7 @@ import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
+import Utility.Id as Id
 import Utility.Image as Image
 import Utility.Loading as Loading
 import Utility.PairImage as PairImage
@@ -706,6 +707,7 @@ burnButton theme =
         [ width <| px 102
         , height <| px 44
         , Border.rounded 4
+        , Id.is "btn"
         , theme |> ThemeColor.primaryBtn |> Background.color
         ]
         { onPress = Just ClickBurn

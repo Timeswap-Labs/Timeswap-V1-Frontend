@@ -31,6 +31,7 @@ import Element.Region as Region
 import Time exposing (Posix)
 import Utility.Color as Color
 import Utility.Duration as Duration
+import Utility.Id as Id
 import Utility.Image as Image
 import Utility.ThemeColor as ThemeColor
 
@@ -115,6 +116,7 @@ view { time, offset, chosenZone, images, theme } param =
                         , height fill
                         , paddingXY 12 0
                         , spacing 6
+                        , Id.is "btn"
                         ]
                         [ el
                             [ width <| px 24
