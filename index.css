@@ -337,7 +337,7 @@
   cursor: pointer;
   overflow: hidden;
   transition: all 0.2s ease;
-  border-radius: 10px;
+  border-radius: 5px;
 }
 #btn:after {
   content: "";
