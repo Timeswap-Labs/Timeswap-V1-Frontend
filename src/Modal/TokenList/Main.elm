@@ -101,7 +101,7 @@ type Msg
     | ChooseToken Token
     | ImportERC20
     | ClearERC20 ERC20
-    | ClearAll
+      -- | ClearAll
     | OnMouseEnter Tooltip
     | OnMouseLeave
     | Exit
@@ -128,7 +128,7 @@ type Effect
 
 
 update :
-    { model | chains : Chains , endPoint : String   }
+    { model | chains : Chains, endPoint : String }
     -> Blockchain
     -> Msg
     -> Modal
@@ -416,12 +416,11 @@ update { chains, endPoint } blockchain msg (Modal modal) =
             , RemoveERC20 erc20 |> Just
             )
 
-        ( ClearAll, CustomERC20s _ ) ->
-            ( modal |> Modal |> Just
-            , Cmd.none
-            , RemoveAll |> Just
-            )
-
+        -- ( ClearAll, CustomERC20s _ ) ->
+        --     ( modal |> Modal |> Just
+        --     , Cmd.none
+        --     , RemoveAll |> Just
+        --     )
         ( Exit, _ ) ->
             ( Nothing
             , Cmd.none
@@ -457,7 +456,7 @@ get blockchain endPoint address =
         |> Blockchain.toChain
         |> (\chain ->
                 Http.get
-                    { url = address |> Query.toUrlString blockchain endPoint 
+                    { url = address |> Query.toUrlString blockchain endPoint
                     , expect =
                         Answer.decoder
                             |> Http.expectJson (ReceiveAnswer chain address)

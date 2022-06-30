@@ -22,7 +22,7 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
-import Data.Maturity as Maturity exposing (Maturity)
+import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
 import Data.Pair as Pair exposing (Pair)
@@ -334,12 +334,11 @@ init { time, endPoint } blockchain maybeTxn parameter =
 
 initGivenPoolInfo :
     { model | time : Posix }
-    -> Blockchain
     -> Maybe Transaction
     -> Pool
     -> PoolInfo
     -> ( Transaction, Cmd Msg )
-initGivenPoolInfo { time } blockchain maybeTxn pool poolInfo =
+initGivenPoolInfo { time } maybeTxn pool poolInfo =
     if pool.maturity |> Maturity.isActive time then
         case maybeTxn of
             Just (Transaction { state }) ->

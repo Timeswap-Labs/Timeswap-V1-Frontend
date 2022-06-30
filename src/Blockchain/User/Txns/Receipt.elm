@@ -1,5 +1,6 @@
 module Blockchain.User.Txns.Receipt exposing (Answer, State(..), decoder, encode)
 
+import Blockchain.User.Txns.TxnWrite as TxnWrite exposing (TxnWrite)
 import Data.Address as Address exposing (Address)
 import Data.Chain as Chain exposing (Chain)
 import Data.Hash as Hash exposing (Hash)
@@ -16,10 +17,12 @@ type alias Receipt =
 
 
 type alias Answer =
-    { chain : Chain
+    { id : Int
+    , chain : Chain
     , address : Address
     , hash : Hash
     , state : State
+    , txnType : Maybe TxnWrite
     }
 
 
@@ -40,10 +43,12 @@ encode { chain, address, hash } =
 decoder : Decoder Answer
 decoder =
     Decode.succeed Answer
+        |> Pipeline.required "id" Decode.int
         |> Pipeline.required "chain" Chain.decoder
         |> Pipeline.required "address" Address.decoder
         |> Pipeline.required "hash" Hash.decoder
         |> Pipeline.required "state" decoderState
+        |> Pipeline.optional "txnType" (TxnWrite.decoder |> Decode.nullable) Nothing
 
 
 decoderState : Decoder State

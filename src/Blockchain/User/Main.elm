@@ -29,6 +29,8 @@ port module Blockchain.User.Main exposing
     , update
     , updateAddERC20
     , updateApprove
+    , updateApproveAndBorrow
+    , updateApproveAndLend
     , updateBorrow
     , updateBurn
     , updateClearTxns
@@ -376,7 +378,23 @@ update { chains, endPoint } chain msg (User user) =
                             |> (\updatedUser ->
                                     ( updatedUser |> User
                                     , Cmd.none
-                                    , ConfirmedTxn decoded.hash |> Just
+                                    , case ( decoded.state, decoded.txnType ) of
+                                        ( Receipt.Success, Just (TxnWrite.ApproveAndLend pool) ) ->
+                                            user.txns
+                                                |> Txns.insert (TxnWrite.Lend pool)
+                                                |> (\( newTxnId, _ ) ->
+                                                        OpenConfirm newTxnId (TxnWrite.Lend pool) |> Just
+                                                   )
+
+                                        ( Receipt.Success, Just (TxnWrite.ApproveAndBorrow pool) ) ->
+                                            user.txns
+                                                |> Txns.insert (TxnWrite.Borrow pool)
+                                                |> (\( newTxnId, _ ) ->
+                                                        OpenConfirm newTxnId (TxnWrite.Borrow pool) |> Just
+                                                   )
+
+                                        _ ->
+                                            ConfirmedTxn decoded.hash |> Just
                                     )
                                )
 
@@ -646,6 +664,38 @@ updateLend model chain writeLend (User user) =
            )
 
 
+updateApproveAndLend :
+    { model | time : Posix, deadline : Deadline }
+    -> Chain
+    -> WriteLend
+    -> User
+    -> ( User, Cmd Msg, Effect )
+updateApproveAndLend model chain writeLend (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.ApproveAndLend
+                (writeLend |> WriteLend.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ writeLend
+                        |> WriteLend.encode model user.address
+                        |> Write.encode id chain user.address
+                        |> approveAndLend
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.ApproveAndLend
+                        (writeLend |> WriteLend.toPool)
+                    )
+                )
+           )
+
+
 updateBorrow :
     { model | time : Posix, deadline : Deadline }
     -> Chain
@@ -672,6 +722,38 @@ updateBorrow model chain writeBorrow (User user) =
                     |> Cmd.batch
                 , OpenConfirm id
                     (TxnWrite.Borrow
+                        (writeBorrow |> WriteBorrow.toPool)
+                    )
+                )
+           )
+
+
+updateApproveAndBorrow :
+    { model | time : Posix, deadline : Deadline }
+    -> Chain
+    -> WriteBorrow
+    -> User
+    -> ( User, Cmd Msg, Effect )
+updateApproveAndBorrow model chain writeBorrow (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.ApproveAndBorrow
+                (writeBorrow |> WriteBorrow.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ writeBorrow
+                        |> WriteBorrow.encode model user.address
+                        |> Write.encode id chain user.address
+                        |> approveAndBorrow
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.ApproveAndBorrow
                         (writeBorrow |> WriteBorrow.toPool)
                     )
                 )
@@ -945,7 +1027,13 @@ port approve : Value -> Cmd msg
 port lend : Value -> Cmd msg
 
 
+port approveAndLend : Value -> Cmd msg
+
+
 port borrow : Value -> Cmd msg
+
+
+port approveAndBorrow : Value -> Cmd msg
 
 
 port liquidity : Value -> Cmd msg

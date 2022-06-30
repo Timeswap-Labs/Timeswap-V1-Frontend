@@ -21,7 +21,7 @@ module Modal.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User exposing (User)
+import Blockchain.User.Main as User
 import Blockchain.User.TokenId exposing (TokenId)
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Blockchain.User.WriteLend exposing (WriteLend)
@@ -105,6 +105,7 @@ type Effect
     | Approve ERC20
     | Pay WritePay
     | Lend WriteLend
+    | ApproveAndLend WriteLend
 
 
 initConnect : Support User.NotSupported Blockchain -> Modal
@@ -137,9 +138,9 @@ initConfirm id txnWrite =
         |> Confirm
 
 
-initCaution : WriteLend -> Float -> CDP -> PoolInfo -> Modal
-initCaution writeLend apr cdp poolInfo =
-    Caution.init writeLend apr cdp poolInfo
+initCaution : WriteLend -> Float -> CDP -> PoolInfo -> Bool -> Modal
+initCaution writeLend apr cdp poolInfo isAssetApproved =
+    Caution.init writeLend apr cdp poolInfo isAssetApproved
         |> Caution
 
 
@@ -205,13 +206,11 @@ initChainList =
 
 
 initPayTransaction :
-    Blockchain
-    -> User
-    -> Pool
+    Pool
     -> Set TokenId
     -> ( Modal, Cmd Msg )
-initPayTransaction blockchain user pool set =
-    PayTransaction.init blockchain user pool set
+initPayTransaction pool set =
+    PayTransaction.init pool set
         |> Tuple.mapBoth
             PayTransaction
             (Cmd.map PayTransactionMsg)
@@ -406,6 +405,9 @@ cautionLendEffect effect =
     case effect of
         Caution.Lend writeLend ->
             Lend writeLend
+
+        Caution.ApproveAndLend writeLend ->
+            ApproveAndLend writeLend
 
 
 receiveUser : Modal -> Maybe Modal

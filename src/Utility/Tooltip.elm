@@ -103,21 +103,22 @@ triangleUp theme =
         |> html
 
 
-triangleLeft : Element msg
-triangleLeft =
-    Svg.svg
-        [ Svg.Attributes.width "7"
-        , Svg.Attributes.height "14"
-        , Svg.Attributes.fill "none"
-        , Svg.Attributes.xmlSpace "http://www.w3.org/2000/svg"
-        ]
-        [ Svg.path
-            [ Svg.Attributes.d "M7 0L7 14L-3.0598e-07 7L7 0Z"
-            , Svg.Attributes.fill "#0F1426"
-            ]
-            []
-        ]
-        |> html
+
+-- triangleLeft : Element msg
+-- triangleLeft =
+--     Svg.svg
+--         [ Svg.Attributes.width "7"
+--         , Svg.Attributes.height "14"
+--         , Svg.Attributes.fill "none"
+--         , Svg.Attributes.xmlSpace "http://www.w3.org/2000/svg"
+--         ]
+--         [ Svg.path
+--             [ Svg.Attributes.d "M7 0L7 14L-3.0598e-07 7L7 0Z"
+--             , Svg.Attributes.fill "#0F1426"
+--             ]
+--             []
+--         ]
+--         |> html
 
 
 shadow : Attribute msg

@@ -262,6 +262,7 @@ export function listenForPendingTxns(app: ElmApp<Ports>, gp: GlobalParams) {
     pendingTxns.forEach(async (pendingTxn) => {
       const txnReceipt = await gp.walletProvider.waitForTransaction(pendingTxn.hash);
       const receiveReceipt = {
+        id: pendingTxn.id,
         chain: parsedTxnData.chain,
         address: parsedTxnData.address,
         hash: pendingTxn.hash,
