@@ -335,15 +335,16 @@
 #btn {
   border: 0;
   cursor: pointer;
-  overflow: hidden;
+  /* overflow: hidden; */
+
   font-size: 12px;
   transition: all 0.2s ease;
 }
 #btn:after {
   content: "";
   position: absolute;
-  left: -200%;
-  width: 200%;
+  left: -60%;
+  width: 60%;
   height: 100%;
   transform: skewX(-20deg);
   background-image: linear-gradient(
@@ -368,16 +369,16 @@
 }
 @-webkit-keyframes shine {
   100% {
-    left: 200%;
+    left: 100%;
   }
 }
 @-o-keyframes shine {
   100% {
-    left: 200%;
+    left: 100%;
   }
 }
 @keyframes shine {
   100% {
-    left: 200%;
+    left: 100%;
   }
 }

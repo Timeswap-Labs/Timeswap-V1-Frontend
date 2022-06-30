@@ -1816,8 +1816,9 @@ connectButton ({ device, images, theme } as model) =
                                 (\_ ->
                                     [ Region.description "account button"
                                     , theme |> ThemeColor.btnBackground |> Background.color
-                                    , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
-                                    , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
+
+                                    -- , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
+                                    -- , mouseOver [ theme |> ThemeColor.btnHoverBG |> Background.color ]
                                     ]
                                 )
                             |> Maybe.withDefault
