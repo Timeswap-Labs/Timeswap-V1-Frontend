@@ -594,17 +594,26 @@ query :
         }
     -> ( Transaction, Cmd Msg, Maybe Effect )
 query blockchain pool priceFeed transaction =
-    transaction
-        |> constructQueryNew queryCreate
-            blockchain
-            pool
-            priceFeed
-        |> (\( updated, cmd ) ->
-                ( updated
-                , cmd
-                , Nothing
-                )
-           )
+    case ( transaction.debtIn |> Uint.fromAmount (pool.pair |> Pair.toAsset), transaction.assetIn |> Uint.fromAmount (pool.pair |> Pair.toAsset) ) of
+        ( Just debtInUint, Just assetInUint ) ->
+            if Uint.hasEnough debtInUint assetInUint then
+                ( transaction |> Transaction, Cmd.none, Nothing )
+
+            else
+                transaction
+                    |> constructQueryNew queryCreate
+                        blockchain
+                        pool
+                        priceFeed
+                    |> (\( updated, cmd ) ->
+                            ( updated
+                            , cmd
+                            , Nothing
+                            )
+                       )
+
+        _ ->
+            ( transaction |> Transaction, Cmd.none, Nothing )
 
 
 constructQueryNew :

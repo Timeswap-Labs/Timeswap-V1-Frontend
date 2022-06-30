@@ -1,16 +1,17 @@
 import { GlobalParams } from './../global';
-import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Pool, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-sdk-core';
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { PoolCore, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-biconomy-sdk';
 import { calculateMaxValue, calculateMinValue, getCurrentTime } from "../helper";
 import { calculateFuturisticApr, calculateFuturisticCdp } from './common';
 
 export async function assetCalculate(
   app: ElmApp<Ports>,
-  pool: Pool,
+  pool: PoolCore,
   query: LiquidityQuery
 ) {
   try {
     const currentTime = getCurrentTime();
+    const totalLiquidity = new Uint256(query.poolInfo.totalLiquidity);
 
     const state = {
       x: new Uint112(query.poolInfo.x),
@@ -26,7 +27,7 @@ export async function assetCalculate(
       zIncrease,
     } = pool.liquidityGivenAsset(
       state,
-      new Uint256(query.poolInfo.totalLiquidity),
+      totalLiquidity,
       new Uint112(query.assetIn!),
       new Uint256(currentTime),
       new Uint256(query.poolInfo.feeStored),
@@ -37,6 +38,8 @@ export async function assetCalculate(
     const minLiquidity = calculateMinValue(liquidityOut, query.slippage);
     const maxDebt = calculateMaxValue(dueOut.debt, query.slippage);
     const maxCollateral = calculateMaxValue(dueOut.collateral, query.slippage);
+    const liqShareCalc = liquidityOut.mul(10000).div(totalLiquidity.add(liquidityOut));
+    const liquidityShare = Math.round(Number(liqShareCalc.toBigInt())) / 100;
 
     const futureApr = calculateFuturisticApr(state, xIncrease, yIncrease);
     const futureCdp = calculateFuturisticCdp(
@@ -62,6 +65,7 @@ export async function assetCalculate(
         maxCollateral: maxCollateral.toString(),
         apr: futureApr,
         cdp: futureCdp,
+        liquidityShare
       }
     });
   } catch (err) {
@@ -79,7 +83,7 @@ export async function assetTransaction(
   gp: GlobalParams,
   liquidity: Liquidity
 ) {
-  return await pool.upgrade(gp.walletSigner!).liquidityGivenAsset({
+  return await pool.upgrade(await gp.getSigner()).liquidityGivenAsset({
     liquidityTo: liquidity.liquidityTo,
     dueTo: liquidity.dueTo,
     assetIn: new Uint112(liquidity.assetIn),

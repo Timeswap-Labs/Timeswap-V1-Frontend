@@ -1,4 +1,4 @@
-import { Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
+import { Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import { GlobalParams } from "./global";
 import { getPoolSDK, handleTxnErrors, updateCachedTxns } from "./helper";
 
@@ -13,14 +13,16 @@ export function paySigner(app: ElmApp<Ports>, gp: GlobalParams) {
     );
 
     try {
-      const txnConfirmation = await pool.upgrade(gp.walletSigner!).repay({
-        collateralTo: params.send.collateralTo,
-        ids: params.send.ids.map((id) => new Uint256(id)),
-        maxAssetsIn: params.send.maxAssetsIn.map(
-          (maxAssetIn) => new Uint112(maxAssetIn)
-        ),
-        deadline: new Uint256(params.send.deadline),
-      });
+      const txnConfirmation = await pool
+        .upgrade(await gp.getSigner())
+        .repay({
+          collateralTo: params.send.collateralTo,
+          ids: params.send.ids.map((id) => new Uint256(id)),
+          maxAssetsIn: params.send.maxAssetsIn.map(
+            (maxAssetIn) => new Uint112(maxAssetIn)
+          ),
+          deadline: new Uint256(params.send.deadline),
+        });
 
       if (txnConfirmation) {
         app.ports.receiveConfirm.send({

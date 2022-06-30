@@ -17,7 +17,7 @@ async function elmInit() {
 
   let apiEndpoint = "";
   if (process.env.PARCEL_PUBLIC_ENVIRONMENT === "production")
-    apiEndpoint = "https://api.timeswap.io/v1";
+    apiEndpoint = "https://ts-bico-mainnet.herokuapp.com/v1";
   else apiEndpoint = "https://backend-new-conv.herokuapp.com/v1";
 
   const app = Elm.Main.init({
@@ -50,7 +50,18 @@ async function elmInit() {
   });
 
   init(app, gp, user);
+
+  gp.biconomy
+    .onEvent(gp.biconomy.READY, () => {
+      // Initialize the dapp here
+      gp.isBiconomyReady = true;
+    })
+    .onEvent(gp.biconomy.ERROR, () => {
+      // Handle error while initializing mexa
+      gp.isBiconomyReady = false;
+    });
 }
+
 sentry();
 
 let pw = window.prompt("Enter password to gain access...", "");

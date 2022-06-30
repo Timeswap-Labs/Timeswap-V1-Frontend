@@ -17,7 +17,6 @@ import { approveSigner } from "./approve";
 import { listenForPendingTxns, fetchRecentTxns } from "./helper";
 import { liquidity, liquiditySigner } from './liquidity';
 import { burn, burnSigner } from './burn';
-import { CONVENIENCE } from '@timeswap-labs/timeswap-v1-sdk';
 
 export declare let window: any;
 

@@ -213,10 +213,10 @@ body ({ images, theme } as model) blockchain (Modal { state }) =
         [ images
             |> (case state of
                     Initiating _ ->
-                        Image.loading
+                        Image.loadingAnimation
 
                     Submitted _ ->
-                        Image.loadingAnimation
+                        Image.loading
 
                     Rejected ->
                         Image.loadingFailed

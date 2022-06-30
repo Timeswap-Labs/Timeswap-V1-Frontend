@@ -3,7 +3,7 @@ import { GlobalParams } from "../global";
 import cdTokenAbi from "../abi/cdToken";
 import pairAbi from "../abi/pair";
 import { updateTransferEventBalance } from "../helper";
-import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-sdk";
+import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 
 export async function borrowPositionsInit(
   gp: GlobalParams,

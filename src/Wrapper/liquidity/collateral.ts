@@ -1,18 +1,18 @@
 import { GlobalParams } from '../global';
-import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
-import { Pool, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-sdk-core';
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { PoolCore, Uint112, Uint256 } from '@timeswap-labs/timeswap-v1-biconomy-sdk';
 import { calculateMaxValue, calculateMinValue, getCurrentTime } from "../helper";
 import { calculateFuturisticApr, calculateFuturisticCdp } from './common';
 
 
 export async function collateralCalculate(
   app: ElmApp<Ports>,
-  pool: Pool,
+  pool: PoolCore,
   query: LiquidityQuery
 ) {
   try {
-    const maturity = new Uint256(query.pool.maturity);
     const currentTime = getCurrentTime();
+    const totalLiquidity = new Uint256(query.poolInfo.totalLiquidity);
 
     const state = {
       x: new Uint112(query.poolInfo.x),
@@ -29,17 +29,18 @@ export async function collateralCalculate(
       zIncrease,
     } = pool.liquidityGivenCollateral(
       state,
-      new Uint256(query.poolInfo.totalLiquidity),
+      totalLiquidity,
       new Uint112(query.collateralIn!),
       new Uint256(currentTime),
       new Uint256(query.poolInfo.feeStored),
     );
 
     const debtIn = dueOut.debt.toString();
-    const collateralIn = dueOut.collateral.toString();
     const minLiquidity = calculateMinValue(liquidityOut, query.slippage);
     const maxDebt = calculateMaxValue(dueOut.debt, query.slippage);
     const maxAsset = calculateMaxValue(assetInReturn, query.slippage);
+    const liqShareCalc = liquidityOut.mul(10_000).div(totalLiquidity.add(liquidityOut));
+    const liquidityShare = Math.round(Number(liqShareCalc.toBigInt())) / 100;
 
     const futureApr = calculateFuturisticApr(state, xIncrease, yIncrease);
     const futureCdp = calculateFuturisticCdp(
@@ -63,6 +64,7 @@ export async function collateralCalculate(
         maxDebt: maxDebt.toString(),
         apr: futureApr,
         cdp: futureCdp,
+        liquidityShare
       },
     });
   } catch(err) {
@@ -80,7 +82,7 @@ export async function collateralTransaction(
   gp: GlobalParams,
   liquidity: Liquidity
 ) {
-  return await pool.upgrade(gp.walletSigner!).liquidityGivenCollateral({
+  return await pool.upgrade(await gp.getSigner()).liquidityGivenCollateral({
     liquidityTo: liquidity.liquidityTo,
     dueTo: liquidity.dueTo,
     collateralIn: new Uint112(liquidity.collateralIn),

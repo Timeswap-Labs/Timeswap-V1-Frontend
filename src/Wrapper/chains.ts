@@ -1,5 +1,5 @@
 import { getCustomTokens } from "./helper";
-import { WNATIVE_ADDRESS } from "@timeswap-labs/timeswap-v1-sdk";
+import { WNATIVE_ADDRESS } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 
 export const whitelistChains: Whitelist = {
   default: {
@@ -32,16 +32,16 @@ export const whitelistChains: Whitelist = {
         symbol: "DAI",
         decimals: 18,
       },
-      {
-        address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
-        name: "WETH",
-        symbol: "WETH",
-        decimals: 18,
-      }
+      // {
+      //   address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
+      //   name: "WETH",
+      //   symbol: "WETH",
+      //   decimals: 18,
+      // },
     ],
     custom: getCustomTokens(String(137)),
   },
-  others: []
+  others: [],
 };
 
 export function getChainData(chainId: number) {

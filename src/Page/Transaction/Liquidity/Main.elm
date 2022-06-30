@@ -1497,7 +1497,7 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
                             ]
                             ((case transaction.state of
                                 Add _ ->
-                                    "Liquidity"
+                                    "Add Liquidity"
 
                                 New _ ->
                                     "Create Pool"

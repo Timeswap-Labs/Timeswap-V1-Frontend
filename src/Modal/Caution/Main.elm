@@ -274,10 +274,20 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                             |> String.concat
 
                     _ ->
-                        ""
+                        ". "
                   )
                     |> text
                 ]
+            , case cdp.percent of
+                Just cdpPerc ->
+                    Element.none
+
+                Nothing ->
+                    paragraph
+                        []
+                        [ text "\nDue to the unavailability of spot prices for your selected tokens at the moment, we're unable to compute the collateralization percentage of your transaction."
+                        , text "\nPlease take the CDP value into account and exercise caution before proceeding."
+                        ]
             ]
         , Input.button
             [ width fill

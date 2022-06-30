@@ -94,6 +94,7 @@ type alias ResultAsset =
     , maxCollateral : Uint
     , apr : Float
     , cdp : CDP
+    , liquidityShare : Float
     }
 
 
@@ -118,6 +119,7 @@ type alias ResultCollateral =
     , maxDebt : Uint
     , apr : Float
     , cdp : CDP
+    , liquidityShare : Float
     }
 
 
@@ -225,6 +227,7 @@ decoderResultAsset =
         |> Pipeline.required "maxCollateral" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "liquidityShare" Decode.float
 
 
 decoderResultDebt : Decoder ResultDebt
@@ -251,3 +254,4 @@ decoderResultCollateral =
         |> Pipeline.required "maxDebt" Uint.decoder
         |> Pipeline.required "apr" Decode.float
         |> Pipeline.required "cdp" CDP.decoder
+        |> Pipeline.required "liquidityShare" Decode.float

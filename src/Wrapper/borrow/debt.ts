@@ -1,5 +1,9 @@
-import { Pool, Uint112, Uint256 } from "@timeswap-labs/timeswap-v1-sdk-core";
-import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-sdk";
+import {
+  PoolCore,
+  Uint112,
+  Uint256,
+} from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { Pool as SDKPool } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import { GlobalParams } from "../global";
 import { calculateMaxValue, getCurrentTime } from "../helper";
 import {
@@ -13,7 +17,7 @@ import {
 
 export function debtCalculate(
   app: ElmApp<Ports>,
-  pool: Pool,
+  pool: PoolCore,
   query: BorrowQuery
 ) {
   try {
@@ -133,14 +137,16 @@ export async function debtTransaction(
   gp: GlobalParams,
   borrow: Borrow
 ) {
-  return await pool.upgrade(gp.walletSigner!).borrowGivenDebt({
-    assetTo: borrow.assetTo,
-    dueTo: borrow.dueTo,
-    assetOut: new Uint112(borrow.assetOut),
-    debtIn: new Uint112(borrow.debtIn),
-    maxCollateral: new Uint112(borrow.maxCollateral),
-    deadline: new Uint256(borrow.deadline),
-  });
+  return await pool
+    .upgrade(await gp.getSigner())
+    .borrowGivenDebt({
+      assetTo: borrow.assetTo,
+      dueTo: borrow.dueTo,
+      assetOut: new Uint112(borrow.assetOut),
+      debtIn: new Uint112(borrow.debtIn),
+      maxCollateral: new Uint112(borrow.maxCollateral),
+      deadline: new Uint256(borrow.deadline),
+    });
 }
 
 interface Borrow {
