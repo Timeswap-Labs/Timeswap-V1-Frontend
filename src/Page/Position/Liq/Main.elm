@@ -1373,7 +1373,7 @@ approveCDTButton theme maybeCDTAddress =
                         , Font.color Color.light100
                         , Font.bold
                         ]
-                        (text "Approve CDT")
+                        (text "Approve & Flash Repay")
                 }
 
         _ ->
