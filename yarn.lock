@@ -1717,25 +1717,25 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@timeswap-labs/flash-repay-contracts@1.0.2-alpha.0":
-  version "1.0.2-alpha.0"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/flash-repay-contracts/1.0.2-alpha.0/15a68fcbd6cb780522d4f984c802f7e280981f5bcf1d0c96cfaeaaf1fe0e3483#9c5a5b54670d09a6d8d2d355fdf72b4f0ba32b57"
-  integrity sha512-kzSe0G4xewcfaSGfPG9TuIHgAPpweTr2PXCT7Bg+fRip6zzaeD0bFJi9wbVCNpr00ASeA8ECymBUFWaIpXRrZg==
+"@timeswap-labs/flash-repay-contracts@1.0.4-alpha.0":
+  version "1.0.4-alpha.0"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/flash-repay-contracts/1.0.4-alpha.0/8670d4f49e41fd1ffdfc20d0e5159e757ec2fb0d4ce9a89aa3bf0115de27f9aa#67e58ded4722b1634541b1d0a49a9e08938195db"
+  integrity sha512-vGLZbkSCH6luGE8FU5PARahW5v/JwCKXNn3ONcw3uiIHGT59Sbcwptkx78+Vvhhk4WuuN3rZTVOdKGI/2jyM6A==
   dependencies:
     "@timeswap-labs/timeswap-v1-convenience" "1.1.5-Beta"
     "@timeswap-labs/timeswap-v1-core" "1.1.5-Beta"
     "@uniswap/v2-core" "^1.0.1"
     "@uniswap/v2-periphery" "^1.1.0-beta.0"
 
-"@timeswap-labs/flash-repay-sdk@1.0.2-alpha.0":
-  version "1.0.2-alpha.0"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/flash-repay-sdk/1.0.2-alpha.0/4902de8a8daa10f0840a2ad8995d64b59efebea1270140faaf5e2c9696841ebe#102da73da39372b523f0b9312be193e84e9541c9"
-  integrity sha512-BaQVoRs2/zOwSvLIHWGhWnNIhGWZ4Mz91ksp54XxziWX/Y7febcUBHMcWryETSWiCLvXYBqj0/vdHWF3HAHuNg==
+"@timeswap-labs/flash-repay-sdk@1.0.4-alpha.0":
+  version "1.0.4-alpha.0"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/flash-repay-sdk/1.0.4-alpha.0/6d3aea4fcc2a8dff0feb7418ef99de9139502b1680841951c33ef391907ac1ce#6ae8e4d2c8eb92315824e3ffe557ddb4f64d14f8"
+  integrity sha512-Q217X49EH875YiC++9BB9qq0D7TfeAcf2QRwlWm0DhxuviGyq+cBf6xcA7/3m0yfZiRGtQJ19v5/0JJN1ISUmg==
   dependencies:
     "@ethersproject/abstract-provider" "^5.6.1"
     "@ethersproject/abstract-signer" "^5.6.1"
     "@ethersproject/bignumber" "^5.6.1"
-    "@timeswap-labs/flash-repay-contracts" "1.0.2-alpha.0"
+    "@timeswap-labs/flash-repay-contracts" "1.0.4-alpha.0"
 
 "@timeswap-labs/timeswap-v1-biconomy-sdk@1.0.14":
   version "1.0.14"
