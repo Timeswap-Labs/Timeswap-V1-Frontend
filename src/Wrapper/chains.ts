@@ -3,10 +3,10 @@ import { WNATIVE_ADDRESS } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 
 export const whitelistChains: Whitelist = {
   default: {
-    chainId: 137,
+    chainId: 8280,
     name: "Polygon Mainnet",
-    rpcUrl: "https://polygon-rpc.com/",
-    blockExplorerUrl: "https://polygonscan.com/",
+    rpcUrl: "https://backend.buildbear.io/node/dreamy-saha-3ba5e6",
+    blockExplorerUrl: "https://explorer.buildbear.io/node/dreamy-saha-3ba5e6",
     nftExplorerUrl: "https://opensea.io/assets/matic",
     native: {
       name: "MATIC",
