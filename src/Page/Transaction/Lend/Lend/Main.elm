@@ -72,6 +72,7 @@ import Time exposing (Posix)
 import Url.Builder as Builder
 import Utility.Calculate as Calculate
 import Utility.Color as Color
+import Utility.Id as Id
 import Utility.Image as Image
 import Utility.Input as Input
 import Utility.Loading as Loading

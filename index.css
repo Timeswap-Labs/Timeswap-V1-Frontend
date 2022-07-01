@@ -332,14 +332,14 @@
   padding: 3px 8px;
 }
 
-#btn {
+.shiningBtn {
   border: 0;
   cursor: pointer;
   overflow: hidden;
   transition: all 0.2s ease;
   border-radius: 5px;
 }
-#btn:after {
+.shiningBtn:after {
   content: "";
   position: absolute;
   left: -60%;
@@ -353,10 +353,10 @@
     transparent
   );
 }
-#btn:hover:after {
+.shiningBtn:hover:after {
   animation: shine 1.6s ease;
 }
-#btn:active {
+.shiningBtn:active {
   transform: translateY(1px);
   box-shadow: 0 16px 16px rgba(0, 0, 0, 0.2);
 }
