@@ -39,6 +39,6 @@
     "url": "^0.11.0"
   },
   "resolutions": {
-    "@ethereum-waffle": "3.4.4"
+    "@ethereum-waffle/provider": "4.0.0-alpha.24"
   }
 }
