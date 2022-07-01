@@ -755,7 +755,7 @@ repayList model blockchain user ({ state, pool } as modal) =
                                  else
                                     dict
                                         |> Dict.foldl
-                                            (\_ { debt, collateral } accumulator ->
+                                            (\_ { debt, collateral, collateralizedDebt } accumulator ->
                                                 accumulator
                                                     |> Maybe.andThen
                                                         (\accumulatedDue ->
@@ -764,9 +764,11 @@ repayList model blockchain user ({ state, pool } as modal) =
                                                                     (Uint.add accumulatedDue.debt debt)
                                                                 |> Maybe.apply
                                                                     (Uint.add accumulatedDue.collateral collateral)
+                                                                |> Maybe.apply
+                                                                    (collateralizedDebt |> Just)
                                                         )
                                             )
-                                            (Due Uint.zero Uint.zero |> Just)
+                                            (Due Uint.zero Uint.zero Nothing |> Just)
                                         |> totalDebtCollateral model modal
                                 )
                         )
@@ -798,7 +800,7 @@ repayList model blockchain user ({ state, pool } as modal) =
                                  else
                                     Dict.merge TokenId.sorter
                                         (\_ _ accumulator -> accumulator)
-                                        (\_ { debt, collateral } assetIn accumulator ->
+                                        (\_ { debt, collateral, collateralizedDebt } assetIn accumulator ->
                                             accumulator
                                                 |> Maybe.andThen
                                                     (\accumulatedDue ->
@@ -819,12 +821,14 @@ repayList model blockchain user ({ state, pool } as modal) =
                                                                         )
                                                                     |> Maybe.andThen (Uint.add accumulatedDue.collateral)
                                                                 )
+                                                            |> Maybe.apply
+                                                                (collateralizedDebt |> Just)
                                                     )
                                         )
                                         (\_ _ accumulator -> accumulator)
                                         dues
                                         dict
-                                        (Due Uint.zero Uint.zero |> Just)
+                                        (Due Uint.zero Uint.zero Nothing |> Just)
                                         |> totalDebtCollateral model modal
                                 )
                         )

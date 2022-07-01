@@ -1148,6 +1148,18 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                     , "pool"
                     ]
                         |> String.join " "
+
+                TxnWrite.ApproveCDT _ ->
+                    [ "Approve CDT"
+                    ]
+                        |> String.join " "
+
+                TxnWrite.FlashRepay pool ->
+                    [ "FlashRepay :"
+                    , pool |> Pool.toString
+                    , "pool"
+                    ]
+                        |> String.join " "
              )
                 |> text
             )

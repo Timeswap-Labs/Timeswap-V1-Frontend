@@ -8,6 +8,7 @@ module Blockchain.User.Due exposing
     )
 
 import Blockchain.User.TokenId as TokenId exposing (TokenId)
+import Data.Address as Address exposing (Address)
 import Data.Uint as Uint exposing (Uint)
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
@@ -18,6 +19,7 @@ import Sort.Dict as Dict exposing (Dict)
 type alias Due =
     { debt : Uint
     , collateral : Uint
+    , collateralizedDebt : Maybe Address
     }
 
 
@@ -49,6 +51,7 @@ decoder =
     Decode.succeed Due
         |> Pipeline.required "debt" Uint.decoder
         |> Pipeline.required "collateral" Uint.decoder
+        |> Pipeline.optional "collateralizedDebt" (Address.decoder |> Decode.nullable) Nothing
 
 
 decoderMultiple : Decoder (Dict TokenId Due)

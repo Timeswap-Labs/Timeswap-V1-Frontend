@@ -1,10 +1,14 @@
 import { Uint256 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import { CONVENIENCE, ERC20Token as ERC20TokenSDK } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { Contract } from "@ethersproject/contracts";
+import cdTokenAbi from "./abi/cdToken";
 
 import { GlobalParams } from './global';
 import { fetchRecentTxns, handleTxnErrors } from "./helper";
 import { lendHandler } from "./lend";
 import { borrowHandler } from "./borrow";
+
+const flashTSRepayAddress = "0xd88afb2186d1b6974de255fd18a04552d4f87b50";
 
 export function approveSigner(
   app: ElmApp<Ports>,
@@ -168,6 +172,32 @@ export function approveSigner(
       } catch (error) {
         handleTxnErrors(error, app, gp, params);
       }
+    }
+  });
+
+  app.ports.approveCDT.subscribe(async (params) => {
+    try {
+      const cdtContract = new Contract(params.send, cdTokenAbi, gp.walletSigner)
+      const txnConfirmation = await cdtContract.setApprovalForAll(flashTSRepayAddress, true);
+
+      app.ports.receiveConfirm.send({
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: txnConfirmation ? txnConfirmation.hash : null
+      });
+
+      const txnReceipt = await txnConfirmation.wait();
+      const receiveReceipt = {
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: txnConfirmation.hash,
+        state: txnReceipt.status ? "success" : "failed"
+      }
+      app.ports.receiveReceipt.send(receiveReceipt);
+    } catch (error) {
+      handleTxnErrors(error, app, gp, params);
     }
   });
 }

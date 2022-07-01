@@ -78,7 +78,7 @@ export async function init(
   liquidity(app);
   liquiditySigner(app, gp);
 
-  burn(app);
+  burn(app, gp);
   burnSigner(app, gp)
 
   if (gp.walletProvider) {

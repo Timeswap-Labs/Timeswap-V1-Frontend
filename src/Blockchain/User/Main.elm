@@ -31,10 +31,12 @@ port module Blockchain.User.Main exposing
     , updateApprove
     , updateApproveAndBorrow
     , updateApproveAndLend
+    , updateApproveCDT
     , updateBorrow
     , updateBurn
     , updateClearTxns
     , updateCreate
+    , updateFlashRepay
     , updateLend
     , updateLiquidity
     , updatePay
@@ -58,6 +60,7 @@ import Blockchain.User.WriteApprove as WriteApprove
 import Blockchain.User.WriteBorrow as WriteBorrow exposing (WriteBorrow)
 import Blockchain.User.WriteBurn as WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate as WriteCreate exposing (WriteCreate)
+import Blockchain.User.WriteFlashRepay as WriteFlashRepay exposing (WriteFlashRepay)
 import Blockchain.User.WriteLend as WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity as WriteLiquidity exposing (WriteLiquidity)
 import Blockchain.User.WritePay as WritePay exposing (WritePay)
@@ -918,6 +921,64 @@ updateBurn chain writeBurn (User user) =
            )
 
 
+updateApproveCDT :
+    Chain
+    -> Address
+    -> User
+    -> ( User, Cmd Msg, Effect )
+updateApproveCDT chain cdtAddress (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.ApproveCDT cdtAddress)
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ cdtAddress
+                        |> Address.encode
+                        |> Write.encode id chain user.address
+                        |> approveCDT
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.ApproveCDT cdtAddress)
+                )
+           )
+
+
+updateFlashRepay :
+    Chain
+    -> WriteFlashRepay
+    -> User
+    -> ( User, Cmd Msg, Effect )
+updateFlashRepay chain writeFlashRepay (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.Pay
+                (writeFlashRepay |> WriteFlashRepay.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ writeFlashRepay
+                        |> WriteFlashRepay.encode
+                        |> Write.encode id chain user.address
+                        |> flashRepay
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.FlashRepay
+                        (writeFlashRepay |> WriteFlashRepay.toPool)
+                    )
+                )
+           )
+
+
 noCmdAndEffect :
     { wallet : Wallet
     , address : Address
@@ -1049,6 +1110,12 @@ port withdraw : Value -> Cmd msg
 
 
 port pay : Value -> Cmd msg
+
+
+port flashRepay : Value -> Cmd msg
+
+
+port approveCDT : Value -> Cmd msg
 
 
 port receiveBalances : (Value -> msg) -> Sub msg

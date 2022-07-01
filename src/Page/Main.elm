@@ -18,9 +18,11 @@ import Blockchain.User.TokenId exposing (TokenId)
 import Blockchain.User.WriteBorrow exposing (WriteBorrow)
 import Blockchain.User.WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate exposing (WriteCreate)
+import Blockchain.User.WriteFlashRepay exposing (WriteFlashRepay)
 import Blockchain.User.WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
+import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.CDP exposing (CDP)
 import Data.Chains exposing (Chains)
@@ -56,7 +58,7 @@ import Page.Markets.Main as Markets exposing (PoolsData)
 import Page.PoolInfo exposing (PoolInfo)
 import Page.Position.Claim.Main as Claim
 import Page.Position.Due.Main as Due
-import Page.Position.Liq.Main as Liq
+import Page.Position.Liq.Main as Liq exposing (Effect(..))
 import Page.Positions.Claims.Main as Claims
 import Page.Positions.Dues.Main as Dues
 import Page.Positions.Liqs.Main as Liqs
@@ -120,6 +122,8 @@ type Effect
     | Create WriteCreate
     | Withdraw WriteWithdraw
     | Burn WriteBurn
+    | FlashRepay WriteFlashRepay
+    | ApproveCDT Address
 
 
 init :
@@ -710,8 +714,14 @@ liqEffect effect =
         Liq.InputPool pool ->
             InputPool pool
 
-        Liq.Burn writeBurm ->
-            Burn writeBurm
+        Liq.Burn writeBurn ->
+            Burn writeBurn
+
+        Liq.FlashRepay writeFlashRepay ->
+            FlashRepay writeFlashRepay
+
+        Liq.ApproveCDT cdtAddress ->
+            ApproveCDT cdtAddress
 
 
 subscriptions : Page -> Sub Msg
@@ -883,7 +893,7 @@ view model blockchain page =
             LiquidityPage liquidityPage ->
                 Just
                     (\position _ ->
-                        Liq.view model position
+                        Liq.view model blockchain position
                             |> map LiqMsg
                             |> List.singleton
                     )
