@@ -66,6 +66,7 @@ sentry();
 
 let pw = window.prompt("Enter password to gain access...", "");
 
+// Initialize app only if pw is correct
 if (pw === "TS-MAIN-123") {
   elmInit();
 } else {
