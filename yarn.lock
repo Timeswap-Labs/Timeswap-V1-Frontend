@@ -1823,27 +1823,25 @@
   dependencies:
     defer-to-connect "^1.0.1"
 
-"@timeswap-labs/flash-repay-contracts@1.0.1-alpha.0":
-  version "1.0.1-alpha.0"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/flash-repay-contracts/1.0.1-alpha.0/a946e260b597249f3917ccee3d30fc5531e3de5ae77d74a953cfba0fd62b8e5d#473db5cfd35f61d1f45a3be33dc4ce3f4de863dc"
-  integrity sha512-FwjlE0uugygSs30SHLvol0Bt0zGJxQthGKk7QyFPaKnoYLv5xBsXQ6ysakGdWFD0mCX3N58SWITgJmLBOBvdrQ==
+"@timeswap-labs/flash-repay-contracts@1.0.2-alpha.0":
+  version "1.0.2-alpha.0"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/flash-repay-contracts/1.0.2-alpha.0/15a68fcbd6cb780522d4f984c802f7e280981f5bcf1d0c96cfaeaaf1fe0e3483#9c5a5b54670d09a6d8d2d355fdf72b4f0ba32b57"
+  integrity sha512-kzSe0G4xewcfaSGfPG9TuIHgAPpweTr2PXCT7Bg+fRip6zzaeD0bFJi9wbVCNpr00ASeA8ECymBUFWaIpXRrZg==
   dependencies:
     "@timeswap-labs/timeswap-v1-convenience" "1.1.5-Beta"
     "@timeswap-labs/timeswap-v1-core" "1.1.5-Beta"
-    "@timeswap-labs/timeswap-v1-sdk" "1.2.9-Beta"
-    "@timeswap-labs/timeswap-v1-sdk-core" "1.2.5-Beta"
     "@uniswap/v2-core" "^1.0.1"
     "@uniswap/v2-periphery" "^1.1.0-beta.0"
 
-"@timeswap-labs/flash-repay-sdk@1.0.1-alpha.0":
-  version "1.0.1-alpha.0"
-  resolved "https://npm.pkg.github.com/download/@timeswap-labs/flash-repay-sdk/1.0.1-alpha.0/9f1da6aeb1ac1b848d4ae3d5a55a6925913979b9dbcb087a659618c53b8cdeb1#27bd35c7e13d0af9cf05b4ede9410790cccf2edd"
-  integrity sha512-iCRaTW+IcO1Yz6z3LxjIEWrEebAMVL8vUZAOQK9CF2/8R1eejT4XJiol+yf5e6u+khkR9M2yG9CkqzgeZ0Whug==
+"@timeswap-labs/flash-repay-sdk@1.0.2-alpha.0":
+  version "1.0.2-alpha.0"
+  resolved "https://npm.pkg.github.com/download/@timeswap-labs/flash-repay-sdk/1.0.2-alpha.0/4902de8a8daa10f0840a2ad8995d64b59efebea1270140faaf5e2c9696841ebe#102da73da39372b523f0b9312be193e84e9541c9"
+  integrity sha512-BaQVoRs2/zOwSvLIHWGhWnNIhGWZ4Mz91ksp54XxziWX/Y7febcUBHMcWryETSWiCLvXYBqj0/vdHWF3HAHuNg==
   dependencies:
     "@ethersproject/abstract-provider" "^5.6.1"
     "@ethersproject/abstract-signer" "^5.6.1"
     "@ethersproject/bignumber" "^5.6.1"
-    "@timeswap-labs/flash-repay-contracts" "1.0.1-alpha.0"
+    "@timeswap-labs/flash-repay-contracts" "1.0.2-alpha.0"
 
 "@timeswap-labs/timeswap-v1-convenience@1.1.5-Beta":
   version "1.1.5-Beta"
@@ -1883,17 +1881,6 @@
   version "1.2.12-Beta"
   resolved "https://registry.yarnpkg.com/@timeswap-labs/timeswap-v1-sdk/-/timeswap-v1-sdk-1.2.12-Beta.tgz#2441c3f99e7e6c146ab255c4af844b77cd5ddc18"
   integrity sha512-AcWkJvtw6ovKtr4IfaVPd0GQ4OfeRHNrV8tSBRcUWxNo9A/zpBbhisBCmE1Ajnu+DyNXZhKhSHTregEzmXSodw==
-  dependencies:
-    "@ethersproject/abstract-provider" "^5.5.1"
-    "@ethersproject/abstract-signer" "^5.5.0"
-    "@ethersproject/contracts" "^5.5.0"
-    "@timeswap-labs/timeswap-v1-sdk-core" "=1.2.5-Beta"
-    tiny-invariant "^1.1.0"
-
-"@timeswap-labs/timeswap-v1-sdk@1.2.9-Beta":
-  version "1.2.9-Beta"
-  resolved "https://registry.yarnpkg.com/@timeswap-labs/timeswap-v1-sdk/-/timeswap-v1-sdk-1.2.9-Beta.tgz#f6dd19bfb1995b3d1b57acabd541d21703466ecc"
-  integrity sha512-L/H/zWeRXt1cndVHWU6pFJoKDMtWCwNbXMBO8ZkB+HBxOJSxFtAhn2Aqzpl8xbIjD0Ye2VASU00OgOodYeoG9A==
   dependencies:
     "@ethersproject/abstract-provider" "^5.5.1"
     "@ethersproject/abstract-signer" "^5.5.0"

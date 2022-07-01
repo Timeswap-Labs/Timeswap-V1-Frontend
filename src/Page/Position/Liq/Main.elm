@@ -1126,90 +1126,43 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
         ( Just user, Success ( _, status ) ) ->
             case status of
                 Maturity.Active (Success activeReturn) ->
-                    column
-                        [ width fill
-                        , height fill
-                        , theme |> ThemeColor.positionBG |> Background.color
-                        , Border.rounded 8
-                        , paddingXY 24 16
-                        , spacing 20
-                        ]
-                        [ row [ spacing 8 ]
-                            [ el
-                                [ width shrink
-                                , height shrink
-                                , Font.size 14
-                                , paddingXY 0 3
-                                , theme |> ThemeColor.textLight |> Font.color
-                                ]
-                                (text "Aggregate Borrow Position")
-                            , images
-                                |> (case theme of
-                                        Theme.Dark ->
-                                            Image.info
+                    user
+                        |> User.getDues
+                        |> Remote.map (Dict.get pool)
+                        |> (Remote.map << Maybe.map)
+                            (\dict ->
+                                dict
+                                    |> Dict.foldl
+                                        (\_ { debt, collateral, collateralizedDebt } accumulator ->
+                                            accumulator
+                                                |> Maybe.andThen
+                                                    (\accumulatedDue ->
+                                                        Just Due
+                                                            |> Maybe.apply
+                                                                (Uint.add accumulatedDue.debt debt)
+                                                            |> Maybe.apply
+                                                                (Uint.add accumulatedDue.collateral collateral)
+                                                            |> Maybe.apply
+                                                                (collateralizedDebt |> Just)
+                                                    )
+                                        )
+                                        (Due Uint.zero Uint.zero Nothing |> Just)
+                                    |> (\maybeDue ->
+                                            case maybeDue of
+                                                Just totalDue ->
+                                                    if totalDue.debt == Uint.zero then
+                                                        none
 
-                                        Theme.Light ->
-                                            Image.infoDark
-                                   )
-                                    [ width <| px 12
-                                    , height <| px 12
-                                    , Font.center
-                                    , centerX
-                                    , Events.onMouseEnter (OnMouseEnter Tooltip.BorrowPositionInfo)
-                                    , Events.onMouseLeave OnMouseLeave
-                                    , (if tooltip == Just Tooltip.BorrowPositionInfo then
-                                        paragraph
-                                            [ Font.size 14
-                                            , width <| px 345
-                                            , theme |> ThemeColor.textLight |> Font.color
-                                            ]
-                                            [ "This is your total borrowed position in this Pool." |> text
-                                            , " For more details and partial repayment, visit the Borrow positions screen."
-                                                |> text
-                                            ]
-                                            |> TooltipUtil.belowAlignLeft theme
-
-                                       else
-                                        none
-                                      )
-                                        |> below
-                                    ]
-                            ]
-                        , user
-                            |> User.getDues
-                            |> Remote.map (Dict.get pool)
-                            |> (Remote.map << Maybe.map)
-                                (\dict ->
-                                    dict
-                                        |> Dict.foldl
-                                            (\_ { debt, collateral, collateralizedDebt } accumulator ->
-                                                accumulator
-                                                    |> Maybe.andThen
-                                                        (\accumulatedDue ->
-                                                            Just Due
-                                                                |> Maybe.apply
-                                                                    (Uint.add accumulatedDue.debt debt)
-                                                                |> Maybe.apply
-                                                                    (Uint.add accumulatedDue.collateral collateral)
-                                                                |> Maybe.apply
-                                                                    (collateralizedDebt |> Just)
-                                                        )
-                                            )
-                                            (Due Uint.zero Uint.zero Nothing |> Just)
-                                        |> (\maybeDue ->
-                                                case maybeDue of
-                                                    Just totalDue ->
-                                                        row
+                                                    else
+                                                        column
                                                             [ width fill
                                                             , height fill
-                                                            , spacing 48
+                                                            , theme |> ThemeColor.positionBG |> Background.color
+                                                            , Border.rounded 8
+                                                            , paddingXY 24 16
+                                                            , spacing 20
                                                             ]
-                                                            [ column
-                                                                [ width shrink
-                                                                , height shrink
-                                                                , spacing 8
-                                                                , centerY
-                                                                ]
+                                                            [ row [ spacing 8 ]
                                                                 [ el
                                                                     [ width shrink
                                                                     , height shrink
@@ -1217,129 +1170,180 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
                                                                     , paddingXY 0 3
                                                                     , theme |> ThemeColor.textLight |> Font.color
                                                                     ]
-                                                                    ("Total Assets to Repay"
-                                                                        |> text
-                                                                    )
-                                                                , row
+                                                                    (text "Aggregate Borrow Position")
+                                                                , images
+                                                                    |> (case theme of
+                                                                            Theme.Dark ->
+                                                                                Image.info
+
+                                                                            Theme.Light ->
+                                                                                Image.infoDark
+                                                                       )
+                                                                        [ width <| px 12
+                                                                        , height <| px 12
+                                                                        , Font.center
+                                                                        , centerX
+                                                                        , Events.onMouseEnter (OnMouseEnter Tooltip.BorrowPositionInfo)
+                                                                        , Events.onMouseLeave OnMouseLeave
+                                                                        , (if tooltip == Just Tooltip.BorrowPositionInfo then
+                                                                            paragraph
+                                                                                [ Font.size 14
+                                                                                , width <| px 345
+                                                                                , theme |> ThemeColor.textLight |> Font.color
+                                                                                ]
+                                                                                [ "This is your total borrowed position in this Pool." |> text
+                                                                                , " For more details and partial repayment, visit the Borrow positions screen."
+                                                                                    |> text
+                                                                                ]
+                                                                                |> TooltipUtil.belowAlignLeft theme
+
+                                                                           else
+                                                                            none
+                                                                          )
+                                                                            |> below
+                                                                        ]
+                                                                ]
+                                                            , row
+                                                                [ width fill
+                                                                , height fill
+                                                                , spacing 48
+                                                                ]
+                                                                [ column
                                                                     [ width shrink
-                                                                    , height <| px 24
-                                                                    , spacing 12
+                                                                    , height shrink
+                                                                    , spacing 8
+                                                                    , centerY
                                                                     ]
-                                                                    [ row
+                                                                    [ el
                                                                         [ width shrink
                                                                         , height shrink
-                                                                        , spacing 6
+                                                                        , Font.size 14
+                                                                        , paddingXY 0 3
+                                                                        , theme |> ThemeColor.textLight |> Font.color
                                                                         ]
-                                                                        [ images
-                                                                            |> Image.viewToken
-                                                                                [ width <| px 24
-                                                                                , height <| px 24
-                                                                                , centerY
-                                                                                ]
-                                                                                (pool.pair |> Pair.toAsset)
-                                                                        , Truncate.viewSymbol
+                                                                        ("Total Assets to Repay"
+                                                                            |> text
+                                                                        )
+                                                                    , row
+                                                                        [ width shrink
+                                                                        , height <| px 24
+                                                                        , spacing 12
+                                                                        ]
+                                                                        [ row
+                                                                            [ width shrink
+                                                                            , height shrink
+                                                                            , spacing 6
+                                                                            ]
+                                                                            [ images
+                                                                                |> Image.viewToken
+                                                                                    [ width <| px 24
+                                                                                    , height <| px 24
+                                                                                    , centerY
+                                                                                    ]
+                                                                                    (pool.pair |> Pair.toAsset)
+                                                                            , Truncate.viewSymbol
+                                                                                { onMouseEnter = OnMouseEnter
+                                                                                , onMouseLeave = OnMouseLeave
+                                                                                , tooltip = Tooltip.Symbol TokenParam.Asset
+                                                                                , opened = tooltip
+                                                                                , token = pool.pair |> Pair.toAsset
+                                                                                , theme = theme
+                                                                                , customStyles = []
+                                                                                }
+                                                                            ]
+                                                                        , Truncate.viewAmount
                                                                             { onMouseEnter = OnMouseEnter
                                                                             , onMouseLeave = OnMouseLeave
-                                                                            , tooltip = Tooltip.Symbol TokenParam.Asset
+                                                                            , tooltip = Tooltip.TotalDebt TokenParam.Asset
                                                                             , opened = tooltip
                                                                             , token = pool.pair |> Pair.toAsset
+                                                                            , amount = totalDue.debt
                                                                             , theme = theme
                                                                             , customStyles = []
                                                                             }
                                                                         ]
-                                                                    , Truncate.viewAmount
-                                                                        { onMouseEnter = OnMouseEnter
-                                                                        , onMouseLeave = OnMouseLeave
-                                                                        , tooltip = Tooltip.TotalDebt TokenParam.Asset
-                                                                        , opened = tooltip
-                                                                        , token = pool.pair |> Pair.toAsset
-                                                                        , amount = totalDue.debt
-                                                                        , theme = theme
-                                                                        , customStyles = []
-                                                                        }
                                                                     ]
-                                                                ]
-                                                            , el
-                                                                [ width <| px 1
-                                                                , height fill
-                                                                , theme |> ThemeColor.textDisabled |> Background.color
-                                                                ]
-                                                                none
-                                                            , column
-                                                                [ width shrink
-                                                                , height shrink
-                                                                , spacing 8
-                                                                ]
-                                                                [ el
+                                                                , el
+                                                                    [ width <| px 1
+                                                                    , height fill
+                                                                    , theme |> ThemeColor.textDisabled |> Background.color
+                                                                    ]
+                                                                    none
+                                                                , column
                                                                     [ width shrink
                                                                     , height shrink
-                                                                    , Font.size 14
-                                                                    , paddingXY 0 3
-                                                                    , theme |> ThemeColor.textLight |> Font.color
+                                                                    , spacing 8
                                                                     ]
-                                                                    ("Total Collateral to unlock"
-                                                                        |> text
-                                                                    )
-                                                                , row
-                                                                    [ width shrink
-                                                                    , height <| px 24
-                                                                    , spacing 12
-                                                                    ]
-                                                                    [ row
+                                                                    [ el
                                                                         [ width shrink
                                                                         , height shrink
-                                                                        , spacing 6
+                                                                        , Font.size 14
+                                                                        , paddingXY 0 3
+                                                                        , theme |> ThemeColor.textLight |> Font.color
                                                                         ]
-                                                                        [ images
-                                                                            |> Image.viewToken
-                                                                                [ width <| px 24
-                                                                                , height <| px 24
-                                                                                , centerY
-                                                                                ]
-                                                                                (pool.pair |> Pair.toCollateral)
-                                                                        , Truncate.viewSymbol
+                                                                        ("Total Collateral to unlock"
+                                                                            |> text
+                                                                        )
+                                                                    , row
+                                                                        [ width shrink
+                                                                        , height <| px 24
+                                                                        , spacing 12
+                                                                        ]
+                                                                        [ row
+                                                                            [ width shrink
+                                                                            , height shrink
+                                                                            , spacing 6
+                                                                            ]
+                                                                            [ images
+                                                                                |> Image.viewToken
+                                                                                    [ width <| px 24
+                                                                                    , height <| px 24
+                                                                                    , centerY
+                                                                                    ]
+                                                                                    (pool.pair |> Pair.toCollateral)
+                                                                            , Truncate.viewSymbol
+                                                                                { onMouseEnter = OnMouseEnter
+                                                                                , onMouseLeave = OnMouseLeave
+                                                                                , tooltip = Tooltip.TotalCollateralSymbol TokenParam.Collateral
+                                                                                , opened = tooltip
+                                                                                , token = pool.pair |> Pair.toCollateral
+                                                                                , theme = theme
+                                                                                , customStyles = []
+                                                                                }
+                                                                            ]
+                                                                        , Truncate.viewAmount
                                                                             { onMouseEnter = OnMouseEnter
                                                                             , onMouseLeave = OnMouseLeave
-                                                                            , tooltip = Tooltip.TotalCollateralSymbol TokenParam.Collateral
+                                                                            , tooltip = Tooltip.TotalCollateral TokenParam.Collateral
                                                                             , opened = tooltip
                                                                             , token = pool.pair |> Pair.toCollateral
+                                                                            , amount = totalDue.collateral
                                                                             , theme = theme
                                                                             , customStyles = []
                                                                             }
                                                                         ]
-                                                                    , Truncate.viewAmount
-                                                                        { onMouseEnter = OnMouseEnter
-                                                                        , onMouseLeave = OnMouseLeave
-                                                                        , tooltip = Tooltip.TotalCollateral TokenParam.Collateral
-                                                                        , opened = tooltip
-                                                                        , token = pool.pair |> Pair.toCollateral
-                                                                        , amount = totalDue.collateral
-                                                                        , theme = theme
-                                                                        , customStyles = []
-                                                                        }
                                                                     ]
+                                                                , case ( activeReturn.isCDTApproved, activeReturn.isFlashRepayAllowed ) of
+                                                                    ( False, _ ) ->
+                                                                        row [ alignRight, centerY ]
+                                                                            [ approveCDTButton theme totalDue.collateralizedDebt ]
+
+                                                                    ( True, False ) ->
+                                                                        row [ alignRight, centerY ]
+                                                                            [ disabledFlashRepayButton theme tooltip ]
+
+                                                                    ( True, True ) ->
+                                                                        row [ alignRight, centerY ]
+                                                                            [ flashRepayButton theme ]
                                                                 ]
-                                                            , case ( activeReturn.isCDTApproved, activeReturn.isFlashRepayAllowed ) of
-                                                                ( False, _ ) ->
-                                                                    row [ alignRight, centerY ]
-                                                                        [ approveCDTButton theme totalDue.collateralizedDebt ]
-
-                                                                ( True, False ) ->
-                                                                    row [ alignRight, centerY ]
-                                                                        [ disabledFlashRepayButton theme tooltip ]
-
-                                                                ( True, True ) ->
-                                                                    row [ alignRight, centerY ]
-                                                                        [ flashRepayButton theme ]
                                                             ]
 
-                                                    _ ->
-                                                        none
-                                           )
-                                )
-                            |> (Remote.map << Maybe.withDefault) none
-                            |> Remote.withDefault none
-                        ]
+                                                _ ->
+                                                    none
+                                       )
+                            )
+                        |> (Remote.map << Maybe.withDefault) none
+                        |> Remote.withDefault none
 
                 _ ->
                     none
