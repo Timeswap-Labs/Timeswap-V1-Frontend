@@ -19,9 +19,9 @@
     "web3": "^1.7.1"
   },
   "devDependencies": {
-    "@parcel/resolver-glob": "2.3.0",
-    "@parcel/transformer-elm": "2.3.0",
-    "@parcel/transformer-typescript-tsc": "2.3.0",
+    "@parcel/resolver-glob": "^2.3.0",
+    "@parcel/transformer-elm": "^2.6.2",
+    "@parcel/transformer-typescript-tsc": "^2.3.0",
     "@types/elm": "^0.19.1",
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
