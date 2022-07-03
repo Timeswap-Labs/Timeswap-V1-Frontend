@@ -17,8 +17,8 @@ async function elmInit() {
 
   let apiEndpoint = "";
   if (process.env.PARCEL_PUBLIC_ENVIRONMENT === "production")
-    apiEndpoint = "https://ts-bico-mainnet.herokuapp.com/v1";
-  else apiEndpoint = "https://backend-new-conv.herokuapp.com/v1";
+    apiEndpoint = "https://collateralized-fork.herokuapp.com/v1";
+  else apiEndpoint = "https://collateralized-fork.herokuapp.com/v1";
 
   const app = Elm.Main.init({
     node: document.getElementById("elm")!,
