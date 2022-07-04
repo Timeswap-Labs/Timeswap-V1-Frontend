@@ -29,6 +29,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Time exposing (Posix)
+import Utility.Class as Class
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Image as Image
@@ -115,6 +116,7 @@ view { time, offset, chosenZone, images, theme } param =
                         , height fill
                         , paddingXY 12 0
                         , spacing 6
+                        , Class.is "shiningBtn"
                         ]
                         [ el
                             [ width <| px 24

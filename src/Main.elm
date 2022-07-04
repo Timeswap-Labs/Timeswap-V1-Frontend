@@ -84,6 +84,7 @@ import Task
 import Time exposing (Posix)
 import Url exposing (Url)
 import Utility.Blur as Blur
+import Utility.Class as Class
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Id as Id
@@ -1894,7 +1895,7 @@ connectButton :
     -> Element Msg
 connectButton ({ device, images, theme } as model) =
     Input.button
-        ([ width shrink
+        ([ width fill
          , height <| px 44
          , paddingXY 12 0
          , Border.rounded 4
@@ -1914,8 +1915,7 @@ connectButton ({ device, images, theme } as model) =
                             |> Maybe.withDefault
                                 [ Region.description "connect button"
                                 , theme |> ThemeColor.primaryBtn |> Background.color
-                                , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
-                                , mouseOver [ Background.color Color.primary400 ]
+                                , Class.is "shiningBtn"
                                 ]
 
                     NotSupported _ ->

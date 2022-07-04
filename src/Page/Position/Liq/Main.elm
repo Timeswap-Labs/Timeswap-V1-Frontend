@@ -69,10 +69,12 @@ import Page.Position.Liq.Error exposing (Error)
 import Page.Position.Liq.Query as Query exposing (ActiveReturn)
 import Page.Position.Liq.Tooltip as Tooltip exposing (Tooltip)
 import Page.Query as PoolInfoQuery
+import Page.Transaction.Button as Button
 import Process
 import Sort.Dict as Dict
 import Task
 import Time exposing (Posix)
+import Utility.Class as Class
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
@@ -767,6 +769,7 @@ burnButton theme =
         [ width <| px 102
         , height <| px 44
         , Border.rounded 4
+        , Class.is "shiningBtn"
         , theme |> ThemeColor.primaryBtn |> Background.color
         ]
         { onPress = Just ClickBurn
@@ -1334,7 +1337,12 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
 
                                                                     ( True, True ) ->
                                                                         row [ alignRight, centerY ]
-                                                                            [ flashRepayButton theme ]
+                                                                            [ Button.view
+                                                                                { onPress = ClickFlashRepay
+                                                                                , text = "Flash Repay"
+                                                                                , theme = theme
+                                                                                }
+                                                                            ]
                                                                 ]
                                                             ]
 
@@ -1356,51 +1364,14 @@ approveCDTButton : Theme -> Maybe Address -> Element Msg
 approveCDTButton theme maybeCDTAddress =
     case maybeCDTAddress of
         Just cdtAddress ->
-            Input.button
-                [ width <| px 115
-                , height <| px 44
-                , Border.rounded 4
-                , theme |> ThemeColor.primaryBtn |> Background.color
-                ]
-                { onPress = Just (ClickAppoveCDT cdtAddress)
-                , label =
-                    el
-                        [ width shrink
-                        , height shrink
-                        , centerX
-                        , centerY
-                        , Font.size 16
-                        , Font.color Color.light100
-                        , Font.bold
-                        ]
-                        (text "Approve & Flash Repay")
+            Button.view
+                { onPress = ClickAppoveCDT cdtAddress
+                , text = "Approve & Flash Repay"
+                , theme = theme
                 }
 
         _ ->
             none
-
-
-flashRepayButton : Theme -> Element Msg
-flashRepayButton theme =
-    Input.button
-        [ width <| px 115
-        , height <| px 44
-        , Border.rounded 4
-        , theme |> ThemeColor.primaryBtn |> Background.color
-        ]
-        { onPress = Just ClickFlashRepay
-        , label =
-            el
-                [ width shrink
-                , height shrink
-                , centerX
-                , centerY
-                , Font.size 16
-                , Font.color Color.light100
-                , Font.bold
-                ]
-                (text "Flash Repay")
-        }
 
 
 disabledFlashRepayButton : Theme -> Maybe Tooltip -> Element Msg

@@ -26,6 +26,7 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
+import Utility.Class as Class
 import Utility.Color as Color
 import Utility.Image as Image
 import Utility.ThemeColor as ThemeColor
@@ -118,6 +119,7 @@ view { images, theme } param =
                 , height <| px 44
                 , theme |> ThemeColor.primaryBtn |> Background.color
                 , Border.rounded 8
+                , Class.is "shiningBtn"
                 ]
                 { onPress = param.onPress param.tokenParam |> Just
                 , label =

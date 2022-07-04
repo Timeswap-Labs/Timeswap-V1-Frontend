@@ -43,6 +43,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Http
+import Utility.Class as Class
 import Utility.Color as Color
 import Utility.ThemeColor as ThemeColor
 
@@ -57,6 +58,7 @@ view params =
     Input.button
         [ Region.description params.text
         , width fill
+        , Class.is "shiningBtn"
         , height <| px 44
         , params.theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
@@ -68,7 +70,7 @@ view params =
                 , centerY
                 , Font.size 16
                 , Font.bold
-                , paddingXY 0 4
+                , paddingXY 12 4
                 , Font.color Color.light100
                 ]
                 (text params.text)
@@ -114,6 +116,7 @@ approve params =
         , height <| px 44
         , params.theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
+        , Class.is "shiningBtn"
         ]
         { onPress = Just params.onPress
         , label =
@@ -155,6 +158,7 @@ approveAndLend params =
         , height <| px 44
         , params.theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
+        , Class.is "shiningBtn"
         ]
         { onPress = Just params.onPress
         , label =
@@ -197,6 +201,7 @@ approveAndBorrow params =
         , height <| px 44
         , params.theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
+        , Class.is "shiningBtn"
         ]
         { onPress = Just params.onPress
         , label =
@@ -359,6 +364,7 @@ approveAsset msg theme =
         , height <| px 44
         , theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
+        , Class.is "shiningBtn"
         ]
         { onPress = Just msg
         , label =
@@ -382,6 +388,7 @@ approveCollateral msg theme =
         , height <| px 44
         , theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4
+        , Class.is "shiningBtn"
         ]
         { onPress = Just msg
         , label =

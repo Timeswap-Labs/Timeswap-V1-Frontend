@@ -101,8 +101,8 @@
   font-family: "Supreme";
   position: relative;
   color: #fff;
-  font-size: .875rem;
-  padding: .75rem;
+  font-size: 0.875rem;
+  padding: 0.75rem;
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 8px;
   box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15);
@@ -112,11 +112,11 @@
 }
 
 .elm-datetimepicker-single--calendar-container {
-  margin-bottom: .5rem;
+  margin-bottom: 0.5rem;
 }
 
 .elm-datetimepicker-single--calendar-header {
-  padding: .25rem 0 0 0;
+  padding: 0.25rem 0 0 0;
   font-weight: bold;
 }
 
@@ -134,7 +134,7 @@
 .elm-datetimepicker-single--calendar-header-chevron {
   display: inline-flex;
   align-items: center;
-  padding: 0 .5rem 0 .5rem;
+  padding: 0 0.5rem 0 0.5rem;
   cursor: pointer;
 }
 
@@ -176,7 +176,7 @@
   display: inline-flex;
   justify-content: center;
   align-items: center;
-  font-size: .75rem;
+  font-size: 0.75rem;
   background-color: rgba(28, 45, 59, 0);
   color: #fff;
   cursor: pointer;
@@ -203,7 +203,7 @@
   background-color: rgba(160, 210, 235, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 5px;
-  color: #A0D2EB;
+  color: #a0d2eb;
 }
 
 .elm-datetimepicker-single--calendar-day.elm-datetimepicker-single--today {
@@ -213,7 +213,7 @@
 .elm-datetimepicker-single--footer {
   width: 100%;
   border-top: 1px solid #a0aec0;
-  padding: .75rem 0 .25rem 0;
+  padding: 0.75rem 0 0.25rem 0;
 }
 
 .elm-datetimepicker-single--time-picker-container {
@@ -228,7 +228,6 @@
   cursor: pointer;
 }
 
-
 .elm-datetimepicker-single--date-display-container {
   display: none;
   justify-content: center;
@@ -240,7 +239,7 @@
 .elm-datetimepicker-single--time-picker {
   display: flex;
   justify-content: space-between;
-  padding: .25rem 0 .25rem 0
+  padding: 0.25rem 0 0.25rem 0;
 }
 
 .elm-datetimepicker-single--select-container {
@@ -262,7 +261,7 @@
 }
 
 .elm-datetimepicker-single--select select option {
-  color: #0F1426;
+  color: #0f1426;
 }
 
 .elm-datetimepicker-single--selection-time {
@@ -276,14 +275,14 @@
 
 .elm-datetimepicker-single--select-spacer {
   display: inline-flex;
-  padding: 0 .5rem;
+  padding: 0 0.5rem;
 }
 
 /* DatePicker Light theme */
 
 #picker-light .elm-datetimepicker-single--picker-container {
   background-color: rgba(160, 210, 235, 0.12);
-  color: #0F1426;
+  color: #0f1426;
   border: 1px solid rgba(120, 117, 235, 0.12);
   /* box-shadow: 0 2px 16px rgba(0, 0, 0, 0.15); */
 }
@@ -298,25 +297,28 @@
 
 #picker-light .elm-datetimepicker-single--calendar-day {
   background-color: rgba(160, 210, 235, 0);
-  color: #0F1426;
+  color: #0f1426;
 }
 
 #picker-light .elm-datetimepicker-single--calendar-day:hover {
   background-color: rgba(255, 255, 255, 0.32);
 }
 
-#picker-light .elm-datetimepicker-single--calendar-day.elm-datetimepicker-single--disabled {
+#picker-light
+  .elm-datetimepicker-single--calendar-day.elm-datetimepicker-single--disabled {
   color: #a0aec0;
   background-color: #fff;
 }
 
-#picker-light .elm-datetimepicker-single--calendar-day.elm-datetimepicker-single--picked {
+#picker-light
+  .elm-datetimepicker-single--calendar-day.elm-datetimepicker-single--picked {
   background-color: rgba(255, 255, 255, 0.32);
   border: 1px solid rgba(120, 117, 235, 0.12);
   color: rgba(84, 82, 204, 1);
 }
 
-#picker-light .elm-datetimepicker-single--calendar-day.elm-datetimepicker-single--today {
+#picker-light
+  .elm-datetimepicker-single--calendar-day.elm-datetimepicker-single--today {
   color: #3490dc;
 }
 
@@ -326,6 +328,56 @@
 
 #picker-light .elm-datetimepicker-single--select select {
   background: rgba(160, 210, 235, 0.12);
-  color: #0F1426;
+  color: #0f1426;
   padding: 3px 8px;
+}
+
+.shiningBtn {
+  border: 0;
+  cursor: pointer;
+  overflow: hidden;
+  transition: all 0.2s ease;
+  border-radius: 5px;
+}
+.shiningBtn:after {
+  content: "";
+  position: absolute;
+  left: -60%;
+  width: 60%;
+  height: 100%;
+  transform: skewX(-20deg);
+  background-image: linear-gradient(
+    to right,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+}
+.shiningBtn:hover:after {
+  animation: shine 1.6s ease;
+}
+.shiningBtn:active {
+  transform: translateY(1px);
+  box-shadow: 0 16px 16px rgba(0, 0, 0, 0.2);
+}
+
+@-moz-keyframes shine {
+  100% {
+    left: 200%;
+  }
+}
+@-webkit-keyframes shine {
+  100% {
+    left: 100%;
+  }
+}
+@-o-keyframes shine {
+  100% {
+    left: 100%;
+  }
+}
+@keyframes shine {
+  100% {
+    left: 100%;
+  }
 }
