@@ -20,60 +20,67 @@ export function lendSigner(
   gp: GlobalParams
 ) {
   app.ports.lend.subscribe(async (params) => {
-    const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
-    const { percent, bondOut, insuranceOut, minBond, minInsurance } = params.send;
-    let txnConfirmation;
-
-    try {
-      if (
-        percent !== undefined &&
-        minBond !== undefined &&
-        minInsurance !== undefined
-      ) {
-        txnConfirmation = await percentTransaction(pool, gp, {
-          ...params.send,
-          percent,
-          minBond,
-          minInsurance,
-        });
-      } else if (bondOut !== undefined && minInsurance !== undefined) {
-        txnConfirmation = await bondTransaction(pool, gp, {
-          ...params.send,
-          bondOut,
-          minInsurance,
-        });
-      } else if (insuranceOut !== undefined && minBond !== undefined) {
-        txnConfirmation = await insuranceTransaction(pool, gp, {
-          ...params.send,
-          insuranceOut,
-          minBond,
-        });
-      }
-
-      if (txnConfirmation) {
-        app.ports.receiveConfirm.send({
-          id: params.id,
-          chain: params.chain,
-          address: params.address,
-          hash: txnConfirmation.hash
-        });
-
-        const txnReceipt = await txnConfirmation.wait();
-        const receiveReceipt = {
-          chain: params.chain,
-          address: params.address,
-          hash: txnConfirmation.hash,
-          state: txnReceipt.status ? "success" : "failed"
-        }
-        app.ports.receiveReceipt.send(receiveReceipt);
-        updateCachedTxns(receiveReceipt);
-      }
-    } catch (error: any) {
-      console.log("err", error);
-
-      handleTxnErrors(error, app, gp, params);
-    }
+    lendHandler(app, gp, params);
   });
+}
+
+export async function lendHandler(
+  app: ElmApp<Ports>,
+  gp: GlobalParams,
+  params: Lend
+) {
+  const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
+  const { percent, bondOut, insuranceOut, minBond, minInsurance } = params.send;
+  let txnConfirmation;
+
+  try {
+    if (
+      percent !== undefined &&
+      minBond !== undefined &&
+      minInsurance !== undefined
+    ) {
+      txnConfirmation = await percentTransaction(pool, gp, {
+        ...params.send,
+        percent,
+        minBond,
+        minInsurance,
+      });
+    } else if (bondOut !== undefined && minInsurance !== undefined) {
+      txnConfirmation = await bondTransaction(pool, gp, {
+        ...params.send,
+        bondOut,
+        minInsurance,
+      });
+    } else if (insuranceOut !== undefined && minBond !== undefined) {
+      txnConfirmation = await insuranceTransaction(pool, gp, {
+        ...params.send,
+        insuranceOut,
+        minBond,
+      });
+    }
+
+    if (txnConfirmation) {
+      app.ports.receiveConfirm.send({
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: txnConfirmation.hash
+      });
+
+      const txnReceipt = await txnConfirmation.wait();
+      const receiveReceipt = {
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: txnConfirmation.hash,
+        state: txnReceipt.status ? "success" : "failed"
+      }
+      app.ports.receiveReceipt.send(receiveReceipt);
+      updateCachedTxns(receiveReceipt);
+    }
+  } catch (error: any) {
+    handleTxnErrors(error, app, gp, params);
+  }
 }
 
 async function lendQueryCalculation(

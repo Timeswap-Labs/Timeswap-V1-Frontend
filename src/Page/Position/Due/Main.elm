@@ -285,7 +285,7 @@ returnButton { images, theme } =
                     , theme |> ThemeColor.text |> Font.color
                     , centerY
                     ]
-                    (text "Back to borrow")
+                    (text "Back to Borrow")
                 ]
         }
 

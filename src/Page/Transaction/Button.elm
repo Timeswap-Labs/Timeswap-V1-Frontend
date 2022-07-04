@@ -1,5 +1,7 @@
 module Page.Transaction.Button exposing
     ( approve
+    , approveAndBorrow
+    , approveAndLend
     , approveAsset
     , approveCollateral
     , checkingAllowance
@@ -127,6 +129,90 @@ approve params =
                  , params.erc20
                     |> ERC20.toSymbol
                     |> String.left 6
+                 ]
+                    |> String.join " "
+                    |> text
+                )
+        }
+
+
+approveAndLend :
+    { onPress : msg
+    , erc20 : ERC20
+    , theme : Theme
+    }
+    -> Element msg
+approveAndLend params =
+    Input.button
+        [ [ "approve"
+          , params.erc20
+                |> ERC20.toSymbol
+          , "and lend"
+          ]
+            |> String.join " "
+            |> Region.description
+        , width fill
+        , height <| px 44
+        , params.theme |> ThemeColor.primaryBtn |> Background.color
+        , Border.rounded 4
+        ]
+        { onPress = Just params.onPress
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.size 16
+                , Font.bold
+                , paddingXY 0 4
+                , Font.color Color.light100
+                ]
+                ([ "Approve"
+                 , params.erc20
+                    |> ERC20.toSymbol
+                    |> String.left 6
+                 , "and Lend"
+                 ]
+                    |> String.join " "
+                    |> text
+                )
+        }
+
+
+approveAndBorrow :
+    { onPress : msg
+    , erc20 : ERC20
+    , theme : Theme
+    }
+    -> Element msg
+approveAndBorrow params =
+    Input.button
+        [ [ "approve"
+          , params.erc20
+                |> ERC20.toSymbol
+          , "and borrow"
+          ]
+            |> String.join " "
+            |> Region.description
+        , width fill
+        , height <| px 44
+        , params.theme |> ThemeColor.primaryBtn |> Background.color
+        , Border.rounded 4
+        ]
+        { onPress = Just params.onPress
+        , label =
+            el
+                [ centerX
+                , centerY
+                , Font.size 16
+                , Font.bold
+                , paddingXY 0 4
+                , Font.color Color.light100
+                ]
+                ([ "Approve"
+                 , params.erc20
+                    |> ERC20.toSymbol
+                    |> String.left 6
+                 , "and Borrow"
                  ]
                     |> String.join " "
                     |> text
@@ -435,7 +521,7 @@ exist theme =
 
 
 error : Http.Error -> Element Never
-error httpError =
+error _ =
     el
         [ width fill
         , height <| px 44

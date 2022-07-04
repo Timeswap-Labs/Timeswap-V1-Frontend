@@ -13,10 +13,14 @@ module Blockchain.Main exposing
     , update
     , updateAddERC20
     , updateApprove
+    , updateApproveAndBorrow
+    , updateApproveAndLend
+    , updateApproveCDT
     , updateBorrow
     , updateBurn
     , updateClearTxns
     , updateCreate
+    , updateFlashRepay
     , updateLend
     , updateLiquidity
     , updatePay
@@ -28,11 +32,13 @@ import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Blockchain.User.WriteBorrow exposing (WriteBorrow)
 import Blockchain.User.WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate exposing (WriteCreate)
+import Blockchain.User.WriteFlashRepay exposing (WriteFlashRepay)
 import Blockchain.User.WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Blockchain.User.WritePay exposing (WritePay)
 import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
 import Browser.Navigation as Navigation exposing (Key)
+import Data.Address exposing (Address)
 import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
@@ -246,6 +252,32 @@ updateLend model writeLend (Blockchain ({ chain } as blockchain)) =
             )
 
 
+updateApproveAndLend :
+    { model | time : Posix, deadline : Deadline }
+    -> WriteLend
+    -> Blockchain
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
+updateApproveAndLend model writeLend (Blockchain ({ chain } as blockchain)) =
+    blockchain.user
+        |> Maybe.map
+            (\user ->
+                user
+                    |> User.updateApproveAndLend model chain writeLend
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
+                                |> Blockchain
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
+            )
+        |> Maybe.withDefault
+            ( blockchain |> Blockchain
+            , Cmd.none
+            , Nothing
+            )
+
+
 updateBorrow :
     { model | time : Posix, deadline : Deadline }
     -> WriteBorrow
@@ -257,6 +289,32 @@ updateBorrow model writeBorrow (Blockchain ({ chain } as blockchain)) =
             (\user ->
                 user
                     |> User.updateBorrow model chain writeBorrow
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
+                                |> Blockchain
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
+            )
+        |> Maybe.withDefault
+            ( blockchain |> Blockchain
+            , Cmd.none
+            , Nothing
+            )
+
+
+updateApproveAndBorrow :
+    { model | time : Posix, deadline : Deadline }
+    -> WriteBorrow
+    -> Blockchain
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
+updateApproveAndBorrow model writeBorrow (Blockchain ({ chain } as blockchain)) =
+    blockchain.user
+        |> Maybe.map
+            (\user ->
+                user
+                    |> User.updateApproveAndBorrow model chain writeBorrow
                     |> (\( updated, cmd, effect ) ->
                             ( { blockchain | user = Just updated }
                                 |> Blockchain
@@ -385,6 +443,56 @@ updateBurn writeBurn (Blockchain ({ chain } as blockchain)) =
             (\user ->
                 user
                     |> User.updateBurn chain writeBurn
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
+                                |> Blockchain
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
+            )
+        |> Maybe.withDefault
+            ( blockchain |> Blockchain
+            , Cmd.none
+            , Nothing
+            )
+
+
+updateApproveCDT :
+    Address
+    -> Blockchain
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
+updateApproveCDT cdtAddress (Blockchain ({ chain } as blockchain)) =
+    blockchain.user
+        |> Maybe.map
+            (\user ->
+                user
+                    |> User.updateApproveCDT chain cdtAddress
+                    |> (\( updated, cmd, effect ) ->
+                            ( { blockchain | user = Just updated }
+                                |> Blockchain
+                            , cmd |> Cmd.map UserMsg
+                            , effect |> userEffect |> Just
+                            )
+                       )
+            )
+        |> Maybe.withDefault
+            ( blockchain |> Blockchain
+            , Cmd.none
+            , Nothing
+            )
+
+
+updateFlashRepay :
+    WriteFlashRepay
+    -> Blockchain
+    -> ( Blockchain, Cmd Msg, Maybe Effect )
+updateFlashRepay writeFlashRepay (Blockchain ({ chain } as blockchain)) =
+    blockchain.user
+        |> Maybe.map
+            (\user ->
+                user
+                    |> User.updateFlashRepay chain writeFlashRepay
                     |> (\( updated, cmd, effect ) ->
                             ( { blockchain | user = Just updated }
                                 |> Blockchain

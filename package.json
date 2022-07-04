@@ -1,7 +1,7 @@
 {
   "scripts": {
-    "start": "parcel index.html",
-    "build": "parcel build index.html --no-source-maps",
+    "start": "parcel index.html --no-cache",
+    "build": "parcel build index.html --no-source-maps --no-cache",
     "check": "tsc --noEmit"
   },
   "dependencies": {
@@ -13,14 +13,15 @@
     "@sentry/browser": "^6.18.1",
     "@sentry/tracing": "^6.18.1",
     "@timeswap-labs/timeswap-v1-biconomy-sdk": "1.0.14",
+    "@timeswap-labs/flash-repay-sdk": "1.0.5-aplpha.0",
     "@walletconnect/web3-provider": "^1.7.4",
     "axios": "^0.27.2",
     "web3": "^1.7.1"
   },
   "devDependencies": {
-    "@parcel/resolver-glob": "2.3.0",
-    "@parcel/transformer-elm": "2.3.0",
-    "@parcel/transformer-typescript-tsc": "2.3.0",
+    "@parcel/resolver-glob": "^2.3.0",
+    "@parcel/transformer-elm": "^2.6.2",
+    "@parcel/transformer-typescript-tsc": "^2.3.0",
     "@types/elm": "^0.19.1",
     "assert": "^2.0.0",
     "buffer": "^6.0.3",
@@ -29,12 +30,15 @@
     "https-browserify": "^1.0.0",
     "node-elm-compiler": "^5.0.6",
     "os-browserify": "^0.3.0",
-    "parcel": "2.3.0",
+    "parcel": "^2.3.0",
     "process": "^0.11.10",
     "querystring-es3": "^0.2.1",
     "stream-browserify": "^3.0.0",
     "stream-http": "^3.2.0",
     "typescript": "^4.4.4",
     "url": "^0.11.0"
+  },
+  "resolutions": {
+    "@ethereum-waffle/provider": "4.0.0-alpha.24"
   }
 }

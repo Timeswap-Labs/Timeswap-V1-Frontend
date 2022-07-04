@@ -7,7 +7,6 @@ module Page.Positions.Liqs.Main exposing
     , view
     )
 
-import Animator exposing (Timeline)
 import Blockchain.User.Liq as Liq exposing (Liq)
 import Blockchain.User.Liqs as Liqs exposing (Liqs)
 import Blockchain.User.Main as User exposing (User)
@@ -24,7 +23,6 @@ import Element
     exposing
         ( Element
         , alignRight
-        , alignTop
         , centerX
         , centerY
         , column
@@ -59,7 +57,6 @@ import Utility.Duration as Duration
 import Utility.Glass as Glass
 import Utility.Id as Id
 import Utility.Image as Image
-import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
@@ -264,7 +261,7 @@ loading { images, theme } =
 
 
 noLiqs : { model | device : Device, images : Images, theme : Theme } -> Element msg
-noLiqs { device, images, theme } =
+noLiqs { images, theme } =
     column
         [ width fill
         , height shrink

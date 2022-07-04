@@ -20,58 +20,67 @@ export function borrowSigner(
   gp: GlobalParams
 ) {
   app.ports.borrow.subscribe(async (params) => {
-    const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
-    const { percent, debtIn, collateralIn, maxDebt, maxCollateral } = params.send;
-    let txnConfirmation;
-
-    try {
-      if (
-        percent !== undefined &&
-        maxDebt !== undefined &&
-        maxCollateral !== undefined
-      ) {
-        txnConfirmation = await percentTransaction(pool, gp, {
-          ...params.send,
-          percent,
-          maxDebt,
-          maxCollateral,
-        });
-      } else if (debtIn !== undefined && maxCollateral !== undefined) {
-        txnConfirmation = await debtTransaction(pool, gp, {
-          ...params.send,
-          debtIn,
-          maxCollateral,
-        });
-      } else if (collateralIn !== undefined && maxDebt !== undefined) {
-        txnConfirmation = await collateralTransaction(pool, gp, {
-          ...params.send,
-          collateralIn,
-          maxDebt,
-        });
-      }
-
-      if (txnConfirmation) {
-        app.ports.receiveConfirm.send({
-          id: params.id,
-          chain: params.chain,
-          address: params.address,
-          hash: txnConfirmation.hash
-        });
-
-        const txnReceipt = await txnConfirmation.wait();
-        const receiveReceipt = {
-          chain: params.chain,
-          address: params.address,
-          hash: txnConfirmation.hash,
-          state: txnReceipt.status ? "success" : "failed"
-        }
-        app.ports.receiveReceipt.send(receiveReceipt);
-        updateCachedTxns(receiveReceipt);
-      }
-    } catch (error) {
-      handleTxnErrors(error, app, gp, params);
-    }
+    borrowHandler(app, gp, params)
   });
+}
+
+export async function borrowHandler(
+  app: ElmApp<Ports>,
+  gp: GlobalParams,
+  params: Borrow
+) {
+  const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
+  const { percent, debtIn, collateralIn, maxDebt, maxCollateral } = params.send;
+  let txnConfirmation;
+
+  try {
+    if (
+      percent !== undefined &&
+      maxDebt !== undefined &&
+      maxCollateral !== undefined
+    ) {
+      txnConfirmation = await percentTransaction(pool, gp, {
+        ...params.send,
+        percent,
+        maxDebt,
+        maxCollateral,
+      });
+    } else if (debtIn !== undefined && maxCollateral !== undefined) {
+      txnConfirmation = await debtTransaction(pool, gp, {
+        ...params.send,
+        debtIn,
+        maxCollateral,
+      });
+    } else if (collateralIn !== undefined && maxDebt !== undefined) {
+      txnConfirmation = await collateralTransaction(pool, gp, {
+        ...params.send,
+        collateralIn,
+        maxDebt,
+      });
+    }
+
+    if (txnConfirmation) {
+      app.ports.receiveConfirm.send({
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: txnConfirmation.hash
+      });
+
+      const txnReceipt = await txnConfirmation.wait();
+      const receiveReceipt = {
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: txnConfirmation.hash,
+        state: txnReceipt.status ? "success" : "failed"
+      }
+      app.ports.receiveReceipt.send(receiveReceipt);
+      updateCachedTxns(receiveReceipt);
+    }
+  } catch (error) {
+    handleTxnErrors(error, app, gp, params);
+  }
 }
 
 function borrowQueryCalculation(

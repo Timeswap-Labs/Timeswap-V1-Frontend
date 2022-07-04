@@ -1,18 +1,55 @@
-import { GlobalParams } from './global';
-import { Uint112, Uint128, Uint256 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
-import { getPool, getPoolSDK, handleTxnErrors, updateCachedTxns } from "./helper";
+import { Contract } from "@ethersproject/contracts";
+import cdTokenAbi from "./abi/cdToken";
 
-export function burn(app: ElmApp<Ports>) {
+import { GlobalParams } from './global';
+import { CONVENIENCE, WNATIVE_ADDRESS, Uint112, Uint128, Uint256 } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { getPool, getPoolSDK, handleTxnErrors, updateCachedTxns } from "./helper";
+import { FlashTSRepay } from "@timeswap-labs/flash-repay-sdk";
+
+const flashTSRepayAddress = "0xd88afb2186d1b6974de255fd18a04552d4f87b50";
+
+export function burn(app: ElmApp<Ports>, gp: GlobalParams) {
   app.ports.queryLiq.subscribe(async (liqData) => {
     const now = Date.now();
 
     // Active pool
     if (now < Number(liqData.pool.maturity) * 1000) {
       let liqPercent = (BigInt(liqData.liquidityIn) * 10000n) / BigInt(liqData.poolInfo.totalLiquidity)
+      const assetAddress = liqData.pool.asset.address || WNATIVE_ADDRESS[liqData.chain.chainId];
+      const collateralAddress = liqData.pool.collateral.address || WNATIVE_ADDRESS[liqData.chain.chainId];
+      let isFlashRepayAllowed = false;
+      let isCDTApproved = false;
+
+      if (liqData.cdtAddress) {
+        const cdtContract = new Contract(liqData.cdtAddress, cdTokenAbi, gp.walletProviderMulti)
+        isCDTApproved = await cdtContract.isApprovedForAll(await gp.walletSigner.getAddress(), flashTSRepayAddress);
+      }
+
+      if (isCDTApproved) {
+        const flashTSRepay = new FlashTSRepay(flashTSRepayAddress, gp.walletSigner);
+
+        try {
+          await flashTSRepay.try(
+            CONVENIENCE[liqData.chain.chainId],
+            assetAddress,
+            collateralAddress,
+            liqData.pool.maturity,
+            liqData.tokenIds
+          );
+
+          isFlashRepayAllowed = true;
+        } catch (error) {
+          isFlashRepayAllowed = false;
+        }
+      }
 
       app.ports.receiveLiqReturn.send({
         ...liqData,
-        result: Number(liqPercent) / 100
+        result: {
+          liqPercent: Number(liqPercent) / 100,
+          isFlashRepayAllowed,
+          isCDTApproved
+        }
       });
     } else {
       if (liqData.liquidityIn === "0") {
@@ -53,6 +90,44 @@ export function burn(app: ElmApp<Ports>) {
       }
     }
   });
+
+  app.ports.flashRepay.subscribe(async (params) => {
+    const assetAddress = params.send.asset.address || WNATIVE_ADDRESS[params.chain.chainId];
+    const collateralAddress = params.send.collateral.address || WNATIVE_ADDRESS[params.chain.chainId];
+    const flashTSRepay = new FlashTSRepay(flashTSRepayAddress, gp.walletSigner);
+
+    try {
+      const txnConfirmation = await flashTSRepay.execute(
+        CONVENIENCE[params.chain.chainId],
+        assetAddress,
+        collateralAddress,
+        params.send.maturity,
+        params.send.ids
+      );
+
+      if (txnConfirmation) {
+        app.ports.receiveConfirm.send({
+          id: params.id,
+          chain: params.chain,
+          address: params.address,
+          hash: txnConfirmation.hash
+        });
+
+        const txnReceipt = await txnConfirmation.wait();
+        const receiveReceipt = {
+          id: params.id,
+          chain: params.chain,
+          address: params.address,
+          hash: txnConfirmation.hash,
+          state: txnReceipt.status ? "success" : "failed"
+        }
+        app.ports.receiveReceipt.send(receiveReceipt);
+        updateCachedTxns(receiveReceipt);
+      }
+    } catch (error) {
+      handleTxnErrors(error, app, gp, params);
+    }
+  });
 }
 
 export function burnSigner(
@@ -79,6 +154,7 @@ export function burnSigner(
 
         const txnReceipt = await txnConfirmation.wait();
         const receiveReceipt = {
+          id: params.id,
           chain: params.chain,
           address: params.address,
           hash: txnConfirmation.hash,

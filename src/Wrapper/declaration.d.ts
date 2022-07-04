@@ -46,6 +46,8 @@ declare interface Ports {
   sdkPayMsg: PortToElm<PayCalculate>;
 
   approve: PortFromElm<Approve>;
+  approveAndLend: PortFromElm<Lend>;
+  approveAndBorrow: PortFromElm<Borrow>;
 
   withdraw: PortFromElm<Withdraw>;
 
@@ -54,9 +56,11 @@ declare interface Ports {
   receiveAddLiqAnswer: PortToElm<LiquidityCalculate>;
   liquidity: PortFromElm<Liquidity>;
   queryLiq: PortFromElm<LiqReturn>;
-  receiveLiqReturn: PortToElm<LiquidityCalculate>;
+  receiveLiqReturn: PortToElm<ReceiveLiqReturn>;
 
   burn: PortFromElm<Burn>;
+  approveCDT: PortFromElm<ApproveCDT>;
+  flashRepay: PortFromElm<FlashRepay>;
 
   queryCreate: PortFromElm<NewLiquidityQuery>;
   receiveNewLiqAnswer: PortToElm<NewLiquidityCalculate>;
@@ -300,6 +304,8 @@ type LiqReturn = {
   pool: Pool;
   poolInfo: PoolInfo;
   liquidityIn: Uint;
+  tokenIds: string[];
+  cdtAddress: string | null;
 };
 
 type ReceiveLiqReturn = {
@@ -311,7 +317,11 @@ type ReceiveLiqReturn = {
         asset: string;
         collateral: string;
       }
-    | number;
+    | {
+        liqPercent: number;
+        isFlashRepayAllowed: boolean;
+        isCDTApproved: boolean;
+      };
 };
 
 interface ReceiveUser {
@@ -329,13 +339,18 @@ interface Txns {
 interface Confirmed {
   id: number;
   hash: string;
-  write: string;
+  write: Write;
   state: string;
 }
 
 interface Uncomfirmed {
   id: number;
-  write: string;
+  write: Write;
+}
+
+interface Write {
+  txn: string;
+  pool: Pool
 }
 
 type Uint = string;
@@ -476,7 +491,6 @@ interface Pay {
     deadline: number;
   };
 }
-
 interface Liquidity {
   id: number;
   chain: Chain;
@@ -551,6 +565,25 @@ interface Burn {
   };
 }
 
+interface ApproveCDT {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: string;
+}
+
+interface FlashRepay {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    ids: string[];
+  };
+}
+
 interface ReceiveConfirm {
   id: number;
   chain: Chain;
@@ -563,6 +596,7 @@ interface ReceiveReceipt {
   address: string;
   hash: string;
   state: string;
+  txnType?: Write;
 }
 
 interface ReceiveUpdatedTxns {

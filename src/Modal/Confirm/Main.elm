@@ -1,7 +1,7 @@
 module Modal.Confirm.Main exposing (Modal, Msg, confirmed, init, reject, submit, update, view)
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
+import Blockchain.User.Txns.TxnWrite exposing (TxnWrite(..))
 import Data.Backdrop exposing (Backdrop)
 import Data.Hash as Hash exposing (Hash)
 import Data.Images exposing (Images)
@@ -15,7 +15,6 @@ import Element
         , el
         , fill
         , height
-        , inFront
         , newTabLink
         , none
         , padding
@@ -201,7 +200,7 @@ body :
     -> Blockchain
     -> Modal
     -> Element Msg
-body ({ images, theme } as model) blockchain (Modal { state }) =
+body ({ images, theme } as model) blockchain (Modal { state, write }) =
     column
         [ width fill
         , centerX
@@ -240,13 +239,55 @@ body ({ images, theme } as model) blockchain (Modal { state }) =
                 (text
                     (case state of
                         Initiating _ ->
-                            "Transaction is being initiated"
+                            case write of
+                                ApproveAndLend _ ->
+                                    "Approve transaction is being initiated"
+
+                                Lend _ ->
+                                    "Lend transaction is being initiated"
+
+                                ApproveAndBorrow _ ->
+                                    "Approve transaction is being initiated"
+
+                                Borrow _ ->
+                                    "Borrow transaction is being initiated"
+
+                                _ ->
+                                    "Transaction is being initiated"
 
                         Rejected ->
-                            "Transaction was not submitted"
+                            case write of
+                                ApproveAndLend _ ->
+                                    "Approve transaction was not submitted"
+
+                                Lend _ ->
+                                    "Lend transaction was not submitted"
+
+                                ApproveAndBorrow _ ->
+                                    "Approve transaction was not submitted"
+
+                                Borrow _ ->
+                                    "Borrow transaction was not submitted"
+
+                                _ ->
+                                    "Transaction was not submitted"
 
                         Submitted _ ->
-                            "Transaction submitted, waiting for confirmation"
+                            case write of
+                                ApproveAndLend _ ->
+                                    "Approve transaction submitted, waiting for confirmation"
+
+                                Lend _ ->
+                                    "Lend transaction submitted, waiting for confirmation"
+
+                                ApproveAndBorrow _ ->
+                                    "Approve transaction submitted, waiting for confirmation"
+
+                                Borrow _ ->
+                                    "Borrow transaction submitted, waiting for confirmation"
+
+                                _ ->
+                                    "Transaction submitted, waiting for confirmation"
 
                         Confirmed _ ->
                             "Your transaction has been confirmed"

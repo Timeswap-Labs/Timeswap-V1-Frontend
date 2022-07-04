@@ -34,7 +34,6 @@ import Element
         )
 import Element.Font as Font
 import Element.Region as Region
-import Utility.Color as Color
 import Utility.Fade as Fade
 import Utility.Image as Image
 import Utility.Loading as Loading
