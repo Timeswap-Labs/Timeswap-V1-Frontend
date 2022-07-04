@@ -47,18 +47,18 @@ export async function balancesAllowancesInit(
         }
       );
 
-      if (CONVENIENCE[balancesOf.chain.chainId]) {
+      if (CONVENIENCE[137]) {
         allowancesToken.push(token as ERC20Token);
         allowances.push(
           contract.allowance(
             balancesOf.address,
-            CONVENIENCE[balancesOf.chain.chainId]
+            CONVENIENCE[137]
           )
         );
 
         const allowanceFilter = subscriptionContract.filters.Approval(
           balancesOf.address,
-          CONVENIENCE[balancesOf.chain.chainId]
+          CONVENIENCE[137]
         );
 
         subscriptionContract.on(allowanceFilter, (_owner, _spender, value) => {
