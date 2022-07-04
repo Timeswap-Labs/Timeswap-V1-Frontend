@@ -11,7 +11,7 @@ import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import axios from "axios";
 const { MulticallProvider } = providers;
 
-const API_KEY = "cYpcPugzC.7b35f956-9eba-47fc-9151-5c0fcc73822b";
+const API_KEY = "cYpcPugtC.7b35f956-9eba-47fc-9151-5c0fcc73822b";
 
 export class GlobalParams {
   private _walletProvider?: Web3Provider;

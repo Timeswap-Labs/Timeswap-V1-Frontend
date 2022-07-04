@@ -138,7 +138,8 @@ export function getPoolSDK(
 
   return new SDKPool(
     gp.biconomyProvider,
-    chain.chainId,
+    // chain.chainId,
+    137,
     assetToken,
     collateralToken,
     new Uint256(maturity)

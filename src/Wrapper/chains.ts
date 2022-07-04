@@ -3,10 +3,10 @@ import { WNATIVE_ADDRESS } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 
 export const whitelistChains: Whitelist = {
   default: {
-    chainId: 8280,
+    chainId: 8283,
     name: "Polygon Mainnet",
-    rpcUrl: "https://backend.buildbear.io/node/dreamy-saha-3ba5e6",
-    blockExplorerUrl: "https://explorer.buildbear.io/node/dreamy-saha-3ba5e6",
+    rpcUrl: "https://backend.buildbear.io/node/upbeat-ride-30b6ee",
+    blockExplorerUrl: "https://explorer.buildbear.io/node/upbeat-ride-30b6ee",
     nftExplorerUrl: "https://opensea.io/assets/matic",
     native: {
       name: "MATIC",
@@ -39,7 +39,7 @@ export const whitelistChains: Whitelist = {
       //   decimals: 18,
       // },
     ],
-    custom: getCustomTokens(String(137)),
+    custom: getCustomTokens(String(8283)),
   },
   others: [],
 };
