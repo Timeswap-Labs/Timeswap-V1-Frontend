@@ -68,6 +68,7 @@ import Process
 import Sort.Dict as Dict
 import Task
 import Time exposing (Posix)
+import Utility.Class as Class
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
@@ -764,6 +765,7 @@ claimButton theme =
     Input.button
         [ width <| px 102
         , height <| px 44
+        , Class.is "shiningBtn"
         , Border.rounded 4
         , theme |> ThemeColor.primaryBtn |> Background.color
         ]

@@ -86,12 +86,16 @@ import Url exposing (Url)
 import Utility.Blur as Blur
 import Utility.Color as Color
 import Utility.Glass as Glass
+
+import Utility.Class as Class
+
 import Utility.Id as Id
 import Utility.Image as Image
 import Utility.Length as Length
 import Utility.Pointer as Pointer
 import Utility.Scroll as Scroll
 import Utility.ThemeColor as ThemeColor
+import Animator.Css exposing (style)
 
 
 main : Program Flags Model Msg
@@ -1894,9 +1898,11 @@ connectButton :
     -> Element Msg
 connectButton ({ device, images, theme } as model) =
     Input.button
-        ([ width shrink
+        ([ width fill
          , height <| px 44
          , paddingXY 12 0
+
+
          , Border.rounded 4
          ]
             ++ (case model.blockchain of
@@ -1914,8 +1920,10 @@ connectButton ({ device, images, theme } as model) =
                             |> Maybe.withDefault
                                 [ Region.description "connect button"
                                 , theme |> ThemeColor.primaryBtn |> Background.color
-                                , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
-                                , mouseOver [ Background.color Color.primary400 ]
+                                 , Class.is "shiningBtn"
+
+                                -- , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
+                                -- , mouseOver [ Background.color Color.primary400 ]
                                 ]
 
                     NotSupported _ ->
@@ -1931,6 +1939,7 @@ connectButton ({ device, images, theme } as model) =
             el
                 [ centerX
                 , centerY
+
                 ]
                 (case model.blockchain of
                     Supported blockchain ->

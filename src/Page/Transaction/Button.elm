@@ -43,6 +43,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
 import Http
+import Utility.Class as Class
 import Utility.Color as Color
 import Utility.ThemeColor as ThemeColor
 
@@ -57,6 +58,7 @@ view params =
     Input.button
         [ Region.description params.text
         , width fill
+        , Class.is "shiningBtn"
         , height <| px 44
         , params.theme |> ThemeColor.primaryBtn |> Background.color
         , Border.rounded 4

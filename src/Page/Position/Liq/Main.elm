@@ -73,6 +73,7 @@ import Process
 import Sort.Dict as Dict
 import Task
 import Time exposing (Posix)
+import Utility.Class as Class
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
@@ -767,6 +768,7 @@ burnButton theme =
         [ width <| px 102
         , height <| px 44
         , Border.rounded 4
+        , Class.is "shiningBtn"
         , theme |> ThemeColor.primaryBtn |> Background.color
         ]
         { onPress = Just ClickBurn
