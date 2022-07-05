@@ -1684,18 +1684,29 @@ buttons theme blockchain pair transaction =
                                     of
                                         Just (Success True) ->
                                             case
-                                                user
+                                                ( user
                                                     |> User.getBalance (pair |> Pair.toAsset)
                                                     |> (Maybe.map << Remote.map)
                                                         (Uint.hasEnough assetIn)
+                                                , user
+                                                    |> User.getBalance (pair |> Pair.toCollateral)
+                                                    |> (Maybe.map << Remote.map)
+                                                        (Uint.hasEnough collateralIn)
+                                                )
                                             of
-                                                Just (Success True) ->
+                                                ( Just (Success True), Just (Success True) ) ->
                                                     [ liquidityButton theme ]
 
-                                                Just (Success False) ->
+                                                ( Just (Success False), _ ) ->
                                                     [ insufficientTokenBalance (pair |> Pair.toAsset) ]
 
-                                                Just (Loading _) ->
+                                                ( _, Just (Success False) ) ->
+                                                    [ insufficientTokenBalance (pair |> Pair.toCollateral) ]
+
+                                                ( Just (Loading _), _ ) ->
+                                                    [ Button.checkingBalance theme |> map never ]
+
+                                                ( _, Just (Loading _) ) ->
                                                     [ Button.checkingBalance theme |> map never ]
 
                                                 _ ->
@@ -1719,18 +1730,29 @@ buttons theme blockchain pair transaction =
                                     of
                                         Just (Success True) ->
                                             case
-                                                user
+                                                ( user
+                                                    |> User.getBalance (pair |> Pair.toAsset)
+                                                    |> (Maybe.map << Remote.map)
+                                                        (Uint.hasEnough assetIn)
+                                                , user
                                                     |> User.getBalance (pair |> Pair.toCollateral)
                                                     |> (Maybe.map << Remote.map)
                                                         (Uint.hasEnough collateralIn)
+                                                )
                                             of
-                                                Just (Success True) ->
+                                                ( Just (Success True), Just (Success True) ) ->
                                                     [ liquidityButton theme ]
 
-                                                Just (Success False) ->
+                                                ( Just (Success False), _ ) ->
+                                                    [ insufficientTokenBalance (pair |> Pair.toAsset) ]
+
+                                                ( _, Just (Success False) ) ->
                                                     [ insufficientTokenBalance (pair |> Pair.toCollateral) ]
 
-                                                Just (Loading _) ->
+                                                ( Just (Loading _), _ ) ->
+                                                    [ Button.checkingBalance theme |> map never ]
+
+                                                ( _, Just (Loading _) ) ->
                                                     [ Button.checkingBalance theme |> map never ]
 
                                                 _ ->
