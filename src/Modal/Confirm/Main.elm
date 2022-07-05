@@ -19,6 +19,7 @@ import Element
         , none
         , padding
         , paddingXY
+        , paragraph
         , px
         , row
         , shrink
@@ -230,13 +231,13 @@ body ({ images, theme } as model) blockchain (Modal { state, write }) =
             , Font.center
             , spacing 16
             ]
-            [ el
+            [ paragraph
                 [ centerX
                 , theme |> ThemeColor.text |> Font.color
                 , Font.center
                 , Font.size 14
                 ]
-                (text
+                [ text
                     (case state of
                         Initiating _ ->
                             case write of
@@ -251,6 +252,12 @@ body ({ images, theme } as model) blockchain (Modal { state, write }) =
 
                                 Borrow _ ->
                                     "Borrow transaction is being initiated"
+
+                                ApproveAndFlashRepay _ ->
+                                    "Approve transaction is being initiated"
+
+                                FlashRepay _ ->
+                                    "Flash-Repay transaction is being initiated"
 
                                 _ ->
                                     "Transaction is being initiated"
@@ -269,6 +276,12 @@ body ({ images, theme } as model) blockchain (Modal { state, write }) =
                                 Borrow _ ->
                                     "Borrow transaction was not submitted"
 
+                                ApproveAndFlashRepay _ ->
+                                    "Approve transaction was not submitted"
+
+                                FlashRepay _ ->
+                                    "Flash-Repay transaction was not submitted"
+
                                 _ ->
                                     "Transaction was not submitted"
 
@@ -286,13 +299,19 @@ body ({ images, theme } as model) blockchain (Modal { state, write }) =
                                 Borrow _ ->
                                     "Borrow transaction submitted, waiting for confirmation"
 
+                                ApproveAndFlashRepay _ ->
+                                    "Approve transaction submitted, waiting for confirmation"
+
+                                FlashRepay _ ->
+                                    "Flash-Repay transaction submitted, waiting for confirmation"
+
                                 _ ->
                                     "Transaction submitted, waiting for confirmation"
 
                         Confirmed _ ->
                             "Your transaction has been confirmed"
                     )
-                )
+                ]
             , case state of
                 Submitted hash ->
                     txnExplorerLink model blockchain hash

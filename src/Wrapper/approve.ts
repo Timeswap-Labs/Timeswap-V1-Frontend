@@ -7,6 +7,7 @@ import { GlobalParams } from './global';
 import { fetchRecentTxns, handleTxnErrors } from "./helper";
 import { lendHandler } from "./lend";
 import { borrowHandler } from "./borrow";
+import { flashRepayHandler } from "./burn";
 
 const flashTSRepayAddress = "0xd88afb2186d1b6974de255fd18a04552d4f87b50";
 
@@ -150,8 +151,6 @@ export function approveSigner(
           }
         }
 
-        console.log("approve success", receiveReceipt);
-
         // If approve is successful, initiate Borrow txn
         if (txnReceipt.status) {
           const recentTxns = fetchRecentTxns(gp, params.address)
@@ -175,9 +174,9 @@ export function approveSigner(
     }
   });
 
-  app.ports.approveCDT.subscribe(async (params) => {
+  app.ports.approveAndFlashRepay.subscribe(async (params) => {
     try {
-      const cdtContract = new Contract(params.send, cdTokenAbi, gp.walletSigner)
+      const cdtContract = new Contract(params.send.cdtAddress, cdTokenAbi, gp.walletSigner)
       const txnConfirmation = await cdtContract.setApprovalForAll(flashTSRepayAddress, true);
 
       app.ports.receiveConfirm.send({
@@ -187,15 +186,41 @@ export function approveSigner(
         hash: txnConfirmation ? txnConfirmation.hash : null
       });
 
+      const pool = {
+        asset: params.send.asset,
+        collateral: params.send.collateral,
+        maturity: params.send.maturity
+      }
       const txnReceipt = await txnConfirmation.wait();
       const receiveReceipt = {
         id: params.id,
         chain: params.chain,
         address: params.address,
         hash: txnConfirmation.hash,
-        state: txnReceipt.status ? "success" : "failed"
+        state: txnReceipt.status ? "success" : "failed",
+        txnType: {
+          txn: "approveAndFlashRepay",
+          pool
+        }
       }
-      app.ports.receiveReceipt.send(receiveReceipt);
+
+      // If approve is successful, initiate Flash Repay txn
+      if (txnReceipt.status) {
+        const recentTxns = fetchRecentTxns(gp, params.address)
+        const newTxnId = recentTxns.confirmed.length + recentTxns.uncomfirmed.length + 1;
+        recentTxns.uncomfirmed.push({ id: newTxnId, write: { txn: "flashRepay", pool }});
+
+        app.ports.receiveUpdatedTxns.send({
+          chain: params.chain,
+          address: params.address,
+          txns: recentTxns
+        });
+
+        app.ports.receiveReceipt.send(receiveReceipt);
+        flashRepayHandler(app, gp, {...params, id: newTxnId});
+      } else {
+        app.ports.receiveReceipt.send(receiveReceipt);
+      }
     } catch (error) {
       handleTxnErrors(error, app, gp, params);
     }

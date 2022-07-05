@@ -92,41 +92,7 @@ export function burn(app: ElmApp<Ports>, gp: GlobalParams) {
   });
 
   app.ports.flashRepay.subscribe(async (params) => {
-    const assetAddress = params.send.asset.address || WNATIVE_ADDRESS[params.chain.chainId];
-    const collateralAddress = params.send.collateral.address || WNATIVE_ADDRESS[params.chain.chainId];
-    const flashTSRepay = new FlashTSRepay(flashTSRepayAddress, gp.walletSigner);
-
-    try {
-      const txnConfirmation = await flashTSRepay.execute(
-        CONVENIENCE[params.chain.chainId],
-        assetAddress,
-        collateralAddress,
-        params.send.maturity,
-        params.send.ids
-      );
-
-      if (txnConfirmation) {
-        app.ports.receiveConfirm.send({
-          id: params.id,
-          chain: params.chain,
-          address: params.address,
-          hash: txnConfirmation.hash
-        });
-
-        const txnReceipt = await txnConfirmation.wait();
-        const receiveReceipt = {
-          id: params.id,
-          chain: params.chain,
-          address: params.address,
-          hash: txnConfirmation.hash,
-          state: txnReceipt.status ? "success" : "failed"
-        }
-        app.ports.receiveReceipt.send(receiveReceipt);
-        updateCachedTxns(receiveReceipt);
-      }
-    } catch (error) {
-      handleTxnErrors(error, app, gp, params);
-    }
+    flashRepayHandler(app, gp, params)
   });
 }
 
@@ -167,4 +133,44 @@ export function burnSigner(
       handleTxnErrors(error, app, gp, params);
     }
   });
+}
+
+export async function flashRepayHandler(app: ElmApp<Ports>, gp: GlobalParams, params: FlashRepay) {
+  const assetAddress = params.send.asset.address || WNATIVE_ADDRESS[params.chain.chainId];
+  const collateralAddress = params.send.collateral.address || WNATIVE_ADDRESS[params.chain.chainId];
+  const flashTSRepay = new FlashTSRepay(flashTSRepayAddress, gp.walletSigner);
+
+  try {
+    const txnConfirmation = await flashTSRepay.execute(
+      CONVENIENCE[params.chain.chainId],
+      assetAddress,
+      collateralAddress,
+      params.send.maturity,
+      params.send.ids
+    );
+
+    if (txnConfirmation) {
+      app.ports.receiveConfirm.send({
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: txnConfirmation.hash
+      });
+
+
+      const txnReceipt = await txnConfirmation.wait();
+      const receiveReceipt = {
+        id: params.id,
+        chain: params.chain,
+        address: params.address,
+        hash: txnConfirmation.hash,
+        state: txnReceipt.status ? "success" : "failed"
+      }
+
+      app.ports.receiveReceipt.send(receiveReceipt);
+      updateCachedTxns(receiveReceipt);
+    }
+  } catch (error) {
+    handleTxnErrors(error, app, gp, params);
+  }
 }

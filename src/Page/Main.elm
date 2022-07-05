@@ -122,8 +122,8 @@ type Effect
     | Create WriteCreate
     | Withdraw WriteWithdraw
     | Burn WriteBurn
+    | ApproveAndFlashRepay WriteFlashRepay
     | FlashRepay WriteFlashRepay
-    | ApproveCDT Address
 
 
 init :
@@ -720,8 +720,8 @@ liqEffect effect =
         Liq.FlashRepay writeFlashRepay ->
             FlashRepay writeFlashRepay
 
-        Liq.ApproveCDT cdtAddress ->
-            ApproveCDT cdtAddress
+        Liq.ApproveAndFlashRepay writeFlashRepay ->
+            ApproveAndFlashRepay writeFlashRepay
 
 
 subscriptions : Page -> Sub Msg

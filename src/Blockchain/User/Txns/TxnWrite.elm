@@ -27,7 +27,7 @@ type TxnWrite
     | Withdraw Pool
     | Pay Pool
     | Burn Pool
-    | ApproveCDT Address
+    | ApproveAndFlashRepay Pool
     | FlashRepay Pool
 
 
@@ -70,6 +70,7 @@ decoder =
     , decoderWithdraw
     , decoderPay
     , decoderBurn
+    , decoderApproveAndFlashRepay
     , decoderFlashRepay
     ]
         |> Decode.oneOf
@@ -225,6 +226,21 @@ decoderBurn =
         |> Decode.andThen identity
 
 
+decoderApproveAndFlashRepay : Decoder TxnWrite
+decoderApproveAndFlashRepay =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "approveAndFlashRepay" then
+                ApproveAndFlashRepay pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
 decoderFlashRepay : Decoder TxnWrite
 decoderFlashRepay =
     Decode.succeed
@@ -303,9 +319,9 @@ encode write =
             ]
                 |> Encode.object
 
-        ApproveCDT address ->
-            [ ( "txn", "approveCDT" |> Encode.string )
-            , ( "address", address |> Address.encode )
+        ApproveAndFlashRepay pool ->
+            [ ( "txn", "approveAndFlashRepay" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
             ]
                 |> Encode.object
 
