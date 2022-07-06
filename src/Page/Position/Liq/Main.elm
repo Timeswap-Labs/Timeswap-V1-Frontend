@@ -182,10 +182,10 @@ update { time, endPoint } blockchain user msg (Position position) =
                 |> User.getDues
                 |> Remote.map (Dict.get position.pool)
                 |> (Remote.map << Maybe.andThen)
-                    (\dict ->
+                    (\tuple ->
                         { pool = position.pool
                         , cdtAddress = addr
-                        , tokenIds = dict |> Dict.keys
+                        , tokenIds = tuple |> Tuple.first |> Dict.keys
                         }
                             |> ApproveAndFlashRepay
                             |> Just
@@ -200,10 +200,10 @@ update { time, endPoint } blockchain user msg (Position position) =
                 |> User.getDues
                 |> Remote.map (Dict.get position.pool)
                 |> (Remote.map << Maybe.andThen)
-                    (\dict ->
+                    (\tuple ->
                         { pool = position.pool
                         , cdtAddress = addr
-                        , tokenIds = dict |> Dict.keys
+                        , tokenIds = tuple |> Tuple.first |> Dict.keys
                         }
                             |> FlashRepay
                             |> Just
@@ -288,19 +288,15 @@ update { time, endPoint } blockchain user msg (Position position) =
                                     |> User.getDues
                                     |> Remote.map (Dict.get position.pool)
                                     |> (Remote.map << Maybe.map)
-                                        (\dict ->
-                                            dict
+                                        (\tuple ->
+                                            tuple
+                                                |> Tuple.first
                                                 |> Dict.keys
                                                 |> query blockchain
                                                     poolInfo
                                                     liquidityIn
                                                     position
-                                                    (dict
-                                                        |> Dict.toList
-                                                        |> List.head
-                                                        |> Maybe.map (\( _, due ) -> due.collateralizedDebt)
-                                                        |> Maybe.withDefault Nothing
-                                                    )
+                                                    (tuple |> Tuple.second |> Just)
                                         )
                                     |> (Remote.map << Maybe.withDefault) (query blockchain poolInfo liquidityIn position Nothing [])
                                     |> Remote.withDefault (query blockchain poolInfo liquidityIn position Nothing [])
@@ -1146,10 +1142,11 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
                         |> User.getDues
                         |> Remote.map (Dict.get pool)
                         |> (Remote.map << Maybe.map)
-                            (\dict ->
-                                dict
+                            (\tuple ->
+                                tuple
+                                    |> Tuple.first
                                     |> Dict.foldl
-                                        (\_ { debt, collateral, collateralizedDebt } accumulator ->
+                                        (\_ { debt, collateral } accumulator ->
                                             accumulator
                                                 |> Maybe.andThen
                                                     (\accumulatedDue ->
@@ -1158,11 +1155,9 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
                                                                 (Uint.add accumulatedDue.debt debt)
                                                             |> Maybe.apply
                                                                 (Uint.add accumulatedDue.collateral collateral)
-                                                            |> Maybe.apply
-                                                                (collateralizedDebt |> Just)
                                                     )
                                         )
-                                        (Due Uint.zero Uint.zero Nothing |> Just)
+                                        (Due Uint.zero Uint.zero |> Just)
                                     |> (\maybeDue ->
                                             case maybeDue of
                                                 Just totalDue ->
@@ -1342,7 +1337,7 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
                                                                 , case ( activeReturn.isCDTApproved, activeReturn.isFlashRepayAllowed ) of
                                                                     ( False, _ ) ->
                                                                         row [ alignRight, centerY ]
-                                                                            [ approveFlashRepayButton theme totalDue.collateralizedDebt ]
+                                                                            [ approveFlashRepayButton theme (tuple |> Tuple.second) ]
 
                                                                     ( True, False ) ->
                                                                         row [ alignRight, centerY ]
@@ -1350,7 +1345,7 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
 
                                                                     ( True, True ) ->
                                                                         row [ alignRight, centerY ]
-                                                                            [ flashRepayButton theme totalDue.collateralizedDebt ]
+                                                                            [ flashRepayButton theme (tuple |> Tuple.second) ]
                                                                 ]
                                                             ]
 
@@ -1368,32 +1363,22 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
             none
 
 
-approveFlashRepayButton : Theme -> Maybe Address -> Element Msg
-approveFlashRepayButton theme maybeCDTAddress =
-    case maybeCDTAddress of
-        Just cdtAddress ->
-            Button.view
-                { onPress = ClickApproveAndFlashRepay cdtAddress
-                , text = "Approve & Flash Repay"
-                , theme = theme
-                }
-
-        _ ->
-            none
+approveFlashRepayButton : Theme -> Address -> Element Msg
+approveFlashRepayButton theme cdtAddress =
+    Button.view
+        { onPress = ClickApproveAndFlashRepay cdtAddress
+        , text = "Approve & Flash Repay"
+        , theme = theme
+        }
 
 
-flashRepayButton : Theme -> Maybe Address -> Element Msg
-flashRepayButton theme maybeCDTAddress =
-    case maybeCDTAddress of
-        Just cdtAddress ->
-            Button.view
-                { onPress = ClickFlashRepay cdtAddress
-                , text = "Flash Repay"
-                , theme = theme
-                }
-
-        _ ->
-            none
+flashRepayButton : Theme -> Address -> Element Msg
+flashRepayButton theme cdtAddress =
+    Button.view
+        { onPress = ClickFlashRepay cdtAddress
+        , text = "Flash Repay"
+        , theme = theme
+        }
 
 
 disabledFlashRepayButton : Theme -> Maybe Tooltip -> Element Msg

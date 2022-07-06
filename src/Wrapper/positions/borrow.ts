@@ -62,12 +62,12 @@ export async function borrowPositionsInit(
 
   return positionsOf.natives.map(({ pool, natives: { collateralizedDebt } }, index) => ({
     pool,
+    collateralizedDebt,
     dues: cdTokenOwnerIndex[index].map((tokenId, tokenIdIndex) => ({
       tokenId,
       due: {
         debt: cdTokenDues[index][tokenIdIndex].debt,
         collateral: cdTokenDues[index][tokenIdIndex].collateral,
-        collateralizedDebt: collateralizedDebt
       },
     })),
   }));
