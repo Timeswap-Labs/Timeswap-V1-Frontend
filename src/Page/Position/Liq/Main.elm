@@ -102,8 +102,8 @@ type alias Status =
 type Msg
     = ClickAddMore
     | ClickBurn
-    | ClickAppoveCDT Address
-    | ClickFlashRepay
+    | ClickApproveAndFlashRepay Address
+    | ClickFlashRepay Address
     | ClickReturn
     | Tick Posix
     | PoolInfoQueryAgain
@@ -117,8 +117,8 @@ type Msg
 type Effect
     = InputPool Pool
     | Burn WriteBurn
+    | ApproveAndFlashRepay WriteFlashRepay
     | FlashRepay WriteFlashRepay
-    | ApproveCDT Address
 
 
 init :
@@ -175,13 +175,7 @@ update { time, endPoint } blockchain user msg (Position position) =
                     |> Remote.withDefault Nothing
             )
 
-        ClickAppoveCDT addr ->
-            ( Position position |> Just
-            , Cmd.none
-            , ApproveCDT addr |> Just
-            )
-
-        ClickFlashRepay ->
+        ClickApproveAndFlashRepay addr ->
             ( Position position |> Just
             , Cmd.none
             , user
@@ -190,6 +184,25 @@ update { time, endPoint } blockchain user msg (Position position) =
                 |> (Remote.map << Maybe.andThen)
                     (\dict ->
                         { pool = position.pool
+                        , cdtAddress = addr
+                        , tokenIds = dict |> Dict.keys
+                        }
+                            |> ApproveAndFlashRepay
+                            |> Just
+                    )
+                |> Remote.withDefault Nothing
+            )
+
+        ClickFlashRepay addr ->
+            ( Position position |> Just
+            , Cmd.none
+            , user
+                |> User.getDues
+                |> Remote.map (Dict.get position.pool)
+                |> (Remote.map << Maybe.andThen)
+                    (\dict ->
+                        { pool = position.pool
+                        , cdtAddress = addr
                         , tokenIds = dict |> Dict.keys
                         }
                             |> FlashRepay
@@ -1329,7 +1342,7 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
                                                                 , case ( activeReturn.isCDTApproved, activeReturn.isFlashRepayAllowed ) of
                                                                     ( False, _ ) ->
                                                                         row [ alignRight, centerY ]
-                                                                            [ approveCDTButton theme totalDue.collateralizedDebt ]
+                                                                            [ approveFlashRepayButton theme totalDue.collateralizedDebt ]
 
                                                                     ( True, False ) ->
                                                                         row [ alignRight, centerY ]
@@ -1337,12 +1350,7 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
 
                                                                     ( True, True ) ->
                                                                         row [ alignRight, centerY ]
-                                                                            [ Button.view
-                                                                                { onPress = ClickFlashRepay
-                                                                                , text = "Flash Repay"
-                                                                                , theme = theme
-                                                                                }
-                                                                            ]
+                                                                            [ flashRepayButton theme totalDue.collateralizedDebt ]
                                                                 ]
                                                             ]
 
@@ -1360,13 +1368,27 @@ viewDues { images, theme } blockchain { pool, return, tooltip } =
             none
 
 
-approveCDTButton : Theme -> Maybe Address -> Element Msg
-approveCDTButton theme maybeCDTAddress =
+approveFlashRepayButton : Theme -> Maybe Address -> Element Msg
+approveFlashRepayButton theme maybeCDTAddress =
     case maybeCDTAddress of
         Just cdtAddress ->
             Button.view
-                { onPress = ClickAppoveCDT cdtAddress
+                { onPress = ClickApproveAndFlashRepay cdtAddress
                 , text = "Approve & Flash Repay"
+                , theme = theme
+                }
+
+        _ ->
+            none
+
+
+flashRepayButton : Theme -> Maybe Address -> Element Msg
+flashRepayButton theme maybeCDTAddress =
+    case maybeCDTAddress of
+        Just cdtAddress ->
+            Button.view
+                { onPress = ClickFlashRepay cdtAddress
+                , text = "Flash Repay"
                 , theme = theme
                 }
 

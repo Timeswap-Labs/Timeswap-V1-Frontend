@@ -14,8 +14,8 @@ module Blockchain.Main exposing
     , updateAddERC20
     , updateApprove
     , updateApproveAndBorrow
+    , updateApproveAndFlashRepay
     , updateApproveAndLend
-    , updateApproveCDT
     , updateBorrow
     , updateBurn
     , updateClearTxns
@@ -38,7 +38,6 @@ import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Blockchain.User.WritePay exposing (WritePay)
 import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
 import Browser.Navigation as Navigation exposing (Key)
-import Data.Address exposing (Address)
 import Data.Chain exposing (Chain)
 import Data.Chains as Chains exposing (Chains)
 import Data.Deadline exposing (Deadline)
@@ -458,16 +457,16 @@ updateBurn writeBurn (Blockchain ({ chain } as blockchain)) =
             )
 
 
-updateApproveCDT :
-    Address
+updateApproveAndFlashRepay :
+    WriteFlashRepay
     -> Blockchain
     -> ( Blockchain, Cmd Msg, Maybe Effect )
-updateApproveCDT cdtAddress (Blockchain ({ chain } as blockchain)) =
+updateApproveAndFlashRepay writeFlashRepay (Blockchain ({ chain } as blockchain)) =
     blockchain.user
         |> Maybe.map
             (\user ->
                 user
-                    |> User.updateApproveCDT chain cdtAddress
+                    |> User.updateApproveAndFlashRepay chain writeFlashRepay
                     |> (\( updated, cmd, effect ) ->
                             ( { blockchain | user = Just updated }
                                 |> Blockchain

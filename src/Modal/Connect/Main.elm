@@ -1149,9 +1149,8 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                     ]
                         |> String.join " "
 
-                TxnWrite.ApproveCDT _ ->
-                    [ "Approve CDT"
-                    ]
+                TxnWrite.ApproveAndFlashRepay _ ->
+                    [ "Approve Flash-Repay" ]
                         |> String.join " "
 
                 TxnWrite.FlashRepay pool ->

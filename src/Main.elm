@@ -922,9 +922,9 @@ pageEffects blockchain effect model =
                                 )
                    )
 
-        Page.ApproveCDT cdtAddress ->
+        Page.ApproveAndFlashRepay writeFlashRepay ->
             blockchain
-                |> Blockchain.updateApproveCDT cdtAddress
+                |> Blockchain.updateApproveAndFlashRepay writeFlashRepay
                 |> (\( updated, cmd, maybeEffect ) ->
                         maybeEffect
                             |> Maybe.map
@@ -2348,6 +2348,7 @@ notSupportedBody { backdrop, images, theme } =
                     , centerX
                     , Background.color Color.negative500
                     , Border.rounded 4
+                    , Class.is "shiningBtn"
                     ]
                     { onPress = Just OpenChainList
                     , label =

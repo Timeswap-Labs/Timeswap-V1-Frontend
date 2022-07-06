@@ -59,7 +59,7 @@ declare interface Ports {
   receiveLiqReturn: PortToElm<ReceiveLiqReturn>;
 
   burn: PortFromElm<Burn>;
-  approveCDT: PortFromElm<ApproveCDT>;
+  approveAndFlashRepay: PortFromElm<ApproveAndFlashRepay>;
   flashRepay: PortFromElm<FlashRepay>;
 
   queryCreate: PortFromElm<NewLiquidityQuery>;
@@ -565,11 +565,17 @@ interface Burn {
   };
 }
 
-interface ApproveCDT {
+interface ApproveAndFlashRepay {
   id: number;
   chain: Chain;
   address: string;
-  send: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    cdtAddress: string;
+    maturity: number | string;
+    ids: string[];
+  };
 }
 
 interface FlashRepay {
