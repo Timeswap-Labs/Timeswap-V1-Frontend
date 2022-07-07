@@ -1,4 +1,4 @@
-module Blockchain.User.Natives exposing (Answer, Natives, decoder, decoderNatives, encode, toUrlString)
+module Blockchain.User.Natives exposing (AllNatives, Natives, decoder, decoderNatives, encode, toPoolNativesList, toUrlString)
 
 import Data.Address as Address exposing (Address)
 import Data.Chain as Chain exposing (Chain)
@@ -21,34 +21,44 @@ type alias Natives =
     }
 
 
-type alias Answer =
-    Dict Pool Natives
+type alias AllNatives =
+    Dict Address (Dict Pool Natives)
 
 
 toUrlString : Chain -> String -> String
 toUrlString chain endPoint =
     Builder.crossOrigin endPoint
-        [ "natives" ]
+        [ "allnatives" ]
         [ chain |> Chain.toQueryParameter ]
 
 
-encode : Chain -> Address -> Answer -> Value
+encode : Chain -> Address -> AllNatives -> Value
 encode chain owner answer =
     [ ( "chain", chain |> Chain.encode )
     , ( "owner", owner |> Address.encode )
-    , ( "natives"
+    , ( "allNatives"
       , answer
             |> Dict.toList
-            |> Encode.list encodeMapping
+            |> Encode.list encodeConvData
       )
     ]
         |> Encode.object
 
 
-encodeMapping : ( Pool, Natives ) -> Value
-encodeMapping ( pool, natives ) =
-    [ ( "pool", pool |> Pool.encode )
-    , ( "natives", natives |> encodeNatives )
+encodeConvData : ( Address, Dict Pool Natives ) -> Value
+encodeConvData ( convAddress, dictPoolNatives ) =
+    [ ( "convAddress", convAddress |> Address.encode )
+    , ( "nativeResponse"
+      , dictPoolNatives
+            |> Dict.toList
+            |> Encode.list
+                (\( pool, natives ) ->
+                    [ ( "pool", pool |> Pool.encode )
+                    , ( "natives", natives |> encodeNatives )
+                    ]
+                        |> Encode.object
+                )
+      )
     ]
         |> Encode.object
 
@@ -65,8 +75,17 @@ encodeNatives natives =
         |> Encode.object
 
 
-decoder : Chain -> Chains -> Decoder Answer
+decoder : Chain -> Chains -> Decoder AllNatives
 decoder chain chains =
+    Decode.succeed Tuple.pair
+        |> Pipeline.required "convAddress" Address.decoder
+        |> Pipeline.required "nativeResponse" (poolNativesDecoder chain chains)
+        |> Decode.list
+        |> Decode.map (Dict.fromList Address.sorter)
+
+
+poolNativesDecoder : Chain -> Chains -> Decoder (Dict Pool Natives)
+poolNativesDecoder chain chains =
     Decode.succeed Tuple.pair
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "natives" decoderNatives
@@ -84,3 +103,10 @@ decoderNatives =
         |> Pipeline.required "insuranceInterest" Address.decoder
         |> Pipeline.required "collateralizedDebt" Address.decoder
         |> Pipeline.required "liquidity" Address.decoder
+
+
+toPoolNativesList : AllNatives -> List ( Pool, Natives )
+toPoolNativesList allNatives =
+    allNatives
+        |> Dict.values
+        |> List.foldl (\dict acc -> dict |> Dict.toList |> List.append acc) []

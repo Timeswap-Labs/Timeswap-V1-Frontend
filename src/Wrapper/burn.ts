@@ -101,7 +101,13 @@ export function burnSigner(
   gp: GlobalParams
 ) {
   app.ports.burn.subscribe(async (params) => {
-    const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
+    const pool = getPoolSDK(
+      gp, params.send.asset,
+      params.send.collateral,
+      params.send.maturity,
+      params.chain,
+      params.send.convAddress
+    );
 
     try {
       const txnConfirmation = await pool.upgrade(await gp.getSigner()).removeLiquidity({

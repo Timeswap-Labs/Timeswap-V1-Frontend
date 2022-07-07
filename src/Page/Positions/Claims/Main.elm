@@ -7,9 +7,10 @@ module Page.Positions.Claims.Main exposing
     , view
     )
 
-import Blockchain.User.Claim as Claim exposing (Claim)
+import Blockchain.User.Claim exposing (Claim)
 import Blockchain.User.Claims as Claims exposing (Claims)
 import Blockchain.User.Main as User exposing (User)
+import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
@@ -68,13 +69,13 @@ type Positions
 
 
 type Msg
-    = ClickClaim Pool
+    = ClickClaim Address Pool
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
 
 type Effect
-    = OpenClaim Pool
+    = OpenClaim Address Pool
 
 
 init : Positions
@@ -85,9 +86,9 @@ init =
 update : Msg -> Positions -> ( Positions, Maybe Effect )
 update msg positions =
     case msg of
-        ClickClaim pool ->
+        ClickClaim convAddress pool ->
             ( positions
-            , OpenClaim pool
+            , OpenClaim convAddress pool
                 |> Just
             )
 
@@ -152,7 +153,7 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
 
             Success claims ->
                 claims
-                    |> Dict.dropIf (\_ claim -> claim |> Claim.isZero)
+                    |> Claims.filterEmptyClaims
                     |> (\filteredClaims ->
                             if filteredClaims |> Dict.isEmpty then
                                 noClaims model
@@ -388,9 +389,9 @@ viewClaims ({ time, theme } as model) tooltip claims =
             (claims
                 |> Claims.toList time
                 |> List.map
-                    (\(( pool, _ ) as tuple) ->
-                        ( pool |> Pool.toString
-                        , tuple |> viewClaim model tooltip
+                    (\( convAddress, poolClaimTuple ) ->
+                        ( poolClaimTuple |> Tuple.first |> Pool.toString
+                        , poolClaimTuple |> viewClaim model tooltip convAddress
                         )
                     )
             )
@@ -428,14 +429,15 @@ viewClaim :
         , images : Images
     }
     -> Maybe Tooltip
+    -> Address
     -> ( Pool, Claim )
     -> Element Msg
-viewClaim { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
+viewClaim { time, offset, chosenZone, theme, images } tooltip convAddress ( pool, claim ) =
     Input.button
         [ width fill
         , height <| px 56
         ]
-        { onPress = ClickClaim pool |> Just
+        { onPress = ClickClaim convAddress pool |> Just
         , label =
             row
                 [ width fill

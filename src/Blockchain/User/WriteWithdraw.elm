@@ -15,6 +15,7 @@ import Json.Encode as Encode exposing (Value)
 
 type alias WriteWithdraw =
     { pool : Pool
+    , convAddress : Address
     , claimsIn : Claim
     }
 
@@ -28,10 +29,11 @@ encode :
     Address
     -> WriteWithdraw
     -> Value
-encode address { pool, claimsIn } =
+encode address { pool, convAddress, claimsIn } =
     [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
     , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
     , ( "maturity", pool.maturity |> Maturity.encode )
+    , ( "convAddress", convAddress |> Address.encode )
     , ( "assetTo", address |> Address.encode )
     , ( "collateralTo", address |> Address.encode )
     , ( "claimsIn", claimsIn |> Claim.encode )

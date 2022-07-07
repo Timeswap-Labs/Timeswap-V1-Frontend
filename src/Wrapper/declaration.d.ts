@@ -124,36 +124,33 @@ interface ReceiveAllowances {
   allowances: string[];
 }
 
-interface PositionsOf {
-  chain: number;
-  owner: string;
-  natives: {
+interface Natives {
+  bondPrincipal: string;
+  bondInterest: string;
+  insurancePrincipal: string;
+  insuranceInterest: string;
+  liquidity: string;
+  collateralizedDebt: string;
+}
+
+interface ConvNatives {
+  convAddress: string;
+  nativeResponse: {
     pool: Pool;
-    natives: {
-      bondPrincipal: string;
-      bondInterest: string;
-      insurancePrincipal: string;
-      insuranceInterest: string;
-      liquidity: string;
-      collateralizedDebt: string;
-    };
+    natives: Natives;
   }[];
 }
 
-interface ReceivePositions {
-  chain: number;
+interface PositionsOf {
+  chain: Chain;
   owner: string;
-  natives: {
-    pool: Pool;
-    natives: {
-      bondPrincipal: string;
-      bondInterest: string;
-      insurancePrincipal: string;
-      insuranceInterest: string;
-      liquidity: string;
-      collateralizedDebt: string;
-    };
-  }[];
+  allNatives: ConvNatives[];
+}
+
+interface ReceivePositions {
+  chain: Chain;
+  owner: string;
+  allNatives: ConvNatives[];
   positions: {
     claims: Claims;
     dues: Dues;
@@ -169,8 +166,11 @@ interface Claim {
 }
 
 type Claims = {
-  pool: Pool;
-  claim: Claim;
+  convAddress: string;
+  pools: {
+    pool: Pool;
+    claim: Claim;
+  }[]
 }[];
 
 type ClaimsSum = {
@@ -295,8 +295,11 @@ type ReceiveCustom = {
 };
 
 type Liqs = {
-  pool: Pool;
-  liq: Uint;
+  convAddress: string;
+  pools: {
+    pool: Pool;
+    liq: Uint;
+  }[]
 }[];
 
 type LiqReturn = {
@@ -471,6 +474,7 @@ interface Withdraw {
     asset: NativeToken | ERC20Token;
     collateral: NativeToken | ERC20Token;
     maturity: number | string;
+    convAddress: string;
     assetTo: string;
     collateralTo: string;
     claimsIn: Claim;
@@ -559,6 +563,7 @@ interface Burn {
     asset: NativeToken | ERC20Token;
     collateral: NativeToken | ERC20Token;
     maturity: number | string;
+    convAddress?: string;
     assetTo: string;
     collateralTo: string;
     liquidityIn: string;

@@ -90,6 +90,7 @@ import Utility.Truncate as Truncate
 type Position
     = Position
         { pool : Pool
+        , convAddress : Address
         , return : Web ( PoolInfo, Status )
         , tooltip : Maybe Tooltip
         }
@@ -124,10 +125,12 @@ type Effect
 init :
     { model | time : Posix, endPoint : String }
     -> Blockchain
+    -> Address
     -> Pool
     -> ( Position, Cmd Msg )
-init { endPoint } blockchain pool =
+init { endPoint } blockchain convAddress pool =
     ( { pool = pool
+      , convAddress = convAddress
       , return = Remote.loading
       , tooltip = Nothing
       }
@@ -163,10 +166,12 @@ update { time, endPoint } blockchain user msg (Position position) =
               else
                 user
                     |> User.getLiqs
-                    |> Remote.map (Dict.get position.pool)
+                    |> Remote.map (Dict.get position.convAddress)
+                    |> (Remote.map << Maybe.andThen) (Dict.get position.pool)
                     |> (Remote.map << Maybe.andThen)
                         (\liquidityIn ->
                             { pool = position.pool
+                            , convAddress = position.convAddress
                             , liquidityIn = liquidityIn
                             }
                                 |> Burn
@@ -281,8 +286,9 @@ update { time, endPoint } blockchain user msg (Position position) =
                 Success ( poolInfo, _ ) ->
                     user
                         |> User.getLiqs
-                        |> Remote.map (Dict.get position.pool)
-                        |> (Remote.map << Maybe.map)
+                        |> Remote.map (Dict.get position.convAddress)
+                        |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                        |> (Remote.map << Maybe.map << Maybe.map)
                             (\liquidityIn ->
                                 user
                                     |> User.getDues
@@ -301,6 +307,7 @@ update { time, endPoint } blockchain user msg (Position position) =
                                     |> (Remote.map << Maybe.withDefault) (query blockchain poolInfo liquidityIn position Nothing [])
                                     |> Remote.withDefault (query blockchain poolInfo liquidityIn position Nothing [])
                             )
+                        |> (Remote.map << Maybe.map << Maybe.withDefault) Cmd.none
                         |> (Remote.map << Maybe.withDefault) Cmd.none
                         |> Remote.withDefault Cmd.none
 
@@ -821,6 +828,7 @@ viewLiq :
     { model | images : Images, theme : Theme }
     ->
         { pool : Pool
+        , convAddress : Address
         , return : Web ( PoolInfo, Status )
         , tooltip : Maybe Tooltip
         }
@@ -1129,6 +1137,7 @@ viewDues :
     -> Blockchain
     ->
         { pool : Pool
+        , convAddress : Address
         , return : Web ( PoolInfo, Status )
         , tooltip : Maybe Tooltip
         }

@@ -7,9 +7,10 @@ module Page.Positions.Liqs.Main exposing
     , view
     )
 
-import Blockchain.User.Liq as Liq exposing (Liq)
+import Blockchain.User.Liq exposing (Liq)
 import Blockchain.User.Liqs as Liqs exposing (Liqs)
 import Blockchain.User.Main as User exposing (User)
+import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
@@ -67,13 +68,13 @@ type Positions
 
 
 type Msg
-    = ClickLiq Pool
+    = ClickLiq Address Pool
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
 
 type Effect
-    = OpenLiq Pool
+    = OpenLiq Address Pool
 
 
 init : Positions
@@ -84,9 +85,9 @@ init =
 update : Msg -> Positions -> ( Positions, Maybe Effect )
 update msg positions =
     case msg of
-        ClickLiq pool ->
+        ClickLiq convAddress pool ->
             ( positions
-            , OpenLiq pool
+            , OpenLiq convAddress pool
                 |> Just
             )
 
@@ -152,7 +153,7 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
             -- |> Debug.log "error view"
             Success liqs ->
                 liqs
-                    |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
+                    |> Liqs.filterEmptyLiqs
                     |> (\filteredLiqs ->
                             if filteredLiqs |> Dict.isEmpty then
                                 noLiqs model
@@ -388,9 +389,9 @@ viewLiqs ({ theme, time } as model) tooltip liqs =
             (liqs
                 |> Liqs.toList time
                 |> List.map
-                    (\(( pool, _ ) as tuple) ->
-                        ( pool |> Pool.toString
-                        , tuple |> viewLiq model tooltip
+                    (\( convAddress, poolLiqTuple ) ->
+                        ( poolLiqTuple |> Tuple.first |> Pool.toString
+                        , poolLiqTuple |> viewLiq model tooltip convAddress
                         )
                     )
             )
@@ -428,14 +429,15 @@ viewLiq :
         , images : Images
     }
     -> Maybe Tooltip
+    -> Address
     -> ( Pool, Liq )
     -> Element Msg
-viewLiq { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
+viewLiq { time, offset, chosenZone, theme, images } tooltip convAddress ( pool, claim ) =
     Input.button
         [ width fill
         , height <| px 56
         ]
-        { onPress = ClickLiq pool |> Just
+        { onPress = ClickLiq convAddress pool |> Just
         , label =
             row
                 [ width fill
