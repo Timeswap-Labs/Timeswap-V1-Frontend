@@ -10,7 +10,8 @@ export async function borrowPositionsInit(
   positionsOf: PositionsOf
 ): Promise<Dues> {
   const currentConvNatives = positionsOf.allNatives.find(
-    convData => convData.convAddress === CONVENIENCE[positionsOf.chain.chainId]
+    (convData) =>
+      convData.convAddress === CONVENIENCE[positionsOf.chain.chainId]
   );
 
   if (currentConvNatives) {
@@ -57,7 +58,9 @@ export async function borrowPositionsInit(
       collateral: string;
       startBlock: string;
     }[][] = (
-      await Promise.all(promiseCDTokenDues.map(async (x) => await Promise.all(x)))
+      await Promise.all(
+        promiseCDTokenDues.map(async (x) => await Promise.all(x))
+      )
     ).map((x) =>
       x.map((y) => ({
         debt: y[0].toString(),
@@ -66,19 +69,21 @@ export async function borrowPositionsInit(
       }))
     );
 
-    return currentConvNatives.nativeResponse.map(({ pool, natives: { collateralizedDebt } }, index) => ({
-      pool,
-      collateralizedDebt,
-      dues: cdTokenOwnerIndex[index].map((tokenId, tokenIdIndex) => ({
-        tokenId,
-        due: {
-          debt: cdTokenDues[index][tokenIdIndex].debt,
-          collateral: cdTokenDues[index][tokenIdIndex].collateral,
-        },
-      })),
-    }));
+    return currentConvNatives.nativeResponse.map(
+      ({ pool, natives: { collateralizedDebt } }, index) => ({
+        pool,
+        collateralizedDebt,
+        dues: cdTokenOwnerIndex[index].map((tokenId, tokenIdIndex) => ({
+          tokenId,
+          due: {
+            debt: cdTokenDues[index][tokenIdIndex].debt,
+            collateral: cdTokenDues[index][tokenIdIndex].collateral,
+          },
+        })),
+      })
+    );
   } else {
-    return []
+    return [];
   }
 }
 
@@ -87,87 +92,93 @@ export function borrowPositionsUpdate(
   gp: GlobalParams,
   positionsOf: PositionsOf
 ) {
-  const cdMulticallTokens = positionsOf.natives.map(
-    ({ natives: { collateralizedDebt } }) =>
-      new Contract(collateralizedDebt, cdTokenAbi, gp.walletProvider)
+  const currentConvNatives = positionsOf.allNatives.find(
+    (convData) =>
+      convData.convAddress === CONVENIENCE[positionsOf.chain.chainId]
   );
-
-  const cdTokens = positionsOf.natives.map(
-    ({ natives: { collateralizedDebt } }) =>
-      new Contract(collateralizedDebt, cdTokenAbi, gp.walletProvider)
-  );
-
-  const updateFunction = async (pool: Pool, index: number) => {
-    const cdTokenBalance: bigint = (
-      await cdMulticallTokens[index].balanceOf(positionsOf.owner)
-    ).toBigInt();
-
-    const promiseCDTokenOwnerIndex = [];
-    for (let i = 0n; i < cdTokenBalance; i++) {
-      promiseCDTokenOwnerIndex.push(
-        cdMulticallTokens[index].tokenOfOwnerByIndex(positionsOf.owner, i)
-      );
-    }
-    const cdTokenOwnerIndex: string[] = (
-      await Promise.all(promiseCDTokenOwnerIndex)
-    ).map((x) => x.toString());
-
-    const promiseCDTokenDues = [];
-    for (const ownerIndex of cdTokenOwnerIndex) {
-      promiseCDTokenDues.push(cdMulticallTokens[index].dueOf(ownerIndex));
-    }
-    const cdTokenDues: {
-      debt: string;
-      collateral: string;
-      startBlock: string;
-    }[] = (await Promise.all(promiseCDTokenDues)).map((x) => ({
-      debt: x[0].toString(),
-      collateral: x[1].toString(),
-      startBlock: x[2].toString(),
-    }));
-
-    app.ports.receivePositions.send({
-      ...positionsOf,
-      positions: {
-        claims: [],
-        dues: [
-          {
-            pool,
-            dues: cdTokenOwnerIndex.map((tokenId, tokenIdIndex) => ({
-              tokenId,
-              due: {
-                debt: cdTokenDues[tokenIdIndex].debt,
-                collateral: cdTokenDues[tokenIdIndex].collateral,
-              },
-            })),
-          },
-        ],
-        liqs: [],
-      },
-    });
-  };
-
-  positionsOf.natives.map(async ({ pool }, index) => {
-    updateTransferEventBalance(cdTokens[index], positionsOf.owner, async () =>
-      updateFunction(pool, index)
+  if (currentConvNatives) {
+    const cdMulticallTokens = currentConvNatives.nativeResponse.map(
+      ({ natives: { collateralizedDebt } }) =>
+        new Contract(collateralizedDebt, cdTokenAbi, gp.walletProvider)
     );
 
-    const pairContract = new Contract(
-      await cdTokens[index].pair(),
-      pairAbi,
-      gp.walletProvider
+    const cdTokens = currentConvNatives.nativeResponse.map(
+      ({ natives: { collateralizedDebt } }) =>
+        new Contract(collateralizedDebt, cdTokenAbi, gp.walletProvider)
     );
 
-    const payFilter = pairContract.filters.Pay(
-      CONVENIENCE[positionsOf.chain.chainId],
-      null,
-      CONVENIENCE[positionsOf.chain.chainId]
-    );
+    const updateFunction = async (pool: Pool, index: number) => {
+      const cdTokenBalance: bigint = (
+        await cdMulticallTokens[index].balanceOf(positionsOf.owner)
+      ).toBigInt();
 
-    pairContract.on(payFilter, (maturity) => {
-      if (pool.maturity == maturity.toString()) {
-        updateFunction(pool, index);
+      const promiseCDTokenOwnerIndex = [];
+      for (let i = 0n; i < cdTokenBalance; i++) {
+        promiseCDTokenOwnerIndex.push(
+          cdMulticallTokens[index].tokenOfOwnerByIndex(positionsOf.owner, i)
+        );
       }
+      const cdTokenOwnerIndex: string[] = (
+        await Promise.all(promiseCDTokenOwnerIndex)
+      ).map((x) => x.toString());
+
+      const promiseCDTokenDues = [];
+      for (const ownerIndex of cdTokenOwnerIndex) {
+        promiseCDTokenDues.push(cdMulticallTokens[index].dueOf(ownerIndex));
+      }
+      const cdTokenDues: {
+        debt: string;
+        collateral: string;
+        startBlock: string;
+      }[] = (await Promise.all(promiseCDTokenDues)).map((x) => ({
+        debt: x[0].toString(),
+        collateral: x[1].toString(),
+        startBlock: x[2].toString(),
+      }));
+
+      app.ports.receivePositions.send({
+        ...positionsOf,
+        positions: {
+          claims: [],
+          dues: [
+            {
+              pool,
+              dues: cdTokenOwnerIndex.map((tokenId, tokenIdIndex) => ({
+                tokenId,
+                due: {
+                  debt: cdTokenDues[tokenIdIndex].debt,
+                  collateral: cdTokenDues[tokenIdIndex].collateral,
+                },
+              })),
+            },
+          ],
+          liqs: [],
+        },
+      });
+    };
+
+    currentConvNatives.nativeResponse.map(async ({ pool }, index) => {
+      updateTransferEventBalance(cdTokens[index], positionsOf.owner, async () =>
+        updateFunction(pool, index)
+      );
+
+      const pairContract = new Contract(
+        await cdTokens[index].pair(),
+        pairAbi,
+        gp.walletProvider
+      );
+
+      const payFilter = pairContract.filters.Pay(
+        CONVENIENCE[positionsOf.chain.chainId],
+        null,
+        CONVENIENCE[positionsOf.chain.chainId]
+      );
+
+      pairContract.on(payFilter, (maturity) => {
+        if (pool.maturity == maturity.toString()) {
+          updateFunction(pool, index);
+        }
+      });
     });
-  });
+  }
 }

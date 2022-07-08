@@ -170,7 +170,7 @@ type Claims = {
   pools: {
     pool: Pool;
     claim: Claim;
-  }[]
+  }[];
 }[];
 
 type ClaimsSum = {
@@ -299,7 +299,7 @@ type Liqs = {
   pools: {
     pool: Pool;
     liq: Uint;
-  }[]
+  }[];
 }[];
 
 type LiqReturn = {
@@ -353,7 +353,7 @@ interface Uncomfirmed {
 
 interface Write {
   txn: string;
-  pool: Pool
+  pool: Pool;
 }
 
 type Uint = string;
@@ -615,5 +615,3 @@ interface ReceiveUpdatedTxns {
   address: string;
   txns: Txns;
 }
-
-

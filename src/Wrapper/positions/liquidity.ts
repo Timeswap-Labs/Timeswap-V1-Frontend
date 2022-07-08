@@ -7,7 +7,7 @@ export async function liquidityPositionsInit(
   gp: GlobalParams,
   positionsOf: PositionsOf
 ): Promise<Liqs> {
-  const allLiqs = positionsOf.allNatives.map(async convData => {
+  const allLiqs = positionsOf.allNatives.map(async (convData) => {
     const liquidityTokens = convData.nativeResponse.map(
       ({ natives: { liquidity } }) =>
         new Contract(liquidity, erc20Abi, gp.walletProviderMulti)
@@ -15,7 +15,9 @@ export async function liquidityPositionsInit(
 
     const promiseLiquidityBalances = [];
     for (const liquidityToken of liquidityTokens)
-      promiseLiquidityBalances.push(liquidityToken.balanceOf(positionsOf.owner));
+      promiseLiquidityBalances.push(
+        liquidityToken.balanceOf(positionsOf.owner)
+      );
 
     const liquidityBalances: string[] = (
       await Promise.all(promiseLiquidityBalances)
@@ -28,8 +30,8 @@ export async function liquidityPositionsInit(
 
     return {
       convAddress: convData.convAddress,
-      pools: convLiqs
-    }
+      pools: convLiqs,
+    };
   });
 
   return Promise.all(allLiqs);
@@ -40,24 +42,47 @@ export function liquidityPositionsUpdate(
   gp: GlobalParams,
   positionsOf: PositionsOf
 ) {
-  const liquidityTokens = positionsOf.natives.map(
-    ({ natives: { liquidity } }) =>
-      new Contract(liquidity, erc20Abi, gp.walletProvider)
-  );
+  positionsOf.allNatives.map(async (convData) => {
+    const liquidityTokens = convData.nativeResponse.map(
+      ({ natives: { liquidity } }) =>
+        new Contract(liquidity, erc20Abi, gp.walletProvider)
+    );
 
-  liquidityTokens.map((liquidityToken, index) => {
-    updateTransferEventBalance(liquidityToken, positionsOf.owner, async () => {
-      const balance = await liquidityToken.balanceOf(positionsOf.owner);
-      const liq = balance.toString();
+    liquidityTokens.map((liquidityToken, index) => {
+      updateTransferEventBalance(
+        liquidityToken,
+        positionsOf.owner,
+        async () => {
+          const promiseLiquidityBalances = [];
+          for (const liquidityToken of liquidityTokens)
+            promiseLiquidityBalances.push(
+              liquidityToken.balanceOf(positionsOf.owner)
+            );
 
-      app.ports.receivePositions.send({
-        ...positionsOf,
-        positions: {
-          claims: [],
-          dues: [],
-          liqs: [{ pool: positionsOf.natives[index].pool, liq }],
-        },
-      });
+          const liquidityBalances: string[] = (
+            await Promise.all(promiseLiquidityBalances)
+          ).map((x) => x.toString());
+
+          const pools = convData.nativeResponse.map(({ pool }, index) => ({
+            pool,
+            liq: liquidityBalances[index],
+          }));
+
+          app.ports.receivePositions.send({
+            ...positionsOf,
+            positions: {
+              claims: [],
+              dues: [],
+              liqs: [
+                {
+                  convAddress: convData.convAddress,
+                  pools,
+                },
+              ],
+            },
+          });
+        }
+      );
     });
   });
 }
