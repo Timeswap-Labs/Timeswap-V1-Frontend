@@ -182,59 +182,54 @@ export function lendPositionsUpdate(
       });
     };
 
-    bondPrincipalTokens.map((bondPrincipalToken: Contract) => {
+    bondPrincipalTokens.map((bondPrincipalToken: Contract, index: number) => {
       updateTransferEventBalance(bondPrincipalToken, positionsOf.owner, () =>
-        positionsOf.allNatives.map((convData, index) => {
-          updateFunction(
-            convData.convAddress,
-            convData.nativeResponse[index].pool,
-            index
-          );
-        })
+        updateFunction(
+          convData.convAddress,
+          convData.nativeResponse[index].pool,
+          index
+        )
       );
     });
 
-    bondInterestTokens.map((bondInterestToken: Contract) => {
+    bondInterestTokens.map((bondInterestToken: Contract, index: number) => {
       updateTransferEventBalance(bondInterestToken, positionsOf.owner, () =>
-        positionsOf.allNatives.map((convData, index) => {
-          updateFunction(
-            convData.convAddress,
-            convData.nativeResponse[index].pool,
-            index
-          );
-        })
+        updateFunction(
+          convData.convAddress,
+          convData.nativeResponse[index].pool,
+          index
+        )
       );
     });
 
-    bondInterestTokens.map((insurancePrincipalToken: Contract) => {
-      updateTransferEventBalance(
-        insurancePrincipalToken,
-        positionsOf.owner,
-        () =>
-          positionsOf.allNatives.map((convData, index) => {
-            updateFunction(
-              convData.convAddress,
-
-              convData.nativeResponse[index].pool,
-              index
-            );
-          })
-      );
-    });
-
-    bondInterestTokens.map((insuranceInterestToken: Contract) => {
-      updateTransferEventBalance(
-        insuranceInterestToken,
-        positionsOf.owner,
-        () =>
-          positionsOf.allNatives.map((convData, index) => {
+    bondInterestTokens.map(
+      (insurancePrincipalToken: Contract, index: number) => {
+        updateTransferEventBalance(
+          insurancePrincipalToken,
+          positionsOf.owner,
+          () =>
             updateFunction(
               convData.convAddress,
               convData.nativeResponse[index].pool,
               index
-            );
-          })
-      );
-    });
+            )
+        );
+      }
+    );
+
+    bondInterestTokens.map(
+      (insuranceInterestToken: Contract, index: number) => {
+        updateTransferEventBalance(
+          insuranceInterestToken,
+          positionsOf.owner,
+          () =>
+            updateFunction(
+              convData.convAddress,
+              convData.nativeResponse[index].pool,
+              index
+            )
+        );
+      }
+    );
   });
 }
