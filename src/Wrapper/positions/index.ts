@@ -22,8 +22,8 @@ export async function positionsInit(app: ElmApp<Ports>, gp: GlobalParams) {
       },
     });
 
-    // lendPositionsUpdate(app, gp, positionsOf);
-    // borrowPositionsUpdate(app, gp, positionsOf);
-    // liquidityPositionsUpdate(app, gp, positionsOf);
+    lendPositionsUpdate(app, gp, positionsOf);
+    borrowPositionsUpdate(app, gp, positionsOf);
+    liquidityPositionsUpdate(app, gp, positionsOf);
   });
 }

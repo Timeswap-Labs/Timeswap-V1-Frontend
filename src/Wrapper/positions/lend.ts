@@ -132,19 +132,19 @@ export function lendPositionsUpdate(
         );
 
         bondPrincipalTokens.push(
-          new Contract(bondPrincipal, erc20Abi, gp.walletProviderMulti)
+          new Contract(bondPrincipal, erc20Abi, gp.walletProvider)
         );
 
         bondInterestTokens.push(
-          new Contract(bondInterest, erc20Abi, gp.walletProviderMulti)
+          new Contract(bondInterest, erc20Abi, gp.walletProvider)
         );
 
         insurancePrincipalTokens.push(
-          new Contract(insurancePrincipal, erc20Abi, gp.walletProviderMulti)
+          new Contract(insurancePrincipal, erc20Abi, gp.walletProvider)
         );
 
         insuranceInterestTokens.push(
-          new Contract(insuranceInterest, erc20Abi, gp.walletProviderMulti)
+          new Contract(insuranceInterest, erc20Abi, gp.walletProvider)
         );
       }
     );
