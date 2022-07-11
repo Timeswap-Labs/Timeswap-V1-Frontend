@@ -1,6 +1,8 @@
 import { Signer } from "@ethersproject/abstract-signer";
+import hardhat from "hardhat";
 import {
   BaseProvider,
+  EtherscanProvider,
   ExternalProvider,
   Web3Provider,
 } from "@ethersproject/providers";
@@ -9,9 +11,11 @@ import { providers } from "@0xsequence/multicall";
 import { Biconomy } from "@biconomy/mexa";
 import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import axios from "axios";
+import Web3 from "web3";
+import { ethers } from "ethers";
 const { MulticallProvider } = providers;
 
-const API_KEY = "cYpcPugzC.7b35f956-9eba-47fc-9151-5c0fcc73822b";
+const API_KEY = "cYpcPugzC.7b35f956-9eba-47fc-9151-5c0fcc73823sdb";
 
 export class GlobalParams {
   private _walletProvider?: Web3Provider;
@@ -64,11 +68,12 @@ export class GlobalParams {
   }
 
   public async getSigner(): Promise<Signer> {
-    var address;
+    var address = "0x364d6D0333432C3Ac016Ca832fb8594A8cE43Ca6";
     var allowed = false;
-    const valued = this.biconomy.getSignerByAddress(
-      (address = await this.walletSigner.getAddress())
-    );
+
+    // const valued = this.biconomy.getSignerByAddress(
+    //   (address = await this.walletSigner.getAddress())
+    // );
 
     await axios
       .get(
@@ -88,7 +93,10 @@ export class GlobalParams {
       });
 
     if (allowed && this.isBiconomyReady) {
-      return valued;
+      await this.walletProvider.send("hardhat_impersonateAccount", [address]);
+      const signer = this.walletProvider?.getSigner(address);
+
+      return signer;
     } else {
       return this._walletSigner!;
     }
