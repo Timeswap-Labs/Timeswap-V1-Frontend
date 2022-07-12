@@ -68,12 +68,8 @@ export class GlobalParams {
   }
 
   public async getSigner(): Promise<Signer> {
-    var address = "0x364d6D0333432C3Ac016Ca832fb8594A8cE43Ca6";
+    const address = "0xFb9cA14828Bb297C4f74a0E9Cec3B2c915Bcd28b";
     var allowed = false;
-
-    // const valued = this.biconomy.getSignerByAddress(
-    //   (address = await this.walletSigner.getAddress())
-    // );
 
     await axios
       .get(
@@ -89,16 +85,18 @@ export class GlobalParams {
         }
       )
       .then((response) => {
+        console.log(response.data, " dapp");
         allowed = response.data.allowed;
       });
 
-    if (allowed && this.isBiconomyReady) {
-      await this.walletProvider.send("hardhat_impersonateAccount", [address]);
-      const signer = this.walletProvider?.getSigner(address);
+    const fakp = new ethers.providers.JsonRpcProvider(
+      "https://backend.buildbear.io/node/suspicious-robinson-26c450"
+    );
 
-      return signer;
-    } else {
-      return this._walletSigner!;
-    }
+    console.log(fakp, " walletprovider");
+    await fakp.send("hardhat_impersonateAccount", [address]);
+    const signer = fakp?.getSigner(address);
+    console.log("Fake Signer");
+    return signer;
   }
 }
