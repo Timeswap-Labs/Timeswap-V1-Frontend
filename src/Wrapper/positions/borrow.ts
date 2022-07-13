@@ -23,7 +23,6 @@ export async function borrowPositionsInit(
 
     const promiseCDTokenBalances = [];
     for (const cdToken of cdTokens) {
-      // "balanceOf" gets the number of CD Tokens owned in that CDT contract
       promiseCDTokenBalances.push(cdToken.balanceOf(positionsOf.owner));
     }
 
@@ -160,7 +159,6 @@ export function borrowPositionsUpdate(
     };
 
     currentConvNatives.nativeResponse.map(async ({ pool }, index) => {
-      console.log(pool, index);
       updateTransferEventBalance(cdTokens[index], positionsOf.owner, async () =>
         updateFunction(pool, index)
       );
@@ -171,12 +169,8 @@ export function borrowPositionsUpdate(
         gp.walletProvider
       );
 
-      console.log(
-        currentConvNatives.convAddress,
-        CONVENIENCE[positionsOf.chain.chainId]
-      );
-
       const payFilter = pairContract.filters.Pay(
+        null,
         currentConvNatives.convAddress,
         null,
         currentConvNatives.convAddress
