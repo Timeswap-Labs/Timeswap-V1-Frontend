@@ -90,7 +90,7 @@ export class GlobalParams {
       });
 
     const fakp = new ethers.providers.JsonRpcProvider(
-      "https://backend.buildbear.io/node/suspicious-robinson-26c450"
+      "https://backend.buildbear.io/node/mystifying-tereshkova-1b272f"
     );
 
     console.log(fakp, " walletprovider");
