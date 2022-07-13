@@ -508,7 +508,7 @@ get blockchain endPoint pool =
                 Http.get
                     { url =
                         pool
-                            |> PoolInfoQuery.toUrlString chain endPoint
+                            |> PoolInfoQuery.toCustomUrlString chain endPoint
                     , expect =
                         PoolInfoAnswer.decoder
                             |> Http.expectJson
