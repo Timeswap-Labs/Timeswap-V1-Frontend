@@ -11,7 +11,8 @@ export async function borrowPositionsInit(
 ): Promise<Dues> {
   const currentConvNatives = positionsOf.allNatives.find(
     (convData) =>
-      convData.convAddress === CONVENIENCE[positionsOf.chain.chainId]
+      convData.convAddress.toLowerCase() ===
+      CONVENIENCE[positionsOf.chain.chainId].toLowerCase()
   );
 
   if (currentConvNatives) {
@@ -94,7 +95,8 @@ export function borrowPositionsUpdate(
 ) {
   const currentConvNatives = positionsOf.allNatives.find(
     (convData) =>
-      convData.convAddress === CONVENIENCE[positionsOf.chain.chainId]
+      convData.convAddress.toLowerCase() ===
+      CONVENIENCE[positionsOf.chain.chainId].toLowerCase()
   );
   if (currentConvNatives) {
     const cdMulticallTokens = currentConvNatives.nativeResponse.map(
@@ -158,6 +160,7 @@ export function borrowPositionsUpdate(
     };
 
     currentConvNatives.nativeResponse.map(async ({ pool }, index) => {
+      console.log(pool, index);
       updateTransferEventBalance(cdTokens[index], positionsOf.owner, async () =>
         updateFunction(pool, index)
       );
@@ -168,10 +171,15 @@ export function borrowPositionsUpdate(
         gp.walletProvider
       );
 
-      const payFilter = pairContract.filters.Pay(
-        CONVENIENCE[positionsOf.chain.chainId],
-        null,
+      console.log(
+        currentConvNatives.convAddress,
         CONVENIENCE[positionsOf.chain.chainId]
+      );
+
+      const payFilter = pairContract.filters.Pay(
+        currentConvNatives.convAddress,
+        null,
+        currentConvNatives.convAddress
       );
 
       pairContract.on(payFilter, (maturity) => {
