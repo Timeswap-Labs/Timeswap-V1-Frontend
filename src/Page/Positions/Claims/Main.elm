@@ -411,7 +411,6 @@ title theme claims =
         ([ "Your Lend Positions "
          , "("
          , claims
-            |> Debug.log "size "
             |> Dict.size
             |> String.fromInt
          , ")"

@@ -120,14 +120,7 @@ toERC20s claims =
 filterEmptyClaims : Claims -> Claims
 filterEmptyClaims claims =
     claims
-        |> Debug.log "filterEmptyClaims"
         |> Dict.map
             (\_ dict ->
-                dict
-                    |> Debug.log "Dict"
-                    |> Dict.dropIf
-                        (\_ claim ->
-                            claim
-                                |> Claim.isZero
-                        )
+                dict |> Dict.dropIf (\_ claim -> claim |> Claim.isZero)
             )
