@@ -1062,7 +1062,7 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
                     , customStyles = []
                     }
                 ]
-            , case remote |> Debug.log "show error" of
+            , case remote of
                 Loading timeline ->
                     el
                         [ width shrink
@@ -1075,8 +1075,7 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
 
                 -- |> Debug.log "show error"
                 Success ( _, Loading timeline ) ->
-                    Debug.log "Loading View"
-                        el
+                    el
                         [ width shrink
                         , height shrink
                         ]
@@ -1087,8 +1086,7 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
 
                 -- |> Debug.log "show error"
                 Success ( _, Success { asset } ) ->
-                    Debug.log "ds"
-                        Truncate.viewAmount
+                    Truncate.viewAmount
                         { onMouseEnter = OnMouseEnter
                         , onMouseLeave = OnMouseLeave
                         , tooltip = Tooltip.Amount TokenParam.Asset
