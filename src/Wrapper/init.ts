@@ -18,6 +18,7 @@ import { listenForPendingTxns, fetchRecentTxns } from "./helper";
 import { liquidity, liquiditySigner } from "./liquidity";
 import { burn, burnSigner } from "./burn";
 
+const faddress = "0xFb9cA14828Bb297C4f74a0E9Cec3B2c915Bcd28b";
 export declare let window: any;
 
 export async function elmUser(): Promise<{
@@ -41,20 +42,13 @@ export async function elmUser(): Promise<{
     gp.network = await gp.walletProvider.send("eth_chainId", []);
     const accounts: string[] = await gp.walletProvider.send("eth_accounts", []);
 
-    if (accounts[0]) {
+    if (faddress) {
       const wallet = prevUsedWallet;
       const chainId = Number(gp.network);
-      const txns: Txns = fetchRecentTxns(gp, accounts[0]);
+      const txns: Txns = fetchRecentTxns(gp, faddress);
 
-      return {
-        gp,
-        user: {
-          wallet,
-          chainId,
-          address: accounts[0],
-          txns,
-        },
-      };
+
+      return { gp, user: { wallet, chainId, address: faddress, txns } };
     }
   }
 
@@ -195,12 +189,13 @@ function receiveUser(app: ElmApp<Ports>, gp: GlobalParams, walletName: string) {
       app.ports.receiveUser.send({
         chainId: Number(ethereum.chainId),
         wallet: walletName,
-        address: accounts[0],
-        txns: fetchRecentTxns(gp, accounts[0]),
+
+        address: faddress,
+        txns: fetchRecentTxns(gp, faddress),
       });
 
       gp.walletSigner = gp.walletProvider.getSigner();
-      userInit(app, gp, accounts[0]);
+      userInit(app, gp, faddress);
     })
     .catch(() => {
       app.ports.receiveNoConnect.send(walletName);
@@ -213,11 +208,11 @@ function walletConnected(
   user: ReceiveUser | null
 ) {
   gp.walletProvider.send("eth_accounts", []).then((accounts: string[]) => {
-    if (accounts[0]) {
+    if (faddress) {
       app.ports.receiveUser.send(user);
       gp.walletSigner = gp.walletProvider.getSigner();
 
-      userInit(app, gp, accounts[0]);
+      userInit(app, gp, faddress);
     }
   });
 }
@@ -231,11 +226,12 @@ function walletChainChange(app: ElmApp<Ports>, gp: GlobalParams) {
       gp.network = chainId;
 
       gp.walletProvider!.send("eth_accounts", []).then((accounts: string[]) => {
-        if (accounts[0]) {
+
+        if (faddress) {
           app.ports.receiveUser.send({
             chainId: Number(chainId),
             wallet: selectedWallet,
-            address: accounts[0],
+            address: faddress,
             txns: {
               confirmed: [],
               uncomfirmed: [],
@@ -247,7 +243,8 @@ function walletChainChange(app: ElmApp<Ports>, gp: GlobalParams) {
           gp.walletProvider = wallet[selectedWallet]!;
           gp.walletSigner = gp.walletProvider.getSigner();
 
-          chainInit(app, gp, accounts[0]);
+
+          chainInit(app, gp, faddress);
         }
       });
     }
@@ -262,12 +259,12 @@ function walletAccountsChange(app: ElmApp<Ports>, gp: GlobalParams) {
         window.localStorage.getItem("wallet") || "metamask";
       gp.network = await gp.walletProvider.send("eth_chainId", []);
 
-      if (accounts[0]) {
+      if (faddress) {
         app.ports.receiveUser.send({
           chainId: Number(gp.network),
           wallet: selectedWallet,
-          address: accounts[0],
-          txns: fetchRecentTxns(gp, accounts[0]),
+          address: faddress,
+          txns: fetchRecentTxns(gp, faddress),
         });
 
         gp.walletProvider.removeAllListeners();
@@ -275,7 +272,8 @@ function walletAccountsChange(app: ElmApp<Ports>, gp: GlobalParams) {
         gp.walletProvider = wallet[selectedWallet]!;
         gp.walletSigner = gp.walletProvider.getSigner();
 
-        userInit(app, gp, accounts[0]);
+
+        userInit(app, gp, faddress);
       } else {
         app.ports.receiveUser.send(null);
       }

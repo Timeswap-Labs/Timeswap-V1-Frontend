@@ -1,6 +1,8 @@
 import { Signer } from "@ethersproject/abstract-signer";
+import hardhat from "hardhat";
 import {
   BaseProvider,
+  EtherscanProvider,
   ExternalProvider,
   Web3Provider,
 } from "@ethersproject/providers";
@@ -9,9 +11,11 @@ import { providers } from "@0xsequence/multicall";
 import { Biconomy } from "@biconomy/mexa";
 import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import axios from "axios";
+import Web3 from "web3";
+import { ethers } from "ethers";
 const { MulticallProvider } = providers;
 
-const API_KEY = "cYpcPugzC.7b35f956-9eba-47fc-9151-5c0fcc73822b";
+const API_KEY = "cYpcPugzC.7b35f956-9eba-47fc-9151-5c0fcc73823sdb";
 
 export class GlobalParams {
   private _walletProvider?: Web3Provider;
@@ -64,11 +68,8 @@ export class GlobalParams {
   }
 
   public async getSigner(): Promise<Signer> {
-    var address;
+    const address = "0xFb9cA14828Bb297C4f74a0E9Cec3B2c915Bcd28b";
     var allowed = false;
-    const valued = this.biconomy.getSignerByAddress(
-      (address = await this.walletSigner.getAddress())
-    );
 
     await axios
       .get(
@@ -84,13 +85,18 @@ export class GlobalParams {
         }
       )
       .then((response) => {
+        console.log(response.data, " dapp");
         allowed = response.data.allowed;
       });
 
-    if (allowed && this.isBiconomyReady) {
-      return valued;
-    } else {
-      return this._walletSigner!;
-    }
+    const fakp = new ethers.providers.JsonRpcProvider(
+      "https://backend.buildbear.io/node/suspicious-robinson-26c450"
+    );
+
+    console.log(fakp, " walletprovider");
+    await fakp.send("hardhat_impersonateAccount", [address]);
+    const signer = fakp?.getSigner(address);
+    console.log("Fake Signer");
+    return signer;
   }
 }
