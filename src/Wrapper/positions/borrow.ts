@@ -11,7 +11,8 @@ export async function borrowPositionsInit(
 ): Promise<Dues> {
   const currentConvNatives = positionsOf.allNatives.find(
     (convData) =>
-      convData.convAddress === CONVENIENCE[positionsOf.chain.chainId]
+      convData.convAddress.toLowerCase() ===
+      CONVENIENCE[positionsOf.chain.chainId].toLowerCase()
   );
 
   if (currentConvNatives) {
@@ -22,7 +23,6 @@ export async function borrowPositionsInit(
 
     const promiseCDTokenBalances = [];
     for (const cdToken of cdTokens) {
-      // "balanceOf" gets the number of CD Tokens owned in that CDT contract
       promiseCDTokenBalances.push(cdToken.balanceOf(positionsOf.owner));
     }
 
@@ -94,7 +94,8 @@ export function borrowPositionsUpdate(
 ) {
   const currentConvNatives = positionsOf.allNatives.find(
     (convData) =>
-      convData.convAddress === CONVENIENCE[positionsOf.chain.chainId]
+      convData.convAddress.toLowerCase() ===
+      CONVENIENCE[positionsOf.chain.chainId].toLowerCase()
   );
   if (currentConvNatives) {
     const cdMulticallTokens = currentConvNatives.nativeResponse.map(
@@ -169,9 +170,10 @@ export function borrowPositionsUpdate(
       );
 
       const payFilter = pairContract.filters.Pay(
-        CONVENIENCE[positionsOf.chain.chainId],
         null,
-        CONVENIENCE[positionsOf.chain.chainId]
+        currentConvNatives.convAddress,
+        null,
+        currentConvNatives.convAddress
       );
 
       pairContract.on(payFilter, (maturity) => {

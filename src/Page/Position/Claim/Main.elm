@@ -3,6 +3,7 @@ port module Page.Position.Claim.Main exposing
     , Msg
     , Position
     , errorHandler
+    , errorHandlerNativesFetch
     , init
     , subscriptions
     , update
@@ -1217,4 +1218,25 @@ errorHandler =
             , Font.color Color.negative400
             ]
             [ text "Err: " ]
+        ]
+
+
+errorHandlerNativesFetch : Element msg
+errorHandlerNativesFetch =
+    row
+        [ width shrink
+        , height shrink
+        , centerX
+        , centerY
+        , spacing 12
+        ]
+        [ paragraph
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.size 14
+            , Font.color Color.negative400
+            ]
+            [ text "Unable to fetch your Positions... " ]
         ]

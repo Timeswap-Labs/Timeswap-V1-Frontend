@@ -1,4 +1,4 @@
-module Blockchain.User.Liqs exposing (Liqs, decoder, filterEmptyLiqs, toERC20s, toList)
+module Blockchain.User.Liqs exposing (Liqs, decoder, filterEmptyLiqs, getPositionCount, toERC20s, toList)
 
 import Blockchain.User.Liq as Liq exposing (Liq)
 import Data.Address as Address exposing (Address)
@@ -51,6 +51,39 @@ toList posix liqs =
                         (poolLiqList |> List.map (\poolLiqTuple -> ( convAddress, poolLiqTuple )))
             )
             []
+
+
+getPositionCount :
+    Liqs
+    -> Int
+getPositionCount liqs =
+    liqs
+        |> Dict.map
+            (\_ dict ->
+                dict
+                    |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
+                    |> Dict.toList
+             -- |> Dict.partition
+             --     (\{ maturity } _ ->
+             --         maturity |> Maturity.isActive posix
+             --     )
+             -- |> Tuple.mapBoth Dict.toList Dict.toList
+             -- |> (\( active, matured ) ->
+             --         [ matured
+             --         , active
+             --         ]
+             --             |> List.concat
+             --    )
+            )
+        |> Dict.toList
+        |> List.foldl
+            (\( convAddress, poolLiqList ) acc ->
+                acc
+                    |> List.append
+                        (poolLiqList |> List.map (\poolLiqTuple -> ( convAddress, poolLiqTuple )))
+            )
+            []
+        |> List.length
 
 
 decoder : Chain -> Chains -> Decoder Liqs
@@ -114,4 +147,9 @@ filterEmptyLiqs liqs =
         |> Dict.map
             (\_ dict ->
                 dict |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
+            )
+        |> Dict.dropIf
+            (\_ dict ->
+                dict
+                    |> Dict.isEmpty
             )

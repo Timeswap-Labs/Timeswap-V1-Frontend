@@ -50,7 +50,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import Element.Region as Region
-import Page.Position.Claim.Main exposing (errorHandler)
+import Page.Position.Claim.Main exposing (errorHandlerNativesFetch)
 import Page.Positions.Claims.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Dict as Dict
 import Time exposing (Posix)
@@ -149,7 +149,7 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
                 loading model
 
             Failure _ ->
-                errorHandler
+                errorHandlerNativesFetch
 
             Success claims ->
                 claims
@@ -411,6 +411,7 @@ title theme claims =
         ([ "Your Lend Positions "
          , "("
          , claims
+            |> Claims.filterEmptyClaims
             |> Dict.size
             |> String.fromInt
          , ")"
