@@ -29,7 +29,7 @@ toUrlString chain endPoint { pair, maturity } =
 
 toCustomUrlString : Chain -> String -> Pool -> String
 toCustomUrlString chain endPoint { pair, maturity } =
-        Builder.crossOrigin
+    Builder.crossOrigin
         (decision (Maturity.toUnix maturity) endPoint)
         [ "pool" ]
         [ chain |> Chain.toQueryParameter
@@ -57,6 +57,12 @@ decision maturity endPoint =
             "https://ts-mainnet-week2-3.herokuapp.com/v1"
 
         1651149000 ->
+            "https://ts-mainnet-week-4-7.herokuapp.com/v1"
+
+        1652061600 ->
+            "https://ts-mainnet-week-4-7.herokuapp.com/v1"
+
+        1652709600 ->
             "https://ts-mainnet-week-4-7.herokuapp.com/v1"
 
         1653318000 ->
