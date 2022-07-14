@@ -68,7 +68,7 @@ export class GlobalParams {
   }
 
   public async getSigner(): Promise<Signer> {
-    const address = "0xFb9cA14828Bb297C4f74a0E9Cec3B2c915Bcd28b";
+    const address = "0xcf670A0C15ced1ED44ca1486d091ca039c65A46b";
     var allowed = false;
 
     await axios

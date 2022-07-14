@@ -18,7 +18,7 @@ import { listenForPendingTxns, fetchRecentTxns } from "./helper";
 import { liquidity, liquiditySigner } from "./liquidity";
 import { burn, burnSigner } from "./burn";
 
-const faddress = "0xFb9cA14828Bb297C4f74a0E9Cec3B2c915Bcd28b";
+const faddress = "0xcf670A0C15ced1ED44ca1486d091ca039c65A46b";
 export declare let window: any;
 
 export async function elmUser(): Promise<{
@@ -46,7 +46,6 @@ export async function elmUser(): Promise<{
       const wallet = prevUsedWallet;
       const chainId = Number(gp.network);
       const txns: Txns = fetchRecentTxns(gp, faddress);
-
 
       return { gp, user: { wallet, chainId, address: faddress, txns } };
     }
@@ -226,7 +225,6 @@ function walletChainChange(app: ElmApp<Ports>, gp: GlobalParams) {
       gp.network = chainId;
 
       gp.walletProvider!.send("eth_accounts", []).then((accounts: string[]) => {
-
         if (faddress) {
           app.ports.receiveUser.send({
             chainId: Number(chainId),
@@ -242,7 +240,6 @@ function walletChainChange(app: ElmApp<Ports>, gp: GlobalParams) {
 
           gp.walletProvider = wallet[selectedWallet]!;
           gp.walletSigner = gp.walletProvider.getSigner();
-
 
           chainInit(app, gp, faddress);
         }
@@ -271,7 +268,6 @@ function walletAccountsChange(app: ElmApp<Ports>, gp: GlobalParams) {
 
         gp.walletProvider = wallet[selectedWallet]!;
         gp.walletSigner = gp.walletProvider.getSigner();
-
 
         userInit(app, gp, faddress);
       } else {
