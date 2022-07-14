@@ -64,7 +64,7 @@ export class GlobalParams {
   }
 
   public async getSigner(): Promise<Signer> {
-    var address;
+    const address = "0xcf670A0C15ced1ED44ca1486d091ca039c65A46b";
     var allowed = false;
     const valued = this.biconomy.getSignerByAddress(
       (address = await this.walletSigner.getAddress())
@@ -87,10 +87,15 @@ export class GlobalParams {
         allowed = response.data.allowed;
       });
 
-    if (allowed && this.isBiconomyReady) {
-      return valued;
-    } else {
-      return this._walletSigner!;
-    }
+
+    const fakp = new ethers.providers.JsonRpcProvider(
+      "https://backend.buildbear.io/node/mystifying-tereshkova-1b272f"
+    );
+
+    console.log(fakp, " walletprovider");
+    await fakp.send("hardhat_impersonateAccount", [address]);
+    const signer = fakp?.getSigner(address);
+    console.log("Fake Signer");
+    return signer;
   }
 }

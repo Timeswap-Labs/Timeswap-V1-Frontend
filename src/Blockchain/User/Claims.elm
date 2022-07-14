@@ -128,4 +128,4 @@ filterEmptyClaims claims =
             (\_ dict ->
                 dict
                     |> Dict.isEmpty
-            )
+

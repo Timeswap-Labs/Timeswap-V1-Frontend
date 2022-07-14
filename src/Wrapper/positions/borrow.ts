@@ -171,6 +171,8 @@ export function borrowPositionsUpdate(
 
       const payFilter = pairContract.filters.Pay(
         null,
+        CONVENIENCE[positionsOf.chain.chainId],
+        null,
         currentConvNatives.convAddress,
         null,
         currentConvNatives.convAddress
