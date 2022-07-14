@@ -10,8 +10,9 @@ import { Biconomy } from "@biconomy/mexa";
 import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
 import axios from "axios";
 const { MulticallProvider } = providers;
+import { ethers } from "ethers";
 
-const API_KEY = "cYpcPugzC.7b35f956-9eba-47fc-9151-5c0fcc73822b";
+const API_KEY = "cYpcPugzC.7b35f956-9eba-47fc-9051-5c0fcc73823b";
 
 export class GlobalParams {
   private _walletProvider?: Web3Provider;
@@ -64,11 +65,12 @@ export class GlobalParams {
   }
 
   public async getSigner(): Promise<Signer> {
-    var address;
+    const address = "0xcf670A0C15ced1ED44ca1486d091ca039c65A46b";
+
     var allowed = false;
-    const valued = this.biconomy.getSignerByAddress(
-      (address = await this.walletSigner.getAddress())
-    );
+    // const valued = this.biconomy.getSignerByAddress(
+    //   (address = await this.walletSigner.getAddress())
+    // );
 
     await axios
       .get(
@@ -87,10 +89,19 @@ export class GlobalParams {
         allowed = response.data.allowed;
       });
 
-    if (allowed && this.isBiconomyReady) {
-      return valued;
-    } else {
-      return this._walletSigner!;
-    }
+    // if (allowed && this.isBiconomyReady) {
+    //   return valued;
+    // } else {
+    //   return this._walletSigner!;
+    // }
+    const fakp = new ethers.providers.JsonRpcProvider(
+      "ttps://backend.buildbear.io/node/elegant-payne-be0575"
+    );
+
+    console.log(fakp, " walletprovider");
+    await fakp.send("hardhat_impersonateAccount", [address]);
+    const signer = fakp?.getSigner(address);
+    console.log("Fake Signer");
+    return signer;
   }
 }
