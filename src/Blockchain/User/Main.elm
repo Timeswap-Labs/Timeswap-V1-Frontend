@@ -452,7 +452,7 @@ update { chains, endPoint } chain msg (User user) =
 
         ReceiveNatives decodedChain (Err error) ->
             if decodedChain == chain then
-                ( { user | natives = Failure error }
+                ( { user | natives = Failure error, positions = Failure error }
                     |> User
                 , Process.sleep 5000
                     |> Task.perform QueryNatives

@@ -124,3 +124,8 @@ filterEmptyClaims claims =
             (\_ dict ->
                 dict |> Dict.dropIf (\_ claim -> claim |> Claim.isZero)
             )
+        |> Dict.dropIf
+            (\_ dict ->
+                dict
+                    |> Dict.isEmpty
+            )

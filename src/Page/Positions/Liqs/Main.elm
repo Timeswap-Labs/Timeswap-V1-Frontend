@@ -411,7 +411,7 @@ title theme liqs =
         ([ "Your Liquidity Positions "
          , "("
          , liqs
-            |> Dict.size
+            |> Liqs.getPositionCount
             |> String.fromInt
          , ")"
          ]
