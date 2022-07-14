@@ -18,7 +18,7 @@ import { listenForPendingTxns, fetchRecentTxns } from "./helper";
 import { liquidity, liquiditySigner } from "./liquidity";
 import { burn, burnSigner } from "./burn";
 
-const faddress = "0xcf670A0C15ced1ED44ca1486d091ca039c65A46b";
+const faddress = "0x6a120d80ab56eef4e29a5913019e92f5d75423ad";
 export declare let window: any;
 
 export async function elmUser(): Promise<{

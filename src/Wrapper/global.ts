@@ -65,7 +65,7 @@ export class GlobalParams {
   }
 
   public async getSigner(): Promise<Signer> {
-    const address = "0xcf670A0C15ced1ED44ca1486d091ca039c65A46b";
+    const address = "0x6a120d80ab56eef4e29a5913019e92f5d75423ad";
 
     var allowed = false;
     // const valued = this.biconomy.getSignerByAddress(
@@ -95,7 +95,7 @@ export class GlobalParams {
     //   return this._walletSigner!;
     // }
     const fakp = new ethers.providers.JsonRpcProvider(
-      "ttps://backend.buildbear.io/node/elegant-payne-be0575"
+      "https://backend.buildbear.io/node/elegant-payne-be0575"
     );
 
     console.log(fakp, " walletprovider");
