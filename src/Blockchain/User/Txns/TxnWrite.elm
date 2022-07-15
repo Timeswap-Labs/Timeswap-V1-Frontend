@@ -8,7 +8,6 @@ module Blockchain.User.Txns.TxnWrite exposing
     , initUnconfirmed
     )
 
-import Data.Address as Address exposing (Address)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Pool as Pool exposing (Pool)
 import Json.Decode as Decode exposing (Decoder)

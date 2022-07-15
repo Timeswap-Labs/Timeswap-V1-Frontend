@@ -45,6 +45,7 @@ import Element
         , fill
         , height
         , map
+        , newTabLink
         , none
         , padding
         , paddingXY
@@ -1048,6 +1049,30 @@ noCmdAndEffect transaction =
     )
 
 
+tutorialLink :
+    { model | images : Images, theme : Theme }
+    -> Element Msg
+tutorialLink { images, theme } =
+    newTabLink []
+        { url = "https://youtu.be/x3OaFiQf_9Q"
+        , label =
+            row
+                [ width shrink
+                , height shrink
+                , spacing 8
+                , paddingXY 8 4
+                , Border.width 1
+                , theme |> ThemeColor.textboxBorder |> Border.color
+                , Border.rounded 8
+                ]
+                [ el [ theme |> ThemeColor.textLight |> Font.color, Font.size 16 ] (text "Guide")
+                , images
+                    |> Image.video
+                        [ width <| px 16, height <| px 16 ]
+                ]
+        }
+
+
 get :
     Blockchain
     -> String
@@ -1486,23 +1511,26 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
 
                             New _ ->
                                 IconButton.back model GoToAdd
-                        , el
-                            [ width shrink
-                            , height shrink
-                            , paddingXY 0 4
-                            , Font.size 24
-                            , theme |> ThemeColor.text |> Font.color
-                            , Font.bold
-                            ]
-                            ((case transaction.state of
-                                Add _ ->
-                                    "Add Liquidity"
+                        , row [ spacing 12 ]
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , paddingXY 0 4
+                                , Font.size 24
+                                , theme |> ThemeColor.text |> Font.color
+                                , Font.bold
+                                ]
+                                ((case transaction.state of
+                                    Add _ ->
+                                        "Add Liquidity"
 
-                                New _ ->
-                                    "Create Pool"
-                             )
-                                |> text
-                            )
+                                    New _ ->
+                                        "Create Pool"
+                                 )
+                                    |> text
+                                )
+                            , tutorialLink model
+                            ]
                         , case transaction.state of
                             Add _ ->
                                 -- createPoolButton model

@@ -3890,15 +3890,6 @@ disabledBorrow theme =
         |> map never
 
 
-approveButton : ERC20 -> Theme -> Element Msg
-approveButton erc20 theme =
-    Button.approve
-        { onPress = ClickApprove
-        , erc20 = erc20
-        , theme = theme
-        }
-
-
 approveAndBorrowButton : ERC20 -> Theme -> Element Msg
 approveAndBorrowButton erc20 theme =
     Button.approveAndBorrow
