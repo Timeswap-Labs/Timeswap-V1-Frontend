@@ -1511,24 +1511,26 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
 
                             New _ ->
                                 IconButton.back model GoToAdd
-                        , el
-                            [ width shrink
-                            , height shrink
-                            , paddingXY 0 4
-                            , Font.size 24
-                            , theme |> ThemeColor.text |> Font.color
-                            , Font.bold
-                            ]
-                            ((case transaction.state of
-                                Add _ ->
-                                    "Add Liquidity"
+                        , row [ spacing 12 ]
+                            [ el
+                                [ width shrink
+                                , height shrink
+                                , paddingXY 0 4
+                                , Font.size 24
+                                , theme |> ThemeColor.text |> Font.color
+                                , Font.bold
+                                ]
+                                ((case transaction.state of
+                                    Add _ ->
+                                        "Add Liquidity"
 
-                                New _ ->
-                                    "Create Pool"
-                             )
-                                |> text
-                            )
-                        , tutorialLink model
+                                    New _ ->
+                                        "Create Pool"
+                                 )
+                                    |> text
+                                )
+                            , tutorialLink model
+                            ]
                         , case transaction.state of
                             Add _ ->
                                 -- createPoolButton model
