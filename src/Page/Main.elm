@@ -585,12 +585,12 @@ claimsEffect :
     -> ( Maybe Claim.Position, Cmd Msg )
 claimsEffect model blockchain effect =
     case effect of
-        Claims.OpenClaim pool ->
+        Claims.OpenClaim convAddress pool ->
             blockchain
                 |> Blockchain.toUser
                 |> Maybe.map
                     (\user ->
-                        Claim.init model blockchain user pool
+                        Claim.init model blockchain user convAddress pool
                             |> Tuple.mapBoth
                                 Just
                                 (Cmd.map ClaimMsg)
@@ -699,8 +699,8 @@ liqsEffect :
     -> ( Maybe Liq.Position, Cmd Msg )
 liqsEffect model blockchain effect =
     case effect of
-        Liqs.OpenLiq pool ->
-            Liq.init model blockchain pool
+        Liqs.OpenLiq convAddress pool ->
+            Liq.init model blockchain convAddress pool
                 |> Tuple.mapBoth
                     Just
                     (Cmd.map LiqMsg)

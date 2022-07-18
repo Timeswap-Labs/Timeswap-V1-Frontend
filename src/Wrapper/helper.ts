@@ -104,7 +104,8 @@ export function getPoolSDK(
   asset: ERC20Token | NativeToken,
   collateral: ERC20Token | NativeToken,
   maturity: number | string,
-  chain: Chain
+  chain: Chain,
+  convAddress?: string
 ): SDKPool {
   let assetToken, collateralToken;
 
@@ -141,7 +142,8 @@ export function getPoolSDK(
     chain.chainId,
     assetToken,
     collateralToken,
-    new Uint256(maturity)
+    new Uint256(maturity),
+    convAddress
   );
 }
 

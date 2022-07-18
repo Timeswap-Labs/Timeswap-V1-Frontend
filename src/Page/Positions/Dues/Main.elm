@@ -50,7 +50,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import Element.Region as Region
-import Page.Position.Claim.Main exposing (errorHandler)
+import Page.Position.Claim.Main exposing (errorHandlerNativesFetch)
 import Page.Positions.Dues.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Dict as Dict exposing (Dict)
 import Time exposing (Posix)
@@ -149,7 +149,7 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
                 loading model
 
             Failure _ ->
-                errorHandler
+                errorHandlerNativesFetch
 
             -- |> Debug.log "error view"
             Success dues ->
