@@ -14,3 +14,4 @@ type Tooltip
     | TotalCollateral TokenParam
     | BorrowPositionInfo
     | FlashRepayDisabled
+    | LPShare

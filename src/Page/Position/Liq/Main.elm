@@ -902,14 +902,46 @@ viewLiq { images, theme } { pool, return, tooltip } =
                             , height shrink
                             , spacing 8
                             ]
-                            [ el
+                            [ row
                                 [ width shrink
                                 , height shrink
                                 , Font.size 14
                                 , paddingXY 0 3
                                 , theme |> ThemeColor.textLight |> Font.color
+                                , spacing 8
                                 ]
-                                (text "LP tokens owned (%)")
+                                [ text "LP tokens owned (%)"
+                                , images
+                                    |> (case theme of
+                                            Theme.Dark ->
+                                                Image.info
+
+                                            Theme.Light ->
+                                                Image.infoDark
+                                       )
+                                        [ width <| px 12
+                                        , height <| px 12
+                                        , Font.center
+                                        , centerX
+                                        , Events.onMouseEnter (OnMouseEnter Tooltip.LPShare)
+                                        , Events.onMouseLeave OnMouseLeave
+                                        , (if tooltip == Just Tooltip.LPShare then
+                                            column
+                                                [ Font.size 14
+                                                , theme |> ThemeColor.textLight |> Font.color
+                                                , spacing 6
+                                                ]
+                                                [ "This is your share of the Timeswap pool right now. " |> text
+                                                , "Do note your share will change as pool liquidity changes." |> text
+                                                ]
+                                                |> TooltipUtil.belowAlignLeft theme
+
+                                           else
+                                            none
+                                          )
+                                            |> below
+                                        ]
+                                ]
                             , el
                                 [ width shrink
                                 , height shrink
