@@ -146,6 +146,7 @@ type Msg
 
 type Effect
     = OpenConnect
+    | OpenCaution WriteLiquidity
     | Approve ERC20
     | Liquidity WriteLiquidity
 
@@ -533,7 +534,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                   , maxCollateral = answer.maxCollateral
                                   }
                                     |> WriteLiquidity.GivenAsset
-                                    |> Liquidity
+                                    |> OpenCaution
                                     |> Just
                                 )
                                     |> Just
@@ -605,7 +606,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                   , maxDebt = answer.maxDebt
                                   }
                                     |> WriteLiquidity.GivenCollateral
-                                    |> Liquidity
+                                    |> OpenCaution
                                     |> Just
                                 )
                                     |> Just

@@ -152,6 +152,7 @@ type Effect
     | Approve ERC20
     | Liquidity WriteLiquidity
     | Create WriteCreate
+    | OpenCaution WriteLiquidity
 
 
 init :
@@ -1024,6 +1025,9 @@ addEffects effect =
 
         Add.Liquidity writeLiquidity ->
             Liquidity writeLiquidity
+
+        Add.OpenCaution writeLiquidity ->
+            OpenCaution writeLiquidity
 
 
 newEffects : New.Effect -> Effect
