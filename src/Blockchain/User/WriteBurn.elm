@@ -15,6 +15,7 @@ import Json.Encode as Encode exposing (Value)
 
 type alias WriteBurn =
     { pool : Pool
+    , convAddress : Address
     , liquidityIn : Liq
     }
 
@@ -28,10 +29,11 @@ encode :
     Address
     -> WriteBurn
     -> Value
-encode address { pool, liquidityIn } =
+encode address { pool, convAddress, liquidityIn } =
     [ ( "asset", pool.pair |> Pair.toAsset |> Token.encode )
     , ( "collateral", pool.pair |> Pair.toCollateral |> Token.encode )
     , ( "maturity", pool.maturity |> Maturity.encode )
+    , ( "convAddress", convAddress |> Address.encode )
     , ( "assetTo", address |> Address.encode )
     , ( "collateralTo", address |> Address.encode )
     , ( "liquidityIn", liquidityIn |> Liq.encode )

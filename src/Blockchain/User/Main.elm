@@ -49,7 +49,7 @@ import Blockchain.User.Cache as Cache
 import Blockchain.User.Claims exposing (Claims)
 import Blockchain.User.Dues exposing (Dues)
 import Blockchain.User.Liqs exposing (Liqs)
-import Blockchain.User.Natives as Natives exposing (Natives)
+import Blockchain.User.Natives as Natives exposing (AllNatives, Natives)
 import Blockchain.User.Positions as Positions exposing (Positions)
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
 import Blockchain.User.Txns.Receipt as Receipt
@@ -72,7 +72,7 @@ import Data.Deadline exposing (Deadline)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.ERC20s exposing (ERC20s)
 import Data.Hash exposing (Hash)
-import Data.Pool exposing (Pool)
+import Data.Pool as Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Token as Token exposing (Token)
 import Data.Uint exposing (Uint)
@@ -83,7 +83,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode exposing (Value)
 import Process
-import Sort.Dict as Dict exposing (Dict)
+import Sort.Dict as Dict
 import Sort.Set as Set
 import Task
 import Time exposing (Posix)
@@ -98,7 +98,7 @@ type User
         , allowances : Allowances
         , positions : Web Positions
         , txns : Txns
-        , natives : Web (Dict Pool Natives)
+        , natives : Web AllNatives
         }
 
 
@@ -132,7 +132,7 @@ type Msg
     | ReceiveConfirm Value
     | ReceiveReceipt Value
     | ReceiveUpdatedTxns Value
-    | ReceiveNatives Chain (Result Http.Error Natives.Answer)
+    | ReceiveNatives Chain (Result Http.Error AllNatives)
     | ReceivePositions Value
     | BalancesTick Posix
     | AllowancesTick Posix
@@ -452,7 +452,7 @@ update { chains, endPoint } chain msg (User user) =
 
         ReceiveNatives decodedChain (Err error) ->
             if decodedChain == chain then
-                ( { user | natives = Failure error }
+                ( { user | natives = Failure error, positions = Failure error }
                     |> User
                 , Process.sleep 5000
                     |> Task.perform QueryNatives
@@ -998,7 +998,7 @@ noCmdAndEffect :
     , allowances : Allowances
     , positions : Web Positions
     , txns : Txns
-    , natives : Web (Dict Pool Natives)
+    , natives : Web AllNatives
     }
     -> ( User, Cmd Msg, Maybe Effect )
 noCmdAndEffect user =
@@ -1260,4 +1260,6 @@ getLiqs (User { positions }) =
 getPoolNatives : Pool -> User -> Web (Maybe Natives)
 getPoolNatives pool (User { natives }) =
     natives
+        |> Remote.map Natives.toPoolNativesList
+        |> Remote.map (Dict.fromList Pool.sorter)
         |> Remote.map (Dict.get pool)

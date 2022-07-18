@@ -3,6 +3,7 @@ port module Page.Position.Claim.Main exposing
     , Msg
     , Position
     , errorHandler
+    , errorHandlerNativesFetch
     , init
     , subscriptions
     , update
@@ -14,6 +15,7 @@ import Blockchain.User.Claim exposing (Claim)
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.Return exposing (Return)
 import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
+import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
@@ -82,6 +84,7 @@ import Utility.Truncate as Truncate
 type Position
     = Position
         { pool : Pool
+        , convAddress : Address
         , state : State
         , tooltip : Maybe Tooltip
         }
@@ -116,10 +119,12 @@ init :
     { model | time : Posix, endPoint : String }
     -> Blockchain
     -> User
+    -> Address
     -> Pool
     -> ( Position, Cmd Msg )
-init { time, endPoint } blockchain user pool =
+init { time, endPoint } blockchain user convAddress pool =
     ( { pool = pool
+      , convAddress = convAddress
       , state =
             if
                 pool.maturity
@@ -140,12 +145,14 @@ init { time, endPoint } blockchain user pool =
       then
         user
             |> User.getClaims
-            |> Remote.map (Dict.get pool)
-            |> (Remote.map << Maybe.map)
+            |> Remote.map (Dict.get convAddress)
+            |> (Remote.map << Maybe.map) (Dict.get pool)
+            |> (Remote.map << Maybe.map << Maybe.map)
                 (\claim ->
                     { pool = pool }
                         |> queryActive blockchain claim
                 )
+            |> (Remote.map << Maybe.map << Maybe.withDefault) Cmd.none
             |> (Remote.map << Maybe.withDefault) Cmd.none
             |> Remote.withDefault Cmd.none
 
@@ -174,10 +181,12 @@ update blockchain endPoint user msg (Position position) =
             , Cmd.none
             , user
                 |> User.getClaims
-                |> Remote.map (Dict.get position.pool)
+                |> Remote.map (Dict.get position.convAddress)
+                |> (Remote.map << Maybe.andThen) (Dict.get position.pool)
                 |> (Remote.map << Maybe.andThen)
                     (\claimsIn ->
                         { pool = position.pool
+                        , convAddress = position.convAddress
                         , claimsIn = claimsIn
                         }
                             |> Withdraw
@@ -254,11 +263,13 @@ update blockchain endPoint user msg (Position position) =
                 |> Just
             , user
                 |> User.getClaims
-                |> Remote.map (Dict.get position.pool)
-                |> (Remote.map << Maybe.map)
+                |> Remote.map (Dict.get position.convAddress)
+                |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                |> (Remote.map << Maybe.map << Maybe.map)
                     (\claims ->
                         queryActive blockchain claims position
                     )
+                |> (Remote.map << Maybe.map << Maybe.withDefault) Cmd.none
                 |> (Remote.map << Maybe.withDefault) Cmd.none
                 |> Remote.withDefault Cmd.none
             , Nothing
@@ -270,11 +281,13 @@ update blockchain endPoint user msg (Position position) =
                 |> Just
             , user
                 |> User.getClaims
-                |> Remote.map (Dict.get position.pool)
-                |> (Remote.map << Maybe.map)
+                |> Remote.map (Dict.get position.convAddress)
+                |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                |> (Remote.map << Maybe.map << Maybe.map)
                     (\claimsIn ->
                         queryMatured blockchain poolInfo claimsIn position
                     )
+                |> (Remote.map << Maybe.map << Maybe.withDefault) Cmd.none
                 |> (Remote.map << Maybe.withDefault) Cmd.none
                 |> Remote.withDefault Cmd.none
             , Nothing
@@ -345,11 +358,13 @@ update blockchain endPoint user msg (Position position) =
                             && (answer.pool == position.pool)
                             && (user
                                     |> User.getClaims
-                                    |> Remote.map (Dict.get position.pool)
-                                    |> (Remote.map << Maybe.map)
+                                    |> Remote.map (Dict.get position.convAddress)
+                                    |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map << Maybe.map)
                                         (\claims ->
                                             answer.claims == claims
                                         )
+                                    |> (Remote.map << Maybe.map << Maybe.withDefault) False
                                     |> (Remote.map << Maybe.withDefault) False
                                     |> Remote.withDefault False
                                )
@@ -378,13 +393,15 @@ update blockchain endPoint user msg (Position position) =
                             && (answer.poolInfo == poolInfo)
                             && (user
                                     |> User.getClaims
-                                    |> Remote.map (Dict.get position.pool)
-                                    |> (Remote.map << Maybe.map)
+                                    |> Remote.map (Dict.get position.convAddress)
+                                    |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map << Maybe.map)
                                         (\claimsIn ->
                                             (answer.claimsIn == claimsIn)
                                                 && (claimsIn.bondPrincipal |> Uint.isZero |> not)
                                                 && (claimsIn.insurancePrincipal |> Uint.isZero |> not)
                                         )
+                                    |> (Remote.map << Maybe.map << Maybe.withDefault) False
                                     |> (Remote.map << Maybe.withDefault) False
                                     |> Remote.withDefault False
                                )
@@ -409,14 +426,16 @@ update blockchain endPoint user msg (Position position) =
                             && (answer.poolInfo == poolInfo)
                             && (user
                                     |> User.getClaims
-                                    |> Remote.map (Dict.get position.pool)
-                                    |> (Remote.map << Maybe.map)
+                                    |> Remote.map (Dict.get position.convAddress)
+                                    |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map << Maybe.map)
                                         (\claimsIn ->
                                             answer.claimsIn
                                                 == claimsIn
                                                 && (claimsIn.bondPrincipal |> Uint.isZero)
                                                 && (claimsIn.insurancePrincipal |> Uint.isZero)
                                         )
+                                    |> (Remote.map << Maybe.map << Maybe.withDefault) False
                                     |> (Remote.map << Maybe.withDefault) False
                                     |> Remote.withDefault False
                                )
@@ -464,6 +483,7 @@ toRemote result =
 
 noCmdAndEffect :
     { pool : Pool
+    , convAddress : Address
     , state : State
     , tooltip : Maybe Tooltip
     }
@@ -489,7 +509,7 @@ get blockchain endPoint pool =
                 Http.get
                     { url =
                         pool
-                            |> PoolInfoQuery.toUrlString chain endPoint
+                            |> PoolInfoQuery.toCustomUrlString chain endPoint
                     , expect =
                         PoolInfoAnswer.decoder
                             |> Http.expectJson
@@ -809,6 +829,7 @@ viewClaim :
     { model | images : Images, theme : Theme }
     ->
         { pool : Pool
+        , convAddress : Address
         , state : State
         , tooltip : Maybe Tooltip
         }
@@ -1197,4 +1218,25 @@ errorHandler =
             , Font.color Color.negative400
             ]
             [ text "Err: " ]
+        ]
+
+
+errorHandlerNativesFetch : Element msg
+errorHandlerNativesFetch =
+    row
+        [ width shrink
+        , height shrink
+        , centerX
+        , centerY
+        , spacing 12
+        ]
+        [ paragraph
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.size 14
+            , Font.color Color.negative400
+            ]
+            [ text "Unable to fetch your Positions... " ]
         ]

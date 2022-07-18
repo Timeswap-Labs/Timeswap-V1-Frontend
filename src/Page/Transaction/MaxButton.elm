@@ -111,8 +111,6 @@ userBalance param =
                     , Font.color Color.transparent300
                     ]
                     (text "error")
-
-        -- |> Debug.log "implement error view"
         ]
 
 
@@ -205,8 +203,6 @@ disabledUserBalance param =
                     , Font.color Color.transparent300
                     ]
                     (text "error")
-
-        -- |> Debug.log "implement error view"
         ]
 
 
