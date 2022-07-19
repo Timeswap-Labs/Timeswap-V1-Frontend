@@ -23,6 +23,7 @@ module Utility.ThemeColor exposing
     , textLight
     , textboxBorder
     , tooltipBG
+    , warning
     )
 
 import Data.Theme as Theme exposing (Theme)
@@ -258,3 +259,13 @@ tooltipBG theme =
 
         Theme.Light ->
             Color.light300
+
+
+warning : Theme -> Color
+warning theme =
+    case theme of
+        Theme.Dark ->
+            Color.warning400
+
+        Theme.Light ->
+            Color.warning500

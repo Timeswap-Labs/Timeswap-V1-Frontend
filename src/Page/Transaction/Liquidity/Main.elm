@@ -1540,7 +1540,7 @@ view ({ device, backdrop, images, theme } as model) blockchain (Transaction tran
                                                             Image.medium
 
                                                         Theme.Light ->
-                                                            Image.medium
+                                                            Image.mediumSecondary
                                                    )
                                                     [ width <| px 20
                                                     , height <| px 20

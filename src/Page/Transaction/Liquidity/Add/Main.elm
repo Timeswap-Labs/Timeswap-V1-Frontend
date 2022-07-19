@@ -1424,82 +1424,10 @@ warningSection { images, theme } pool { state } =
             |> Image.warning
                 [ width <| px 24, height <| px 24, Font.center, centerX ]
         , paragraph
-            [ Font.color Color.warning400
+            [ theme |> ThemeColor.warning |> Font.color
             , Font.center
             ]
             [ text "The above Debt must be repaid before maturity of the pool, else the collateral locked will be forfeited. You can view the debt position under the Borrow tab." ]
-        ]
-
-
-liqOutSection :
-    { model | images : Images, theme : Theme }
-    -> Pool
-    -> { transaction | state : State }
-    -> Element Msg
-liqOutSection model pool { state } =
-    column
-        [ Region.description "liquidity output"
-        , width fill
-        , height shrink
-        , padding 16
-        , spacing 10
-        , model.theme |> ThemeColor.sectionBackground |> Background.color
-        , Border.rounded 8
-        ]
-        [ row
-            [ width shrink
-            , height shrink
-            , spacing 10
-            ]
-            [ el
-                [ width shrink
-                , height shrink
-                , Font.size 14
-                , paddingXY 0 3
-                , model.theme |> ThemeColor.actionElemLabel |> Font.color
-                ]
-                (text "LP Tokens to Receive")
-            , (case state of
-                Asset { out } ->
-                    case out of
-                        Loading timeline ->
-                            Just timeline
-
-                        _ ->
-                            Nothing
-
-                Collateral { out } ->
-                    case out of
-                        Loading timeline ->
-                            Just timeline
-
-                        _ ->
-                            Nothing
-              )
-                |> Maybe.map
-                    (\timeline ->
-                        el
-                            [ width shrink
-                            , height shrink
-                            , centerY
-                            ]
-                            (Loading.view timeline model.theme)
-                    )
-                |> Maybe.withDefault none
-            ]
-        , Output.liquidity model
-            { pair = pool.pair
-            , output =
-                case state of
-                    Asset { out } ->
-                        out
-                            |> Remote.map .liquidityOut
-
-                    Collateral { out } ->
-                        out
-                            |> Remote.map .liquidityOut
-            , description = "liquidity out"
-            }
         ]
 
 
