@@ -64,7 +64,6 @@ import Page.Transaction.Liquidity.Add.Error as Error exposing (Error)
 import Page.Transaction.Liquidity.Add.Query as Query
 import Page.Transaction.Liquidity.Add.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.MaxButton as MaxButton
-import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -973,13 +972,10 @@ view model blockchain pool poolInfo (Transaction transaction) =
     , second =
         transaction
             |> duesInSection model
-                blockchain
                 pool
                 poolInfo
     , third =
-        transaction
-            |> warningSection model
-                pool
+        warningSection model
     , buttons =
         transaction
             |> buttons model.theme blockchain pool.pair
@@ -1187,12 +1183,11 @@ collateralInSection model blockchain collateral { tooltip } or =
 
 duesInSection :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
-    -> Blockchain
     -> Pool
     -> PoolInfo
     -> { transaction | state : State, tooltip : Maybe Tooltip }
     -> Element Msg
-duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction) =
+duesInSection model pool poolInfo ({ state, tooltip } as transaction) =
     column [ width fill, spacing 16 ]
         [ column
             [ Region.description "APR and CDP"
@@ -1406,10 +1401,8 @@ debtInSection model asset { state, tooltip } remote =
 
 warningSection :
     { model | images : Images, theme : Theme }
-    -> Pool
-    -> { transaction | state : State }
     -> Element Msg
-warningSection { images, theme } pool { state } =
+warningSection { images, theme } =
     column
         [ width fill
         , height shrink

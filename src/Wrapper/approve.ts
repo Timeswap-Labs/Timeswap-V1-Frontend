@@ -8,8 +8,7 @@ import { fetchRecentTxns, handleTxnErrors } from "./helper";
 import { lendHandler } from "./lend";
 import { borrowHandler } from "./borrow";
 import { flashRepayHandler } from "./burn";
-
-const flashTSRepayAddress = "0xd88afb2186d1b6974de255fd18a04552d4f87b50";
+import { FLASH_REPAY_CONTRACT } from "./constants";
 
 export function approveSigner(
   app: ElmApp<Ports>,
@@ -176,8 +175,8 @@ export function approveSigner(
 
   app.ports.approveAndFlashRepay.subscribe(async (params) => {
     try {
-      const cdtContract = new Contract(params.send.cdtAddress, cdTokenAbi, gp.walletSigner)
-      const txnConfirmation = await cdtContract.setApprovalForAll(flashTSRepayAddress, true);
+      const cdtContract = new Contract(params.send.cdtAddress, cdTokenAbi, gp.walletSigner);
+      const txnConfirmation = await cdtContract.setApprovalForAll(FLASH_REPAY_CONTRACT, true);
 
       app.ports.receiveConfirm.send({
         id: params.id,

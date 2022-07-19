@@ -63,17 +63,6 @@ getPositionCount liqs =
                 dict
                     |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
                     |> Dict.toList
-             -- |> Dict.partition
-             --     (\{ maturity } _ ->
-             --         maturity |> Maturity.isActive posix
-             --     )
-             -- |> Tuple.mapBoth Dict.toList Dict.toList
-             -- |> (\( active, matured ) ->
-             --         [ matured
-             --         , active
-             --         ]
-             --             |> List.concat
-             --    )
             )
         |> Dict.toList
         |> List.foldl

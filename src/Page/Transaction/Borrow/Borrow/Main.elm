@@ -197,7 +197,6 @@ type Msg
       -- | InputMax
     | QueryAgain Posix
     | ClickConnect
-    | ClickApprove
     | ClickBorrow
     | ClickApproveAndBorrow
     | ReceiveAnswer Value
@@ -1069,83 +1068,6 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     , Cmd.none
                     , OpenConnect |> Just
                     )
-
-        ( ClickApprove, _ ) ->
-            (case
-                ( blockchain |> Blockchain.toUser
-                , case transaction.state of
-                    Default { dues } ->
-                        case dues of
-                            Success { collateralIn } ->
-                                collateralIn |> Just
-
-                            _ ->
-                                Nothing
-
-                    DefaultMax { collateralIn } ->
-                        collateralIn
-                            |> Uint.fromAmount
-                                (pool.pair |> Pair.toCollateral)
-
-                    Slider { dues } ->
-                        case dues of
-                            Success { collateralIn } ->
-                                collateralIn |> Just
-
-                            _ ->
-                                Nothing
-
-                    Debt { dues } ->
-                        case dues of
-                            Success { collateralIn } ->
-                                collateralIn |> Just
-
-                            _ ->
-                                Nothing
-
-                    Collateral { collateralIn } ->
-                        collateralIn
-                            |> Uint.fromAmount
-                                (pool.pair |> Pair.toCollateral)
-
-                    AdvancedMax { collateralIn } ->
-                        collateralIn
-                            |> Uint.fromAmount
-                                (pool.pair |> Pair.toCollateral)
-                , pool.pair
-                    |> Pair.toCollateral
-                    |> Token.toERC20
-                )
-             of
-                ( Just user, Just collateralIn, Just erc20 ) ->
-                    if
-                        (user
-                            |> User.hasEnoughBalance
-                                (pool.pair |> Pair.toCollateral)
-                                collateralIn
-                        )
-                            && (user
-                                    |> User.hasEnoughAllowance
-                                        erc20
-                                        collateralIn
-                                    |> not
-                               )
-                    then
-                        ( transaction |> Transaction
-                        , Cmd.none
-                        , erc20
-                            |> Approve
-                            |> Just
-                        )
-                            |> Just
-
-                    else
-                        Nothing
-
-                _ ->
-                    Nothing
-            )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ClickApproveAndBorrow, Default default ) ->
             (case default.dues of
