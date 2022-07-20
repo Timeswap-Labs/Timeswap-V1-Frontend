@@ -1,7 +1,6 @@
 module Page.Transaction.Liquidity.Empty exposing (view)
 
 import Data.Images exposing (Images)
-import Data.Pair as Pair
 import Data.Theme exposing (Theme)
 import Data.Token exposing (Token)
 import Element
@@ -13,7 +12,6 @@ import Element
         , el
         , fill
         , height
-        , none
         , padding
         , paddingXY
         , paragraph
@@ -29,7 +27,6 @@ import Element.Border as Border
 import Element.Font as Font
 import Element.Region as Region
 import Page.Transaction.Info as Info
-import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
 import Utility.Color as Color
 import Utility.Image as Image
@@ -50,7 +47,7 @@ view :
         }
 view model { asset, collateral } =
     { first = assetInSection model asset collateral
-    , second = duesOutSection model asset
+    , second = duesOutSection model
     , third = warningSection model
     }
 
@@ -96,9 +93,8 @@ assetInSection model asset collateral =
 
 duesOutSection :
     { model | images : Images, theme : Theme }
-    -> Maybe Token
     -> Element Never
-duesOutSection model asset =
+duesOutSection model =
     column
         [ spacing 16
         , alpha 0.2
@@ -129,16 +125,15 @@ duesOutSection model asset =
             , model.theme |> ThemeColor.sectionBackground |> Background.color
             , Border.rounded 8
             ]
-            [ debtOutSection model asset
+            [ debtOutSection model
             ]
         ]
 
 
 debtOutSection :
     { model | images : Images, theme : Theme }
-    -> Maybe Token
     -> Element Never
-debtOutSection model asset =
+debtOutSection model =
     column
         [ width fill
         , height shrink

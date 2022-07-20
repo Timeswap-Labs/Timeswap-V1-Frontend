@@ -31,7 +31,6 @@ import Element
         , fill
         , height
         , inFront
-        , none
         , padding
         , paddingEach
         , paddingXY
@@ -336,7 +335,7 @@ noLiqs { images, theme } =
                             , paddingXY 0 8
                             , theme |> ThemeColor.textLight |> Font.color
                             ]
-                            [ text "You don’t have any open Liquidity positions" ]
+                            [ text "You don't have any open Liquidity positions" ]
                         ]
                     ]
                 )
@@ -542,6 +541,7 @@ viewLiq { time, offset, chosenZone, theme, images } tooltip convAddress ( pool, 
                             , centerY
                             , Font.size 14
                             , Font.color Color.negative400
+                            , Font.bold
                             ]
                             (text "Matured")
                         )

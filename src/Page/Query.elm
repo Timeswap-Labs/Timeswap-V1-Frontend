@@ -1,12 +1,11 @@
 module Page.Query exposing (toCustomUrlString, toUrlString)
 
 import Data.Chain as Chain exposing (Chain)
-import Data.Maturity as Maturity exposing (Maturity, toUnix)
+import Data.Maturity as Maturity
 import Data.Pair as Pair
 import Data.Pool exposing (Pool)
 import Data.Token as Token
 import Data.TokenParam as TokenParam
-import Json.Decode exposing (int, string)
 import Url.Builder as Builder
 
 

@@ -64,7 +64,6 @@ import Page.Transaction.Liquidity.Add.Error as Error exposing (Error)
 import Page.Transaction.Liquidity.Add.Query as Query
 import Page.Transaction.Liquidity.Add.Tooltip as Tooltip exposing (Tooltip)
 import Page.Transaction.MaxButton as MaxButton
-import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
 import Time exposing (Posix)
 import Utility.Color as Color
@@ -146,6 +145,7 @@ type Msg
 
 type Effect
     = OpenConnect
+    | OpenCaution WriteLiquidity
     | Approve ERC20
     | Liquidity WriteLiquidity
 
@@ -533,7 +533,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                   , maxCollateral = answer.maxCollateral
                                   }
                                     |> WriteLiquidity.GivenAsset
-                                    |> Liquidity
+                                    |> OpenCaution
                                     |> Just
                                 )
                                     |> Just
@@ -605,7 +605,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                                   , maxDebt = answer.maxDebt
                                   }
                                     |> WriteLiquidity.GivenCollateral
-                                    |> Liquidity
+                                    |> OpenCaution
                                     |> Just
                                 )
                                     |> Just
@@ -972,13 +972,10 @@ view model blockchain pool poolInfo (Transaction transaction) =
     , second =
         transaction
             |> duesInSection model
-                blockchain
                 pool
                 poolInfo
     , third =
-        transaction
-            |> warningSection model
-                pool
+        warningSection model
     , buttons =
         transaction
             |> buttons model.theme blockchain pool.pair
@@ -1186,12 +1183,11 @@ collateralInSection model blockchain collateral { tooltip } or =
 
 duesInSection :
     { model | priceFeed : PriceFeed, images : Images, theme : Theme }
-    -> Blockchain
     -> Pool
     -> PoolInfo
     -> { transaction | state : State, tooltip : Maybe Tooltip }
     -> Element Msg
-duesInSection model blockchain pool poolInfo ({ state, tooltip } as transaction) =
+duesInSection model pool poolInfo ({ state, tooltip } as transaction) =
     column [ width fill, spacing 16 ]
         [ column
             [ Region.description "APR and CDP"
@@ -1405,10 +1401,8 @@ debtInSection model asset { state, tooltip } remote =
 
 warningSection :
     { model | images : Images, theme : Theme }
-    -> Pool
-    -> { transaction | state : State }
     -> Element Msg
-warningSection { images, theme } pool { state } =
+warningSection { images, theme } =
     column
         [ width fill
         , height shrink
@@ -1423,82 +1417,10 @@ warningSection { images, theme } pool { state } =
             |> Image.warning
                 [ width <| px 24, height <| px 24, Font.center, centerX ]
         , paragraph
-            [ Font.color Color.warning400
+            [ theme |> ThemeColor.warning |> Font.color
             , Font.center
             ]
             [ text "The above Debt must be repaid before maturity of the pool, else the collateral locked will be forfeited. You can view the debt position under the Borrow tab." ]
-        ]
-
-
-liqOutSection :
-    { model | images : Images, theme : Theme }
-    -> Pool
-    -> { transaction | state : State }
-    -> Element Msg
-liqOutSection model pool { state } =
-    column
-        [ Region.description "liquidity output"
-        , width fill
-        , height shrink
-        , padding 16
-        , spacing 10
-        , model.theme |> ThemeColor.sectionBackground |> Background.color
-        , Border.rounded 8
-        ]
-        [ row
-            [ width shrink
-            , height shrink
-            , spacing 10
-            ]
-            [ el
-                [ width shrink
-                , height shrink
-                , Font.size 14
-                , paddingXY 0 3
-                , model.theme |> ThemeColor.actionElemLabel |> Font.color
-                ]
-                (text "LP Tokens to Receive")
-            , (case state of
-                Asset { out } ->
-                    case out of
-                        Loading timeline ->
-                            Just timeline
-
-                        _ ->
-                            Nothing
-
-                Collateral { out } ->
-                    case out of
-                        Loading timeline ->
-                            Just timeline
-
-                        _ ->
-                            Nothing
-              )
-                |> Maybe.map
-                    (\timeline ->
-                        el
-                            [ width shrink
-                            , height shrink
-                            , centerY
-                            ]
-                            (Loading.view timeline model.theme)
-                    )
-                |> Maybe.withDefault none
-            ]
-        , Output.liquidity model
-            { pair = pool.pair
-            , output =
-                case state of
-                    Asset { out } ->
-                        out
-                            |> Remote.map .liquidityOut
-
-                    Collateral { out } ->
-                        out
-                            |> Remote.map .liquidityOut
-            , description = "liquidity out"
-            }
         ]
 
 

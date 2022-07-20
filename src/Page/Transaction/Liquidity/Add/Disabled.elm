@@ -38,7 +38,6 @@ import Element.Font as Font
 import Element.Region as Region
 import Page.Transaction.Info as Info
 import Page.Transaction.MaxButton as MaxButton
-import Page.Transaction.Output as Output
 import Page.Transaction.Textbox as Textbox
 import Utility.Color as Color
 import Utility.Image as Image
@@ -71,8 +70,8 @@ view model blockchain pool transaction =
             blockchain
             pool
             transaction
-    , second = duesInSection model blockchain pool transaction
-    , third = warningSection model pool
+    , second = duesInSection model
+    , third = warningSection model
     }
 
 
@@ -199,11 +198,8 @@ collateralInSection model blockchain collateral transaction =
 
 duesInSection :
     { model | images : Images, theme : Theme }
-    -> Blockchain
-    -> Pool
-    -> Transaction
     -> Element Never
-duesInSection model blockchain pool transaction =
+duesInSection model =
     column
         [ spacing 16
         , alpha 0.2
@@ -235,18 +231,14 @@ duesInSection model blockchain pool transaction =
             , Border.rounded 8
             ]
             [ debtInSection model
-                (pool.pair |> Pair.toAsset)
-                transaction
             ]
         ]
 
 
 debtInSection :
     { model | images : Images, theme : Theme }
-    -> Token
-    -> Transaction
     -> Element Never
-debtInSection model asset transaction =
+debtInSection model =
     column
         [ width fill
         , height shrink
@@ -273,9 +265,8 @@ debtInSection model asset transaction =
 
 warningSection :
     { model | images : Images, theme : Theme }
-    -> Pool
     -> Element Never
-warningSection { images, theme } pool =
+warningSection { images, theme } =
     column
         [ width fill
         , height shrink
@@ -291,7 +282,7 @@ warningSection { images, theme } pool =
             |> Image.warning
                 [ width <| px 24, height <| px 24, Font.center, centerX ]
         , paragraph
-            [ Font.color Color.warning400
+            [ theme |> ThemeColor.warning |> Font.color
             , Font.center
             ]
             [ text "The above Debt must be repaid before maturity of the pool, else the collateral locked will be forfeited. You can view the debt position under the Borrow tab." ]

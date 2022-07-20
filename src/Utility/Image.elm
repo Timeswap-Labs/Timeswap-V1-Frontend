@@ -34,17 +34,18 @@ module Utility.Image exposing
     , linkDark
     , linkSecondary
     , linkWhite
-    , loadingPositions
-    , loadingPositionsDark
     , loading
     , loadingAnimation
     , loadingFailed
+    , loadingPositions
+    , loadingPositionsDark
     , loadingSuccess
     , logoPure
     , logoText
     , logoTextDark
     , matured
     , medium
+    , mediumSecondary
     , metamask
     , minus
     , minusDark
@@ -469,6 +470,12 @@ medium : List (Attribute msg) -> Images -> Element msg
 medium =
     view "Medium"
 
+
+mediumSecondary : List (Attribute msg) -> Images -> Element msg
+mediumSecondary =
+    view "MediumSecondary"
+
+
 loadingPositions : List (Attribute msg) -> Images -> Element msg
 loadingPositions =
     view "LoadingPositions"
@@ -497,7 +504,8 @@ borrowloadingPositionsIcon =
 borrowloadingPositionsIconDark : List (Attribute msg) -> Images -> Element msg
 borrowloadingPositionsIconDark =
     view "BorrowEmptyDark"
-    
+
+
 loading : List (Attribute msg) -> Images -> Element msg
 loading =
     viewGifs "Loading"

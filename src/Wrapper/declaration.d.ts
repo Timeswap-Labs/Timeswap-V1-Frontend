@@ -60,6 +60,10 @@ declare interface Ports {
 
   burn: PortFromElm<Burn>;
   approveAndFlashRepay: PortFromElm<ApproveAndFlashRepay>;
+  queryFlashRepay: PortFromElm<QueryFlashRepay>;
+  receiveFlashRepay: PortToElm<ReceiveFlashRepay>;
+  flashRepayTry: PortFromElm<FlashRepayTry>;
+  receiveFlashRepayTry: PortToElm<ReceiveFlashRepayTry>;
   flashRepay: PortFromElm<FlashRepay>;
 
   queryCreate: PortFromElm<NewLiquidityQuery>;
@@ -307,8 +311,6 @@ type LiqReturn = {
   pool: Pool;
   poolInfo: PoolInfo;
   liquidityIn: Uint;
-  tokenIds: string[];
-  cdtAddress: string | null;
 };
 
 type ReceiveLiqReturn = {
@@ -322,8 +324,6 @@ type ReceiveLiqReturn = {
       }
     | {
         liqPercent: number;
-        isFlashRepayAllowed: boolean;
-        isCDTApproved: boolean;
       };
 };
 
@@ -582,6 +582,35 @@ interface ApproveAndFlashRepay {
     ids: string[];
   };
 }
+
+interface QueryFlashRepay {
+  chain: Chain;
+  pool: Pool;
+  tokenIds: string[];
+  cdtAddress: string;
+}
+
+interface FlashRepayTry {
+  chain: Chain;
+  pool: Pool;
+  tokenIds: string[];
+}
+
+interface ReceiveFlashRepayTry {
+  chain: Chain;
+  pool: Pool;
+  tokenIds: string[];
+  result: boolean;
+};
+
+interface ReceiveFlashRepay {
+  chain: Chain;
+  pool: Pool;
+  result: {
+    isCDTApproved: boolean;
+    liqDueTokenIds: string[];
+  };
+};
 
 interface FlashRepay {
   id: number;

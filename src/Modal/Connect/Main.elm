@@ -43,6 +43,7 @@ import Element
         , none
         , padding
         , paddingXY
+        , paragraph
         , px
         , row
         , shrink
@@ -1065,15 +1066,15 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                         |> inFront
                     ]
                     none
-        , el
-            [ width shrink
+        , paragraph
+            [ width fill
             , height shrink
             , centerY
             , Font.size 14
             , theme |> ThemeColor.text |> Font.color
             , paddingXY 0 3
             ]
-            ((case txn.write of
+            [ (case txn.write of
                 TxnWrite.Approve erc20 ->
                     [ "Approve"
                     , erc20
@@ -1159,9 +1160,9 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                     , "pool"
                     ]
                         |> String.join " "
-             )
+              )
                 |> text
-            )
+            ]
         , newTabLink
             [ width shrink
             , height shrink
