@@ -9,6 +9,7 @@ import * as walletImages from "url:../../image/wallets/*.svg";
 import { elmUser, init } from "./init";
 import { whitelistChains } from "./chains";
 import { sentry } from "./sentry";
+import { API_ENDPOINT_PROD, API_ENDPOINT_TEST } from "./constants";
 
 export declare let window: any;
 
@@ -17,9 +18,9 @@ async function elmInit() {
 
   let apiEndpoint = "";
   if (process.env.PARCEL_PUBLIC_ENVIRONMENT === "production")
-    apiEndpoint = "https://ts-bico-mainnet.herokuapp.com/v1";
+    apiEndpoint = API_ENDPOINT_PROD;
   else
-    apiEndpoint = "https://ts-bico-testnet.herokuapp.com/v1";
+    apiEndpoint = API_ENDPOINT_TEST;
 
   const app = Elm.Main.init({
     node: document.getElementById("elm")!,

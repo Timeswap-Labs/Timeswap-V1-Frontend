@@ -747,6 +747,18 @@ pageEffects blockchain effect model =
             , Cmd.none
             )
 
+        Page.OpenCautionLiq txnLiq ->
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (Modal.initCautionLiq txnLiq
+                                |> Just
+                            )
+              }
+            , Cmd.none
+            )
+
         Page.InputPool pool ->
             ( model
             , Route.fromTab
@@ -1186,6 +1198,33 @@ modalEffects effect model =
             case model.blockchain of
                 Supported blockchain ->
                     approveAndLendTxn writeLend blockchain model
+
+                _ ->
+                    ( model
+                    , Cmd.none
+                    )
+
+        Modal.AddLiquidity writeLiq ->
+            case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.updateLiquidity model writeLiq
+                        |> (\( updated, cmd, maybeEffect ) ->
+                                maybeEffect
+                                    |> Maybe.map
+                                        (\pageEffect ->
+                                            { model | blockchain = Supported updated }
+                                                |> blockchainEffect pageEffect
+                                                |> Tuple.mapSecond List.singleton
+                                                |> Tuple.mapSecond
+                                                    ((::) (cmd |> Cmd.map BlockchainMsg))
+                                                |> Tuple.mapSecond Cmd.batch
+                                        )
+                                    |> Maybe.withDefault
+                                        ( { model | blockchain = Supported updated }
+                                        , cmd |> Cmd.map BlockchainMsg
+                                        )
+                           )
 
                 _ ->
                     ( model

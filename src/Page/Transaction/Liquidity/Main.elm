@@ -39,12 +39,14 @@ import Element
         ( Element
         , alignRight
         , alignTop
+        , below
         , centerY
         , column
         , el
         , fill
         , height
         , map
+        , newTabLink
         , none
         , padding
         , paddingXY
@@ -57,6 +59,7 @@ import Element
         )
 import Element.Background as Background
 import Element.Border as Border
+import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Region as Region
@@ -83,6 +86,7 @@ import Utility.IconButton as IconButton
 import Utility.Image as Image
 import Utility.Input as Input
 import Utility.ThemeColor as ThemeColor
+import Utility.Tooltip as TooltipUtil
 
 
 type Transaction
@@ -151,6 +155,7 @@ type Effect
     | Approve ERC20
     | Liquidity WriteLiquidity
     | Create WriteCreate
+    | OpenCaution WriteLiquidity
 
 
 init :
@@ -1024,6 +1029,9 @@ addEffects effect =
         Add.Liquidity writeLiquidity ->
             Liquidity writeLiquidity
 
+        Add.OpenCaution writeLiquidity ->
+            OpenCaution writeLiquidity
+
 
 newEffects : New.Effect -> Effect
 newEffects effect =
@@ -1046,6 +1054,30 @@ noCmdAndEffect transaction =
     , Cmd.none
     , Nothing
     )
+
+
+tutorialLink :
+    { model | images : Images, theme : Theme }
+    -> Element Msg
+tutorialLink { images, theme } =
+    newTabLink []
+        { url = "https://youtu.be/x3OaFiQf_9Q"
+        , label =
+            row
+                [ width shrink
+                , height shrink
+                , spacing 8
+                , paddingXY 8 4
+                , Border.width 1
+                , theme |> ThemeColor.textboxBorder |> Border.color
+                , Border.rounded 8
+                ]
+                [ el [ theme |> ThemeColor.textLight |> Font.color, Font.size 16 ] (text "Guide")
+                , images
+                    |> Image.video
+                        [ width <| px 16, height <| px 16 ]
+                ]
+        }
 
 
 get :
@@ -1172,7 +1204,7 @@ view :
     -> Blockchain
     -> Transaction
     -> Element Msg
-view ({ device, backdrop, theme } as model) blockchain (Transaction transaction) =
+view ({ device, backdrop, images, theme } as model) blockchain (Transaction transaction) =
     (case transaction.state of
         Add None ->
             { asset = Nothing
@@ -1486,23 +1518,63 @@ view ({ device, backdrop, theme } as model) blockchain (Transaction transaction)
 
                             New _ ->
                                 IconButton.back model GoToAdd
-                        , el
-                            [ width shrink
-                            , height shrink
-                            , paddingXY 0 4
-                            , Font.size 24
-                            , theme |> ThemeColor.text |> Font.color
-                            , Font.bold
-                            ]
-                            ((case transaction.state of
-                                Add _ ->
-                                    "Add Liquidity"
+                        , case transaction.state of
+                            Add _ ->
+                                row [ spacing 12 ]
+                                    [ el
+                                        [ width shrink
+                                        , height shrink
+                                        , paddingXY 0 4
+                                        , Font.size 24
+                                        , theme |> ThemeColor.text |> Font.color
+                                        , Font.bold
+                                        ]
+                                        ("Add Liquidity" |> text)
+                                    , tutorialLink model
+                                    , newTabLink []
+                                        { url = "https://medium.com/timeswap/deep-dive-on-liquidity-providers-of-timeswap-3d1eb64ad818"
+                                        , label =
+                                            images
+                                                |> (case theme of
+                                                        Theme.Dark ->
+                                                            Image.medium
 
-                                New _ ->
-                                    "Create Pool"
-                             )
-                                |> text
-                            )
+                                                        Theme.Light ->
+                                                            Image.mediumSecondary
+                                                   )
+                                                    [ width <| px 20
+                                                    , height <| px 20
+                                                    , Font.center
+                                                    , Events.onMouseEnter (OnMouseEnter Tooltip.LiquidityMedium)
+                                                    , Events.onMouseLeave OnMouseLeave
+                                                    , (if transaction.tooltip == Just Tooltip.LiquidityMedium then
+                                                        el
+                                                            [ Font.size 14
+                                                            , model.theme |> ThemeColor.textLight |> Font.color
+                                                            ]
+                                                            ("We encourage you to read our deep-dive on liquidity providers on our medium blog" |> text)
+                                                            |> TooltipUtil.belowAlignLeft model.theme
+
+                                                       else
+                                                        none
+                                                      )
+                                                        |> below
+                                                    ]
+                                        }
+                                    ]
+
+                            New _ ->
+                                row [ spacing 12 ]
+                                    [ el
+                                        [ width shrink
+                                        , height shrink
+                                        , paddingXY 0 4
+                                        , Font.size 24
+                                        , theme |> ThemeColor.text |> Font.color
+                                        , Font.bold
+                                        ]
+                                        ("Create Pool" |> text)
+                                    ]
                         , case transaction.state of
                             Add _ ->
                                 -- createPoolButton model

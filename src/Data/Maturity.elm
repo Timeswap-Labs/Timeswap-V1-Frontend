@@ -9,8 +9,8 @@ module Data.Maturity exposing
     , sorter
     , toDuration
     , toQueryParameter
-    , toString, toUnix
-    
+    , toString
+    , toUnix
     )
 
 import Json.Decode as Decode exposing (Decoder)

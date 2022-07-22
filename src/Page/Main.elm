@@ -119,6 +119,7 @@ type Effect
     | Borrow WriteBorrow
     | ApproveAndBorrow WriteBorrow
     | Liquidity WriteLiquidity
+    | OpenCautionLiq WriteLiquidity
     | Create WriteCreate
     | Withdraw WriteWithdraw
     | Burn WriteBurn
@@ -687,6 +688,9 @@ liquidityEffect effect =
 
         Liquidity.Liquidity writeLiquidity ->
             Liquidity writeLiquidity
+
+        Liquidity.OpenCaution writeLiquidity ->
+            OpenCautionLiq writeLiquidity
 
         Liquidity.Create writeCreate ->
             Create writeCreate

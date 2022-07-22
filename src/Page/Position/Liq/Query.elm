@@ -1,8 +1,15 @@
 module Page.Position.Liq.Query exposing
     ( ActiveReturn
     , Answer
+    , FlashRepayAnswer
+    , FlashRepayData
+    , FlashRepayQuery
     , Query
     , decoder
+    , encodeFlashRepayQuery
+    , encodeFlashRepayTry
+    , flashRepayDecoder
+    , flashRepayTryDecoder
     , givenLiq
     )
 
@@ -25,8 +32,14 @@ type alias Query =
     , pool : Pool
     , poolInfo : PoolInfo
     , liquidityIn : Liq
+    }
+
+
+type alias FlashRepayQuery =
+    { chain : Chain
+    , pool : Pool
     , tokenIds : List TokenId
-    , cdtAddress : Maybe Address
+    , cdtAddress : Address
     }
 
 
@@ -41,26 +54,60 @@ type alias Answer =
 
 type alias ActiveReturn =
     { liqPercent : Float
-    , isFlashRepayAllowed : Bool
-    , isCDTApproved : Bool
+    }
+
+
+type alias FlashRepayAnswer =
+    { chain : Chain
+    , pool : Pool
+    , result : Result Error FlashRepayData
+    }
+
+
+type alias FlashRepayTryAnswer =
+    { chain : Chain
+    , pool : Pool
+    , tokenIds : List TokenId
+    , result : Result Error Bool
+    }
+
+
+type alias FlashRepayData =
+    { isCDTApproved : Bool
+    , liqDueTokenIds : List TokenId
     }
 
 
 givenLiq : Query -> Value
-givenLiq { chain, pool, poolInfo, liquidityIn, tokenIds, cdtAddress } =
+givenLiq { chain, pool, poolInfo, liquidityIn } =
     [ ( "chain", chain |> Chain.encode )
     , ( "pool", pool |> Pool.encode )
     , ( "poolInfo", poolInfo |> PoolInfo.encode )
     , ( "liquidityIn", liquidityIn |> Liq.encode )
-    , ( "tokenIds", tokenIds |> Encode.list TokenId.encode )
-    , ( "cdtAddress"
-      , case cdtAddress of
-            Just address ->
-                address |> Address.encode
+    ]
+        |> Encode.object
 
-            _ ->
-                Encode.null
-      )
+
+encodeFlashRepayQuery : FlashRepayQuery -> Value
+encodeFlashRepayQuery { chain, pool, tokenIds, cdtAddress } =
+    [ ( "chain", chain |> Chain.encode )
+    , ( "pool", pool |> Pool.encode )
+    , ( "tokenIds", tokenIds |> Encode.list TokenId.encode )
+    , ( "cdtAddress", cdtAddress |> Address.encode )
+    ]
+        |> Encode.object
+
+
+encodeFlashRepayTry :
+    { chain : Chain
+    , pool : Pool
+    , tokenIds : List TokenId
+    }
+    -> Value
+encodeFlashRepayTry { chain, pool, tokenIds } =
+    [ ( "chain", chain |> Chain.encode )
+    , ( "pool", pool |> Pool.encode )
+    , ( "tokenIds", tokenIds |> Encode.list TokenId.encode )
     ]
         |> Encode.object
 
@@ -89,5 +136,39 @@ activeReturnDecoder : Decoder ActiveReturn
 activeReturnDecoder =
     Decode.succeed ActiveReturn
         |> Pipeline.required "liqPercent" Decode.float
-        |> Pipeline.required "isFlashRepayAllowed" Decode.bool
+
+
+flashRepayDecoder : Decoder FlashRepayAnswer
+flashRepayDecoder =
+    Decode.succeed FlashRepayAnswer
+        |> Pipeline.required "chain" Chain.decoder
+        |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "result"
+            ([ flashRepayDataDecoder
+                |> Decode.map Ok
+             , Error.decoder |> Decode.map Err
+             ]
+                |> Decode.oneOf
+            )
+
+
+flashRepayDataDecoder : Decoder FlashRepayData
+flashRepayDataDecoder =
+    Decode.succeed FlashRepayData
         |> Pipeline.required "isCDTApproved" Decode.bool
+        |> Pipeline.required "liqDueTokenIds" (Decode.list TokenId.decoder)
+
+
+flashRepayTryDecoder : Decoder FlashRepayTryAnswer
+flashRepayTryDecoder =
+    Decode.succeed FlashRepayTryAnswer
+        |> Pipeline.required "chain" Chain.decoder
+        |> Pipeline.required "pool" Pool.decoder
+        |> Pipeline.required "tokenIds" (Decode.list TokenId.decoder)
+        |> Pipeline.required "result"
+            ([ Decode.bool
+                |> Decode.map Ok
+             , Error.decoder |> Decode.map Err
+             ]
+                |> Decode.oneOf
+            )

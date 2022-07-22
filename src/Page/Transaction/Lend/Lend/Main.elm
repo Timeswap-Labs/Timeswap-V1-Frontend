@@ -162,7 +162,6 @@ type Msg
     | InputInsuranceOut String
     | QueryAgain Posix
     | ClickConnect
-    | ClickApprove
     | ClickApproveAndLend
     | ClickLend
     | ReceiveAnswer Value
@@ -749,47 +748,6 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     , Cmd.none
                     , OpenConnect |> Just
                     )
-
-        ( ClickApprove, _ ) ->
-            (case
-                ( blockchain |> Blockchain.toUser
-                , transaction.assetIn
-                    |> Uint.fromAmount
-                        (pool.pair |> Pair.toAsset)
-                , pool.pair
-                    |> Pair.toAsset
-                    |> Token.toERC20
-                )
-             of
-                ( Just user, Just assetIn, Just erc20 ) ->
-                    if
-                        (user
-                            |> User.hasEnoughBalance
-                                (pool.pair |> Pair.toAsset)
-                                assetIn
-                        )
-                            && (user
-                                    |> User.hasEnoughAllowance
-                                        erc20
-                                        assetIn
-                                    |> not
-                               )
-                    then
-                        ( transaction |> Transaction
-                        , Cmd.none
-                        , erc20
-                            |> Approve
-                            |> Just
-                        )
-                            |> Just
-
-                    else
-                        Nothing
-
-                _ ->
-                    Nothing
-            )
-                |> Maybe.withDefault (transaction |> noCmdAndEffect)
 
         ( ClickApproveAndLend, Default (Success answer) ) ->
             (case
@@ -2859,15 +2817,6 @@ disabledLend : Theme -> Element msg
 disabledLend theme =
     Button.disabled theme "Lend"
         |> map never
-
-
-approveButton : ERC20 -> Theme -> Element Msg
-approveButton erc20 theme =
-    Button.approve
-        { onPress = ClickApprove
-        , erc20 = erc20
-        , theme = theme
-        }
 
 
 approveAndLendButton : ERC20 -> Theme -> Element Msg
