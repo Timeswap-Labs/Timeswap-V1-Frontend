@@ -8,14 +8,11 @@ module Page.Positions.Dues.Main exposing
     , view
     )
 
-import Animator exposing (Timeline)
-import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Due as Due exposing (Due)
 import Blockchain.User.Dues as Dues exposing (Dues)
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.TokenId exposing (TokenId)
 import Data.Backdrop exposing (Backdrop)
-import Data.Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.Images exposing (Images)
@@ -28,7 +25,6 @@ import Element
     exposing
         ( Element
         , alignRight
-        , alignTop
         , centerX
         , centerY
         , column
@@ -36,7 +32,6 @@ import Element
         , fill
         , height
         , inFront
-        , none
         , padding
         , paddingEach
         , paddingXY
@@ -55,6 +50,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import Element.Region as Region
+import Page.Position.Claim.Main exposing (errorHandlerNativesFetch)
 import Page.Positions.Dues.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Dict as Dict exposing (Dict)
 import Time exposing (Posix)
@@ -63,7 +59,6 @@ import Utility.Duration as Duration
 import Utility.Glass as Glass
 import Utility.Id as Id
 import Utility.Image as Image
-import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
@@ -153,14 +148,14 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
             Loading _ ->
                 loading model
 
-            Failure error ->
-                none
+            Failure _ ->
+                errorHandlerNativesFetch
 
             -- |> Debug.log "error view"
             Success dues ->
                 dues
-                    |> Dict.map (\_ dict -> dict |> Due.dropZero)
-                    |> Dict.dropIf (\_ dict -> dict |> Dict.isEmpty)
+                    |> Dict.map (\_ tuple -> tuple |> Tuple.mapFirst Due.dropZero)
+                    |> Dict.dropIf (\_ tuple -> tuple |> Tuple.first |> Dict.isEmpty)
                     |> (\filteredDues ->
                             if filteredDues |> Dict.isEmpty then
                                 noDues model
@@ -269,7 +264,7 @@ loading { images, theme } =
 
 
 noDues : { model | device : Device, images : Images, theme : Theme } -> Element msg
-noDues { device, images, theme } =
+noDues { images, theme } =
     column
         [ width fill
         , height shrink

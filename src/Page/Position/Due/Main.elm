@@ -170,8 +170,9 @@ getChecks user { pool, checks } =
                     |> User.getDues
                     |> Remote.map (Dict.get pool)
                     |> (Remote.map << Maybe.map)
-                        (\dict ->
-                            dict
+                        (\tuple ->
+                            tuple
+                                |> Tuple.first
                                 |> Dict.get tokenId
                                 |> Maybe.map
                                     (\{ collateral } ->
@@ -285,7 +286,7 @@ returnButton { images, theme } =
                     , theme |> ThemeColor.text |> Font.color
                     , centerY
                     ]
-                    (text "Back to borrow")
+                    (text "Back to Borrow")
                 ]
         }
 
@@ -457,8 +458,9 @@ viewDue { images, theme, time } chain user { pool, checks, tooltip } =
             |> User.getDues
             |> Remote.map (Dict.get pool)
             |> (Remote.map << Maybe.map)
-                (\dict ->
-                    dict
+                (\tuple ->
+                    tuple
+                        |> Tuple.first
                         |> Due.dropZero
                         |> Dict.toList
                         |> List.map

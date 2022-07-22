@@ -128,7 +128,7 @@ type Effect
     | OpenMaturityList Pair
     | OpenConnect
     | OpenSettings
-    | OpenCaution WriteLend Float CDP PoolInfo
+    | OpenCaution WriteLend Float CDP PoolInfo Bool
     | Approve ERC20
     | Lend WriteLend
 
@@ -482,8 +482,8 @@ lendEffects effect =
         Lend.OpenConnect ->
             OpenConnect
 
-        Lend.OpenCaution txn apr cdp poolInfo ->
-            OpenCaution txn apr cdp poolInfo
+        Lend.OpenCaution txn apr cdp poolInfo isAssetApproved ->
+            OpenCaution txn apr cdp poolInfo isAssetApproved
 
         Lend.Approve erc20 ->
             Approve erc20

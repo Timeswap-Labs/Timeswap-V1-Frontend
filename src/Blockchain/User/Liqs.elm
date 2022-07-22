@@ -1,6 +1,9 @@
-module Blockchain.User.Liqs exposing (Liqs, decoder, toERC20s, toList)
+module Blockchain.User.Liqs exposing (Liqs, decoder, filterEmptyLiqs, getPositionCount, toERC20s, toList)
 
 import Blockchain.User.Liq as Liq exposing (Liq)
+import Data.Address as Address exposing (Address)
+import Data.Chain exposing (Chain)
+import Data.Chains exposing (Chains)
 import Data.ERC20 as ERC20
 import Data.ERC20s exposing (ERC20s)
 import Data.Maturity as Maturity
@@ -12,36 +15,77 @@ import Json.Decode.Pipeline as Pipeline
 import Sort.Dict as Dict exposing (Dict)
 import Sort.Set as Set
 import Time exposing (Posix)
-import Data.Chains exposing (Chains)
-import Data.Chain exposing (Chain)
 
 
 type alias Liqs =
-    Dict Pool Liq
+    Dict Address (Dict Pool Liq)
 
 
 toList :
     Posix
     -> Liqs
-    -> List ( Pool, Liq )
-toList posix claims =
-    claims
-        |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
-        |> Dict.partition
-            (\{ maturity } _ ->
-                maturity |> Maturity.isActive posix
+    -> List ( Address, ( Pool, Liq ) )
+toList posix liqs =
+    liqs
+        |> Dict.map
+            (\_ dict ->
+                dict
+                    |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
+                    |> Dict.partition
+                        (\{ maturity } _ ->
+                            maturity |> Maturity.isActive posix
+                        )
+                    |> Tuple.mapBoth Dict.toList Dict.toList
+                    |> (\( active, matured ) ->
+                            [ matured
+                            , active
+                            ]
+                                |> List.concat
+                       )
             )
-        |> Tuple.mapBoth Dict.toList Dict.toList
-        |> (\( active, matured ) ->
-                [ matured
-                , active
-                ]
-                    |> List.concat
-           )
+        |> Dict.toList
+        |> List.foldl
+            (\( convAddress, poolLiqList ) acc ->
+                acc
+                    |> List.append
+                        (poolLiqList |> List.map (\poolLiqTuple -> ( convAddress, poolLiqTuple )))
+            )
+            []
+
+
+getPositionCount :
+    Liqs
+    -> Int
+getPositionCount liqs =
+    liqs
+        |> Dict.map
+            (\_ dict ->
+                dict
+                    |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
+                    |> Dict.toList
+            )
+        |> Dict.toList
+        |> List.foldl
+            (\( convAddress, poolLiqList ) acc ->
+                acc
+                    |> List.append
+                        (poolLiqList |> List.map (\poolLiqTuple -> ( convAddress, poolLiqTuple )))
+            )
+            []
+        |> List.length
 
 
 decoder : Chain -> Chains -> Decoder Liqs
 decoder chain chains =
+    Decode.succeed Tuple.pair
+        |> Pipeline.required "convAddress" Address.decoder
+        |> Pipeline.required "pools" (poolLiqsDecoder chain chains)
+        |> Decode.list
+        |> Decode.map (Dict.fromList Address.sorter)
+
+
+poolLiqsDecoder : Chain -> Chains -> Decoder (Dict Pool Liq)
+poolLiqsDecoder chain chains =
     Decode.succeed Tuple.pair
         |> Pipeline.required "pool" Pool.decoder
         |> Pipeline.required "liq" Liq.decoder
@@ -53,24 +97,48 @@ decoder chain chains =
 toERC20s : Liqs -> ERC20s
 toERC20s liqs =
     liqs
-        |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
-        |> Dict.keys
-        |> List.concatMap
-            (\pool ->
-                []
-                    |> (++)
-                        (pool.pair
-                            |> Pair.toAsset
-                            |> Token.toERC20
-                            |> Maybe.map List.singleton
-                            |> Maybe.withDefault []
+        |> Dict.values
+        |> List.map
+            (\dict ->
+                dict
+                    |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
+                    |> Dict.keys
+                    |> List.concatMap
+                        (\pool ->
+                            []
+                                |> (++)
+                                    (pool.pair
+                                        |> Pair.toAsset
+                                        |> Token.toERC20
+                                        |> Maybe.map List.singleton
+                                        |> Maybe.withDefault []
+                                    )
+                                |> (++)
+                                    (pool.pair
+                                        |> Pair.toCollateral
+                                        |> Token.toERC20
+                                        |> Maybe.map List.singleton
+                                        |> Maybe.withDefault []
+                                    )
                         )
-                    |> (++)
-                        (pool.pair
-                            |> Pair.toCollateral
-                            |> Token.toERC20
-                            |> Maybe.map List.singleton
-                            |> Maybe.withDefault []
-                        )
+                    |> Set.fromList ERC20.sorter
             )
-        |> Set.fromList ERC20.sorter
+        |> List.foldl
+            (\erc20Set acc ->
+                Set.union ERC20.sorter erc20Set acc
+            )
+            (Set.empty ERC20.sorter)
+
+
+filterEmptyLiqs : Liqs -> Liqs
+filterEmptyLiqs liqs =
+    liqs
+        |> Dict.map
+            (\_ dict ->
+                dict |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
+            )
+        |> Dict.dropIf
+            (\_ dict ->
+                dict
+                    |> Dict.isEmpty
+            )

@@ -63,7 +63,13 @@ export function withdrawSigner(
   gp: GlobalParams
 ) {
   app.ports.withdraw.subscribe(async (params) => {
-    const pool = getPoolSDK(gp, params.send.asset, params.send.collateral, params.send.maturity, params.chain);
+    const pool = getPoolSDK(
+      gp, params.send.asset,
+      params.send.collateral,
+      params.send.maturity,
+      params.chain,
+      params.send.convAddress
+    );
 
     try {
       const txnConfirmation = await pool.upgrade(await gp.getSigner()).collect({
@@ -87,6 +93,7 @@ export function withdrawSigner(
 
         const txnReceipt = await txnConfirmation.wait();
         const receiveReceipt = {
+          id: params.id,
           chain: params.chain,
           address: params.address,
           hash: txnConfirmation.hash,

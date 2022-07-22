@@ -162,7 +162,7 @@ type Msg
     | InputInsuranceOut String
     | QueryAgain Posix
     | ClickConnect
-    | ClickApprove
+    | ClickApproveAndLend
     | ClickLend
     | ReceiveAnswer Value
     | Tick Posix
@@ -172,7 +172,7 @@ type Msg
 
 type Effect
     = OpenConnect
-    | OpenCaution WriteLend Float CDP PoolInfo
+    | OpenCaution WriteLend Float CDP PoolInfo Bool
     | Approve ERC20
     | Lend WriteLend
 
@@ -749,35 +749,227 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                     , OpenConnect |> Just
                     )
 
-        ( ClickApprove, _ ) ->
+        ( ClickApproveAndLend, Default (Success answer) ) ->
             (case
                 ( blockchain |> Blockchain.toUser
                 , transaction.assetIn
                     |> Uint.fromAmount
                         (pool.pair |> Pair.toAsset)
-                , pool.pair
-                    |> Pair.toAsset
-                    |> Token.toERC20
                 )
              of
-                ( Just user, Just assetIn, Just erc20 ) ->
+                ( Just user, Just assetIn ) ->
                     if
                         (user
                             |> User.hasEnoughBalance
                                 (pool.pair |> Pair.toAsset)
                                 assetIn
                         )
-                            && (user
-                                    |> User.hasEnoughAllowance
-                                        erc20
-                                        assetIn
-                                    |> not
+                            && (pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toERC20
+                                    |> Maybe.map
+                                        (\erc20 ->
+                                            user
+                                                |> User.hasEnoughAllowance
+                                                    erc20
+                                                    assetIn
+                                                |> not
+                                        )
+                                    |> Maybe.withDefault True
                                )
                     then
                         ( transaction |> Transaction
                         , Cmd.none
-                        , erc20
-                            |> Approve
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , percent = Percent.init
+                             , minBond = answer.minBond
+                             , minInsurance = answer.minInsurance
+                             }
+                                |> WriteLend.GivenPercent
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
+                            False
+                            |> Just
+                        )
+                            |> Just
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ClickApproveAndLend, Slider { percent, claims } ) ->
+            (case
+                ( claims
+                , blockchain |> Blockchain.toUser
+                , transaction.assetIn
+                    |> Uint.fromAmount
+                        (pool.pair |> Pair.toAsset)
+                )
+             of
+                ( Success answer, Just user, Just assetIn ) ->
+                    if
+                        (user
+                            |> User.hasEnoughBalance
+                                (pool.pair |> Pair.toAsset)
+                                assetIn
+                        )
+                            && (pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toERC20
+                                    |> Maybe.map
+                                        (\erc20 ->
+                                            user
+                                                |> User.hasEnoughAllowance
+                                                    erc20
+                                                    assetIn
+                                                |> not
+                                        )
+                                    |> Maybe.withDefault True
+                               )
+                    then
+                        ( transaction |> Transaction
+                        , Cmd.none
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , percent = percent
+                             , minBond = answer.minBond
+                             , minInsurance = answer.minInsurance
+                             }
+                                |> WriteLend.GivenPercent
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
+                            False
+                            |> Just
+                        )
+                            |> Just
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ClickApproveAndLend, Bond bond ) ->
+            (case
+                ( bond.claims
+                , blockchain |> Blockchain.toUser
+                , ( transaction.assetIn
+                        |> Uint.fromAmount
+                            (pool.pair |> Pair.toAsset)
+                  , bond.bondOut
+                        |> Uint.fromAmount
+                            (pool.pair |> Pair.toAsset)
+                  )
+                )
+             of
+                ( Success answer, Just user, ( Just assetIn, Just bondOut ) ) ->
+                    if
+                        (user
+                            |> User.hasEnoughBalance
+                                (pool.pair |> Pair.toAsset)
+                                assetIn
+                        )
+                            && (pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toERC20
+                                    |> Maybe.map
+                                        (\erc20 ->
+                                            user
+                                                |> User.hasEnoughAllowance
+                                                    erc20
+                                                    assetIn
+                                                |> not
+                                        )
+                                    |> Maybe.withDefault True
+                               )
+                    then
+                        ( transaction |> Transaction
+                        , Cmd.none
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , bondOut = bondOut
+                             , minInsurance = answer.minInsurance
+                             }
+                                |> WriteLend.GivenBond
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
+                            False
+                            |> Just
+                        )
+                            |> Just
+
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+            )
+                |> Maybe.withDefault (transaction |> noCmdAndEffect)
+
+        ( ClickApproveAndLend, Insurance insurance ) ->
+            (case
+                ( insurance.claims
+                , blockchain |> Blockchain.toUser
+                , ( transaction.assetIn
+                        |> Uint.fromAmount
+                            (pool.pair |> Pair.toAsset)
+                  , insurance.insuranceOut
+                        |> Uint.fromAmount
+                            (pool.pair |> Pair.toCollateral)
+                  )
+                )
+             of
+                ( Success answer, Just user, ( Just assetIn, Just insuranceOut ) ) ->
+                    if
+                        (user
+                            |> User.hasEnoughBalance
+                                (pool.pair |> Pair.toAsset)
+                                assetIn
+                        )
+                            && (pool.pair
+                                    |> Pair.toAsset
+                                    |> Token.toERC20
+                                    |> Maybe.map
+                                        (\erc20 ->
+                                            user
+                                                |> User.hasEnoughAllowance
+                                                    erc20
+                                                    assetIn
+                                                |> not
+                                        )
+                                    |> Maybe.withDefault True
+                               )
+                    then
+                        ( transaction |> Transaction
+                        , Cmd.none
+                        , OpenCaution
+                            ({ pool = pool
+                             , assetIn = assetIn
+                             , insuranceOut = insuranceOut
+                             , minBond = answer.minBond
+                             }
+                                |> WriteLend.GivenInsurance
+                            )
+                            answer.apr
+                            answer.cdp
+                            poolInfo
+                            False
                             |> Just
                         )
                             |> Just
@@ -832,6 +1024,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             answer.apr
                             answer.cdp
                             poolInfo
+                            True
                             |> Just
                         )
                             |> Just
@@ -887,6 +1080,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             answer.apr
                             answer.cdp
                             poolInfo
+                            True
                             |> Just
                         )
                             |> Just
@@ -945,6 +1139,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             answer.apr
                             answer.cdp
                             poolInfo
+                            True
                             |> Just
                         )
                             |> Just
@@ -1003,6 +1198,7 @@ update model blockchain pool poolInfo msg (Transaction transaction) =
                             answer.apr
                             answer.cdp
                             poolInfo
+                            True
                             |> Just
                         )
                             |> Just
@@ -2475,8 +2671,9 @@ buttons { theme } blockchain asset transaction =
                                     [ theme |> Button.checkingBalance |> map never ]
 
                                 ( Just (Success True), Just (Success False) ) ->
-                                    [ approveButton erc20 theme
-                                    , theme |> disabledLend
+                                    [ approveAndLendButton erc20 theme
+
+                                    -- , theme |> disabledLend
                                     ]
 
                                 ( Just (Success False), Just (Success False) ) ->
@@ -2622,10 +2819,10 @@ disabledLend theme =
         |> map never
 
 
-approveButton : ERC20 -> Theme -> Element Msg
-approveButton erc20 theme =
-    Button.approve
-        { onPress = ClickApprove
+approveAndLendButton : ERC20 -> Theme -> Element Msg
+approveAndLendButton erc20 theme =
+    Button.approveAndLend
+        { onPress = ClickApproveAndLend
         , erc20 = erc20
         , theme = theme
         }

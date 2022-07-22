@@ -46,6 +46,8 @@ declare interface Ports {
   sdkPayMsg: PortToElm<PayCalculate>;
 
   approve: PortFromElm<Approve>;
+  approveAndLend: PortFromElm<Lend>;
+  approveAndBorrow: PortFromElm<Borrow>;
 
   withdraw: PortFromElm<Withdraw>;
 
@@ -54,9 +56,15 @@ declare interface Ports {
   receiveAddLiqAnswer: PortToElm<LiquidityCalculate>;
   liquidity: PortFromElm<Liquidity>;
   queryLiq: PortFromElm<LiqReturn>;
-  receiveLiqReturn: PortToElm<LiquidityCalculate>;
+  receiveLiqReturn: PortToElm<ReceiveLiqReturn>;
 
   burn: PortFromElm<Burn>;
+  approveAndFlashRepay: PortFromElm<ApproveAndFlashRepay>;
+  queryFlashRepay: PortFromElm<QueryFlashRepay>;
+  receiveFlashRepay: PortToElm<ReceiveFlashRepay>;
+  flashRepayTry: PortFromElm<FlashRepayTry>;
+  receiveFlashRepayTry: PortToElm<ReceiveFlashRepayTry>;
+  flashRepay: PortFromElm<FlashRepay>;
 
   queryCreate: PortFromElm<NewLiquidityQuery>;
   receiveNewLiqAnswer: PortToElm<NewLiquidityCalculate>;
@@ -120,36 +128,33 @@ interface ReceiveAllowances {
   allowances: string[];
 }
 
-interface PositionsOf {
-  chain: number;
-  owner: string;
-  natives: {
+interface Natives {
+  bondPrincipal: string;
+  bondInterest: string;
+  insurancePrincipal: string;
+  insuranceInterest: string;
+  liquidity: string;
+  collateralizedDebt: string;
+}
+
+interface ConvNatives {
+  convAddress: string;
+  nativeResponse: {
     pool: Pool;
-    natives: {
-      bondPrincipal: string;
-      bondInterest: string;
-      insurancePrincipal: string;
-      insuranceInterest: string;
-      liquidity: string;
-      collateralizedDebt: string;
-    };
+    natives: Natives;
   }[];
 }
 
-interface ReceivePositions {
-  chain: number;
+interface PositionsOf {
+  chain: Chain;
   owner: string;
-  natives: {
-    pool: Pool;
-    natives: {
-      bondPrincipal: string;
-      bondInterest: string;
-      insurancePrincipal: string;
-      insuranceInterest: string;
-      liquidity: string;
-      collateralizedDebt: string;
-    };
-  }[];
+  allNatives: ConvNatives[];
+}
+
+interface ReceivePositions {
+  chain: Chain;
+  owner: string;
+  allNatives: ConvNatives[];
   positions: {
     claims: Claims;
     dues: Dues;
@@ -165,8 +170,11 @@ interface Claim {
 }
 
 type Claims = {
-  pool: Pool;
-  claim: Claim;
+  convAddress: string;
+  pools: {
+    pool: Pool;
+    claim: Claim;
+  }[];
 }[];
 
 type ClaimsSum = {
@@ -291,8 +299,11 @@ type ReceiveCustom = {
 };
 
 type Liqs = {
-  pool: Pool;
-  liq: Uint;
+  convAddress: string;
+  pools: {
+    pool: Pool;
+    liq: Uint;
+  }[];
 }[];
 
 type LiqReturn = {
@@ -311,7 +322,9 @@ type ReceiveLiqReturn = {
         asset: string;
         collateral: string;
       }
-    | number;
+    | {
+        liqPercent: number;
+      };
 };
 
 interface ReceiveUser {
@@ -329,13 +342,18 @@ interface Txns {
 interface Confirmed {
   id: number;
   hash: string;
-  write: string;
+  write: Write;
   state: string;
 }
 
 interface Uncomfirmed {
   id: number;
-  write: string;
+  write: Write;
+}
+
+interface Write {
+  txn: string;
+  pool: Pool;
 }
 
 type Uint = string;
@@ -456,6 +474,7 @@ interface Withdraw {
     asset: NativeToken | ERC20Token;
     collateral: NativeToken | ERC20Token;
     maturity: number | string;
+    convAddress: string;
     assetTo: string;
     collateralTo: string;
     claimsIn: Claim;
@@ -476,7 +495,6 @@ interface Pay {
     deadline: number;
   };
 }
-
 interface Liquidity {
   id: number;
   chain: Chain;
@@ -545,9 +563,64 @@ interface Burn {
     asset: NativeToken | ERC20Token;
     collateral: NativeToken | ERC20Token;
     maturity: number | string;
+    convAddress?: string;
     assetTo: string;
     collateralTo: string;
     liquidityIn: string;
+  };
+}
+
+interface ApproveAndFlashRepay {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    cdtAddress: string;
+    maturity: number | string;
+    ids: string[];
+  };
+}
+
+interface QueryFlashRepay {
+  chain: Chain;
+  pool: Pool;
+  tokenIds: string[];
+  cdtAddress: string;
+}
+
+interface FlashRepayTry {
+  chain: Chain;
+  pool: Pool;
+  tokenIds: string[];
+}
+
+interface ReceiveFlashRepayTry {
+  chain: Chain;
+  pool: Pool;
+  tokenIds: string[];
+  result: boolean;
+};
+
+interface ReceiveFlashRepay {
+  chain: Chain;
+  pool: Pool;
+  result: {
+    isCDTApproved: boolean;
+    liqDueTokenIds: string[];
+  };
+};
+
+interface FlashRepay {
+  id: number;
+  chain: Chain;
+  address: string;
+  send: {
+    asset: NativeToken | ERC20Token;
+    collateral: NativeToken | ERC20Token;
+    maturity: number | string;
+    ids: string[];
   };
 }
 
@@ -563,6 +636,7 @@ interface ReceiveReceipt {
   address: string;
   hash: string;
   state: string;
+  txnType?: Write;
 }
 
 interface ReceiveUpdatedTxns {
@@ -570,5 +644,3 @@ interface ReceiveUpdatedTxns {
   address: string;
   txns: Txns;
 }
-
-

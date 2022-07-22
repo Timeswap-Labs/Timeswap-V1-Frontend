@@ -27,7 +27,6 @@ import Element
         , height
         , map
         , padding
-        , paddingEach
         , paddingXY
         , px
         , row
@@ -44,7 +43,7 @@ import Element.Region as Region
 import Modal.Outside as Outside
 import Page.Transaction.Button as Button
 import SingleDatePicker
-import Time exposing (Month(..), Posix, Weekday(..), millisToPosix, posixToMillis)
+import Time exposing (Month(..), Posix, Weekday(..), posixToMillis)
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.IconButton as IconButton
@@ -199,7 +198,7 @@ view :
     }
     -> Modal
     -> Element Msg
-view ({ backdrop, theme, time } as model) ((Modal { dateText, pickedTime }) as modal) =
+view ({ backdrop, theme, time } as model) ((Modal { pickedTime }) as modal) =
     Outside.view model
         { onClick = Exit
         , modal =
@@ -367,162 +366,153 @@ dateField { images, theme, time, offset } (Modal { picker, dateText, pickedTime 
         ]
 
 
-hourInput :
-    { model
-        | backdrop : Backdrop
-        , images : Images
-        , theme : Theme
-    }
-    -> Modal
-    -> Element Msg
-hourInput { theme } (Modal { hours }) =
-    row
-        [ width fill
-        , height fill
-        , paddingEach
-            { top = 0
-            , right = 8
-            , bottom = 0
-            , left = 0
-            }
-        , Border.width 1
-        , Border.solid
-        , (if hours |> isHourCorrect then
-            theme |> ThemeColor.textboxBorder
 
-           else
-            Color.negative500
-          )
-            |> Border.color
-        , Border.rounded 8
-        ]
-        [ Input.text
-            [ width fill
-            , height shrink
-            , centerY
-            , Background.color Color.none
-            , Border.color Color.none
-            , Font.bold
-            , Font.size 14
-            , (if hours |> isHourCorrect then
-                theme |> ThemeColor.text
-
-               else
-                Color.negative500
-              )
-                |> Font.color
-            ]
-            { onChange = InputHour
-            , text = hours
-            , placeholder =
-                Input.placeholder
-                    [ (if hours |> isHourCorrect then
-                        theme |> ThemeColor.placeholder2
-
-                       else
-                        Color.negative500
-                      )
-                        |> Font.color
-                    ]
-                    (text "00")
-                    |> Just
-            , label = Input.labelHidden "Maturity Time (Hours)"
-            }
-        , el
-            [ width shrink
-            , height shrink
-            , centerY
-            , Font.bold
-            , Font.size 14
-            , (if hours |> isHourCorrect then
-                theme |> ThemeColor.text
-
-               else
-                Color.negative500
-              )
-                |> Font.color
-            ]
-            (text "h")
-        ]
-
-
-minuteInput :
-    { model
-        | backdrop : Backdrop
-        , images : Images
-        , theme : Theme
-    }
-    -> Modal
-    -> Element Msg
-minuteInput { theme } (Modal { minutes }) =
-    row
-        [ width fill
-        , height fill
-        , paddingEach
-            { top = 0
-            , right = 8
-            , bottom = 0
-            , left = 0
-            }
-        , Border.width 1
-        , Border.solid
-        , (if minutes |> isMinuteCorrect then
-            theme |> ThemeColor.textboxBorder
-
-           else
-            Color.negative500
-          )
-            |> Border.color
-        , Border.rounded 8
-        ]
-        [ Input.text
-            [ width fill
-            , height shrink
-            , centerY
-            , Background.color Color.none
-            , Border.color Color.none
-            , Font.bold
-            , Font.size 14
-            , (if minutes |> isMinuteCorrect then
-                theme |> ThemeColor.text
-
-               else
-                Color.negative500
-              )
-                |> Font.color
-            ]
-            { onChange = InputMinute
-            , text = minutes
-            , placeholder =
-                Input.placeholder
-                    [ (if minutes |> isMinuteCorrect then
-                        theme |> ThemeColor.placeholder2
-
-                       else
-                        Color.negative500
-                      )
-                        |> Font.color
-                    ]
-                    (text "00")
-                    |> Just
-            , label = Input.labelHidden "Maturity Time (Minutes)"
-            }
-        , el
-            [ width shrink
-            , height shrink
-            , centerY
-            , Font.bold
-            , Font.size 14
-            , (if minutes |> isMinuteCorrect then
-                theme |> ThemeColor.text
-
-               else
-                Color.negative500
-              )
-                |> Font.color
-            ]
-            (text "m")
-        ]
+-- hourInput :
+--     { model
+--         | backdrop : Backdrop
+--         , images : Images
+--         , theme : Theme
+--     }
+--     -> Modal
+--     -> Element Msg
+-- hourInput { theme } (Modal { hours }) =
+--     row
+--         [ width fill
+--         , height fill
+--         , paddingEach
+--             { top = 0
+--             , right = 8
+--             , bottom = 0
+--             , left = 0
+--             }
+--         , Border.width 1
+--         , Border.solid
+--         , (if hours |> isHourCorrect then
+--             theme |> ThemeColor.textboxBorder
+--            else
+--             Color.negative500
+--           )
+--             |> Border.color
+--         , Border.rounded 8
+--         ]
+--         [ Input.text
+--             [ width fill
+--             , height shrink
+--             , centerY
+--             , Background.color Color.none
+--             , Border.color Color.none
+--             , Font.bold
+--             , Font.size 14
+--             , (if hours |> isHourCorrect then
+--                 theme |> ThemeColor.text
+--                else
+--                 Color.negative500
+--               )
+--                 |> Font.color
+--             ]
+--             { onChange = InputHour
+--             , text = hours
+--             , placeholder =
+--                 Input.placeholder
+--                     [ (if hours |> isHourCorrect then
+--                         theme |> ThemeColor.placeholder2
+--                        else
+--                         Color.negative500
+--                       )
+--                         |> Font.color
+--                     ]
+--                     (text "00")
+--                     |> Just
+--             , label = Input.labelHidden "Maturity Time (Hours)"
+--             }
+--         , el
+--             [ width shrink
+--             , height shrink
+--             , centerY
+--             , Font.bold
+--             , Font.size 14
+--             , (if hours |> isHourCorrect then
+--                 theme |> ThemeColor.text
+--                else
+--                 Color.negative500
+--               )
+--                 |> Font.color
+--             ]
+--             (text "h")
+--         ]
+-- minuteInput :
+--     { model
+--         | backdrop : Backdrop
+--         , images : Images
+--         , theme : Theme
+--     }
+--     -> Modal
+--     -> Element Msg
+-- minuteInput { theme } (Modal { minutes }) =
+--     row
+--         [ width fill
+--         , height fill
+--         , paddingEach
+--             { top = 0
+--             , right = 8
+--             , bottom = 0
+--             , left = 0
+--             }
+--         , Border.width 1
+--         , Border.solid
+--         , (if minutes |> isMinuteCorrect then
+--             theme |> ThemeColor.textboxBorder
+--            else
+--             Color.negative500
+--           )
+--             |> Border.color
+--         , Border.rounded 8
+--         ]
+--         [ Input.text
+--             [ width fill
+--             , height shrink
+--             , centerY
+--             , Background.color Color.none
+--             , Border.color Color.none
+--             , Font.bold
+--             , Font.size 14
+--             , (if minutes |> isMinuteCorrect then
+--                 theme |> ThemeColor.text
+--                else
+--                 Color.negative500
+--               )
+--                 |> Font.color
+--             ]
+--             { onChange = InputMinute
+--             , text = minutes
+--             , placeholder =
+--                 Input.placeholder
+--                     [ (if minutes |> isMinuteCorrect then
+--                         theme |> ThemeColor.placeholder2
+--                        else
+--                         Color.negative500
+--                       )
+--                         |> Font.color
+--                     ]
+--                     (text "00")
+--                     |> Just
+--             , label = Input.labelHidden "Maturity Time (Minutes)"
+--             }
+--         , el
+--             [ width shrink
+--             , height shrink
+--             , centerY
+--             , Font.bold
+--             , Font.size 14
+--             , (if minutes |> isMinuteCorrect then
+--                 theme |> ThemeColor.text
+--                else
+--                 Color.negative500
+--               )
+--                 |> Font.color
+--             ]
+--             (text "m")
+--         ]
 
 
 doneButton : Theme -> Modal -> Element Msg
@@ -553,34 +543,31 @@ doneButton theme (Modal { pickedTime }) =
         }
 
 
-isHourCorrect : String -> Bool
-isHourCorrect string =
-    string
-        |> String.toInt
-        |> Maybe.map
-            (\hour ->
-                if hour >= 0 && hour < 24 then
-                    True
 
-                else
-                    False
-            )
-        |> Maybe.withDefault False
-
-
-isMinuteCorrect : String -> Bool
-isMinuteCorrect string =
-    string
-        |> String.toInt
-        |> Maybe.map
-            (\minutes ->
-                if minutes >= 0 && minutes <= 59 then
-                    True
-
-                else
-                    False
-            )
-        |> Maybe.withDefault False
+-- isHourCorrect : String -> Bool
+-- isHourCorrect string =
+--     string
+--         |> String.toInt
+--         |> Maybe.map
+--             (\hour ->
+--                 if hour >= 0 && hour < 24 then
+--                     True
+--                 else
+--                     False
+--             )
+--         |> Maybe.withDefault False
+-- isMinuteCorrect : String -> Bool
+-- isMinuteCorrect string =
+--     string
+--         |> String.toInt
+--         |> Maybe.map
+--             (\minutes ->
+--                 if minutes >= 0 && minutes <= 59 then
+--                     True
+--                 else
+--                     False
+--             )
+--         |> Maybe.withDefault False
 
 
 isPosixValid : Posix -> Maybe Posix -> Bool

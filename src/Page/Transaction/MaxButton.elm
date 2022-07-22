@@ -102,7 +102,7 @@ userBalance param =
                     ]
                     (Loading.view timeline param.theme)
 
-            Failure error ->
+            Failure _ ->
                 el
                     [ width shrink
                     , height shrink
@@ -111,8 +111,6 @@ userBalance param =
                     , Font.color Color.transparent300
                     ]
                     (text "error")
-
-        -- |> Debug.log "implement error view"
         ]
 
 
@@ -196,7 +194,7 @@ disabledUserBalance param =
                     ]
                     (Loading.view timeline param.theme)
 
-            Failure error ->
+            Failure _ ->
                 el
                     [ width shrink
                     , height shrink
@@ -205,8 +203,6 @@ disabledUserBalance param =
                     , Font.color Color.transparent300
                     ]
                     (text "error")
-
-        -- |> Debug.log "implement error view"
         ]
 
 

@@ -19,10 +19,12 @@ import Data.Backdrop exposing (Backdrop)
 import Data.ERC20 as ERC20
 import Data.Hash as Hash exposing (Hash)
 import Data.Images exposing (Images)
+import Data.Pair as Pair
 import Data.Pool as Pool
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Support exposing (Support(..))
 import Data.Theme as Theme exposing (Theme)
+import Data.Token as Token
 import Data.Wallet as Wallet exposing (Wallet)
 import Data.Wallets exposing (Wallets)
 import Element
@@ -41,6 +43,7 @@ import Element
         , none
         , padding
         , paddingXY
+        , paragraph
         , px
         , row
         , shrink
@@ -1063,15 +1066,15 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                         |> inFront
                     ]
                     none
-        , el
-            [ width shrink
+        , paragraph
+            [ width fill
             , height shrink
             , centerY
             , Font.size 14
             , theme |> ThemeColor.text |> Font.color
             , paddingXY 0 3
             ]
-            ((case txn.write of
+            [ (case txn.write of
                 TxnWrite.Approve erc20 ->
                     [ "Approve"
                     , erc20
@@ -1087,10 +1090,28 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                     ]
                         |> String.join " "
 
+                TxnWrite.ApproveAndLend pool ->
+                    [ "Approve"
+                    , pool.pair
+                        |> Pair.toAsset
+                        |> Token.toSymbol
+                        |> String.left 5
+                    ]
+                        |> String.join " "
+
                 TxnWrite.Borrow pool ->
                     [ "Borrow :"
                     , pool |> Pool.toString
                     , "pool"
+                    ]
+                        |> String.join " "
+
+                TxnWrite.ApproveAndBorrow pool ->
+                    [ "Approve"
+                    , pool.pair
+                        |> Pair.toCollateral
+                        |> Token.toSymbol
+                        |> String.left 5
                     ]
                         |> String.join " "
 
@@ -1128,9 +1149,20 @@ viewTxn { images, theme } blockchain ( hash, txn ) =
                     , "pool"
                     ]
                         |> String.join " "
-             )
+
+                TxnWrite.ApproveAndFlashRepay _ ->
+                    [ "Approve Flash-Repay" ]
+                        |> String.join " "
+
+                TxnWrite.FlashRepay pool ->
+                    [ "FlashRepay :"
+                    , pool |> Pool.toString
+                    , "pool"
+                    ]
+                        |> String.join " "
+              )
                 |> text
-            )
+            ]
         , newTabLink
             [ width shrink
             , height shrink

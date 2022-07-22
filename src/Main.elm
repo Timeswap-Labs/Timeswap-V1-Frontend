@@ -4,14 +4,7 @@ import Animator exposing (Animator, Timeline)
 import Animator.Css
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Main as User
-import Blockchain.User.Txns.TxnWrite as TxnWrite
-import Blockchain.User.WriteBorrow as WriteBorrow
-import Blockchain.User.WriteBurn as WriteBurn
-import Blockchain.User.WriteCreate as WriteCreate
 import Blockchain.User.WriteLend as WriteLend
-import Blockchain.User.WriteLiquidity as WriteLiquidity
-import Blockchain.User.WritePay as WritePay
-import Blockchain.User.WriteWithdraw as WriteWithdraw
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Events exposing (Visibility)
 import Browser.Navigation as Navigation exposing (Key)
@@ -91,6 +84,7 @@ import Task
 import Time exposing (Posix)
 import Url exposing (Url)
 import Utility.Blur as Blur
+import Utility.Class as Class
 import Utility.Color as Color
 import Utility.Glass as Glass
 import Utility.Id as Id
@@ -741,12 +735,24 @@ pageEffects blockchain effect model =
             , Cmd.none
             )
 
-        Page.OpenCaution txnLend apr cdp poolInfo ->
+        Page.OpenCaution txnLend apr cdp poolInfo isAssetApproved ->
             ( { model
                 | modal =
                     model.modal
                         |> Animator.go Animator.quickly
-                            (Modal.initCaution txnLend apr cdp poolInfo
+                            (Modal.initCaution txnLend apr cdp poolInfo isAssetApproved
+                                |> Just
+                            )
+              }
+            , Cmd.none
+            )
+
+        Page.OpenCautionLiq txnLiq ->
+            ( { model
+                | modal =
+                    model.modal
+                        |> Animator.go Animator.quickly
+                            (Modal.initCautionLiq txnLiq
                                 |> Just
                             )
               }
@@ -766,8 +772,8 @@ pageEffects blockchain effect model =
             blockchain
                 |> Blockchain.toUser
                 |> Maybe.map
-                    (\user ->
-                        Modal.initPayTransaction blockchain user pool set
+                    (\_ ->
+                        Modal.initPayTransaction pool set
                     )
                 |> Maybe.map
                     (\( newModal, cmd ) ->
@@ -811,6 +817,26 @@ pageEffects blockchain effect model =
         Page.Borrow writeBorrow ->
             blockchain
                 |> Blockchain.updateBorrow model writeBorrow
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
+
+        Page.ApproveAndBorrow writeBorrow ->
+            blockchain
+                |> Blockchain.updateApproveAndBorrow model writeBorrow
                 |> (\( updated, cmd, maybeEffect ) ->
                         maybeEffect
                             |> Maybe.map
@@ -891,6 +917,46 @@ pageEffects blockchain effect model =
         Page.Burn writeBurn ->
             blockchain
                 |> Blockchain.updateBurn writeBurn
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
+
+        Page.ApproveAndFlashRepay writeFlashRepay ->
+            blockchain
+                |> Blockchain.updateApproveAndFlashRepay writeFlashRepay
+                |> (\( updated, cmd, maybeEffect ) ->
+                        maybeEffect
+                            |> Maybe.map
+                                (\pageEffect ->
+                                    { model | blockchain = Supported updated }
+                                        |> blockchainEffect pageEffect
+                                        |> Tuple.mapSecond List.singleton
+                                        |> Tuple.mapSecond
+                                            ((::) (cmd |> Cmd.map BlockchainMsg))
+                                        |> Tuple.mapSecond Cmd.batch
+                                )
+                            |> Maybe.withDefault
+                                ( { model | blockchain = Supported updated }
+                                , cmd |> Cmd.map BlockchainMsg
+                                )
+                   )
+
+        Page.FlashRepay writeFlashRepay ->
+            blockchain
+                |> Blockchain.updateFlashRepay writeFlashRepay
                 |> (\( updated, cmd, maybeEffect ) ->
                         maybeEffect
                             |> Maybe.map
@@ -1128,11 +1194,70 @@ modalEffects effect model =
                     , Cmd.none
                     )
 
+        Modal.ApproveAndLend writeLend ->
+            case model.blockchain of
+                Supported blockchain ->
+                    approveAndLendTxn writeLend blockchain model
+
+                _ ->
+                    ( model
+                    , Cmd.none
+                    )
+
+        Modal.AddLiquidity writeLiq ->
+            case model.blockchain of
+                Supported blockchain ->
+                    blockchain
+                        |> Blockchain.updateLiquidity model writeLiq
+                        |> (\( updated, cmd, maybeEffect ) ->
+                                maybeEffect
+                                    |> Maybe.map
+                                        (\pageEffect ->
+                                            { model | blockchain = Supported updated }
+                                                |> blockchainEffect pageEffect
+                                                |> Tuple.mapSecond List.singleton
+                                                |> Tuple.mapSecond
+                                                    ((::) (cmd |> Cmd.map BlockchainMsg))
+                                                |> Tuple.mapSecond Cmd.batch
+                                        )
+                                    |> Maybe.withDefault
+                                        ( { model | blockchain = Supported updated }
+                                        , cmd |> Cmd.map BlockchainMsg
+                                        )
+                           )
+
+                _ ->
+                    ( model
+                    , Cmd.none
+                    )
+
 
 lendTxn : WriteLend.WriteLend -> Blockchain -> Model -> ( Model, Cmd Msg )
 lendTxn writeLend blockchain model =
     blockchain
         |> Blockchain.updateLend model writeLend
+        |> (\( updated, cmd, maybeEffect ) ->
+                maybeEffect
+                    |> Maybe.map
+                        (\pageEffect ->
+                            { model | blockchain = Supported updated }
+                                |> blockchainEffect pageEffect
+                                |> Tuple.mapSecond List.singleton
+                                |> Tuple.mapSecond
+                                    ((::) (cmd |> Cmd.map BlockchainMsg))
+                                |> Tuple.mapSecond Cmd.batch
+                        )
+                    |> Maybe.withDefault
+                        ( { model | blockchain = Supported updated }
+                        , cmd |> Cmd.map BlockchainMsg
+                        )
+           )
+
+
+approveAndLendTxn : WriteLend.WriteLend -> Blockchain -> Model -> ( Model, Cmd Msg )
+approveAndLendTxn writeLend blockchain model =
+    blockchain
+        |> Blockchain.updateApproveAndLend model writeLend
         |> (\( updated, cmd, maybeEffect ) ->
                 maybeEffect
                     |> Maybe.map
@@ -1677,7 +1802,7 @@ tabs ({ device, backdrop, theme } as model) =
         [ tab model Tab.Markets
         , tab model Tab.Lend
         , tab model Tab.Borrow
-        , tab model Tab.Liquidity -- Remove liquidity
+        , tab model Tab.Liquidity
         ]
 
 
@@ -1809,7 +1934,7 @@ connectButton :
     -> Element Msg
 connectButton ({ device, images, theme } as model) =
     Input.button
-        ([ width shrink
+        ([ width fill
          , height <| px 44
          , paddingXY 12 0
          , Border.rounded 4
@@ -1829,8 +1954,7 @@ connectButton ({ device, images, theme } as model) =
                             |> Maybe.withDefault
                                 [ Region.description "connect button"
                                 , theme |> ThemeColor.primaryBtn |> Background.color
-                                , mouseDown [ theme |> ThemeColor.btnPressBG |> Background.color ]
-                                , mouseOver [ Background.color Color.primary400 ]
+                                , Class.is "shiningBtn"
                                 ]
 
                     NotSupported _ ->
@@ -2263,6 +2387,7 @@ notSupportedBody { backdrop, images, theme } =
                     , centerX
                     , Background.color Color.negative500
                     , Border.rounded 4
+                    , Class.is "shiningBtn"
                     ]
                     { onPress = Just OpenChainList
                     , label =

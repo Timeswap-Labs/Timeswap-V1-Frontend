@@ -50,11 +50,13 @@ type Modal
         , cdp : CDP
         , poolInfo : PoolInfo
         , tooltip : Maybe Tooltip
+        , isAssetApproved : Bool
         }
 
 
 type Msg
     = LendClick WriteLend
+    | ApproveAndLendClick WriteLend
     | OnMouseEnter Tooltip
     | OnMouseLeave
     | Exit
@@ -62,15 +64,17 @@ type Msg
 
 type Effect
     = Lend WriteLend
+    | ApproveAndLend WriteLend
 
 
-init : WriteLend -> Float -> CDP -> PoolInfo -> Modal
-init writeLend apr cdp poolInfo =
+init : WriteLend -> Float -> CDP -> PoolInfo -> Bool -> Modal
+init writeLend apr cdp poolInfo isAssetApproved =
     { txn = writeLend
     , apr = apr
     , cdp = cdp
     , poolInfo = poolInfo
     , tooltip = Nothing
+    , isAssetApproved = isAssetApproved
     }
         |> Modal
 
@@ -81,6 +85,11 @@ update msg (Modal modal) =
         LendClick writeLend ->
             ( modal |> Modal |> Just
             , Lend writeLend |> Just
+            )
+
+        ApproveAndLendClick writeLend ->
+            ( modal |> Modal |> Just
+            , ApproveAndLend writeLend |> Just
             )
 
         OnMouseEnter tooltip ->
@@ -174,7 +183,7 @@ body :
     { model | images : Images, backdrop : Backdrop, theme : Theme }
     -> Modal
     -> Element Msg
-body { images, theme } (Modal { txn, cdp, tooltip }) =
+body { images, theme } (Modal { txn, cdp, tooltip, isAssetApproved }) =
     column
         [ width fill
         , height shrink
@@ -279,7 +288,7 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
                     |> text
                 ]
             , case cdp.percent of
-                Just cdpPerc ->
+                Just _ ->
                     Element.none
 
                 Nothing ->
@@ -300,7 +309,12 @@ body { images, theme } (Modal { txn, cdp, tooltip }) =
             , theme |> ThemeColor.primaryBtn |> Background.color
             , Border.rounded 4
             ]
-            { onPress = Just (LendClick txn)
+            { onPress =
+                if isAssetApproved then
+                    Just (LendClick txn)
+
+                else
+                    Just (ApproveAndLendClick txn)
             , label = text "Confirm"
             }
         ]

@@ -9,6 +9,7 @@ module Blockchain.User.Dues exposing
 
 import Blockchain.User.Due as Due exposing (Due)
 import Blockchain.User.TokenId exposing (TokenId)
+import Data.Address as Address exposing (Address)
 import Data.Chain exposing (Chain)
 import Data.Chains exposing (Chains)
 import Data.ERC20 as ERC20
@@ -25,7 +26,7 @@ import Time exposing (Posix)
 
 
 type alias Dues =
-    Dict Pool (Dict TokenId Due)
+    Dict Pool ( Dict TokenId Due, Address )
 
 
 toList :
@@ -34,7 +35,7 @@ toList :
     -> List ( Pool, Dict TokenId Due )
 toList posix dues =
     dues
-        |> Dict.map (\_ dict -> dict |> Due.dropZero)
+        |> Dict.map (\_ tuple -> tuple |> Tuple.first |> Due.dropZero)
         |> Dict.dropIf (\_ dict -> dict |> Dict.isEmpty)
         |> Dict.partition
             (\{ maturity } _ ->
@@ -53,6 +54,7 @@ getMultiple : Pool -> Set TokenId -> Dues -> Maybe (Dict TokenId Due)
 getMultiple pool tokenIds dues =
     dues
         |> Dict.get pool
+        |> Maybe.map (\tuple -> tuple |> Tuple.first)
         |> (Maybe.map << Dict.keepIf)
             (\tokenId _ ->
                 tokenId
@@ -64,6 +66,7 @@ getSingle : Pool -> TokenId -> Dues -> Maybe Due
 getSingle pool tokenId dues =
     dues
         |> Dict.get pool
+        |> Maybe.map (\tuple -> tuple |> Tuple.first)
         |> Maybe.map (Dict.get tokenId)
         |> Maybe.withDefault Nothing
 
@@ -72,16 +75,23 @@ decoder : Chain -> Chains -> Decoder Dues
 decoder chain chains =
     Decode.succeed Tuple.pair
         |> Pipeline.required "pool" Pool.decoder
-        |> Pipeline.required "dues" Due.decoderMultiple
+        |> Pipeline.custom decoderTuple
         |> Decode.list
         |> (Decode.map << List.map << Tuple.mapFirst) (Pool.toNative chain chains)
         |> Decode.map (Dict.fromList Pool.sorter)
 
 
+decoderTuple : Decoder ( Dict TokenId Due, Address )
+decoderTuple =
+    Decode.succeed Tuple.pair
+        |> Pipeline.required "dues" Due.decoderMultiple
+        |> Pipeline.required "collateralizedDebt" Address.decoder
+
+
 toERC20s : Dues -> ERC20s
 toERC20s dues =
     dues
-        |> Dict.map (\_ dict -> dict |> Due.dropZero)
+        |> Dict.map (\_ tuple -> tuple |> Tuple.first |> Due.dropZero)
         |> Dict.dropIf (\_ dict -> dict |> Dict.isEmpty)
         |> Dict.keys
         |> List.concatMap

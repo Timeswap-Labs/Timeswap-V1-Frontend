@@ -18,9 +18,11 @@ import Blockchain.User.TokenId exposing (TokenId)
 import Blockchain.User.WriteBorrow exposing (WriteBorrow)
 import Blockchain.User.WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate exposing (WriteCreate)
+import Blockchain.User.WriteFlashRepay exposing (WriteFlashRepay)
 import Blockchain.User.WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
+import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.CDP exposing (CDP)
 import Data.Chains exposing (Chains)
@@ -28,7 +30,6 @@ import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
 import Data.ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
-import Data.Maturity exposing (Maturity)
 import Data.Offset exposing (Offset)
 import Data.Or exposing (Or(..))
 import Data.Pair exposing (Pair)
@@ -57,7 +58,7 @@ import Page.Markets.Main as Markets exposing (PoolsData)
 import Page.PoolInfo exposing (PoolInfo)
 import Page.Position.Claim.Main as Claim
 import Page.Position.Due.Main as Due
-import Page.Position.Liq.Main as Liq
+import Page.Position.Liq.Main as Liq exposing (Effect(..))
 import Page.Positions.Claims.Main as Claims
 import Page.Positions.Dues.Main as Dues
 import Page.Positions.Liqs.Main as Liqs
@@ -110,16 +111,20 @@ type Effect
     | OpenMaturityPicker Pair
     | OpenSettings
     | OpenConnect
-    | OpenCaution WriteLend Float CDP PoolInfo
+    | OpenCaution WriteLend Float CDP PoolInfo Bool
     | InputPool Pool
     | OpenPayTransaction Pool (Set TokenId)
     | Approve ERC20
     | Lend WriteLend
     | Borrow WriteBorrow
+    | ApproveAndBorrow WriteBorrow
     | Liquidity WriteLiquidity
+    | OpenCautionLiq WriteLiquidity
     | Create WriteCreate
     | Withdraw WriteWithdraw
     | Burn WriteBurn
+    | ApproveAndFlashRepay WriteFlashRepay
+    | FlashRepay WriteFlashRepay
 
 
 init :
@@ -207,9 +212,9 @@ construct ({ chains } as model) url maybePage =
                     )
                     (Cmd.map LendMsg)
 
-        ( Just (Route.Borrow (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
+        ( Just (Route.Borrow (Just (Parameter.Pool pool))), Supported _, Just (Right poolInfo) ) ->
             poolInfo
-                |> Borrow.initGivenPoolInfo model blockchain pool
+                |> Borrow.initGivenPoolInfo model pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction
@@ -248,7 +253,7 @@ construct ({ chains } as model) url maybePage =
 
         ( Just (Route.Liquidity (Just (Parameter.Pool pool))), Supported blockchain, Just (Right poolInfo) ) ->
             poolInfo
-                |> Liquidity.initGivenPoolInfo model blockchain (maybePage |> toLiquidityTxn) pool
+                |> Liquidity.initGivenPoolInfo model (maybePage |> toLiquidityTxn) pool
                 |> Tuple.mapBoth
                     (\transaction ->
                         { transaction = transaction
@@ -564,8 +569,8 @@ lendEffect effect =
         Lend.OpenSettings ->
             OpenSettings
 
-        Lend.OpenCaution txn apr cdp poolInfo ->
-            OpenCaution txn apr cdp poolInfo
+        Lend.OpenCaution txn apr cdp poolInfo isAssetApproved ->
+            OpenCaution txn apr cdp poolInfo isAssetApproved
 
         Lend.Approve erc20 ->
             Approve erc20
@@ -581,12 +586,12 @@ claimsEffect :
     -> ( Maybe Claim.Position, Cmd Msg )
 claimsEffect model blockchain effect =
     case effect of
-        Claims.OpenClaim pool ->
+        Claims.OpenClaim convAddress pool ->
             blockchain
                 |> Blockchain.toUser
                 |> Maybe.map
                     (\user ->
-                        Claim.init model blockchain user pool
+                        Claim.init model blockchain user convAddress pool
                             |> Tuple.mapBoth
                                 Just
                                 (Cmd.map ClaimMsg)
@@ -631,6 +636,9 @@ borrowEffect effect =
 
         Borrow.Borrow writeBorrow ->
             Borrow writeBorrow
+
+        Borrow.ApproveAndBorrow writeBorrow ->
+            ApproveAndBorrow writeBorrow
 
 
 duesEffect :
@@ -681,6 +689,9 @@ liquidityEffect effect =
         Liquidity.Liquidity writeLiquidity ->
             Liquidity writeLiquidity
 
+        Liquidity.OpenCaution writeLiquidity ->
+            OpenCautionLiq writeLiquidity
+
         Liquidity.Create writeCreate ->
             Create writeCreate
 
@@ -692,8 +703,8 @@ liqsEffect :
     -> ( Maybe Liq.Position, Cmd Msg )
 liqsEffect model blockchain effect =
     case effect of
-        Liqs.OpenLiq pool ->
-            Liq.init model blockchain pool
+        Liqs.OpenLiq convAddress pool ->
+            Liq.init model blockchain convAddress pool
                 |> Tuple.mapBoth
                     Just
                     (Cmd.map LiqMsg)
@@ -707,8 +718,14 @@ liqEffect effect =
         Liq.InputPool pool ->
             InputPool pool
 
-        Liq.Burn writeBurm ->
-            Burn writeBurm
+        Liq.Burn writeBurn ->
+            Burn writeBurn
+
+        Liq.FlashRepay writeFlashRepay ->
+            FlashRepay writeFlashRepay
+
+        Liq.ApproveAndFlashRepay writeFlashRepay ->
+            ApproveAndFlashRepay writeFlashRepay
 
 
 subscriptions : Page -> Sub Msg
@@ -879,8 +896,8 @@ view model blockchain page =
 
             LiquidityPage liquidityPage ->
                 Just
-                    (\position user ->
-                        Liq.view model user position
+                    (\position _ ->
+                        Liq.view model blockchain position
                             |> map LiqMsg
                             |> List.singleton
                     )

@@ -7,10 +7,10 @@ module Page.Positions.Liqs.Main exposing
     , view
     )
 
-import Animator exposing (Timeline)
-import Blockchain.User.Liq as Liq exposing (Liq)
+import Blockchain.User.Liq exposing (Liq)
 import Blockchain.User.Liqs as Liqs exposing (Liqs)
 import Blockchain.User.Main as User exposing (User)
+import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
@@ -24,7 +24,6 @@ import Element
     exposing
         ( Element
         , alignRight
-        , alignTop
         , centerX
         , centerY
         , column
@@ -32,7 +31,6 @@ import Element
         , fill
         , height
         , inFront
-        , none
         , padding
         , paddingEach
         , paddingXY
@@ -51,6 +49,7 @@ import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed as Keyed
 import Element.Region as Region
+import Page.Position.Claim.Main exposing (errorHandlerNativesFetch)
 import Page.Positions.Liqs.Tooltip as Tooltip exposing (Tooltip)
 import Sort.Dict as Dict
 import Time exposing (Posix)
@@ -59,7 +58,6 @@ import Utility.Duration as Duration
 import Utility.Glass as Glass
 import Utility.Id as Id
 import Utility.Image as Image
-import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
 import Utility.Truncate as Truncate
@@ -70,13 +68,13 @@ type Positions
 
 
 type Msg
-    = ClickLiq Pool
+    = ClickLiq Address Pool
     | OnMouseEnter Tooltip
     | OnMouseLeave
 
 
 type Effect
-    = OpenLiq Pool
+    = OpenLiq Address Pool
 
 
 init : Positions
@@ -87,9 +85,9 @@ init =
 update : Msg -> Positions -> ( Positions, Maybe Effect )
 update msg positions =
     case msg of
-        ClickLiq pool ->
+        ClickLiq convAddress pool ->
             ( positions
-            , OpenLiq pool
+            , OpenLiq convAddress pool
                 |> Just
             )
 
@@ -150,12 +148,12 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
                 loading model
 
             Failure _ ->
-                none
+                errorHandlerNativesFetch
 
             -- |> Debug.log "error view"
             Success liqs ->
                 liqs
-                    |> Dict.dropIf (\_ liq -> liq |> Liq.isZero)
+                    |> Liqs.filterEmptyLiqs
                     |> (\filteredLiqs ->
                             if filteredLiqs |> Dict.isEmpty then
                                 noLiqs model
@@ -264,7 +262,7 @@ loading { images, theme } =
 
 
 noLiqs : { model | device : Device, images : Images, theme : Theme } -> Element msg
-noLiqs { device, images, theme } =
+noLiqs { images, theme } =
     column
         [ width fill
         , height shrink
@@ -337,7 +335,7 @@ noLiqs { device, images, theme } =
                             , paddingXY 0 8
                             , theme |> ThemeColor.textLight |> Font.color
                             ]
-                            [ text "You don’t have any open Liquidity positions" ]
+                            [ text "You don't have any open Liquidity positions" ]
                         ]
                     ]
                 )
@@ -391,9 +389,9 @@ viewLiqs ({ theme, time } as model) tooltip liqs =
             (liqs
                 |> Liqs.toList time
                 |> List.map
-                    (\(( pool, _ ) as tuple) ->
-                        ( pool |> Pool.toString
-                        , tuple |> viewLiq model tooltip
+                    (\( convAddress, poolLiqTuple ) ->
+                        ( poolLiqTuple |> Tuple.first |> Pool.toString
+                        , poolLiqTuple |> viewLiq model tooltip convAddress
                         )
                     )
             )
@@ -413,7 +411,7 @@ title theme liqs =
         ([ "Your Liquidity Positions "
          , "("
          , liqs
-            |> Dict.size
+            |> Liqs.getPositionCount
             |> String.fromInt
          , ")"
          ]
@@ -431,14 +429,15 @@ viewLiq :
         , images : Images
     }
     -> Maybe Tooltip
+    -> Address
     -> ( Pool, Liq )
     -> Element Msg
-viewLiq { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
+viewLiq { time, offset, chosenZone, theme, images } tooltip convAddress ( pool, claim ) =
     Input.button
         [ width fill
         , height <| px 56
         ]
-        { onPress = ClickLiq pool |> Just
+        { onPress = ClickLiq convAddress pool |> Just
         , label =
             row
                 [ width fill
@@ -542,6 +541,7 @@ viewLiq { time, offset, chosenZone, theme, images } tooltip ( pool, claim ) =
                             , centerY
                             , Font.size 14
                             , Font.color Color.negative400
+                            , Font.bold
                             ]
                             (text "Matured")
                         )

@@ -4,6 +4,7 @@ module Modal.Main exposing
     , Msg
     , confirmed
     , initCaution
+    , initCautionLiq
     , initChainList
     , initConfirm
     , initConnect
@@ -21,10 +22,11 @@ module Modal.Main exposing
     )
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
-import Blockchain.User.Main as User exposing (User)
+import Blockchain.User.Main as User
 import Blockchain.User.TokenId exposing (TokenId)
 import Blockchain.User.Txns.TxnWrite exposing (TxnWrite)
 import Blockchain.User.WriteLend exposing (WriteLend)
+import Blockchain.User.WriteLiquidity exposing (WriteLiquidity)
 import Blockchain.User.WritePay exposing (WritePay)
 import Data.Backdrop exposing (Backdrop)
 import Data.CDP exposing (CDP)
@@ -53,6 +55,7 @@ import Element
         , none
         )
 import Modal.Caution.Main as Caution
+import Modal.CautionLiquidity.Main as CautionLiq exposing (Effect(..))
 import Modal.ChainList.Main as ChainList
 import Modal.Confirm.Main as Confirm
 import Modal.Connect.Main as Connect
@@ -76,6 +79,7 @@ type Modal
     | PayTransaction PayTransaction.Modal
     | Confirm Confirm.Modal
     | Caution Caution.Modal
+    | CautionLiq CautionLiq.Modal
 
 
 type Msg
@@ -88,6 +92,7 @@ type Msg
     | PayTransactionMsg PayTransaction.Msg
     | ConfirmMsg Confirm.Msg
     | CautionMsg Caution.Msg
+    | CautionLiqMsg CautionLiq.Msg
 
 
 type Effect
@@ -105,6 +110,8 @@ type Effect
     | Approve ERC20
     | Pay WritePay
     | Lend WriteLend
+    | ApproveAndLend WriteLend
+    | AddLiquidity WriteLiquidity
 
 
 initConnect : Support User.NotSupported Blockchain -> Modal
@@ -137,10 +144,16 @@ initConfirm id txnWrite =
         |> Confirm
 
 
-initCaution : WriteLend -> Float -> CDP -> PoolInfo -> Modal
-initCaution writeLend apr cdp poolInfo =
-    Caution.init writeLend apr cdp poolInfo
+initCaution : WriteLend -> Float -> CDP -> PoolInfo -> Bool -> Modal
+initCaution writeLend apr cdp poolInfo isAssetApproved =
+    Caution.init writeLend apr cdp poolInfo isAssetApproved
         |> Caution
+
+
+initCautionLiq : WriteLiquidity -> Modal
+initCautionLiq writeLiq =
+    CautionLiq.init writeLiq
+        |> CautionLiq
 
 
 submit : Int -> Hash -> Modal -> Modal
@@ -205,13 +218,11 @@ initChainList =
 
 
 initPayTransaction :
-    Blockchain
-    -> User
-    -> Pool
+    Pool
     -> Set TokenId
     -> ( Modal, Cmd Msg )
-initPayTransaction blockchain user pool set =
-    PayTransaction.init blockchain user pool set
+initPayTransaction pool set =
+    PayTransaction.init pool set
         |> Tuple.mapBoth
             PayTransaction
             (Cmd.map PayTransactionMsg)
@@ -327,6 +338,15 @@ update model msg modal =
                         )
                    )
 
+        ( CautionLiqMsg cautionLiqMsg, CautionLiq cautionLiqModal, Supported _ ) ->
+            CautionLiq.update cautionLiqMsg cautionLiqModal
+                |> (\( updated, maybeEffect ) ->
+                        ( updated |> Maybe.map CautionLiq
+                        , Cmd.none
+                        , maybeEffect |> Maybe.map cautionLiqEffect
+                        )
+                   )
+
         _ ->
             ( modal |> Just
             , Cmd.none
@@ -406,6 +426,16 @@ cautionLendEffect effect =
     case effect of
         Caution.Lend writeLend ->
             Lend writeLend
+
+        Caution.ApproveAndLend writeLend ->
+            ApproveAndLend writeLend
+
+
+cautionLiqEffect : CautionLiq.Effect -> Effect
+cautionLiqEffect effect =
+    case effect of
+        CautionLiq.AddLiquidity writeLiq ->
+            AddLiquidity writeLiq
 
 
 receiveUser : Modal -> Maybe Modal
@@ -534,3 +564,8 @@ view model modal =
             cautionModal
                 |> Caution.view model
                 |> map CautionMsg
+
+        CautionLiq cautionLiqModal ->
+            cautionLiqModal
+                |> CautionLiq.view model
+                |> map CautionLiqMsg

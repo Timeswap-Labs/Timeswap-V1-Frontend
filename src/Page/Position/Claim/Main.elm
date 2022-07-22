@@ -2,6 +2,8 @@ port module Page.Position.Claim.Main exposing
     ( Effect(..)
     , Msg
     , Position
+    , errorHandler
+    , errorHandlerNativesFetch
     , init
     , subscriptions
     , update
@@ -13,6 +15,7 @@ import Blockchain.User.Claim exposing (Claim)
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.Return exposing (Return)
 import Blockchain.User.WriteWithdraw exposing (WriteWithdraw)
+import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain exposing (Chain)
 import Data.ChosenZone exposing (ChosenZone)
@@ -41,6 +44,7 @@ import Element
         , none
         , padding
         , paddingXY
+        , paragraph
         , px
         , row
         , shrink
@@ -66,6 +70,7 @@ import Process
 import Sort.Dict as Dict
 import Task
 import Time exposing (Posix)
+import Utility.Class as Class
 import Utility.Color as Color
 import Utility.Duration as Duration
 import Utility.Glass as Glass
@@ -79,6 +84,7 @@ import Utility.Truncate as Truncate
 type Position
     = Position
         { pool : Pool
+        , convAddress : Address
         , state : State
         , tooltip : Maybe Tooltip
         }
@@ -113,10 +119,12 @@ init :
     { model | time : Posix, endPoint : String }
     -> Blockchain
     -> User
+    -> Address
     -> Pool
     -> ( Position, Cmd Msg )
-init { time, endPoint } blockchain user pool =
+init { time, endPoint } blockchain user convAddress pool =
     ( { pool = pool
+      , convAddress = convAddress
       , state =
             if
                 pool.maturity
@@ -137,12 +145,14 @@ init { time, endPoint } blockchain user pool =
       then
         user
             |> User.getClaims
-            |> Remote.map (Dict.get pool)
-            |> (Remote.map << Maybe.map)
+            |> Remote.map (Dict.get convAddress)
+            |> (Remote.map << Maybe.map) (Dict.get pool)
+            |> (Remote.map << Maybe.map << Maybe.map)
                 (\claim ->
                     { pool = pool }
                         |> queryActive blockchain claim
                 )
+            |> (Remote.map << Maybe.map << Maybe.withDefault) Cmd.none
             |> (Remote.map << Maybe.withDefault) Cmd.none
             |> Remote.withDefault Cmd.none
 
@@ -171,10 +181,12 @@ update blockchain endPoint user msg (Position position) =
             , Cmd.none
             , user
                 |> User.getClaims
-                |> Remote.map (Dict.get position.pool)
+                |> Remote.map (Dict.get position.convAddress)
+                |> (Remote.map << Maybe.andThen) (Dict.get position.pool)
                 |> (Remote.map << Maybe.andThen)
                     (\claimsIn ->
                         { pool = position.pool
+                        , convAddress = position.convAddress
                         , claimsIn = claimsIn
                         }
                             |> Withdraw
@@ -251,11 +263,13 @@ update blockchain endPoint user msg (Position position) =
                 |> Just
             , user
                 |> User.getClaims
-                |> Remote.map (Dict.get position.pool)
-                |> (Remote.map << Maybe.map)
+                |> Remote.map (Dict.get position.convAddress)
+                |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                |> (Remote.map << Maybe.map << Maybe.map)
                     (\claims ->
                         queryActive blockchain claims position
                     )
+                |> (Remote.map << Maybe.map << Maybe.withDefault) Cmd.none
                 |> (Remote.map << Maybe.withDefault) Cmd.none
                 |> Remote.withDefault Cmd.none
             , Nothing
@@ -267,11 +281,13 @@ update blockchain endPoint user msg (Position position) =
                 |> Just
             , user
                 |> User.getClaims
-                |> Remote.map (Dict.get position.pool)
-                |> (Remote.map << Maybe.map)
+                |> Remote.map (Dict.get position.convAddress)
+                |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                |> (Remote.map << Maybe.map << Maybe.map)
                     (\claimsIn ->
                         queryMatured blockchain poolInfo claimsIn position
                     )
+                |> (Remote.map << Maybe.map << Maybe.withDefault) Cmd.none
                 |> (Remote.map << Maybe.withDefault) Cmd.none
                 |> Remote.withDefault Cmd.none
             , Nothing
@@ -342,11 +358,13 @@ update blockchain endPoint user msg (Position position) =
                             && (answer.pool == position.pool)
                             && (user
                                     |> User.getClaims
-                                    |> Remote.map (Dict.get position.pool)
-                                    |> (Remote.map << Maybe.map)
+                                    |> Remote.map (Dict.get position.convAddress)
+                                    |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map << Maybe.map)
                                         (\claims ->
                                             answer.claims == claims
                                         )
+                                    |> (Remote.map << Maybe.map << Maybe.withDefault) False
                                     |> (Remote.map << Maybe.withDefault) False
                                     |> Remote.withDefault False
                                )
@@ -375,13 +393,15 @@ update blockchain endPoint user msg (Position position) =
                             && (answer.poolInfo == poolInfo)
                             && (user
                                     |> User.getClaims
-                                    |> Remote.map (Dict.get position.pool)
-                                    |> (Remote.map << Maybe.map)
+                                    |> Remote.map (Dict.get position.convAddress)
+                                    |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map << Maybe.map)
                                         (\claimsIn ->
                                             (answer.claimsIn == claimsIn)
                                                 && (claimsIn.bondPrincipal |> Uint.isZero |> not)
                                                 && (claimsIn.insurancePrincipal |> Uint.isZero |> not)
                                         )
+                                    |> (Remote.map << Maybe.map << Maybe.withDefault) False
                                     |> (Remote.map << Maybe.withDefault) False
                                     |> Remote.withDefault False
                                )
@@ -406,14 +426,16 @@ update blockchain endPoint user msg (Position position) =
                             && (answer.poolInfo == poolInfo)
                             && (user
                                     |> User.getClaims
-                                    |> Remote.map (Dict.get position.pool)
-                                    |> (Remote.map << Maybe.map)
+                                    |> Remote.map (Dict.get position.convAddress)
+                                    |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                                    |> (Remote.map << Maybe.map << Maybe.map)
                                         (\claimsIn ->
                                             answer.claimsIn
                                                 == claimsIn
                                                 && (claimsIn.bondPrincipal |> Uint.isZero)
                                                 && (claimsIn.insurancePrincipal |> Uint.isZero)
                                         )
+                                    |> (Remote.map << Maybe.map << Maybe.withDefault) False
                                     |> (Remote.map << Maybe.withDefault) False
                                     |> Remote.withDefault False
                                )
@@ -461,6 +483,7 @@ toRemote result =
 
 noCmdAndEffect :
     { pool : Pool
+    , convAddress : Address
     , state : State
     , tooltip : Maybe Tooltip
     }
@@ -486,7 +509,7 @@ get blockchain endPoint pool =
                 Http.get
                     { url =
                         pool
-                            |> PoolInfoQuery.toUrlString chain endPoint
+                            |> PoolInfoQuery.toCustomUrlString chain endPoint
                     , expect =
                         PoolInfoAnswer.decoder
                             |> Http.expectJson
@@ -653,7 +676,7 @@ returnButton { images, theme } =
                     , theme |> ThemeColor.text |> Font.color
                     , centerY
                     ]
-                    (text "Back to lend")
+                    (text "Back to Lend")
                 ]
         }
 
@@ -762,6 +785,7 @@ claimButton theme =
     Input.button
         [ width <| px 102
         , height <| px 44
+        , Class.is "shiningBtn"
         , Border.rounded 4
         , theme |> ThemeColor.primaryBtn |> Background.color
         ]
@@ -805,6 +829,7 @@ viewClaim :
     { model | images : Images, theme : Theme }
     ->
         { pool : Pool
+        , convAddress : Address
         , state : State
         , tooltip : Maybe Tooltip
         }
@@ -891,8 +916,8 @@ viewBond { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Failure error ->
-                    none
+                Failure _ ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success { asset } ->
@@ -968,8 +993,8 @@ viewInsurance { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Failure error ->
-                    none
+                Failure _ ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success { collateral } ->
@@ -1046,8 +1071,8 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Failure error ->
-                    none
+                Failure _ ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success ( _, Loading timeline ) ->
@@ -1057,8 +1082,8 @@ viewAssetReturn { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Success ( _, Failure error ) ->
-                    none
+                Success ( _, Failure _ ) ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success ( _, Success { asset } ) ->
@@ -1135,8 +1160,8 @@ viewCollateralReturn { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Failure error ->
-                    none
+                Failure _ ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success ( _, Loading timeline ) ->
@@ -1146,8 +1171,8 @@ viewCollateralReturn { images, theme } { pool, tooltip } remote =
                         ]
                         (Loading.view timeline theme)
 
-                Success ( _, Failure error ) ->
-                    none
+                Success ( _, Failure _ ) ->
+                    errorHandler
 
                 -- |> Debug.log "show error"
                 Success ( _, Success { collateral } ) ->
@@ -1173,3 +1198,45 @@ line { theme } =
         , theme |> ThemeColor.textDisabled |> Background.color
         ]
         none
+
+
+errorHandler : Element msg
+errorHandler =
+    row
+        [ width shrink
+        , height shrink
+        , centerX
+        , centerY
+        , spacing 12
+        ]
+        [ paragraph
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.size 14
+            , Font.color Color.negative400
+            ]
+            [ text "Err: " ]
+        ]
+
+
+errorHandlerNativesFetch : Element msg
+errorHandlerNativesFetch =
+    row
+        [ width shrink
+        , height shrink
+        , centerX
+        , centerY
+        , spacing 12
+        ]
+        [ paragraph
+            [ width shrink
+            , height shrink
+            , centerX
+            , centerY
+            , Font.size 14
+            , Font.color Color.negative400
+            ]
+            [ text "Unable to fetch your Positions... " ]
+        ]

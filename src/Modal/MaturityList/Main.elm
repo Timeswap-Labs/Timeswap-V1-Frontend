@@ -80,7 +80,6 @@ import Utility.Glass as Glass
 import Utility.IconButton as IconButton
 import Utility.Id as Id
 import Utility.Image as Image
-import Utility.Loading as Loading
 import Utility.PairImage as PairImage
 import Utility.ThemeColor as ThemeColor
 import Utility.Tooltip as Tooltip
@@ -693,7 +692,7 @@ maturityList { images, time, offset, chosenZone, priceFeed, theme } (Modal { pai
         , scrollbarY
         ]
         (case pools of
-            Loading timeline ->
+            Loading _ ->
                 [ el [ centerX, centerY ]
                     (images
                         |> Image.loadingAnimation

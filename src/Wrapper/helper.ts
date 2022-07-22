@@ -104,7 +104,8 @@ export function getPoolSDK(
   asset: ERC20Token | NativeToken,
   collateral: ERC20Token | NativeToken,
   maturity: number | string,
-  chain: Chain
+  chain: Chain,
+  convAddress?: string
 ): SDKPool {
   let assetToken, collateralToken;
 
@@ -141,7 +142,8 @@ export function getPoolSDK(
     chain.chainId,
     assetToken,
     collateralToken,
-    new Uint256(maturity)
+    new Uint256(maturity),
+    convAddress
   );
 }
 
@@ -262,6 +264,7 @@ export function listenForPendingTxns(app: ElmApp<Ports>, gp: GlobalParams) {
     pendingTxns.forEach(async (pendingTxn) => {
       const txnReceipt = await gp.walletProvider.waitForTransaction(pendingTxn.hash);
       const receiveReceipt = {
+        id: pendingTxn.id,
         chain: parsedTxnData.chain,
         address: parsedTxnData.address,
         hash: pendingTxn.hash,
@@ -277,7 +280,7 @@ export function handleTxnErrors(
   error: any,
   app: ElmApp<Ports>,
   gp: GlobalParams,
-  params: Lend | Borrow | Approve | Burn | Pay | Withdraw | Liquidity | NewLiquidity
+  params: Lend | Borrow | Approve | Burn | Pay | Withdraw | Liquidity | NewLiquidity | FlashRepay
 ) {
   // If txn is canceled or sped-up, new txn-hash is created
   if (error.code === ethers.utils.Logger.errors.TRANSACTION_REPLACED) {

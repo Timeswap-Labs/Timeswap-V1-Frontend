@@ -18,12 +18,16 @@ import Json.Encode as Encode exposing (Value)
 type TxnWrite
     = Approve ERC20
     | Lend Pool
+    | ApproveAndLend Pool
     | Borrow Pool
+    | ApproveAndBorrow Pool
     | Liquidity Pool
     | Create Pool
     | Withdraw Pool
     | Pay Pool
     | Burn Pool
+    | ApproveAndFlashRepay Pool
+    | FlashRepay Pool
 
 
 type alias Flag =
@@ -57,12 +61,16 @@ decoder : Decoder TxnWrite
 decoder =
     [ decoderApprove
     , decoderLend
+    , decoderApproveAndLend
     , decoderBorrow
+    , decoderApproveAndBorrow
     , decoderLiquidity
     , decoderCreate
     , decoderWithdraw
     , decoderPay
     , decoderBurn
+    , decoderApproveAndFlashRepay
+    , decoderFlashRepay
     ]
         |> Decode.oneOf
 
@@ -97,12 +105,42 @@ decoderLend =
         |> Decode.andThen identity
 
 
+decoderApproveAndLend : Decoder TxnWrite
+decoderApproveAndLend =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "approveAndLend" then
+                ApproveAndLend pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
 decoderBorrow : Decoder TxnWrite
 decoderBorrow =
     Decode.succeed
         (\txn pool ->
             if txn == "borrow" then
                 Borrow pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
+decoderApproveAndBorrow : Decoder TxnWrite
+decoderApproveAndBorrow =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "approveAndBorrow" then
+                ApproveAndBorrow pool |> Decode.succeed
 
             else
                 Decode.fail "Not a txn"
@@ -187,6 +225,36 @@ decoderBurn =
         |> Decode.andThen identity
 
 
+decoderApproveAndFlashRepay : Decoder TxnWrite
+decoderApproveAndFlashRepay =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "approveAndFlashRepay" then
+                ApproveAndFlashRepay pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
+decoderFlashRepay : Decoder TxnWrite
+decoderFlashRepay =
+    Decode.succeed
+        (\txn pool ->
+            if txn == "flashRepay" then
+                FlashRepay pool |> Decode.succeed
+
+            else
+                Decode.fail "Not a txn"
+        )
+        |> Pipeline.required "txn" Decode.string
+        |> Pipeline.required "pool" Pool.decoder
+        |> Decode.andThen identity
+
+
 encode : TxnWrite -> Value
 encode write =
     case write of
@@ -202,8 +270,20 @@ encode write =
             ]
                 |> Encode.object
 
+        ApproveAndLend pool ->
+            [ ( "txn", "approveAndLend" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
+            ]
+                |> Encode.object
+
         Borrow pool ->
             [ ( "txn", "borrow" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
+            ]
+                |> Encode.object
+
+        ApproveAndBorrow pool ->
+            [ ( "txn", "approveAndBorrow" |> Encode.string )
             , ( "pool", pool |> Pool.encode )
             ]
                 |> Encode.object
@@ -234,6 +314,18 @@ encode write =
 
         Burn pool ->
             [ ( "txn", "burn" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
+            ]
+                |> Encode.object
+
+        ApproveAndFlashRepay pool ->
+            [ ( "txn", "approveAndFlashRepay" |> Encode.string )
+            , ( "pool", pool |> Pool.encode )
+            ]
+                |> Encode.object
+
+        FlashRepay pool ->
+            [ ( "txn", "flashRepay" |> Encode.string )
             , ( "pool", pool |> Pool.encode )
             ]
                 |> Encode.object

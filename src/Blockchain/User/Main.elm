@@ -29,10 +29,14 @@ port module Blockchain.User.Main exposing
     , update
     , updateAddERC20
     , updateApprove
+    , updateApproveAndBorrow
+    , updateApproveAndFlashRepay
+    , updateApproveAndLend
     , updateBorrow
     , updateBurn
     , updateClearTxns
     , updateCreate
+    , updateFlashRepay
     , updateLend
     , updateLiquidity
     , updatePay
@@ -45,7 +49,7 @@ import Blockchain.User.Cache as Cache
 import Blockchain.User.Claims exposing (Claims)
 import Blockchain.User.Dues exposing (Dues)
 import Blockchain.User.Liqs exposing (Liqs)
-import Blockchain.User.Natives as Natives exposing (Natives)
+import Blockchain.User.Natives as Natives exposing (AllNatives, Natives)
 import Blockchain.User.Positions as Positions exposing (Positions)
 import Blockchain.User.Txns.Main as Txns exposing (Txns)
 import Blockchain.User.Txns.Receipt as Receipt
@@ -56,6 +60,7 @@ import Blockchain.User.WriteApprove as WriteApprove
 import Blockchain.User.WriteBorrow as WriteBorrow exposing (WriteBorrow)
 import Blockchain.User.WriteBurn as WriteBurn exposing (WriteBurn)
 import Blockchain.User.WriteCreate as WriteCreate exposing (WriteCreate)
+import Blockchain.User.WriteFlashRepay as WriteFlashRepay exposing (WriteFlashRepay)
 import Blockchain.User.WriteLend as WriteLend exposing (WriteLend)
 import Blockchain.User.WriteLiquidity as WriteLiquidity exposing (WriteLiquidity)
 import Blockchain.User.WritePay as WritePay exposing (WritePay)
@@ -67,7 +72,7 @@ import Data.Deadline exposing (Deadline)
 import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.ERC20s exposing (ERC20s)
 import Data.Hash exposing (Hash)
-import Data.Pool exposing (Pool)
+import Data.Pool as Pool exposing (Pool)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Token as Token exposing (Token)
 import Data.Uint exposing (Uint)
@@ -78,7 +83,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline as Pipeline
 import Json.Encode exposing (Value)
 import Process
-import Sort.Dict as Dict exposing (Dict)
+import Sort.Dict as Dict
 import Sort.Set as Set
 import Task
 import Time exposing (Posix)
@@ -93,7 +98,7 @@ type User
         , allowances : Allowances
         , positions : Web Positions
         , txns : Txns
-        , natives : Web (Dict Pool Natives)
+        , natives : Web AllNatives
         }
 
 
@@ -127,7 +132,7 @@ type Msg
     | ReceiveConfirm Value
     | ReceiveReceipt Value
     | ReceiveUpdatedTxns Value
-    | ReceiveNatives Chain (Result Http.Error Natives.Answer)
+    | ReceiveNatives Chain (Result Http.Error AllNatives)
     | ReceivePositions Value
     | BalancesTick Posix
     | AllowancesTick Posix
@@ -376,7 +381,30 @@ update { chains, endPoint } chain msg (User user) =
                             |> (\updatedUser ->
                                     ( updatedUser |> User
                                     , Cmd.none
-                                    , ConfirmedTxn decoded.hash |> Just
+                                    , case ( decoded.state, decoded.txnType ) of
+                                        ( Receipt.Success, Just (TxnWrite.ApproveAndLend pool) ) ->
+                                            user.txns
+                                                |> Txns.insert (TxnWrite.Lend pool)
+                                                |> (\( newTxnId, _ ) ->
+                                                        OpenConfirm newTxnId (TxnWrite.Lend pool) |> Just
+                                                   )
+
+                                        ( Receipt.Success, Just (TxnWrite.ApproveAndBorrow pool) ) ->
+                                            user.txns
+                                                |> Txns.insert (TxnWrite.Borrow pool)
+                                                |> (\( newTxnId, _ ) ->
+                                                        OpenConfirm newTxnId (TxnWrite.Borrow pool) |> Just
+                                                   )
+
+                                        ( Receipt.Success, Just (TxnWrite.ApproveAndFlashRepay pool) ) ->
+                                            user.txns
+                                                |> Txns.insert (TxnWrite.FlashRepay pool)
+                                                |> (\( newTxnId, _ ) ->
+                                                        OpenConfirm newTxnId (TxnWrite.FlashRepay pool) |> Just
+                                                   )
+
+                                        _ ->
+                                            ConfirmedTxn decoded.hash |> Just
                                     )
                                )
 
@@ -424,7 +452,7 @@ update { chains, endPoint } chain msg (User user) =
 
         ReceiveNatives decodedChain (Err error) ->
             if decodedChain == chain then
-                ( { user | natives = Failure error }
+                ( { user | natives = Failure error, positions = Failure error }
                     |> User
                 , Process.sleep 5000
                     |> Task.perform QueryNatives
@@ -646,6 +674,38 @@ updateLend model chain writeLend (User user) =
            )
 
 
+updateApproveAndLend :
+    { model | time : Posix, deadline : Deadline }
+    -> Chain
+    -> WriteLend
+    -> User
+    -> ( User, Cmd Msg, Effect )
+updateApproveAndLend model chain writeLend (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.ApproveAndLend
+                (writeLend |> WriteLend.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ writeLend
+                        |> WriteLend.encode model user.address
+                        |> Write.encode id chain user.address
+                        |> approveAndLend
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.ApproveAndLend
+                        (writeLend |> WriteLend.toPool)
+                    )
+                )
+           )
+
+
 updateBorrow :
     { model | time : Posix, deadline : Deadline }
     -> Chain
@@ -672,6 +732,38 @@ updateBorrow model chain writeBorrow (User user) =
                     |> Cmd.batch
                 , OpenConfirm id
                     (TxnWrite.Borrow
+                        (writeBorrow |> WriteBorrow.toPool)
+                    )
+                )
+           )
+
+
+updateApproveAndBorrow :
+    { model | time : Posix, deadline : Deadline }
+    -> Chain
+    -> WriteBorrow
+    -> User
+    -> ( User, Cmd Msg, Effect )
+updateApproveAndBorrow model chain writeBorrow (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.ApproveAndBorrow
+                (writeBorrow |> WriteBorrow.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ writeBorrow
+                        |> WriteBorrow.encode model user.address
+                        |> Write.encode id chain user.address
+                        |> approveAndBorrow
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.ApproveAndBorrow
                         (writeBorrow |> WriteBorrow.toPool)
                     )
                 )
@@ -836,6 +928,68 @@ updateBurn chain writeBurn (User user) =
            )
 
 
+updateApproveAndFlashRepay :
+    Chain
+    -> WriteFlashRepay
+    -> User
+    -> ( User, Cmd Msg, Effect )
+updateApproveAndFlashRepay chain writeFlashRepay (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.ApproveAndFlashRepay
+                (writeFlashRepay |> WriteFlashRepay.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ writeFlashRepay
+                        |> WriteFlashRepay.encode
+                        |> Write.encode id chain user.address
+                        |> approveAndFlashRepay
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.ApproveAndFlashRepay
+                        (writeFlashRepay |> WriteFlashRepay.toPool)
+                    )
+                )
+           )
+
+
+updateFlashRepay :
+    Chain
+    -> WriteFlashRepay
+    -> User
+    -> ( User, Cmd Msg, Effect )
+updateFlashRepay chain writeFlashRepay (User user) =
+    user.txns
+        |> Txns.insert
+            (TxnWrite.FlashRepay
+                (writeFlashRepay |> WriteFlashRepay.toPool)
+            )
+        |> (\( id, txns ) ->
+                ( { user | txns = txns }
+                    |> User
+                , [ writeFlashRepay
+                        |> WriteFlashRepay.encode
+                        |> Write.encode id chain user.address
+                        |> flashRepay
+                  , txns
+                        |> Cache.encodeTxns chain user.address
+                        |> cacheTxns
+                  ]
+                    |> Cmd.batch
+                , OpenConfirm id
+                    (TxnWrite.FlashRepay
+                        (writeFlashRepay |> WriteFlashRepay.toPool)
+                    )
+                )
+           )
+
+
 noCmdAndEffect :
     { wallet : Wallet
     , address : Address
@@ -844,7 +998,7 @@ noCmdAndEffect :
     , allowances : Allowances
     , positions : Web Positions
     , txns : Txns
-    , natives : Web (Dict Pool Natives)
+    , natives : Web AllNatives
     }
     -> ( User, Cmd Msg, Maybe Effect )
 noCmdAndEffect user =
@@ -945,7 +1099,13 @@ port approve : Value -> Cmd msg
 port lend : Value -> Cmd msg
 
 
+port approveAndLend : Value -> Cmd msg
+
+
 port borrow : Value -> Cmd msg
+
+
+port approveAndBorrow : Value -> Cmd msg
 
 
 port liquidity : Value -> Cmd msg
@@ -961,6 +1121,12 @@ port withdraw : Value -> Cmd msg
 
 
 port pay : Value -> Cmd msg
+
+
+port approveAndFlashRepay : Value -> Cmd msg
+
+
+port flashRepay : Value -> Cmd msg
 
 
 port receiveBalances : (Value -> msg) -> Sub msg
@@ -1094,4 +1260,6 @@ getLiqs (User { positions }) =
 getPoolNatives : Pool -> User -> Web (Maybe Natives)
 getPoolNatives pool (User { natives }) =
     natives
+        |> Remote.map Natives.toPoolNativesList
+        |> Remote.map (Dict.fromList Pool.sorter)
         |> Remote.map (Dict.get pool)
