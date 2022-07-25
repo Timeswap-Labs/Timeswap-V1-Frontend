@@ -154,8 +154,7 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
             -- |> Debug.log "error view"
             Success dues ->
                 dues
-                    |> Dict.map (\_ tuple -> tuple |> Tuple.mapFirst Due.dropZero)
-                    |> Dict.dropIf (\_ tuple -> tuple |> Tuple.first |> Dict.isEmpty)
+                    |> Dues.filterEmptyDues
                     |> (\filteredDues ->
                             if filteredDues |> Dict.isEmpty then
                                 noDues model

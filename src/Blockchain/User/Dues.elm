@@ -1,6 +1,7 @@
 module Blockchain.User.Dues exposing
     ( Dues
     , decoder
+    , filterEmptyDues
     , getMultiple
     , getSingle
     , toERC20s
@@ -113,3 +114,10 @@ toERC20s dues =
                         )
             )
         |> Set.fromList ERC20.sorter
+
+
+filterEmptyDues : Dues -> Dues
+filterEmptyDues dues =
+    dues
+        |> Dict.map (\_ tuple -> tuple |> Tuple.mapFirst Due.dropZero)
+        |> Dict.dropIf (\_ tuple -> tuple |> Tuple.first |> Dict.isEmpty)
