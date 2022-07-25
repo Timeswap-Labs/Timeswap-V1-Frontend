@@ -10,6 +10,7 @@ port module Page.Position.Liq.Main exposing
 
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Blockchain.User.Due exposing (Due)
+import Blockchain.User.Dues as Dues
 import Blockchain.User.Liq exposing (Liq)
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.Return exposing (Return)
@@ -115,7 +116,6 @@ type Msg
     | ClickReturn
     | Tick Posix
     | PoolInfoQueryAgain
-    | QueryAgain Posix
     | ReceivePoolInfo Chain Pool (Result Http.Error PoolInfoAnswer.Answer)
     | ReceiveLiqReturn Value
     | ReceiveFlashRepayTry Value
@@ -341,45 +341,6 @@ update { time, endPoint } blockchain user msg (Position position) =
             , Nothing
             )
 
-        QueryAgain posix ->
-            ( { position
-                | return =
-                    case
-                        ( position.pool.maturity
-                            |> Maturity.isActive posix
-                        , position.return
-                        )
-                    of
-                        ( False, Success ( poolInfo, Maturity.Active _ ) ) ->
-                            ( poolInfo
-                            , Maturity.Matured Remote.loading
-                            )
-                                |> Success
-
-                        _ ->
-                            position.return
-              }
-                |> Position
-                |> Just
-            , case position.return of
-                Success ( poolInfo, _ ) ->
-                    user
-                        |> User.getLiqs
-                        |> Remote.map (Dict.get position.convAddress)
-                        |> (Remote.map << Maybe.map) (Dict.get position.pool)
-                        |> (Remote.map << Maybe.map << Maybe.map)
-                            (\liquidityIn ->
-                                query blockchain poolInfo liquidityIn position
-                            )
-                        |> (Remote.map << Maybe.map << Maybe.withDefault) Cmd.none
-                        |> (Remote.map << Maybe.withDefault) Cmd.none
-                        |> Remote.withDefault Cmd.none
-
-                _ ->
-                    Cmd.none
-            , Nothing
-            )
-
         ReceivePoolInfo chain pool result ->
             if
                 (chain == (blockchain |> Blockchain.toChain))
@@ -421,8 +382,21 @@ update { time, endPoint } blockchain user msg (Position position) =
                           }
                             |> Position
                             |> Just
-                        , Process.sleep 5000
-                            |> Task.perform (\_ -> PoolInfoQueryAgain)
+                        , [ Process.sleep 5000
+                                |> Task.perform (\_ -> PoolInfoQueryAgain)
+                          , user
+                                |> User.getLiqs
+                                |> Remote.map (Dict.get position.convAddress)
+                                |> (Remote.map << Maybe.map) (Dict.get position.pool)
+                                |> (Remote.map << Maybe.map << Maybe.map)
+                                    (\liquidityIn ->
+                                        query blockchain poolInfo liquidityIn position
+                                    )
+                                |> (Remote.map << Maybe.map << Maybe.withDefault) Cmd.none
+                                |> (Remote.map << Maybe.withDefault) Cmd.none
+                                |> Remote.withDefault Cmd.none
+                          ]
+                            |> Cmd.batch
                         , Nothing
                         )
 
@@ -709,6 +683,7 @@ queryFR blockchain pool =
         Just user ->
             user
                 |> User.getDues
+                |> Remote.map Dues.filterEmptyDues
                 |> Remote.map (Dict.get pool)
                 |> (Remote.map << Maybe.map)
                     (\tuple ->
@@ -782,7 +757,6 @@ subscriptions (Position { return }) =
     , receiveLiqReturn ReceiveLiqReturn
     , receiveFlashRepayTry ReceiveFlashRepayTry
     , receiveFlashRepay ReceiveFlashRepay
-    , Time.every 10000 QueryAgain
     ]
         |> Sub.batch
 
@@ -1408,6 +1382,7 @@ viewDues ({ images, theme } as model) blockchain ({ pool, return, tooltip, flash
                 Maturity.Active (Success _) ->
                     user
                         |> User.getDues
+                        |> Remote.map Dues.filterEmptyDues
                         |> Remote.map (Dict.get pool)
                         |> (Remote.map << Maybe.map)
                             (\tuple ->

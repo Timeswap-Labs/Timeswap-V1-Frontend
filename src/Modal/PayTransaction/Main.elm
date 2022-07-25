@@ -738,6 +738,7 @@ repayList model blockchain user ({ state, pool } as modal) =
             Full tokenIdSet ->
                 user
                     |> User.getDues
+                    |> Remote.map Dues.filterEmptyDues
                     |> Remote.map (Dues.getMultiple pool tokenIdSet)
                     |> (Remote.map << Maybe.map)
                         (\dict ->
@@ -776,6 +777,7 @@ repayList model blockchain user ({ state, pool } as modal) =
             Custom dict ->
                 user
                     |> User.getDues
+                    |> Remote.map Dues.filterEmptyDues
                     |> Remote.map
                         (dict
                             |> Dict.keys
