@@ -32,6 +32,12 @@ export const whitelistChains: Whitelist = {
         symbol: "DAI",
         decimals: 18,
       },
+      {
+        address: "0xa3fa99a148fa48d14ed51d610c367c61876997f1",
+        name: "Mai Finance",
+        symbol: "MAI",
+        decimals: 18,
+      },
       // {
       //   address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
       //   name: "WETH",
