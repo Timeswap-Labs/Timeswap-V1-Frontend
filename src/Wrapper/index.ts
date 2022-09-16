@@ -20,7 +20,7 @@ async function elmInit() {
   if (process.env.PARCEL_PUBLIC_ENVIRONMENT === "production")
     apiEndpoint = API_ENDPOINT_PROD;
   else
-    apiEndpoint = API_ENDPOINT_TEST;
+    apiEndpoint = API_ENDPOINT_PROD;
 
   const app = Elm.Main.init({
     node: document.getElementById("elm")!,
