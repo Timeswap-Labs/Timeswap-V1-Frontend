@@ -3,17 +3,18 @@ module Page.Markets.Main exposing (Msg, PoolsData, init, update, view)
 import Blockchain.Main as Blockchain exposing (Blockchain)
 import Data.Backdrop exposing (Backdrop)
 import Data.Chain as Chain exposing (Chain)
-import Data.Chains exposing (Chains)
+import Data.Chains as Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
+import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Offset exposing (Offset)
 import Data.Pair as Pair exposing (Pair)
 import Data.Parameter as Parameter
-import Data.Pool exposing (Pool)
+import Data.Pool as Pool exposing (Pool)
 import Data.PriceFeed as PriceFeed exposing (PriceFeed)
 import Data.Remote as Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
-import Data.Token as Token
+import Data.Token as Token exposing (Token(..))
 import Data.Web as Web
 import Element
     exposing
@@ -182,7 +183,7 @@ update msg blockchain { chains, endPoint } (PoolsData page) =
                     | data =
                         case result of
                             Ok a ->
-                                Success a
+                                Success (a |> transformTokensToWhitelisted chains chain)
 
                             Err error ->
                                 Failure error
@@ -1135,6 +1136,37 @@ buttons { theme } pool =
                 }
             )
         ]
+
+
+transformTokensToWhitelisted : Chains -> Chain -> Answer -> Answer
+transformTokensToWhitelisted chains chain dict =
+    dict
+        |> Dict.toList
+        |> List.map
+            (\( pool, poolInfo ) ->
+                pool.pair
+                    |> Pair.toAsset
+                    |> (\token ->
+                            (token |> Token.toERC20)
+                                |> Maybe.map (\erc20 -> tokenTransform chains chain erc20 |> Token.ERC20)
+                                |> Maybe.withDefault token
+                       )
+                    |> (\assetToken -> Pair.init assetToken (pool.pair |> Pair.toCollateral))
+                    |> Maybe.map (\pair -> pair)
+                    |> Maybe.withDefault pool.pair
+                    |> (\pair -> { pair = pair, maturity = pool.maturity })
+                    |> (\newPool -> Tuple.pair newPool poolInfo)
+            )
+        |> Dict.fromList Pool.sorter
+
+
+tokenTransform : Chains -> Chain -> ERC20 -> ERC20
+tokenTransform chains chain erc20 =
+    (chains |> Chains.toERC20List chain)
+        |> List.filter (\chainERC20 -> (chainERC20 |> ERC20.toAddress) == (erc20 |> ERC20.toAddress))
+        |> List.head
+        |> Maybe.map (\chainERC20 -> chainERC20)
+        |> Maybe.withDefault erc20
 
 
 getPairSet : Answer -> Set Pair
