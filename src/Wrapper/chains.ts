@@ -38,6 +38,12 @@ export const whitelistChains: Whitelist = {
         symbol: "MAI",
         decimals: 18,
       },
+      {
+        address: "0x3A58a54C066FdC0f2D55FC9C89F0415C92eBf3C4",
+        name: "Staked MATIC",
+        symbol: "STMATIC",
+        decimals: 18,
+      },
       // {
       //   address: "0x7ceB23fD6bC0adD59E62ac25578270cFf1b9f619",
       //   name: "WETH",
