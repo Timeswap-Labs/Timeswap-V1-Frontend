@@ -2,6 +2,7 @@ import { Contract } from "@ethersproject/contracts";
 import { GlobalParams } from "../global";
 import erc20Abi from "../abi/erc20";
 import { updateTransferEventBalance } from "../helper";
+import { transformPool } from "../chains";
 
 export async function liquidityPositionsInit(
   gp: GlobalParams,
@@ -23,10 +24,14 @@ export async function liquidityPositionsInit(
       await Promise.all(promiseLiquidityBalances)
     ).map((x) => x.toString());
 
-    const convLiqs = convData.nativeResponse.map(({ pool }, index) => ({
-      pool,
-      liq: liquidityBalances[index],
-    }));
+    const convLiqs = convData.nativeResponse.map(({ pool }, index) => {
+      const transformedPool: Pool = transformPool(pool, positionsOf.chain);
+
+      return {
+        pool: transformedPool,
+        liq: liquidityBalances[index],
+      }
+    } );
 
     return {
       convAddress: convData.convAddress,

@@ -2,6 +2,7 @@ import { Contract } from "@ethersproject/contracts";
 import { GlobalParams } from "../global";
 import erc20Abi from "../abi/erc20";
 import { updateTransferEventBalance } from "../helper";
+import { transformPool } from "../chains";
 
 export async function lendPositionsInit(
   gp: GlobalParams,
@@ -73,15 +74,19 @@ export async function lendPositionsInit(
       await Promise.all(promiseInsuranceInterestBalances)
     ).map((x) => x.toString());
 
-    const convClaims = convData.nativeResponse.map(({ pool }, index) => ({
-      pool,
-      claim: {
-        bondPrincipal: bondPrincipalBalances[index],
-        bondInterest: bondInterestBalances[index],
-        insurancePrincipal: insurancePrincipalBalances[index],
-        insuranceInterest: insuranceInterestBalances[index],
-      },
-    }));
+    const convClaims = convData.nativeResponse.map(({ pool }, index) => {
+      const transformedPool: Pool = transformPool(pool, positionsOf.chain);
+
+      return {
+        pool: transformedPool,
+        claim: {
+          bondPrincipal: bondPrincipalBalances[index],
+          bondInterest: bondInterestBalances[index],
+          insurancePrincipal: insurancePrincipalBalances[index],
+          insuranceInterest: insuranceInterestBalances[index],
+        },
+      }
+    });
 
     return {
       convAddress: convData.convAddress,

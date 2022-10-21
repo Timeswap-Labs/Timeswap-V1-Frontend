@@ -111,6 +111,36 @@ export function getTokenList(chainId: number): (NativeToken | ERC20Token)[] {
   return tokenList;
 }
 
+// Transform pool token-data from server to the data provided in whitelist
+export function transformPool(pool: Pool, chain: Chain): Pool {
+  const tokenList: (NativeToken | ERC20Token)[] = getTokenList(chain.chainId);
+  let asset = pool.asset;
+  let collateral = pool.collateral;
+
+  if ((pool.asset as ERC20Token).address) {
+    asset = tokenList.find(token =>
+      (token as ERC20Token).address?.toLowerCase() === (pool.asset as ERC20Token).address?.toLowerCase()
+    )
+    || pool.asset;
+  }
+
+  if ((pool.collateral as ERC20Token).address) {
+    collateral = tokenList.find(token =>
+      (token as ERC20Token).address?.toLowerCase() === (pool.collateral as ERC20Token).address?.toLowerCase()
+    )
+    || pool.collateral;
+  }
+
+  const transformedPool: Pool = {
+    asset,
+    collateral,
+    maturity: pool.maturity
+  }
+
+  return transformedPool;
+}
+
+
 interface Whitelist {
   default: WhitelistChain;
   others: WhitelistChain[];

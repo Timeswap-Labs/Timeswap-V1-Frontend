@@ -4,6 +4,7 @@ import cdTokenAbi from "../abi/cdToken";
 import pairAbi from "../abi/pair";
 import { updateTransferEventBalance } from "../helper";
 import { CONVENIENCE } from "@timeswap-labs/timeswap-v1-biconomy-sdk";
+import { transformPool } from "../chains";
 
 export async function borrowPositionsInit(
   gp: GlobalParams,
@@ -70,17 +71,21 @@ export async function borrowPositionsInit(
     );
 
     return currentConvNatives.nativeResponse.map(
-      ({ pool, natives: { collateralizedDebt } }, index) => ({
-        pool,
-        collateralizedDebt,
-        dues: cdTokenOwnerIndex[index].map((tokenId, tokenIdIndex) => ({
-          tokenId,
-          due: {
-            debt: cdTokenDues[index][tokenIdIndex].debt,
-            collateral: cdTokenDues[index][tokenIdIndex].collateral,
-          },
-        })),
-      })
+      ({ pool, natives: { collateralizedDebt } }, index) => {
+        const transformedPool: Pool = transformPool(pool, positionsOf.chain);
+
+        return {
+          pool: transformedPool,
+          collateralizedDebt,
+          dues: cdTokenOwnerIndex[index].map((tokenId, tokenIdIndex) => ({
+            tokenId,
+            due: {
+              debt: cdTokenDues[index][tokenIdIndex].debt,
+              collateral: cdTokenDues[index][tokenIdIndex].collateral,
+            },
+          })),
+        }
+      }
     );
   } else {
     return [];
