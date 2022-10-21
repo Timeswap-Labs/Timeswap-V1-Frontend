@@ -12,14 +12,19 @@ import Blockchain.User.Claims as Claims exposing (Claims)
 import Blockchain.User.Main as User exposing (User)
 import Data.Address exposing (Address)
 import Data.Backdrop exposing (Backdrop)
+import Data.Chain exposing (Chain)
+import Data.Chains as Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
+import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
+import Data.Pair as Pair
 import Data.Pool as Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
+import Data.Token as Token
 import Element
     exposing
         ( Element
@@ -112,11 +117,13 @@ view :
         , device : Device
         , backdrop : Backdrop
         , images : Images
+        , chains : Chains
     }
     -> User
+    -> Chain
     -> Positions
     -> Element Msg
-view ({ theme, device, backdrop } as model) user (Positions tooltip) =
+view ({ theme, device, backdrop } as model) user chain (Positions tooltip) =
     el
         ([ Region.description "lend positions"
          , (case device of
@@ -159,7 +166,7 @@ view ({ theme, device, backdrop } as model) user (Positions tooltip) =
                                 noClaims model
 
                             else
-                                viewClaims model tooltip filteredClaims
+                                viewClaims model chain tooltip filteredClaims
                        )
         )
 
@@ -370,11 +377,13 @@ viewClaims :
         , chosenZone : ChosenZone
         , theme : Theme
         , images : Images
+        , chains : Chains
     }
+    -> Chain
     -> Maybe Tooltip
     -> Claims
     -> Element Msg
-viewClaims ({ time, theme } as model) tooltip claims =
+viewClaims ({ time, theme, chains } as model) chain tooltip claims =
     column
         [ width fill
         , height shrink
@@ -391,11 +400,49 @@ viewClaims ({ time, theme } as model) tooltip claims =
                 |> List.map
                     (\( convAddress, poolClaimTuple ) ->
                         ( poolClaimTuple |> Tuple.first |> Pool.toString
-                        , poolClaimTuple |> viewClaim model tooltip convAddress
+                        , (poolClaimTuple |> poolTransform chains chain) |> viewClaim model tooltip convAddress
                         )
                     )
             )
         ]
+
+
+poolTransform : Chains -> Chain -> ( Pool, Claim ) -> ( Pool, Claim )
+poolTransform chains chain poolClaimTuple =
+    poolClaimTuple
+        |> (\( pool, claim ) ->
+                pool.pair
+                    |> Pair.toAsset
+                    |> (\token ->
+                            (token |> Token.toERC20)
+                                |> Maybe.map (\erc20 -> tokenTransform chains chain erc20 |> Token.ERC20)
+                                |> Maybe.withDefault token
+                       )
+                    |> (\assetToken ->
+                            Pair.init assetToken
+                                (pool.pair
+                                    |> Pair.toCollateral
+                                    |> (\token ->
+                                            (token |> Token.toERC20)
+                                                |> Maybe.map (\erc20 -> tokenTransform chains chain erc20 |> Token.ERC20)
+                                                |> Maybe.withDefault token
+                                       )
+                                )
+                       )
+                    |> Maybe.map (\pair -> pair)
+                    |> Maybe.withDefault pool.pair
+                    |> (\pair -> { pair = pair, maturity = pool.maturity })
+                    |> (\newPool -> Tuple.pair newPool claim)
+           )
+
+
+tokenTransform : Chains -> Chain -> ERC20 -> ERC20
+tokenTransform chains chain erc20 =
+    (chains |> Chains.toERC20List chain)
+        |> List.filter (\chainERC20 -> (chainERC20 |> ERC20.toAddress) == (erc20 |> ERC20.toAddress))
+        |> List.head
+        |> Maybe.map (\chainERC20 -> chainERC20)
+        |> Maybe.withDefault erc20
 
 
 title : Theme -> Claims -> Element msg

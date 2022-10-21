@@ -1151,7 +1151,17 @@ transformTokensToWhitelisted chains chain dict =
                                 |> Maybe.map (\erc20 -> tokenTransform chains chain erc20 |> Token.ERC20)
                                 |> Maybe.withDefault token
                        )
-                    |> (\assetToken -> Pair.init assetToken (pool.pair |> Pair.toCollateral))
+                    |> (\assetToken ->
+                            Pair.init assetToken
+                                (pool.pair
+                                    |> Pair.toCollateral
+                                    |> (\token ->
+                                            (token |> Token.toERC20)
+                                                |> Maybe.map (\erc20 -> tokenTransform chains chain erc20 |> Token.ERC20)
+                                                |> Maybe.withDefault token
+                                       )
+                                )
+                       )
                     |> Maybe.map (\pair -> pair)
                     |> Maybe.withDefault pool.pair
                     |> (\pair -> { pair = pair, maturity = pool.maturity })

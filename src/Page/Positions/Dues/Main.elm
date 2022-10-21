@@ -8,19 +8,24 @@ module Page.Positions.Dues.Main exposing
     , view
     )
 
-import Blockchain.User.Due as Due exposing (Due)
+import Blockchain.User.Due exposing (Due)
 import Blockchain.User.Dues as Dues exposing (Dues)
 import Blockchain.User.Main as User exposing (User)
 import Blockchain.User.TokenId exposing (TokenId)
 import Data.Backdrop exposing (Backdrop)
+import Data.Chain exposing (Chain)
+import Data.Chains as Chains exposing (Chains)
 import Data.ChosenZone exposing (ChosenZone)
 import Data.Device exposing (Device(..))
+import Data.ERC20 as ERC20 exposing (ERC20)
 import Data.Images exposing (Images)
 import Data.Maturity as Maturity
 import Data.Offset exposing (Offset)
+import Data.Pair as Pair
 import Data.Pool as Pool exposing (Pool)
 import Data.Remote exposing (Remote(..))
 import Data.Theme as Theme exposing (Theme)
+import Data.Token as Token
 import Element
     exposing
         ( Element
@@ -112,11 +117,13 @@ view :
         , device : Device
         , backdrop : Backdrop
         , images : Images
+        , chains : Chains
     }
     -> User
+    -> Chain
     -> Positions
     -> Element Msg
-view ({ device, backdrop, theme } as model) user (Positions tooltip) =
+view ({ device, backdrop, theme } as model) user chain (Positions tooltip) =
     el
         ([ Region.description "borrow positions"
          , (case device of
@@ -160,7 +167,7 @@ view ({ device, backdrop, theme } as model) user (Positions tooltip) =
                                 noDues model
 
                             else
-                                viewDues model tooltip filteredDues
+                                viewDues model tooltip chain filteredDues
                        )
         )
 
@@ -371,11 +378,13 @@ viewDues :
         , chosenZone : ChosenZone
         , theme : Theme
         , images : Images
+        , chains : Chains
     }
     -> Maybe Tooltip
+    -> Chain
     -> Dues
     -> Element Msg
-viewDues ({ time, theme } as model) tooltip dues =
+viewDues ({ time, theme, chains } as model) tooltip chain dues =
     column
         [ width fill
         , height shrink
@@ -392,11 +401,49 @@ viewDues ({ time, theme } as model) tooltip dues =
                 |> List.map
                     (\(( pool, _ ) as tuple) ->
                         ( pool |> Pool.toString
-                        , tuple |> viewDue model tooltip
+                        , (tuple |> poolTransform chains chain) |> viewDue model tooltip
                         )
                     )
             )
         ]
+
+
+poolTransform : Chains -> Chain -> ( Pool, Dict TokenId Due ) -> ( Pool, Dict TokenId Due )
+poolTransform chains chain poolDueTuple =
+    poolDueTuple
+        |> (\( pool, dict ) ->
+                pool.pair
+                    |> Pair.toAsset
+                    |> (\token ->
+                            (token |> Token.toERC20)
+                                |> Maybe.map (\erc20 -> tokenTransform chains chain erc20 |> Token.ERC20)
+                                |> Maybe.withDefault token
+                       )
+                    |> (\assetToken ->
+                            Pair.init assetToken
+                                (pool.pair
+                                    |> Pair.toCollateral
+                                    |> (\token ->
+                                            (token |> Token.toERC20)
+                                                |> Maybe.map (\erc20 -> tokenTransform chains chain erc20 |> Token.ERC20)
+                                                |> Maybe.withDefault token
+                                       )
+                                )
+                       )
+                    |> Maybe.map (\pair -> pair)
+                    |> Maybe.withDefault pool.pair
+                    |> (\pair -> { pair = pair, maturity = pool.maturity })
+                    |> (\newPool -> Tuple.pair newPool dict)
+           )
+
+
+tokenTransform : Chains -> Chain -> ERC20 -> ERC20
+tokenTransform chains chain erc20 =
+    (chains |> Chains.toERC20List chain)
+        |> List.filter (\chainERC20 -> (chainERC20 |> ERC20.toAddress) == (erc20 |> ERC20.toAddress))
+        |> List.head
+        |> Maybe.map (\chainERC20 -> chainERC20)
+        |> Maybe.withDefault erc20
 
 
 title : Theme -> Dues -> Element msg
